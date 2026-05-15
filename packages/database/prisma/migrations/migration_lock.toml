@@ -1,0 +1,2 @@
+# See https://pris.ly/d/migrate-provider
+provider = "postgresql"

@@ -1,0 +1,68 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@repo/ui/styles/insureflow.css";
+
+@custom-variant dark (&:is(.dark *));
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.imgDark {
+  display: none;
+}
+
+.dark .imgLight {
+  display: none;
+}
+.dark .imgDark {
+  display: unset;
+}
+
+.light .imgDark {
+  display: none;
+}
+.light .imgLight {
+  display: unset;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.dark {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html.light {
+    color-scheme: light;
+  }
+}
+
+@layer utilities {
+  .pipeline-board--dragging {
+    cursor: grabbing;
+  }
+
+  .pipeline-board--dragging * {
+    cursor: grabbing !important;
+  }
+
+  .pipeline-drag-overlay {
+    cursor: grabbing;
+    pointer-events: none;
+  }
+}

@@ -1,0 +1,75 @@
+"use client"
+
+import { motion } from "framer-motion"
+import { Percent, Target, Timer, TrendingUp, Wallet } from "lucide-react"
+
+import { crmMetrics, formatCurrency } from "@/lib/crm-mock"
+import { GlassCard } from "@/components/dashboard/glass-card"
+import { Stagger, StaggerItem } from "@/components/motion/primitives"
+import { cn } from "@/lib/utils"
+
+const metrics = [
+  {
+    label: "Valor do pipeline",
+    value: formatCurrency(crmMetrics.pipelineValue),
+    sub: "Negócios em aberto",
+    icon: Wallet,
+    accent: "from-primary/25 to-primary/5",
+  },
+  {
+    label: "Negócios abertos",
+    value: String(crmMetrics.openDeals),
+    sub: `+${crmMetrics.newThisWeek} esta semana`,
+    icon: Target,
+    accent: "from-violet-500/20 to-violet-600/5",
+  },
+  {
+    label: "Taxa de conversão",
+    value: `${crmMetrics.winRate}%`,
+    sub: "Últimos 90 dias",
+    icon: Percent,
+    accent: "from-emerald-500/15 to-emerald-600/5",
+  },
+  {
+    label: "Ciclo médio",
+    value: `${crmMetrics.avgCycleDays}d`,
+    sub: "Lead → fechamento",
+    icon: Timer,
+    accent: "from-amber-500/15 to-amber-600/5",
+  },
+] as const
+
+export function CrmMetrics() {
+  return (
+    <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map((m, i) => (
+        <StaggerItem key={m.label}>
+          <GlassCard delay={i * 0.05} className="p-0">
+            <motion.div className="flex items-start gap-4 p-5 md:p-6">
+              <div
+                className={cn(
+                  "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-white/10",
+                  m.accent
+                )}
+              >
+                <m.icon className="size-5 text-primary" strokeWidth={1.5} />
+              </div>
+              <motion.div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                  {m.label}
+                </p>
+                <p className="tabular-metric mt-1 text-2xl font-semibold text-foreground">
+                  {m.value}
+                </p>
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <TrendingUp className="size-3 text-emerald-400/80" strokeWidth={1.5} />
+                  {m.sub}
+                </p>
+              </motion.div>
+            </motion.div>
+          </GlassCard>
+        </StaggerItem>
+      ))}
+    </Stagger>
+  )
+}
