@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 
-import type { CrmDeal } from "@/lib/crm-mock"
+import type { CrmDeal } from "@/lib/crm-api"
 import { DealCard } from "@/components/crm/deal-card"
 import { cn } from "@/lib/utils"
 

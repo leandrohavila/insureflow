@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 
-import { loginWithCredentials } from "@/lib/auth/session"
+import { loginWithBackendCredentials } from "@/lib/auth/session"
 
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(8, "Senha deve ter ao menos 8 caracteres"),
+  tenantSlug: z.string().min(1).default("insureflow"),
 })
 
 export async function POST(request: Request) {
@@ -20,7 +21,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const session = await loginWithCredentials(parsed.data.email, parsed.data.password)
+    const session = await loginWithBackendCredentials(
+      parsed.data.email,
+      parsed.data.password,
+      parsed.data.tenantSlug
+    )
 
     if (!session) {
       return NextResponse.json(

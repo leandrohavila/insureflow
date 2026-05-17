@@ -30,6 +30,7 @@ model Tenant {
   roles         Role[]
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
+  deals         Deal[]
 
   @@map("tenants")
 }
@@ -152,4 +153,24 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@map("audit_logs")
+}
+
+model Deal {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title      String
+  company    String
+  value      Decimal  @db.Decimal(14, 2)
+  stage      String   @default("novo")
+  status     String   @default("open")
+  assignedTo String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, stage])
+  @@index([tenantId, status])
+  @@index([tenantId, assignedTo])
+  @@map("deals")
 }

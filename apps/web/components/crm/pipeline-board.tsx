@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -16,8 +16,9 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { motion, useReducedMotion } from "framer-motion"
 
-import type { CrmDeal, CrmStageId } from "@/lib/crm-mock"
-import { crmDeals, pipelineStages } from "@/lib/crm-mock"
+import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
+import { pipelineStages } from "@/lib/crm-api"
+import { crmDeals as mockDeals } from "@/lib/crm-mock"
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
@@ -27,17 +28,19 @@ type PipelineBoardProps = {
   compact?: boolean
   interactive?: boolean
   onDealSelect?: (deal: CrmDeal) => void
-  initialDeals?: CrmDeal[]
+  deals?: CrmDeal[]
+  onDealStageChange?: (deal: CrmDeal, stage: CrmStageId) => void
 }
 
 export function PipelineBoard({
   compact,
   interactive = true,
   onDealSelect,
-  initialDeals = crmDeals,
+  deals: sourceDeals = mockDeals as unknown as CrmDeal[],
+  onDealStageChange,
 }: PipelineBoardProps) {
   const reduce = useReducedMotion()
-  const [deals, setDeals] = useState<CrmDeal[]>(initialDeals)
+  const [deals, setDeals] = useState<CrmDeal[]>(sourceDeals)
   const [activeDeal, setActiveDeal] = useState<CrmDeal | null>(null)
   const [overStageId, setOverStageId] = useState<CrmStageId | null>(null)
 
@@ -51,6 +54,10 @@ export function PipelineBoard({
   )
 
   const activeId = activeDeal?.id ?? null
+
+  useEffect(() => {
+    setDeals(sourceDeals)
+  }, [sourceDeals])
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const deal = deals.find((d) => d.id === event.active.id)
@@ -72,13 +79,18 @@ export function PipelineBoard({
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event
+      const deal = activeDeal ?? deals.find((d) => d.id === active.id)
+      const nextStage = over ? resolveDropStage(over.id, deals) : null
       if (over) {
         setDeals((current) => reorderDeals(current, active.id, over.id))
+      }
+      if (deal && nextStage && nextStage !== deal.stage) {
+        onDealStageChange?.(deal, nextStage)
       }
       setActiveDeal(null)
       setOverStageId(null)
     },
-    []
+    [activeDeal, deals, onDealStageChange]
   )
 
   const handleDragCancel = useCallback(() => {

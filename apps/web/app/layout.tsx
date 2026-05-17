@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@repo/ui/theme-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +45,9 @@ export default function RootLayout({
         )}
       >
         <ThemeProvider defaultTheme="dark">
-          <TooltipProvider>{children}</TooltipProvider>
+          <QueryProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

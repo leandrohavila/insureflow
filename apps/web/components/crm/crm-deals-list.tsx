@@ -2,8 +2,9 @@
 
 import { useReducedMotion } from "framer-motion"
 
-import type { CrmDeal } from "@/lib/crm-mock"
-import { crmDeals, formatCurrency, pipelineStages } from "@/lib/crm-mock"
+import type { CrmDeal } from "@/lib/crm-api"
+import { formatCurrency, pipelineStages } from "@/lib/crm-api"
+import { crmDeals as mockDeals } from "@/lib/crm-mock"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -23,9 +24,13 @@ const stageLabel = Object.fromEntries(
 
 type CrmDealsListProps = {
   onDealSelect?: (deal: CrmDeal) => void
+  deals?: CrmDeal[]
 }
 
-export function CrmDealsList({ onDealSelect }: CrmDealsListProps) {
+export function CrmDealsList({
+  onDealSelect,
+  deals = mockDeals as unknown as CrmDeal[],
+}: CrmDealsListProps) {
   const reduce = useReducedMotion()
 
   return (
@@ -55,7 +60,7 @@ export function CrmDealsList({ onDealSelect }: CrmDealsListProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {crmDeals.map((deal, i) => (
+            {deals.map((deal, i) => (
               <TableRow
                 key={deal.id}
                 onClick={onDealSelect ? () => onDealSelect(deal) : undefined}

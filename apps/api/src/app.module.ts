@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CrmModule } from './modules/crm/crm.module';
 import { HealthModule } from './modules/health/health.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { QueueModule } from './modules/queue/queue.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
     QueueModule,
     AuthModule,
+    CrmModule,
     UsersModule,
     TenantsModule,
     PermissionsModule,

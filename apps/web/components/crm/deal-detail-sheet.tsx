@@ -10,13 +10,13 @@ import {
   User,
 } from "lucide-react"
 
-import type { CrmDeal } from "@/lib/crm-mock"
+import type { CrmDeal } from "@/lib/crm-api"
 import {
-  crmActivities,
   formatCurrency,
   pipelineStages,
   stageLabelMap,
-} from "@/lib/crm-mock"
+} from "@/lib/crm-api"
+import { crmActivities } from "@/lib/crm-mock"
 import {
   Sheet,
   SheetContent,

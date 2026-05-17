@@ -3,43 +3,60 @@
 import { motion } from "framer-motion"
 import { Percent, Target, Timer, TrendingUp, Wallet } from "lucide-react"
 
-import { crmMetrics, formatCurrency } from "@/lib/crm-mock"
+import { crmMetrics } from "@/lib/crm-mock"
+import { formatCurrency, type CrmDeal } from "@/lib/crm-api"
 import { GlassCard } from "@/components/dashboard/glass-card"
 import { Stagger, StaggerItem } from "@/components/motion/primitives"
 import { cn } from "@/lib/utils"
 
-const metrics = [
-  {
-    label: "Valor do pipeline",
-    value: formatCurrency(crmMetrics.pipelineValue),
-    sub: "Negócios em aberto",
-    icon: Wallet,
-    accent: "from-primary/25 to-primary/5",
-  },
-  {
-    label: "Negócios abertos",
-    value: String(crmMetrics.openDeals),
-    sub: `+${crmMetrics.newThisWeek} esta semana`,
-    icon: Target,
-    accent: "from-violet-500/20 to-violet-600/5",
-  },
-  {
-    label: "Taxa de conversão",
-    value: `${crmMetrics.winRate}%`,
-    sub: "Últimos 90 dias",
-    icon: Percent,
-    accent: "from-emerald-500/15 to-emerald-600/5",
-  },
-  {
-    label: "Ciclo médio",
-    value: `${crmMetrics.avgCycleDays}d`,
-    sub: "Lead → fechamento",
-    icon: Timer,
-    accent: "from-amber-500/15 to-amber-600/5",
-  },
-] as const
+type CrmMetricsProps = {
+  deals?: CrmDeal[]
+}
 
-export function CrmMetrics() {
+export function CrmMetrics({ deals }: CrmMetricsProps) {
+  const openDeals = deals?.filter((deal) => deal.status === "open") ?? []
+  const wonDeals = deals?.filter((deal) => deal.status === "won") ?? []
+  const pipelineValue =
+    deals === undefined
+      ? crmMetrics.pipelineValue
+      : openDeals.reduce((sum, deal) => sum + deal.value, 0)
+  const totalDeals = deals?.length ?? crmMetrics.openDeals
+  const winRate =
+    deals === undefined || deals.length === 0
+      ? crmMetrics.winRate
+      : Math.round((wonDeals.length / deals.length) * 100)
+
+  const metrics = [
+    {
+      label: "Valor do pipeline",
+      value: formatCurrency(pipelineValue),
+      sub: "Negócios em aberto",
+      icon: Wallet,
+      accent: "from-primary/25 to-primary/5",
+    },
+    {
+      label: "Negócios abertos",
+      value: String(totalDeals),
+      sub: deals ? "Carregado do banco" : `+${crmMetrics.newThisWeek} esta semana`,
+      icon: Target,
+      accent: "from-violet-500/20 to-violet-600/5",
+    },
+    {
+      label: "Taxa de conversão",
+      value: `${winRate}%`,
+      sub: "Pipeline atual",
+      icon: Percent,
+      accent: "from-emerald-500/15 to-emerald-600/5",
+    },
+    {
+      label: "Ciclo médio",
+      value: `${crmMetrics.avgCycleDays}d`,
+      sub: "Lead → fechamento",
+      icon: Timer,
+      accent: "from-amber-500/15 to-amber-600/5",
+    },
+  ] as const
+
   return (
     <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {metrics.map((m, i) => (

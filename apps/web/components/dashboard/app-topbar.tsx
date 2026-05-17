@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -167,11 +168,13 @@ export function AppTopbar({ session }: AppTopbarProps) {
             align="end"
             className="glass-panel w-56 border-white/[0.08] p-1"
           >
-            <DropdownMenuLabel className="space-y-1 text-xs font-normal">
-              <p className="font-medium text-foreground">{session.name}</p>
-              <p className="text-muted-foreground">{session.email}</p>
-              <RoleBadge role={session.role} label={session.roleLabel} />
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="space-y-1 text-xs font-normal">
+                <p className="font-medium text-foreground">{session.name}</p>
+                <p className="text-muted-foreground">{session.email}</p>
+                <RoleBadge role={session.role} label={session.roleLabel} />
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-white/[0.06]" />
             <DropdownMenuItem className="cursor-pointer rounded-lg" render={(props) => <Link href="/configuracoes" {...props} />}>
               Configurações
