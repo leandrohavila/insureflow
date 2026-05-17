@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { Percent, Target, Timer, TrendingUp, Wallet } from "lucide-react"
 
 import { crmMetrics } from "@/lib/crm-mock"
-import { formatCurrency, type CrmDeal } from "@/lib/crm-api"
+import { formatCurrency, type CrmDeal } from "@/lib/data-access/modules/crm"
 import { GlassCard } from "@/components/dashboard/glass-card"
 import { Stagger, StaggerItem } from "@/components/motion/primitives"
 import { cn } from "@/lib/utils"

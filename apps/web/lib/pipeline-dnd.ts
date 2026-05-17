@@ -1,7 +1,7 @@
 import type { UniqueIdentifier } from "@dnd-kit/core"
 
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
-import { pipelineStages } from "@/lib/crm-api"
+import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
+import { pipelineStages } from "@/lib/data-access/modules/crm"
 
 export const stageDroppableId = (stageId: CrmStageId) => `stage:${stageId}`
 

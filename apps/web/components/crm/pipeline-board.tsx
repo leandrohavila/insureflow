@@ -16,8 +16,8 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { motion, useReducedMotion } from "framer-motion"
 
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
-import { pipelineStages } from "@/lib/crm-api"
+import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
+import { pipelineStages } from "@/lib/data-access/modules/crm"
 import { crmDeals as mockDeals } from "@/lib/crm-mock"
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"

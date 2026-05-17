@@ -2,8 +2,8 @@
 
 import { useReducedMotion } from "framer-motion"
 
-import type { CrmDeal } from "@/lib/crm-api"
-import { formatCurrency, pipelineStages } from "@/lib/crm-api"
+import type { CrmDeal } from "@/lib/data-access/modules/crm"
+import { formatCurrency, pipelineStages } from "@/lib/data-access/modules/crm"
 import { crmDeals as mockDeals } from "@/lib/crm-mock"
 import { Badge } from "@/components/ui/badge"
 import {

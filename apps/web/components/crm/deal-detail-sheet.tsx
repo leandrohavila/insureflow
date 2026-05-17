@@ -10,12 +10,12 @@ import {
   User,
 } from "lucide-react"
 
-import type { CrmDeal } from "@/lib/crm-api"
+import type { CrmDeal } from "@/lib/data-access/modules/crm"
 import {
   formatCurrency,
   pipelineStages,
   stageLabelMap,
-} from "@/lib/crm-api"
+} from "@/lib/data-access/modules/crm"
 import { crmActivities } from "@/lib/crm-mock"
 import {
   Sheet,

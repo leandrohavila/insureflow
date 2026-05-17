@@ -3,8 +3,8 @@
 import { motion, useReducedMotion } from "framer-motion"
 import { Building2, Clock, GripVertical, MoreHorizontal } from "lucide-react"
 
-import type { CrmDeal } from "@/lib/crm-api"
-import { formatCurrency } from "@/lib/crm-api"
+import type { CrmDeal } from "@/lib/data-access/modules/crm"
+import { formatCurrency } from "@/lib/data-access/modules/crm"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"

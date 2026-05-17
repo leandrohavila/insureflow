@@ -29,13 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
+import { getErrorMessage } from "@/lib/data-access"
+import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
 import {
   pipelineStages,
   useCreateCrmDeal,
   useCrmDeals,
   useUpdateCrmDeal,
-} from "@/lib/crm-api"
+} from "@/lib/data-access/modules/crm"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -166,7 +167,7 @@ export function DealsPage() {
           <div>
             <p className="font-medium text-foreground">Não foi possível carregar o CRM.</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {(dealsQuery.error as Error).message}
+              {getErrorMessage(dealsQuery.error, "Erro ao carregar negócios")}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => dealsQuery.refetch()}>
@@ -215,7 +216,7 @@ export function DealsPage() {
       <NewDealDialog
         open={createOpen}
         pending={createDeal.isPending}
-        error={createDeal.error as Error | null}
+        error={createDeal.error}
         onOpenChange={setCreateOpen}
         onSubmit={(input) => {
           createDeal.mutate(input, {
@@ -244,7 +245,7 @@ function NewDealDialog({
 }: {
   open: boolean
   pending: boolean
-  error: Error | null
+  error: unknown
   onOpenChange: (open: boolean) => void
   onSubmit: (input: {
     title: string
@@ -350,7 +351,7 @@ function NewDealDialog({
 
           {error ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {error.message}
+              {getErrorMessage(error, "Erro ao salvar negócio")}
             </p>
           ) : null}
 
