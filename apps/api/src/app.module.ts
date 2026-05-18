@@ -12,7 +12,9 @@ import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
@@ -62,6 +64,8 @@ import { UsersModule } from './modules/users/users.module';
     QueueModule,
     AuthModule,
     CrmModule,
+    CustomersModule,
+    LeadsModule,
     UsersModule,
     TenantsModule,
     PermissionsModule,

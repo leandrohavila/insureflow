@@ -31,6 +31,8 @@ model Tenant {
   auditLogs     AuditLog[]
   refreshTokens RefreshToken[]
   deals         Deal[]
+  customers     Customer[]
+  leads         Lead[]
 
   @@map("tenants")
 }
@@ -168,9 +170,58 @@ model Deal {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  convertedLead Lead? @relation("LeadConvertedDeal")
+
   @@index([tenantId])
   @@index([tenantId, stage])
   @@index([tenantId, status])
   @@index([tenantId, assignedTo])
   @@map("deals")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type      String
+  name      String
+  document  String
+  email     String?
+  phone     String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, document])
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, status])
+  @@index([tenantId, email])
+  @@index([tenantId, createdAt])
+  @@map("customers")
+}
+
+model Lead {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  company    String?
+  source     String?
+  status     String   @default("new")
+  notes      String?
+  assignedTo String?
+  dealId     String?  @unique
+  deal       Deal?    @relation("LeadConvertedDeal", fields: [dealId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, source])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, createdAt])
+  @@map("leads")
 }
