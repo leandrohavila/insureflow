@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { Building2, Filter, Globe, Upload } from "lucide-react"
 
@@ -12,9 +13,59 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import type { CrmCompany } from "@/lib/crm-mock"
-import { crmCompanies } from "@/lib/crm-mock"
+import {
+  formatCurrency,
+  useCrmDeals,
+  type CrmDeal,
+} from "@/lib/data-access/modules/crm"
 import { easeOut } from "@/lib/motion"
+
+type CrmCompany = {
+  id: string
+  name: string
+  domain: string
+  industry: string
+  size: string
+  owner: string
+  ownerInitials: string
+  deals: number
+  revenue: string
+}
+
+function domainFromCompany(company: string) {
+  return `${
+    company
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 24) || "empresa"
+  }.crm`
+}
+
+function buildCompanies(deals: CrmDeal[]): CrmCompany[] {
+  const byCompany = new Map<string, CrmDeal[]>()
+  deals.forEach((deal) => {
+    byCompany.set(deal.company, [...(byCompany.get(deal.company) ?? []), deal])
+  })
+
+  return Array.from(byCompany.entries()).map(([company, companyDeals]) => {
+    const owner = companyDeals[0]?.owner ?? "Sem responsável"
+    return {
+      id: company,
+      name: company,
+      domain: domainFromCompany(company),
+      industry: "CRM real",
+      size: `${companyDeals.length} negócio(s)`,
+      owner,
+      ownerInitials: companyDeals[0]?.ownerInitials ?? "IF",
+      deals: companyDeals.length,
+      revenue: formatCurrency(
+        companyDeals.reduce((sum, deal) => sum + deal.value, 0),
+      ),
+    }
+  })
+}
 
 const columns: CrmTableColumn<CrmCompany>[] = [
   {
@@ -40,7 +91,10 @@ const columns: CrmTableColumn<CrmCompany>[] = [
     header: "Setor",
     hideOnMobile: true,
     render: (row) => (
-      <Badge variant="outline" className="rounded-full border-white/10 text-[10px]">
+      <Badge
+        variant="outline"
+        className="rounded-full border-white/10 text-[10px]"
+      >
         {row.industry}
       </Badge>
     ),
@@ -49,7 +103,9 @@ const columns: CrmTableColumn<CrmCompany>[] = [
     key: "size",
     header: "Porte",
     hideOnMobile: true,
-    render: (row) => <span className="text-sm text-muted-foreground">{row.size}</span>,
+    render: (row) => (
+      <span className="text-sm text-muted-foreground">{row.size}</span>
+    ),
   },
   {
     key: "deals",
@@ -68,12 +124,19 @@ const columns: CrmTableColumn<CrmCompany>[] = [
     key: "owner",
     header: "Proprietário",
     className: "text-right",
-    render: (row) => <OwnerCell initials={row.ownerInitials} name={row.owner} />,
+    render: (row) => (
+      <OwnerCell initials={row.ownerInitials} name={row.owner} />
+    ),
   },
 ]
 
 export function CompaniesPage() {
   const reduce = useReducedMotion()
+  const dealsQuery = useCrmDeals()
+  const companies = useMemo(
+    () => buildCompanies(dealsQuery.data ?? []),
+    [dealsQuery.data],
+  )
 
   return (
     <motion.div
@@ -103,11 +166,11 @@ export function CompaniesPage() {
       </motion.div>
 
       <CrmRecordTable
-        data={crmCompanies}
+        data={companies}
         columns={columns}
         getRowId={(row) => row.id}
         title="Todas as empresas"
-        subtitle={`${crmCompanies.length} contas ativas`}
+        subtitle={`${companies.length} empresas derivadas dos negócios reais`}
       />
     </motion.div>
   )

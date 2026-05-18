@@ -17,6 +17,7 @@ import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useCrmDeals } from "@/lib/data-access/modules/crm"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -25,6 +26,8 @@ type ViewMode = "board" | "list"
 export function CrmPage() {
   const [view, setView] = useState<ViewMode>("board")
   const reduce = useReducedMotion()
+  const dealsQuery = useCrmDeals()
+  const deals = dealsQuery.data ?? []
 
   return (
     <motion.div
@@ -71,7 +74,7 @@ export function CrmPage() {
         </motion.div>
       </header>
 
-      <CrmMetrics />
+      <CrmMetrics deals={deals} />
 
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 8 }}
@@ -99,7 +102,7 @@ export function CrmPage() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                 view === "board"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Kanban className="size-3.5" strokeWidth={1.5} />
@@ -112,7 +115,7 @@ export function CrmPage() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                 view === "list"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <List className="size-3.5" strokeWidth={1.5} />
@@ -130,17 +133,21 @@ export function CrmPage() {
           transition={{ duration: 0.35, ease: easeOut }}
           className="min-w-0"
         >
-          {view === "board" ? <PipelineBoard /> : <CrmDealsList />}
+          {view === "board" ? (
+            <PipelineBoard deals={deals} />
+          ) : (
+            <CrmDealsList deals={deals} />
+          )}
         </motion.div>
         <aside className="hidden xl:block">
           <div className="sticky top-20">
-            <CrmActivityFeed />
+            <CrmActivityFeed deals={deals} />
           </div>
         </aside>
       </div>
 
       <div className="xl:hidden">
-        <CrmActivityFeed />
+        <CrmActivityFeed deals={deals} />
       </div>
     </motion.div>
   )

@@ -18,7 +18,6 @@ import { motion, useReducedMotion } from "framer-motion"
 
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
 import { pipelineStages } from "@/lib/data-access/modules/crm"
-import { crmDeals as mockDeals } from "@/lib/crm-mock"
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
@@ -36,7 +35,7 @@ export function PipelineBoard({
   compact,
   interactive = true,
   onDealSelect,
-  deals: sourceDeals = mockDeals as unknown as CrmDeal[],
+  deals: sourceDeals = [],
   onDealStageChange,
 }: PipelineBoardProps) {
   const reduce = useReducedMotion()
@@ -50,7 +49,7 @@ export function PipelineBoard({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   )
 
   const activeId = activeDeal?.id ?? null
@@ -59,10 +58,13 @@ export function PipelineBoard({
     setDeals(sourceDeals)
   }, [sourceDeals])
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const deal = deals.find((d) => d.id === event.active.id)
-    if (deal) setActiveDeal(deal)
-  }, [deals])
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const deal = deals.find((d) => d.id === event.active.id)
+      if (deal) setActiveDeal(deal)
+    },
+    [deals],
+  )
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event
@@ -90,7 +92,7 @@ export function PipelineBoard({
       setActiveDeal(null)
       setOverStageId(null)
     },
-    [activeDeal, deals, onDealStageChange]
+    [activeDeal, deals, onDealStageChange],
   )
 
   const handleDragCancel = useCallback(() => {
@@ -102,7 +104,7 @@ export function PipelineBoard({
     "flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:thin]",
     "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10",
     compact && "max-h-[300px]",
-    activeId && "pipeline-board--dragging"
+    activeId && "pipeline-board--dragging",
   )
 
   const columns = useMemo(
@@ -121,7 +123,7 @@ export function PipelineBoard({
           onDealSelect={onDealSelect}
         />
       )),
-    [compact, deals, interactive, onDealSelect, overStageId, activeId]
+    [compact, deals, interactive, onDealSelect, overStageId, activeId],
   )
 
   if (!interactive) {
@@ -155,7 +157,12 @@ export function PipelineBoard({
         {columns}
       </motion.div>
 
-      <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+      <DragOverlay
+        dropAnimation={{
+          duration: 220,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      >
         {activeDeal ? (
           <div className="pipeline-drag-overlay w-[272px] rotate-[1.5deg] scale-[1.03]">
             <DealCard deal={activeDeal} isOverlay />

@@ -1,35 +1,72 @@
 "use client"
 
 import { motion, useReducedMotion } from "framer-motion"
-import {
-  FileText,
-  Mail,
-  MessageSquare,
-  Phone,
-  Receipt,
-} from "lucide-react"
+import { FileText, MessageSquare, Receipt } from "lucide-react"
 
-import type { CrmActivity } from "@/lib/crm-mock"
-import { crmActivities } from "@/lib/crm-mock"
+import {
+  formatCurrency,
+  stageLabelMap,
+  type CrmDeal,
+} from "@/lib/data-access/modules/crm"
 import { GlassCard } from "@/components/dashboard/glass-card"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const activityIcon = {
-  call: Phone,
-  email: Mail,
-  meeting: MessageSquare,
+  created: MessageSquare,
   note: FileText,
-  quote: Receipt,
+  value: Receipt,
 } as const
 
 const activityColor = {
-  call: "bg-sky-500/15 text-sky-300 ring-sky-500/25",
-  email: "bg-violet-500/15 text-violet-200 ring-violet-500/25",
-  meeting: "bg-primary/15 text-primary ring-primary/25",
+  created: "bg-primary/15 text-primary ring-primary/25",
   note: "bg-white/[0.06] text-muted-foreground ring-white/10",
-  quote: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
+  value: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
 } as const
+
+type CrmActivity = {
+  id: string
+  type: keyof typeof activityIcon
+  title: string
+  description: string
+  time: string
+  user: string
+}
+
+function formatRelativeTime(value: string) {
+  const date = new Date(value)
+  const diffMs = Date.now() - date.getTime()
+  if (Number.isNaN(diffMs)) return "Agora"
+
+  const minutes = Math.max(0, Math.floor(diffMs / 60000))
+  if (minutes < 1) return "Agora"
+  if (minutes < 60) return `Há ${minutes}min`
+
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `Há ${hours}h`
+
+  const days = Math.floor(hours / 24)
+  return `Há ${days}d`
+}
+
+function buildActivities(deals: CrmDeal[]): CrmActivity[] {
+  return deals
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    )
+    .slice(0, 5)
+    .map((deal) => ({
+      id: deal.id,
+      type: deal.value > 0 ? "value" : "created",
+      title:
+        deal.status === "won" ? `Negócio ganho — ${deal.title}` : deal.title,
+      description: `${deal.company} · ${formatCurrency(deal.value)} · ${stageLabelMap[deal.stage]}`,
+      time: formatRelativeTime(deal.updatedAt),
+      user: deal.owner,
+    }))
+}
 
 function ActivityItem({
   activity,
@@ -52,7 +89,7 @@ function ActivityItem({
         <div
           className={cn(
             "flex size-8 shrink-0 items-center justify-center rounded-lg ring-1",
-            activityColor[activity.type]
+            activityColor[activity.type],
           )}
         >
           <Icon className="size-3.5" strokeWidth={1.5} />
@@ -71,13 +108,17 @@ function ActivityItem({
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
           {activity.description}
         </p>
-        <p className="mt-1.5 text-[10px] text-muted-foreground/70">{activity.user}</p>
+        <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+          {activity.user}
+        </p>
       </div>
     </motion.li>
   )
 }
 
-export function CrmActivityFeed() {
+export function CrmActivityFeed({ deals }: { deals: CrmDeal[] }) {
+  const activities = buildActivities(deals)
+
   return (
     <GlassCard delay={0.2} hover={false} className="flex h-full flex-col p-0">
       <div className="border-b border-white/[0.06] px-5 py-4 md:px-6">
@@ -85,9 +126,15 @@ export function CrmActivityFeed() {
         <p className="text-xs text-muted-foreground">Timeline do dia</p>
       </div>
       <ul className="flex-1 overflow-y-auto px-5 py-4 md:px-6">
-        {crmActivities.map((activity, i) => (
-          <ActivityItem key={activity.id} activity={activity} index={i} />
-        ))}
+        {activities.length === 0 ? (
+          <li className="text-xs text-muted-foreground">
+            Nenhuma atividade real registrada no pipeline.
+          </li>
+        ) : (
+          activities.map((activity, i) => (
+            <ActivityItem key={activity.id} activity={activity} index={i} />
+          ))
+        )}
       </ul>
     </GlassCard>
   )

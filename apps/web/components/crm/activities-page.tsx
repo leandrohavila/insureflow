@@ -1,50 +1,74 @@
 "use client"
 
+import { useMemo } from "react"
 import { motion, useReducedMotion } from "framer-motion"
-import {
-  FileText,
-  Filter,
-  Mail,
-  MessageSquare,
-  Phone,
-  Receipt,
-} from "lucide-react"
+import { FileText, Filter, MessageSquare, Receipt } from "lucide-react"
 
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { GlassCard } from "@/components/dashboard/glass-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { CrmActivity } from "@/lib/crm-mock"
-import { crmActivities } from "@/lib/crm-mock"
+import {
+  formatCurrency,
+  stageLabelMap,
+  useCrmDeals,
+  type CrmDeal,
+} from "@/lib/data-access/modules/crm"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const activityIcon = {
-  call: Phone,
-  email: Mail,
-  meeting: MessageSquare,
+  created: MessageSquare,
   note: FileText,
-  quote: Receipt,
+  value: Receipt,
 } as const
 
 const activityColor = {
-  call: "bg-sky-500/15 text-sky-300 ring-sky-500/25",
-  email: "bg-violet-500/15 text-violet-200 ring-violet-500/25",
-  meeting: "bg-primary/15 text-primary ring-primary/25",
+  created: "bg-primary/15 text-primary ring-primary/25",
   note: "bg-white/[0.06] text-muted-foreground ring-white/10",
-  quote: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
+  value: "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25",
 } as const
 
+type CrmActivity = {
+  id: string
+  type: keyof typeof activityIcon
+  title: string
+  description: string
+  time: string
+  user: string
+}
+
 const typeLabel: Record<CrmActivity["type"], string> = {
-  call: "Ligação",
-  email: "E-mail",
-  meeting: "Reunião",
+  created: "Negócio",
   note: "Nota",
-  quote: "Cotação",
+  value: "Valor",
+}
+
+function activityFromDeal(deal: CrmDeal): CrmActivity {
+  return {
+    id: deal.id,
+    type: deal.value > 0 ? "value" : "created",
+    title: deal.status === "won" ? `Negócio ganho — ${deal.title}` : deal.title,
+    description: `${deal.company} · ${stageLabelMap[deal.stage]} · ${formatCurrency(deal.value)}`,
+    time: new Intl.DateTimeFormat("pt-BR").format(new Date(deal.updatedAt)),
+    user: deal.owner,
+  }
 }
 
 export function ActivitiesPage() {
   const reduce = useReducedMotion()
+  const dealsQuery = useCrmDeals()
+  const activities = useMemo(
+    () =>
+      (dealsQuery.data ?? [])
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
+        .map(activityFromDeal),
+    [dealsQuery.data],
+  )
 
   return (
     <motion.div
@@ -79,7 +103,7 @@ export function ActivitiesPage() {
             aria-hidden
             className="absolute top-2 bottom-2 left-[19px] w-px bg-gradient-to-b from-primary/40 via-white/10 to-transparent"
           />
-          {crmActivities.map((activity, i) => {
+          {activities.map((activity, i) => {
             const Icon = activityIcon[activity.type]
             return (
               <motion.li
@@ -92,14 +116,16 @@ export function ActivitiesPage() {
                 <motion.div
                   className={cn(
                     "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-xl ring-1",
-                    activityColor[activity.type]
+                    activityColor[activity.type],
                   )}
                 >
                   <Icon className="size-4" strokeWidth={1.5} />
                 </motion.div>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <motion.div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold tracking-[-0.02em]">{activity.title}</p>
+                    <p className="text-sm font-semibold tracking-[-0.02em]">
+                      {activity.title}
+                    </p>
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-muted-foreground">
                       {typeLabel[activity.type]}
                     </span>
@@ -114,6 +140,11 @@ export function ActivitiesPage() {
               </motion.li>
             )
           })}
+          {activities.length === 0 ? (
+            <li className="text-sm text-muted-foreground">
+              Nenhuma atividade real registrada no pipeline.
+            </li>
+          ) : null}
         </ul>
       </GlassCard>
     </motion.div>

@@ -69,12 +69,14 @@ export function PipelineColumn({
       transition={{ delay: 0.08 * columnIndex, duration: 0.45, ease: easeOut }}
       className={cn(
         "flex shrink-0 flex-col",
-        compact ? "w-[220px]" : "w-[min(100%,280px)] sm:w-[272px]"
+        compact ? "w-[220px]" : "w-[min(100%,280px)] sm:w-[272px]",
       )}
     >
       <div className="mb-3 flex items-center justify-between gap-2 px-0.5">
         <motion.div className="flex min-w-0 items-center gap-2">
-          <span className={cn("h-4 w-1 shrink-0 rounded-full", accentBar[accent])} />
+          <span
+            className={cn("h-4 w-1 shrink-0 rounded-full", accentBar[accent])}
+          />
           <h3 className="truncate text-[13px] font-semibold tracking-[-0.02em] text-foreground">
             {label}
           </h3>
@@ -92,12 +94,14 @@ export function PipelineColumn({
         className={cn(
           "relative flex flex-1 flex-col gap-2.5 rounded-xl border p-2 transition-[border-color,box-shadow,background] duration-300",
           "border-white/[0.06] bg-white/[0.02]",
-          compact ? "min-h-[160px] max-h-[240px] overflow-y-auto" : "min-h-[min(420px,55vh)]",
+          compact
+            ? "min-h-[160px] max-h-[240px] overflow-y-auto"
+            : "min-h-[min(420px,55vh)]",
           highlighted &&
             cn(
               "border-primary/40 bg-primary/[0.06] shadow-lg ring-2 ring-primary/25",
-              accentGlow[accent]
-            )
+              accentGlow[accent],
+            ),
         )}
       >
         {highlighted && (
@@ -125,7 +129,7 @@ export function PipelineColumn({
               index={i}
               onClick={onDealSelect ? () => onDealSelect(deal) : undefined}
             />
-          )
+          ),
         )}
 
         {deals.length === 0 && (
@@ -134,10 +138,13 @@ export function PipelineColumn({
               "flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors",
               highlighted
                 ? "border-primary/35 bg-primary/5 text-primary/80"
-                : "border-white/[0.08] text-muted-foreground/60"
+                : "border-white/[0.08] text-muted-foreground/60",
             )}
           >
-            <Plus className={cn("size-4", highlighted && "text-primary")} strokeWidth={1.5} />
+            <Plus
+              className={cn("size-4", highlighted && "text-primary")}
+              strokeWidth={1.5}
+            />
             <p className="text-xs leading-relaxed">
               {highlighted ? "Solte aqui" : "Arraste negócios para esta etapa"}
             </p>

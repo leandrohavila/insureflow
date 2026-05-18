@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import { Filter, Mail, Phone, Upload } from "lucide-react"
 
@@ -12,9 +13,35 @@ import {
 } from "@/components/crm/crm-record-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { CrmContact } from "@/lib/crm-mock"
-import { crmContacts } from "@/lib/crm-mock"
+import {
+  stageLabelMap,
+  useCrmDeals,
+  type CrmDeal,
+} from "@/lib/data-access/modules/crm"
 import { easeOut } from "@/lib/motion"
+
+type CrmContact = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  company: string
+  owner: string
+  ownerInitials: string
+  lifecycle: "Lead" | "MQL" | "SQL" | "Cliente"
+  lastActivity: string
+}
+
+function lifecycleFromDeal(deal: CrmDeal): CrmContact["lifecycle"] {
+  if (deal.status === "won" || deal.stage === "fechado") return "Cliente"
+  if (deal.stage === "proposta" || deal.stage === "negociacao") return "SQL"
+  if (deal.stage === "qualificacao") return "MQL"
+  return "Lead"
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR").format(new Date(value))
+}
 
 const columns: CrmTableColumn<CrmContact>[] = [
   {
@@ -31,7 +58,9 @@ const columns: CrmTableColumn<CrmContact>[] = [
     key: "company",
     header: "Empresa",
     hideOnMobile: true,
-    render: (row) => <span className="text-sm text-muted-foreground">{row.company}</span>,
+    render: (row) => (
+      <span className="text-sm text-muted-foreground">{row.company}</span>
+    ),
   },
   {
     key: "phone",
@@ -53,7 +82,9 @@ const columns: CrmTableColumn<CrmContact>[] = [
     key: "owner",
     header: "Proprietário",
     className: "text-right",
-    render: (row) => <OwnerCell initials={row.ownerInitials} name={row.owner} />,
+    render: (row) => (
+      <OwnerCell initials={row.ownerInitials} name={row.owner} />
+    ),
   },
   {
     key: "activity",
@@ -66,6 +97,22 @@ const columns: CrmTableColumn<CrmContact>[] = [
 
 export function ContactsPage() {
   const reduce = useReducedMotion()
+  const dealsQuery = useCrmDeals()
+  const contacts = useMemo(
+    () =>
+      (dealsQuery.data ?? []).map((deal) => ({
+        id: deal.id,
+        name: deal.contact,
+        email: deal.email ?? "Sem e-mail no negócio",
+        phone: "Sem telefone no negócio",
+        company: deal.company,
+        owner: deal.owner,
+        ownerInitials: deal.ownerInitials,
+        lifecycle: lifecycleFromDeal(deal),
+        lastActivity: `${stageLabelMap[deal.stage]} · ${formatDate(deal.updatedAt)}`,
+      })),
+    [dealsQuery.data],
+  )
 
   return (
     <motion.div
@@ -101,11 +148,11 @@ export function ContactsPage() {
       </motion.div>
 
       <CrmRecordTable
-        data={crmContacts}
+        data={contacts}
         columns={columns}
         getRowId={(row) => row.id}
         title="Todos os contatos"
-        subtitle={`${crmContacts.length} registros no workspace`}
+        subtitle={`${contacts.length} contatos derivados dos negócios reais`}
       />
     </motion.div>
   )

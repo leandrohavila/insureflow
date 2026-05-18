@@ -31,7 +31,7 @@ export function useCreateCrmDeal() {
     mutationFn: createDeal,
     onSuccess: (deal) => {
       queryClient.setQueryData<CrmDeal[]>(DEALS_LIST_KEY, (current) =>
-        upsertListItem(current, deal)
+        upsertListItem(current, deal),
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.crm.deals.all })
     },
@@ -45,18 +45,24 @@ export function useUpdateCrmDeal() {
     mutationFn: ({ id, input }: { id: string; input: UpdateCrmDealInput }) =>
       updateDeal(id, input),
     onMutate: async ({ id, input }) => {
-      const snapshot = await snapshotQuery<CrmDeal[]>(queryClient, DEALS_LIST_KEY)
+      const snapshot = await snapshotQuery<CrmDeal[]>(
+        queryClient,
+        DEALS_LIST_KEY,
+      )
       queryClient.setQueryData<CrmDeal[]>(DEALS_LIST_KEY, (current) =>
-        patchListItem(current, id, input as Partial<CrmDeal>)
+        patchListItem(current, id, input as Partial<CrmDeal>),
       )
       return snapshot
     },
     onError: (_error, _variables, snapshot) => {
-      rollbackQuery(queryClient, snapshot as OptimisticSnapshot<CrmDeal[]> | undefined)
+      rollbackQuery(
+        queryClient,
+        snapshot as OptimisticSnapshot<CrmDeal[]> | undefined,
+      )
     },
     onSuccess: (deal) => {
       queryClient.setQueryData<CrmDeal[]>(DEALS_LIST_KEY, (current) =>
-        upsertListItem(current, deal)
+        upsertListItem(current, deal),
       )
     },
     onSettled: () => {
@@ -71,14 +77,20 @@ export function useDeleteCrmDeal() {
   return useMutation({
     mutationFn: deleteDeal,
     onMutate: async (id) => {
-      const snapshot = await snapshotQuery<CrmDeal[]>(queryClient, DEALS_LIST_KEY)
+      const snapshot = await snapshotQuery<CrmDeal[]>(
+        queryClient,
+        DEALS_LIST_KEY,
+      )
       queryClient.setQueryData<CrmDeal[]>(DEALS_LIST_KEY, (current) =>
-        removeListItem(current, id)
+        removeListItem(current, id),
       )
       return snapshot
     },
     onError: (_error, _variables, snapshot) => {
-      rollbackQuery(queryClient, snapshot as OptimisticSnapshot<CrmDeal[]> | undefined)
+      rollbackQuery(
+        queryClient,
+        snapshot as OptimisticSnapshot<CrmDeal[]> | undefined,
+      )
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.crm.deals.all })

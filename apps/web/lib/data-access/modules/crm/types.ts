@@ -1,6 +1,9 @@
-import type { CrmStageId } from "@/lib/crm-mock"
-
-export type { CrmStageId }
+export type CrmStageId =
+  | "novo"
+  | "qualificacao"
+  | "proposta"
+  | "negociacao"
+  | "fechado"
 
 export type CrmDealStatus = "open" | "won" | "lost" | "archived"
 

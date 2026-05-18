@@ -1,14 +1,12 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
 import {
-  AlertCircle,
   Filter,
   Kanban,
   List,
-  Loader2,
   SlidersHorizontal,
   Upload,
 } from "lucide-react"
@@ -18,21 +16,14 @@ import { PipelineBoard } from "@/components/crm/pipeline-board"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { DealDetailSheet } from "@/components/crm/deal-detail-sheet"
+import { ErrorState, LoadingState } from "@/components/shared"
 import { Button, buttonVariants } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { getErrorMessage } from "@/lib/data-access"
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
 import {
-  pipelineStages,
   useCreateCrmDeal,
   useCrmDeals,
   useUpdateCrmDeal,
@@ -60,12 +51,12 @@ export function DealsPage() {
     return deals.filter((deal) =>
       [deal.title, deal.company, deal.assignedTo, deal.status, deal.stage]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term))
+        .some((value) => String(value).toLowerCase().includes(term)),
     )
   }, [deals, query])
 
   const selectedDeal = selectedDealId
-    ? deals.find((deal) => deal.id === selectedDealId) ?? null
+    ? (deals.find((deal) => deal.id === selectedDealId) ?? null)
     : null
 
   const handleDealSelect = (deal: CrmDeal) => {
@@ -87,11 +78,17 @@ export function DealsPage() {
         badge="Pipeline comercial"
         title="Negócios"
         description="Funil visual de oportunidades — arraste entre estágios, filtre e acompanhe cada negócio em detalhe."
-        primaryAction={{ label: "Novo negócio", onClick: () => setCreateOpen(true) }}
+        primaryAction={{
+          label: "Novo negócio",
+          onClick: () => setCreateOpen(true),
+        }}
       >
         <Link
           href="/crm"
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "gap-2",
+          )}
         >
           Visão geral
         </Link>
@@ -131,7 +128,7 @@ export function DealsPage() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                 view === "board"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Kanban className="size-3.5" strokeWidth={1.5} />
@@ -144,7 +141,7 @@ export function DealsPage() {
                 "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                 view === "list"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <List className="size-3.5" strokeWidth={1.5} />
@@ -155,54 +152,48 @@ export function DealsPage() {
       </motion.div>
 
       {dealsQuery.isLoading ? (
-        <div className="glass-panel flex min-h-[320px] items-center justify-center rounded-2xl">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando negócios do CRM…
-          </div>
-        </div>
+        <LoadingState label="Carregando negócios do CRM…" />
       ) : dealsQuery.isError ? (
-        <div className="glass-panel flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center">
-          <AlertCircle className="size-8 text-destructive" />
-          <div>
-            <p className="font-medium text-foreground">Não foi possível carregar o CRM.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {getErrorMessage(dealsQuery.error, "Erro ao carregar negócios")}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => dealsQuery.refetch()}>
-            Tentar novamente
-          </Button>
-        </div>
-      ) : (
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px] xl:gap-8">
-        <motion.div
-          key={view}
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: easeOut }}
-          className="min-w-0"
-        >
-          {view === "board" ? (
-            <PipelineBoard
-              deals={filteredDeals}
-              onDealSelect={handleDealSelect}
-              onDealStageChange={handleDealStageChange}
-            />
-          ) : (
-            <CrmDealsList deals={filteredDeals} onDealSelect={handleDealSelect} />
+        <ErrorState
+          title="Não foi possível carregar o CRM."
+          description={getErrorMessage(
+            dealsQuery.error,
+            "Erro ao carregar negócios",
           )}
-        </motion.div>
-        <aside className="hidden xl:block">
-          <motion.div className="sticky top-36">
-            <CrmActivityFeed />
+          onRetry={() => dealsQuery.refetch()}
+        />
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[1fr_300px] xl:gap-8">
+          <motion.div
+            key={view}
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut }}
+            className="min-w-0"
+          >
+            {view === "board" ? (
+              <PipelineBoard
+                deals={filteredDeals}
+                onDealSelect={handleDealSelect}
+                onDealStageChange={handleDealStageChange}
+              />
+            ) : (
+              <CrmDealsList
+                deals={filteredDeals}
+                onDealSelect={handleDealSelect}
+              />
+            )}
           </motion.div>
-        </aside>
-      </div>
+          <aside className="hidden xl:block">
+            <motion.div className="sticky top-36">
+              <CrmActivityFeed deals={deals} />
+            </motion.div>
+          </aside>
+        </div>
       )}
 
       <div className="xl:hidden">
-        <CrmActivityFeed />
+        <CrmActivityFeed deals={deals} />
       </div>
 
       <DealDetailSheet
@@ -213,7 +204,7 @@ export function DealsPage() {
         }}
       />
 
-      <NewDealDialog
+      <DealFormDialog
         open={createOpen}
         pending={createDeal.isPending}
         error={createDeal.error}
@@ -225,158 +216,5 @@ export function DealsPage() {
         }}
       />
     </motion.div>
-  )
-}
-
-type NewDealForm = {
-  title: string
-  company: string
-  value: string
-  stage: CrmStageId
-  assignedTo: string
-}
-
-function NewDealDialog({
-  open,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean
-  pending: boolean
-  error: unknown
-  onOpenChange: (open: boolean) => void
-  onSubmit: (input: {
-    title: string
-    company: string
-    value: number
-    stage: CrmStageId
-    status: "open"
-    assignedTo?: string
-  }) => void
-}) {
-  const [form, setForm] = useState<NewDealForm>({
-    title: "",
-    company: "",
-    value: "",
-    stage: "novo",
-    assignedTo: "",
-  })
-
-  function update<K extends keyof NewDealForm>(key: K, value: NewDealForm[K]) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const value = Number(form.value)
-    if (!form.title.trim() || !form.company.trim() || Number.isNaN(value)) return
-
-    onSubmit({
-      title: form.title.trim(),
-      company: form.company.trim(),
-      value,
-      stage: form.stage,
-      status: "open",
-      assignedTo: form.assignedTo.trim() || undefined,
-    })
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-lg">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>Novo negócio</DialogTitle>
-            <DialogDescription>
-              Crie uma oportunidade real no backend e atualize o pipeline automaticamente.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Título</span>
-              <Input
-                required
-                value={form.title}
-                onChange={(event) => update("title", event.target.value)}
-                placeholder="Ex.: Frota corporativa"
-              />
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Empresa</span>
-              <Input
-                required
-                value={form.company}
-                onChange={(event) => update("company", event.target.value)}
-                placeholder="Ex.: Transportes Sul"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Valor</span>
-              <Input
-                required
-                min={0}
-                step="0.01"
-                type="number"
-                value={form.value}
-                onChange={(event) => update("value", event.target.value)}
-                placeholder="67000"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Estágio</span>
-              <select
-                value={form.stage}
-                onChange={(event) => update("stage", event.target.value as CrmStageId)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {pipelineStages.map((stage) => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Responsável</span>
-              <Input
-                value={form.assignedTo}
-                onChange={(event) => update("assignedTo", event.target.value)}
-                placeholder="Ex.: Ana Costa"
-              />
-            </label>
-          </div>
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {getErrorMessage(error, "Erro ao salvar negócio")}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : (
-                "Salvar negócio"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

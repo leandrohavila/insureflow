@@ -55,7 +55,11 @@ export function CrmPageHeader({
           </Button>
         )}
         {primaryAction && (
-          <Button size="sm" className="gap-2 shadow-lg shadow-primary/20" onClick={primaryAction.onClick}>
+          <Button
+            size="sm"
+            className="gap-2 shadow-lg shadow-primary/20"
+            onClick={primaryAction.onClick}
+          >
             <Plus className="size-3.5" strokeWidth={1.5} />
             {primaryAction.label}
           </Button>

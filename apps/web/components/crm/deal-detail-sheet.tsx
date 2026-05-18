@@ -16,7 +16,6 @@ import {
   pipelineStages,
   stageLabelMap,
 } from "@/lib/data-access/modules/crm"
-import { crmActivities } from "@/lib/crm-mock"
 import {
   Sheet,
   SheetContent,
@@ -36,17 +35,36 @@ type DealDetailSheetProps = {
 }
 
 const activityIcons = {
-  call: Phone,
-  email: Mail,
-  meeting: MessageSquare,
   note: MessageSquare,
-  quote: MessageSquare,
+  value: MessageSquare,
 } as const
 
-export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetProps) {
+export function DealDetailSheet({
+  deal,
+  open,
+  onOpenChange,
+}: DealDetailSheetProps) {
   if (!deal) return null
 
   const stageInfo = pipelineStages.find((s) => s.id === deal.stage)
+  const recentActivities = [
+    {
+      id: `${deal.id}-updated`,
+      type: "value" as const,
+      title: "Negócio atualizado",
+      description: `${deal.company} · ${formatCurrency(deal.value)} · ${stageLabelMap[deal.stage]}`,
+      time: new Intl.DateTimeFormat("pt-BR").format(new Date(deal.updatedAt)),
+      user: deal.owner,
+    },
+    {
+      id: `${deal.id}-created`,
+      type: "note" as const,
+      title: "Negócio criado",
+      description: "Registro carregado diretamente do backend do CRM.",
+      time: new Intl.DateTimeFormat("pt-BR").format(new Date(deal.createdAt)),
+      user: deal.owner,
+    },
+  ]
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -91,10 +109,20 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
                 Propriedades do negócio
               </h3>
               <dl className="space-y-3 text-sm">
-                <PropertyRow icon={Building2} label="Empresa" value={deal.company} />
+                <PropertyRow
+                  icon={Building2}
+                  label="Empresa"
+                  value={deal.company}
+                />
                 <PropertyRow icon={User} label="Contato" value={deal.contact} />
-                {deal.email && <PropertyRow icon={Mail} label="E-mail" value={deal.email} />}
-                <PropertyRow icon={Calendar} label="Produto" value={deal.product} />
+                {deal.email && (
+                  <PropertyRow icon={Mail} label="E-mail" value={deal.email} />
+                )}
+                <PropertyRow
+                  icon={Calendar}
+                  label="Produto"
+                  value={deal.product}
+                />
                 <PropertyRow
                   icon={User}
                   label="Proprietário"
@@ -131,7 +159,7 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
                 Atividades recentes
               </h3>
               <ul className="space-y-4">
-                {crmActivities.slice(0, 4).map((act) => {
+                {recentActivities.map((act) => {
                   const Icon = activityIcons[act.type]
                   return (
                     <li key={act.id} className="flex gap-3">
@@ -140,7 +168,9 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
                       </div>
                       <div>
                         <p className="text-[13px] font-medium">{act.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{act.description}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {act.description}
+                        </p>
                         <p className="mt-1 text-[10px] text-muted-foreground/70">
                           {act.time} · {act.user}
                         </p>

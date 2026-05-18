@@ -20,14 +20,18 @@ export function DraggableDealCard({
   onSelect,
   disabled,
 }: DraggableDealCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: deal.id,
-    data: { type: "deal", deal },
-    disabled,
-  })
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: deal.id,
+      data: { type: "deal", deal },
+      disabled,
+    })
 
   const style = transform
-    ? { transform: CSS.Translate.toString(transform), zIndex: isDragging ? 50 : undefined }
+    ? {
+        transform: CSS.Translate.toString(transform),
+        zIndex: isDragging ? 50 : undefined,
+      }
     : undefined
 
   return (
@@ -37,7 +41,7 @@ export function DraggableDealCard({
       className={cn(
         "touch-none",
         isDragging && "opacity-[0.35] saturate-50",
-        !disabled && "cursor-grab active:cursor-grabbing"
+        !disabled && "cursor-grab active:cursor-grabbing",
       )}
       {...listeners}
       {...attributes}

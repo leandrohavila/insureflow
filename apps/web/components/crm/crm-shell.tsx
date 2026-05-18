@@ -46,14 +46,18 @@ export function CrmShell({ children }: CrmShellProps) {
                     "relative flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
                     active
                       ? "text-foreground"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
                   )}
                 >
                   {active && (
                     <motion.span
                       layoutId="crm-nav-indicator"
                       className="absolute inset-0 rounded-lg border border-primary/20 bg-primary/10"
-                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 32,
+                      }}
                     />
                   )}
                   <item.icon

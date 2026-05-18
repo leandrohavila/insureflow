@@ -1,15 +1,6 @@
-export {
-  formatCurrency,
-  pipelineStages,
-  stageLabelMap,
-} from "@/lib/crm-mock"
+export { formatCurrency, pipelineStages, stageLabelMap } from "./constants"
 
-export {
-  createDeal,
-  deleteDeal,
-  fetchDeals,
-  updateDeal,
-} from "./api"
+export { createDeal, deleteDeal, fetchDeals, updateDeal } from "./api"
 export {
   useCreateCrmDeal,
   useCrmDeals,

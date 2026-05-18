@@ -66,13 +66,16 @@ export function DealCard({
           "border-primary/35 bg-white/[0.07] shadow-2xl shadow-primary/20 ring-1 ring-primary/30 backdrop-blur-md",
         !isOverlay &&
           !isDragging &&
-          "hover:border-primary/25 hover:bg-white/[0.05] hover:shadow-md hover:shadow-primary/5"
+          "hover:border-primary/25 hover:bg-white/[0.05] hover:shadow-md hover:shadow-primary/5",
       )}
     >
       <motion.div className="mb-3 flex items-start justify-between gap-2">
         <motion.div className="flex min-w-0 items-center gap-2">
           <span
-            className={cn("size-2 shrink-0 rounded-full", priorityDot[deal.priority])}
+            className={cn(
+              "size-2 shrink-0 rounded-full",
+              priorityDot[deal.priority],
+            )}
             title={`Prioridade ${deal.priority}`}
           />
           <h4 className="truncate text-[13px] font-semibold tracking-[-0.02em] text-foreground">

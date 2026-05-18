@@ -20,10 +20,15 @@ export async function createDeal(input: CreateCrmDealInput) {
 }
 
 export async function updateDeal(id: string, input: UpdateCrmDealInput) {
-  const deal = await apiClient.patch<BackendCrmDeal>(`${CRM_DEALS_PATH}/${id}`, input)
+  const deal = await apiClient.patch<BackendCrmDeal>(
+    `${CRM_DEALS_PATH}/${id}`,
+    input,
+  )
   return normalizeDeal(deal)
 }
 
 export async function deleteDeal(id: string) {
-  return apiClient.delete<{ deleted: true; id: string }>(`${CRM_DEALS_PATH}/${id}`)
+  return apiClient.delete<{ deleted: true; id: string }>(
+    `${CRM_DEALS_PATH}/${id}`,
+  )
 }
