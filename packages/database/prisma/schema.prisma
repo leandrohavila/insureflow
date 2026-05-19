@@ -3,6 +3,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Cliente gerado no node_modules da raiz para resolver com @prisma/client hoisted (npm workspaces)
+  output   = "../../../node_modules/.prisma/client"
 }
 
 datasource db {

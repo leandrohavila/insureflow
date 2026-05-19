@@ -3,6 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "license": "UNLICENSED",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./index.ts"
+    }
+  },
   "scripts": {
     "build": "prisma generate",
     "db:deploy": "prisma migrate deploy",
@@ -13,16 +21,14 @@
     "db:seed": "ts-node --project tsconfig.json prisma/seed.ts",
     "check-types": "echo skip"
   },
-  "prisma": {
-    "seed": "ts-node --project tsconfig.json prisma/seed.ts"
-  },
   "dependencies": {
-    "@prisma/client": "5.22.0",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
-    "prisma": "5.22.0",
+    "dotenv": "^16.4.7",
+    "prisma": "6.19.3",
     "ts-node": "^10.9.2",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   }
 }
