@@ -8,6 +8,10 @@ const root = path.resolve(__dirname, '..');
 const maxAttempts = 4;
 const retryDelayMs = 2500;
 
+const GENERATE_DATABASE_URL =
+  process.env.DATABASE_URL ??
+  'postgresql://postgres:postgres@localhost:5432/insureflow?schema=public';
+
 function sleep(ms) {
   spawnSync('node', ['-e', `Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ${ms})`], {
     stdio: 'ignore',
@@ -20,7 +24,7 @@ function runGenerate(attempt) {
     cwd: root,
     stdio: 'inherit',
     shell: true,
-    env: process.env,
+    env: { ...process.env, DATABASE_URL: GENERATE_DATABASE_URL },
   });
 
   if (result.status === 0) {

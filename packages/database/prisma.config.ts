@@ -1,13 +1,18 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 const pkgRoot = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(pkgRoot, '../..');
 
 config({ path: path.join(monorepoRoot, '.env') });
 config({ path: path.join(monorepoRoot, 'apps/api/.env'), override: true });
+
+/** Fallback para `prisma generate` em CI/Vercel (sem DB real; não usar env() do Prisma). */
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  'postgresql://postgres:postgres@localhost:5432/insureflow?schema=public';
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -16,6 +21,6 @@ export default defineConfig({
     seed: 'ts-node --project tsconfig.json prisma/seed.ts',
   },
   datasource: {
-    url: env('DATABASE_URL'),
+    url: databaseUrl,
   },
 });
