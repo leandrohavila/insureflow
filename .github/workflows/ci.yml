@@ -44,9 +44,11 @@ jobs:
       - name: Prisma validate
         run: npm run db:validate
 
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
       - name: Build web
-        working-directory: apps/web
-        run: npm run build
+        run: npm run build -w web
 
       - name: Build api
         run: npm run build -w api
