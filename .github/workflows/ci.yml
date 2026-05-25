@@ -32,23 +32,14 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Enable package manager from package.json
+        run: corepack enable && corepack prepare npm@11.12.1 --activate
+
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint
-        run: npx turbo run lint --filter=web --filter=api --filter=@repo/ui
-
-      - name: Typecheck
-        run: npx turbo run check-types --filter=web --filter=api
-
-      - name: Prisma validate
-        run: npm run db:validate
 
       - name: Generate Prisma Client
         run: npm run db:generate
 
-      - name: Build web
-        run: npx turbo run build --filter=web --force
-
-      - name: Build api
-        run: npx turbo run build --filter=api --force
+      - name: CI (lint, types, validate, build web + api)
+        run: npm run ci
