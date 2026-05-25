@@ -7,6 +7,7 @@
     "AUTH_SECRET",
     "DATABASE_URL",
     "JWT_SECRET",
+    "NEXT_PHASE",
     "NODE_ENV",
     "DEAL_CONTRACT_DEBUG",
     "RUNTIME_AUDIT"
