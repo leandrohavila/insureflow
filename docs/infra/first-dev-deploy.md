@@ -21,7 +21,7 @@ Template: `.env.development.example`. Detalhes: [environments.md](environments.m
 
 ## Pré-requisitos
 
-- [ ] GitHub Actions CI verde em `develop` (atualizar SHA após push consolidado)
+- [x] GitHub Actions CI em `develop` — commit `f7cc6b8` (`feat(crm): stabilize operational crm flows and dialogs`)
 - [ ] `npm run ci` verde localmente (opcional; GHA é fonte de verdade)
 - [ ] Conta [Neon](https://neon.tech), [Railway](https://railway.app), [Vercel](https://vercel.com)
 - [ ] CLIs autenticados: `railway login`, `vercel login` (ou tokens em CI/secrets)
