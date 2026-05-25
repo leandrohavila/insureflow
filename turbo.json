@@ -5,6 +5,8 @@
     "API_INTERNAL_URL",
     "API_URL",
     "AUTH_SECRET",
+    "DATABASE_URL",
+    "JWT_SECRET",
     "NODE_ENV",
     "DEAL_CONTRACT_DEBUG",
     "RUNTIME_AUDIT"
