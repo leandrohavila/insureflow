@@ -92,13 +92,20 @@ Redeploy Railway API.
 | Activities | `/crm/atividades` |
 | BFF | Network tab — `/api/crm/deals` → 200 |
 
-## URLs DEV (preencher após deploy)
+## URLs DEV (Fase Infra 1.2 — preencher após deploy)
 
-| Serviço | URL |
-|---------|-----|
-| Web | `https://_____________.vercel.app` |
-| API | `https://_____________.up.railway.app` |
-| Neon branch | `insureflow-dev` |
+| Serviço | URL | Status |
+|---------|-----|--------|
+| Web (Vercel) | `https://_____________.vercel.app` | pendente |
+| API (Railway) | `https://_____________.up.railway.app` | pendente |
+| Neon branch | `insureflow-dev` | pendente |
+| Redis | Railway plugin / Upstash | pendente |
+
+Smoke test automatizado (após deploy):
+
+```bash
+API_URL=https://<railway-api>.up.railway.app WEB_URL=https://<vercel-app>.vercel.app node scripts/dev-cloud-smoke.cjs
+```
 
 ## Logs a monitorar
 
