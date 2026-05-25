@@ -48,7 +48,7 @@ jobs:
         run: npm run db:generate
 
       - name: Build web
-        run: npm run build -w web
+        run: npx turbo run build --filter=web --force
 
       - name: Build api
-        run: npm run build -w api
+        run: npx turbo run build --filter=api --force
