@@ -2,9 +2,11 @@ import type { LucideIcon } from "lucide-react"
 import {
   Activity,
   Building2,
+  CalendarDays,
   CheckSquare,
   Kanban,
   LayoutGrid,
+  Shield,
   Users,
 } from "lucide-react"
 
@@ -39,6 +41,18 @@ export const crmNavItems: CrmNavItem[] = [
     href: "/crm/empresas",
     icon: Building2,
     description: "Contas e carteira corporativa",
+  },
+  {
+    title: "Clientes",
+    href: "/crm/clientes",
+    icon: Shield,
+    description: "Carteira ativa, apólices e renovações",
+  },
+  {
+    title: "Agenda",
+    href: "/crm/agenda",
+    icon: CalendarDays,
+    description: "Follow-ups e compromissos do dia",
   },
   {
     title: "Tarefas",

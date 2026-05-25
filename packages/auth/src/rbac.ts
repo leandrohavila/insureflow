@@ -7,7 +7,13 @@ export function hasPermission(
 ): boolean {
   if (!session) return false
   if (session.role === "super_admin") return true
-  return session.permissions.includes(permission)
+  if (session.permissions.includes(permission)) return true
+
+  if (permission.endsWith(":view")) {
+    return session.permissions.includes(canManage(permission))
+  }
+
+  return false
 }
 
 export function hasAnyPermission(
@@ -36,6 +42,13 @@ export function buildSessionPayload(user: SessionUser): SessionPayload {
 }
 
 export function isRoleAtLeast(role: AppRole, minimum: AppRole): boolean {
-  const order: AppRole[] = ["viewer", "broker", "underwriter", "admin", "super_admin"]
+  const order: AppRole[] = [
+    "viewer",
+    "sales",
+    "broker",
+    "underwriter",
+    "admin",
+    "super_admin",
+  ]
   return order.indexOf(role) >= order.indexOf(minimum)
 }

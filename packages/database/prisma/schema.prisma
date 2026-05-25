@@ -3,8 +3,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Cliente gerado no node_modules da raiz para resolver com @prisma/client hoisted (npm workspaces)
+  output   = "../../../node_modules/.prisma/client"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -26,11 +27,18 @@ model Tenant {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users         User[]
-  roles         Role[]
-  auditLogs     AuditLog[]
-  refreshTokens RefreshToken[]
-  deals         Deal[]
+  users                    User[]
+  roles                    Role[]
+  auditLogs                AuditLog[]
+  refreshTokens            RefreshToken[]
+  deals                    Deal[]
+  customers                Customer[]
+  leads                    Lead[]
+  policies                 Policy[]
+  questionnaireTemplates   QuestionnaireTemplate[]
+  questionnaireFields      QuestionnaireField[]
+  questionnaireSubmissions QuestionnaireSubmission[]
+  activities               Activity[]
 
   @@map("tenants")
 }
@@ -51,7 +59,9 @@ model User {
 
   userRoles     UserRole[]
   auditLogs     AuditLog[]
-  refreshTokens RefreshToken[]
+  refreshTokens    RefreshToken[]
+  activities       Activity[]
+  brokeredPolicies Policy[]       @relation("PolicyBroker")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -83,8 +93,8 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  userRoles        UserRole[]
-  rolePermissions  RolePermission[]
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -104,22 +114,22 @@ model RolePermission {
 model UserRole {
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
   @@map("user_roles")
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash String
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   revokedAt DateTime?
 
   @@index([userId])
@@ -133,21 +143,37 @@ enum AuditSeverity {
   critical
 }
 
+enum PolicyStatus {
+  pending
+  active
+  cancelled
+  expired
+  lapsed
+}
+
+enum PolicyRenewalStatus {
+  pending
+  in_progress
+  renewed
+  lapsed
+  cancelled
+}
+
 model AuditLog {
-  id          String        @id @default(cuid())
-  tenantId    String
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action      String
-  resource    String
-  resourceId  String?
-  metadata    Json?
-  severity    AuditSeverity @default(info)
-  ipAddress   String?
-  userAgent   String?
-  requestId   String?
-  createdAt   DateTime      @default(now())
+  id         String        @id @default(cuid())
+  tenantId   String
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  severity   AuditSeverity @default(info)
+  ipAddress  String?
+  userAgent  String?
+  requestId  String?
+  createdAt  DateTime      @default(now())
 
   @@index([tenantId, createdAt])
   @@index([userId])
@@ -162,15 +188,304 @@ model Deal {
   title      String
   company    String
   value      Decimal  @db.Decimal(14, 2)
-  stage      String   @default("novo")
-  status     String   @default("open")
-  assignedTo String?
+  stage          String   @default("novo")
+  status         String   @default("open")
+  pipelineOrder  Float    @default(0)
+  assignedTo     String?
+  customerId     String?
+  customer       Customer? @relation("DealCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+  wonAt          DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  convertedLead            Lead?                     @relation("LeadConvertedDeal")
+  sourcedCustomer          Customer?                 @relation("CustomerSourceDeal")
+  questionnaireSubmissions QuestionnaireSubmission[]
+  activities               Activity[]
+  policies                 Policy[]
+
   @@index([tenantId])
   @@index([tenantId, stage])
+  @@index([tenantId, stage, pipelineOrder])
   @@index([tenantId, status])
   @@index([tenantId, assignedTo])
+  @@index([tenantId, customerId])
   @@map("deals")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type      String
+  name      String
+  document  String
+  email     String?
+  phone     String?
+  /// Conta cadastral: active | inactive | archived
+  status    String   @default("active")
+  /// Lifecycle operacional pós-venda (separado do pipeline comercial)
+  lifecycleStage  String   @default("won")
+  sourceDealId    String?  @unique
+  sourceDeal      Deal?    @relation("CustomerSourceDeal", fields: [sourceDealId], references: [id], onDelete: SetNull)
+  companyName     String?
+  renewalDate     DateTime?
+  renewalStatus   String?
+  renewalPipeline String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals                    Deal[]                    @relation("DealCustomer")
+  policies                 Policy[]
+  questionnaireSubmissions QuestionnaireSubmission[]
+  activities               Activity[]
+
+  @@unique([tenantId, document])
+  @@index([tenantId])
+  @@index([tenantId, type])
+  @@index([tenantId, status])
+  @@index([tenantId, lifecycleStage])
+  @@index([tenantId, email])
+  @@index([tenantId, phone])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, renewalDate])
+  @@map("customers")
+}
+
+/// Apólice / contrato de seguro vinculado ao cliente (pós-venda)
+model Policy {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId String
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  dealId    String?
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  insurer       String
+  policyNumber  String
+  productLine   String
+  modality      String?
+
+  premiumValue    Decimal  @db.Decimal(14, 2)
+  commissionValue Decimal? @db.Decimal(14, 2)
+
+  issuedAt      DateTime?
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+
+  status        PolicyStatus         @default(pending)
+  renewalStatus PolicyRenewalStatus?
+
+  brokerUserId String?
+  brokerUser   User?   @relation("PolicyBroker", fields: [brokerUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activities Activity[]
+
+  @@unique([tenantId, policyNumber])
+  @@index([tenantId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, dealId])
+  @@index([tenantId, status])
+  @@index([tenantId, renewalStatus])
+  @@index([tenantId, effectiveTo])
+  @@index([tenantId, brokerUserId])
+  @@index([tenantId, insurer])
+  @@map("policies")
+}
+
+model Lead {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  email         String?
+  phone         String?
+  company       String?
+  source        String?
+  documentType  String?
+  document      String?
+  status        String    @default("new")
+  notes         String?
+  assignedTo    String?
+  lastContactAt DateTime?
+  dealId        String?   @unique
+  deal          Deal?     @relation("LeadConvertedDeal", fields: [dealId], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  questionnaireSubmissions QuestionnaireSubmission[]
+  activities               Activity[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, source])
+  @@index([tenantId, assignedTo])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, document])
+  @@map("leads")
+}
+
+/// Interação humana registrada no CRM (ligações, notas, follow-up, etc.)
+model Activity {
+  id             String    @id @default(cuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type           String
+  /// Status operacional: pending | completed | cancelled
+  status         String    @default("pending")
+  subject        String
+  description    String?
+  outcome        String?
+  /// Evento operacional pós-venda (deal_won, policy_issued, renewal, claim, …)
+  operationalEventKind String?
+  occurredAt     DateTime
+  nextFollowUpAt DateTime?
+  leadId         String?
+  lead           Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  dealId         String?
+  deal           Deal?     @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  policyId       String?
+  policy         Policy?   @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  performedById  String
+  performedBy    User      @relation(fields: [performedById], references: [id], onDelete: Restrict)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, nextFollowUpAt])
+  @@index([tenantId, type])
+  @@index([tenantId, leadId])
+  @@index([tenantId, dealId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, policyId])
+  @@map("activities")
+}
+
+enum QuestionnaireTemplateStatus {
+  draft
+  active
+  archived
+}
+
+enum QuestionnaireFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DATE
+  BOOLEAN
+  SELECT
+  MULTI_SELECT
+  EMAIL
+  PHONE
+  CURRENCY
+  FILE
+}
+
+enum QuestionnaireOrigin {
+  WHATSAPP
+  INSTAGRAM
+  SITE
+  INTERNAL
+  PHONE
+  INDICATION
+}
+
+enum QuestionnaireSubmissionMode {
+  INTERNAL
+  EXTERNAL
+}
+
+enum QuestionnaireSubmissionStatus {
+  draft
+  submitted
+  reviewed
+  archived
+}
+
+model QuestionnaireTemplate {
+  id          String                      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  status      QuestionnaireTemplateStatus @default(draft)
+  version     Int                         @default(1)
+  settings    Json                        @default("{}")
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  fields      QuestionnaireField[]
+  submissions QuestionnaireSubmission[]
+
+  @@unique([tenantId, name, version])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("questionnaire_templates")
+}
+
+model QuestionnaireField {
+  id          String                 @id @default(cuid())
+  tenantId    String
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId  String
+  template    QuestionnaireTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  key         String
+  label       String
+  type        QuestionnaireFieldType
+  required    Boolean                @default(false)
+  order       Int                    @default(0)
+  placeholder String?
+  helpText    String?
+  options     Json?
+  validation  Json?
+  settings    Json                   @default("{}")
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@unique([templateId, key])
+  @@index([tenantId])
+  @@index([templateId])
+  @@index([tenantId, templateId])
+  @@map("questionnaire_fields")
+}
+
+model QuestionnaireSubmission {
+  id          String                        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId  String
+  template    QuestionnaireTemplate         @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  mode        QuestionnaireSubmissionMode   @default(INTERNAL)
+  origin      QuestionnaireOrigin           @default(INTERNAL)
+  status      QuestionnaireSubmissionStatus @default(draft)
+  answers     Json                          @default("{}")
+  metadata    Json?
+  leadId      String?
+  lead        Lead?                         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customerId  String?
+  customer    Customer?                     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  dealId      String?
+  deal        Deal?                         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  submittedAt DateTime?
+  createdAt   DateTime                      @default(now())
+  updatedAt   DateTime                      @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, templateId])
+  @@index([tenantId, status])
+  @@index([tenantId, origin])
+  @@index([tenantId, leadId])
+  @@index([tenantId, customerId])
+  @@index([tenantId, dealId])
+  @@index([tenantId, createdAt])
+  @@map("questionnaire_submissions")
 }

@@ -1,6 +1,10 @@
 /**
- * Seed: permissões globais, tenant demo, papéis e usuário admin.
- * Senha padrão: Admin@2026!
+ * Seed: permissões globais, tenant demo, roles e usuários oficiais de teste.
+ *
+ * Credenciais:
+ * - admin@insureflow.com / Admin@2026!
+ * - viewer@insureflow.com / Viewer@2026!
+ * - sales@insureflow.com / Sales@2026!
  */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -34,6 +38,39 @@ const PERMISSIONS: { key: string; description: string }[] = [
   { key: 'audit:view', description: 'Ver auditoria' },
 ];
 
+const ROLE_PERMISSIONS = {
+  admin: PERMISSIONS.map((p) => p.key),
+  viewer: PERMISSIONS.map((p) => p.key).filter((key) => key.endsWith(':view')),
+  sales: ['crm:manage', 'leads:manage', 'clients:view'],
+} as const;
+
+const SEED_USERS = [
+  {
+    email: 'admin@insureflow.com',
+    password: 'Admin@2026!',
+    name: 'Ana Costa',
+    initials: 'AC',
+    title: 'Head of Operations',
+    roleSlug: 'admin',
+  },
+  {
+    email: 'viewer@insureflow.com',
+    password: 'Viewer@2026!',
+    name: 'Carlos Viewer',
+    initials: 'CV',
+    title: 'Auditoria',
+    roleSlug: 'viewer',
+  },
+  {
+    email: 'sales@insureflow.com',
+    password: 'Sales@2026!',
+    name: 'Sofia Sales',
+    initials: 'SS',
+    title: 'Executiva Comercial',
+    roleSlug: 'sales',
+  },
+] as const;
+
 async function main() {
   for (const p of PERMISSIONS) {
     await prisma.permission.upsert({
@@ -56,80 +93,96 @@ async function main() {
   const allPerms = await prisma.permission.findMany();
   const permByKey = Object.fromEntries(allPerms.map((x) => [x.key, x.id]));
 
-  const adminRole = await prisma.role.upsert({
-    where: {
-      tenantId_slug: { tenantId: tenant.id, slug: 'admin' },
-    },
-    create: {
-      tenantId: tenant.id,
+  const roleLabels = {
+    admin: {
       name: 'Administrador',
-      slug: 'admin',
       description: 'Acesso total ao tenant',
-      isSystem: true,
     },
-    update: {},
-  });
+    viewer: {
+      name: 'Visualizador',
+      description: 'Acesso somente leitura',
+    },
+    sales: {
+      name: 'Comercial',
+      description: 'Gerencia CRM e leads, visualiza clientes',
+    },
+  } as const;
 
-  await prisma.rolePermission.deleteMany({ where: { roleId: adminRole.id } });
-  for (const p of allPerms) {
-    await prisma.rolePermission.create({
-      data: { roleId: adminRole.id, permissionId: p.id },
+  const roles = new Map<string, string>();
+  for (const [slug, labels] of Object.entries(roleLabels)) {
+    const role = await prisma.role.upsert({
+      where: { tenantId_slug: { tenantId: tenant.id, slug } },
+      create: {
+        tenantId: tenant.id,
+        slug,
+        name: labels.name,
+        description: labels.description,
+        isSystem: true,
+      },
+      update: {
+        name: labels.name,
+        description: labels.description,
+        isSystem: true,
+      },
+    });
+
+    await prisma.rolePermission.deleteMany({ where: { roleId: role.id } });
+    for (const key of ROLE_PERMISSIONS[slug as keyof typeof ROLE_PERMISSIONS]) {
+      const permissionId = permByKey[key];
+      if (!permissionId) continue;
+      await prisma.rolePermission.create({
+        data: { roleId: role.id, permissionId },
+      });
+    }
+    roles.set(slug, role.id);
+  }
+
+  for (const seedUser of SEED_USERS) {
+    const passwordHash = await bcrypt.hash(seedUser.password, 10);
+    const user = await prisma.user.upsert({
+      where: {
+        tenantId_email: {
+          tenantId: tenant.id,
+          email: seedUser.email,
+        },
+      },
+      create: {
+        tenantId: tenant.id,
+        email: seedUser.email,
+        passwordHash,
+        name: seedUser.name,
+        initials: seedUser.initials,
+        title: seedUser.title,
+        isActive: true,
+      },
+      update: {
+        passwordHash,
+        name: seedUser.name,
+        initials: seedUser.initials,
+        title: seedUser.title,
+        isActive: true,
+      },
+    });
+
+    const roleId = roles.get(seedUser.roleSlug);
+    if (!roleId) continue;
+    await prisma.userRole.deleteMany({ where: { userId: user.id } });
+    await prisma.userRole.create({
+      data: { userId: user.id, roleId },
     });
   }
 
-  const brokerPerms = [
-    'dashboard:view',
-    'crm:view',
-    'crm:manage',
-    'clients:view',
-    'clients:manage',
-    'leads:view',
-    'leads:manage',
-    'quotes:view',
-    'quotes:manage',
-    'settings:view',
-  ];
-  const brokerRole = await prisma.role.upsert({
-    where: { tenantId_slug: { tenantId: tenant.id, slug: 'broker' } },
-    create: {
-      tenantId: tenant.id,
-      name: 'Corretor',
-      slug: 'broker',
-      isSystem: true,
-    },
-    update: {},
-  });
-  await prisma.rolePermission.deleteMany({ where: { roleId: brokerRole.id } });
-  for (const k of brokerPerms) {
-    const id = permByKey[k];
-    if (id)
-      await prisma.rolePermission.create({
-        data: { roleId: brokerRole.id, permissionId: id },
-      });
+  console.log(
+    'Seed OK — tenant:',
+    tenant.slug,
+    'users:',
+    SEED_USERS.map((user) => user.email).join(', '),
+  );
+
+  if (process.env.SEED_DEV_DATA === '1') {
+    const { seedDevData } = await import('./seed-dev');
+    await seedDevData();
   }
-
-  const passwordHash = await bcrypt.hash('Admin@2026!', 10);
-  const user = await prisma.user.upsert({
-    where: {
-      tenantId_email: { tenantId: tenant.id, email: 'admin@insureflow.com' },
-    },
-    create: {
-      tenantId: tenant.id,
-      email: 'admin@insureflow.com',
-      passwordHash,
-      name: 'Ana Costa',
-      initials: 'AC',
-      title: 'Head of Operations',
-    },
-    update: { passwordHash },
-  });
-
-  await prisma.userRole.deleteMany({ where: { userId: user.id } });
-  await prisma.userRole.create({
-    data: { userId: user.id, roleId: adminRole.id },
-  });
-
-  console.log('Seed OK — tenant:', tenant.slug, 'admin: admin@insureflow.com / Admin@2026!');
 }
 
 main()

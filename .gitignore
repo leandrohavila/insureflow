@@ -5,9 +5,12 @@ node_modules
 .pnp
 .pnp.js
 
-# Local env files
+# Local env files (templates *.example são commitados)
 .env
 .env.local
+.env.development
+.env.staging
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local

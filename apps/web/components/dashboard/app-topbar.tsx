@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
-import { Bell, ChevronDown, LogOut, Search, Sparkles } from "lucide-react"
+import { Bell, ChevronDown, LogOut, Sparkles } from "lucide-react"
 
 import type { SessionPayload } from "@repo/auth"
 import { RoleBadge } from "@/components/auth/role-badge"
+import { WorkspaceSearchTrigger } from "@/components/crm/workspace-search"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,12 +19,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useDashboardBreadcrumbs } from "@/components/dashboard/use-dashboard-breadcrumbs"
+import { dashboardTopbarClassName } from "@/lib/layout/operational-shell"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -47,7 +48,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
       initial={reduce ? false : { opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: easeOut }}
-      className="glass-topbar sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 px-3 md:h-16 md:gap-4 md:px-8"
+      className={dashboardTopbarClassName()}
     >
       <SidebarTrigger
         className="-ml-0.5 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
@@ -98,19 +99,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
       <motion.div
         className="relative ml-auto flex min-w-0 flex-1 transition-transform duration-200 focus-within:scale-[1.005] md:max-w-md md:flex-none lg:max-w-xl"
       >
-        <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60"
-          strokeWidth={1.5}
-        />
-        <Input
-          type="search"
-          placeholder="Buscar em todo o workspace…"
-          className="h-10 rounded-full border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-[13px] shadow-inner shadow-black/20 transition-all duration-300 placeholder:text-muted-foreground/50 focus-visible:border-primary/35 focus-visible:bg-white/[0.06] focus-visible:shadow-[0_0_0_3px_oklch(0.64_0.19_252/0.12)] md:h-10"
-          aria-label="Busca global"
-        />
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60 md:inline">
-          ⌘K
-        </kbd>
+        <WorkspaceSearchTrigger className="relative w-full" />
       </motion.div>
 
       <motion.div

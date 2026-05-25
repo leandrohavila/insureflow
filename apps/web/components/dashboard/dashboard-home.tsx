@@ -50,7 +50,7 @@ export function DashboardHome() {
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: easeOut }}
-      className="flex flex-1 flex-col gap-10 px-4 py-8 md:gap-12 md:px-8 md:py-10 lg:gap-14 lg:px-10 lg:py-12"
+      className="flex min-h-0 flex-1 flex-col gap-10 overflow-y-auto overflow-x-hidden px-4 py-8 md:gap-12 md:px-8 md:py-10 lg:gap-14 lg:px-10 lg:py-12"
     >
       <motion.header
         initial={reduce ? false : { opacity: 0, y: 16 }}

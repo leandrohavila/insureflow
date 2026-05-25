@@ -35,9 +35,19 @@ type BackendLoginResponse = {
 
 const API_ROLE_TO_APP_ROLE: Record<string, AppRole> = {
   admin: "admin",
+  sales: "sales",
   broker: "broker",
   underwriter: "underwriter",
   viewer: "viewer",
+}
+
+const ROLE_LABELS: Record<AppRole, string> = {
+  super_admin: "Super Admin",
+  admin: "Administrador",
+  sales: "Comercial",
+  broker: "Corretor",
+  underwriter: "Subscritor",
+  viewer: "Visualizador",
 }
 
 function getApiBaseUrl() {
@@ -55,23 +65,29 @@ function initialsFromEmail(email: string) {
 }
 
 function toBackendSessionUser(payload: BackendLoginResponse["user"]): SessionUser {
-  const firstRole = payload.roles[0] ?? "admin"
-  const role = API_ROLE_TO_APP_ROLE[firstRole] ?? "admin"
+  const firstRole = payload.roles[0] ?? "viewer"
+  const role = API_ROLE_TO_APP_ROLE[firstRole] ?? "viewer"
   return {
     id: payload.sub,
     email: payload.email,
     name: payload.email.split("@")[0] ?? payload.email,
     initials: initialsFromEmail(payload.email),
     role,
-    roleLabel: role === "admin" ? "Administrador" : firstRole,
+    roleLabel: ROLE_LABELS[role],
     organizationId: payload.tenantId,
     organizationName: payload.tenantSlug,
     title: "InsureFlow",
   }
 }
 
-export async function createSessionToken(user: ReturnType<typeof toSessionUser>) {
+export async function createSessionToken(
+  user: ReturnType<typeof toSessionUser>,
+  permissions?: Permission[],
+) {
   const payload = buildSessionPayload(user)
+  if (permissions) {
+    payload.permissions = permissions
+  }
   const secret = getAuthSecret()
 
   return new SignJWT({
@@ -155,9 +171,9 @@ export async function loginWithBackendCredentials(
 
   const backend = (await res.json()) as BackendLoginResponse
   const sessionUser = toBackendSessionUser(backend.user)
-  const token = await createSessionToken(sessionUser)
   const session = buildSessionPayload(sessionUser)
   session.permissions = backend.user.permissions as Permission[]
+  const token = await createSessionToken(sessionUser, session.permissions)
 
   await setSessionCookie(token)
   await setBackendTokenCookies({

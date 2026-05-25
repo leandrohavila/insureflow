@@ -18,7 +18,9 @@ export class UsersService {
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
-        userRoles: { include: { role: { select: { id: true, name: true, slug: true } } } },
+        userRoles: {
+          include: { role: { select: { id: true, name: true, slug: true } } },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

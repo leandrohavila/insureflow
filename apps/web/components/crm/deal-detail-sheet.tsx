@@ -1,22 +1,38 @@
 "use client"
 
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   Building2,
   Calendar,
+  ClipboardList,
   Mail,
-  MessageSquare,
-  Phone,
   User,
+  UserPlus,
 } from "lucide-react"
 
-import type { CrmDeal } from "@/lib/crm-api"
+import {
+  formatSubmissionDate,
+  submissionResponsible,
+} from "@/components/questionnaires/questionnaire-answer-utils"
+import { questionnaireStatusLabels } from "@/components/questionnaires/questionnaire-submission-constants"
+import type { CrmDeal, CrmDealQuestionnaireStatus } from "@/lib/data-access/modules/crm"
+import {
+  crmQuestionnaireLabel,
+  crmQuestionnaireStyle,
+} from "@/lib/crm/commercial-labels"
+import {
+  buildCrmQuestionnaireResponsesHref,
+  markQuestionnaireCrmNavigation,
+} from "@/lib/questionnaires/questionnaire-crm-navigation"
+import { cn } from "@/lib/utils"
+import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
   formatCurrency,
   pipelineStages,
   stageLabelMap,
-} from "@/lib/crm-api"
-import { crmActivities } from "@/lib/crm-mock"
+} from "@/lib/data-access/modules/crm"
 import {
   Sheet,
   SheetContent,
@@ -24,7 +40,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
+import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
+import { ActivityTimeline } from "@/components/activities/activity-timeline"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -33,20 +51,22 @@ type DealDetailSheetProps = {
   deal: CrmDeal | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  crmReturnHref?: string
 }
 
-const activityIcons = {
-  call: Phone,
-  email: Mail,
-  meeting: MessageSquare,
-  note: MessageSquare,
-  quote: MessageSquare,
-} as const
-
-export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetProps) {
+export function DealDetailSheet({
+  deal,
+  open,
+  onOpenChange,
+  crmReturnHref,
+}: DealDetailSheetProps) {
   if (!deal) return null
 
   const stageInfo = pipelineStages.find((s) => s.id === deal.stage)
+  const leadId = deal.convertedLead?.id ?? null
+  const lastInteractionLabel = formatLastInteraction(
+    deal.commercialContext?.lastInteractionAt,
+  )
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -65,20 +85,13 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
             <p className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">
               {formatCurrency(deal.value)}
             </p>
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <Mail className="size-3.5" />
-                E-mail
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <Phone className="size-3.5" />
-                Ligar
-              </Button>
-              <Button size="sm" className="gap-1.5">
-                <MessageSquare className="size-3.5" />
-                Nota
-              </Button>
-            </div>
+            <p className="text-xs text-muted-foreground">{lastInteractionLabel}</p>
+            <ActivityQuickActions
+              dealId={deal.id}
+              leadId={leadId}
+              className="pt-2"
+              compact
+            />
           </SheetHeader>
 
           <motion.div
@@ -91,10 +104,20 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
                 Propriedades do negócio
               </h3>
               <dl className="space-y-3 text-sm">
-                <PropertyRow icon={Building2} label="Empresa" value={deal.company} />
+                <PropertyRow
+                  icon={Building2}
+                  label="Empresa"
+                  value={deal.company}
+                />
                 <PropertyRow icon={User} label="Contato" value={deal.contact} />
-                {deal.email && <PropertyRow icon={Mail} label="E-mail" value={deal.email} />}
-                <PropertyRow icon={Calendar} label="Produto" value={deal.product} />
+                {deal.email && (
+                  <PropertyRow icon={Mail} label="E-mail" value={deal.email} />
+                )}
+                <PropertyRow
+                  icon={Calendar}
+                  label="Produto"
+                  value={deal.product}
+                />
                 <PropertyRow
                   icon={User}
                   label="Proprietário"
@@ -126,34 +149,128 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
 
             <Separator className="my-6 bg-white/[0.06]" />
 
-            <section className="space-y-4">
-              <h3 className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                Atividades recentes
-              </h3>
-              <ul className="space-y-4">
-                {crmActivities.slice(0, 4).map((act) => {
-                  const Icon = activityIcons[act.type]
-                  return (
-                    <li key={act.id} className="flex gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] ring-1 ring-white/10">
-                        <Icon className="size-3.5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-[13px] font-medium">{act.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{act.description}</p>
-                        <p className="mt-1 text-[10px] text-muted-foreground/70">
-                          {act.time} · {act.user}
-                        </p>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
+            <DealCommercialContext deal={deal} crmReturnHref={crmReturnHref} />
+
+            <Separator className="my-6 bg-white/[0.06]" />
+
+            <ActivityTimeline dealId={deal.id} leadId={leadId} />
           </motion.div>
         </div>
       </SheetContent>
     </Sheet>
+  )
+}
+
+function DealCommercialContext({
+  deal,
+  crmReturnHref,
+}: {
+  deal: CrmDeal
+  crmReturnHref?: string
+}) {
+  const router = useRouter()
+  const lead = deal.convertedLead
+  const commercial = deal.commercialContext
+  const questionnaireStatus: CrmDealQuestionnaireStatus =
+    commercial?.questionnaire.status ?? (lead ? "pending" : "pending")
+  const returnTo = crmReturnHref ?? `/crm/negocios?deal=${deal.id}`
+  const responsible = submissionResponsible(
+    commercial?.responsible,
+    lead?.assignedTo ?? deal.assignedTo,
+  )
+  const lastUpdated =
+    commercial?.questionnaire.updatedAt ??
+    commercial?.lastInteractionAt ??
+    deal.updatedAt
+
+  function handleViewResponses() {
+    const href = buildCrmQuestionnaireResponsesHref({
+      dealId: deal.id,
+      dealName: deal.title,
+      leadId: lead?.id,
+      returnTo,
+    })
+    markQuestionnaireCrmNavigation(returnTo)
+    router.push(href)
+  }
+
+  return (
+    <section className="space-y-4">
+      <h3 className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+        Contexto comercial
+      </h3>
+      <dl className="space-y-3 text-sm">
+        <PropertyRow
+          icon={UserPlus}
+          label="Lead de origem"
+          value={lead ? lead.name : "Sem lead vinculado"}
+        />
+        <PropertyRow
+          icon={ClipboardList}
+          label="Status do questionário"
+          value={
+            <Badge
+              variant="outline"
+              className={cn(
+                "rounded-full text-[10px] font-semibold",
+                questionnaireStatus === "pending"
+                  ? "border-white/10 text-[10px]"
+                  : crmQuestionnaireStyle(questionnaireStatus),
+              )}
+            >
+              {questionnaireStatus === "pending"
+                ? "Pendente"
+                : questionnaireStatus === "submitted"
+                  ? questionnaireStatusLabels.submitted
+                  : crmQuestionnaireLabel(questionnaireStatus)}
+            </Badge>
+          }
+        />
+        <PropertyRow
+          icon={Calendar}
+          label="Última interação"
+          value={
+            <span className="text-xs text-muted-foreground">
+              {formatLastInteraction(commercial?.lastInteractionAt)}
+            </span>
+          }
+        />
+        <PropertyRow
+          icon={Calendar}
+          label="Questionário"
+          value={
+            <span className="text-xs text-muted-foreground">
+              {formatSubmissionDate(commercial?.questionnaire.updatedAt ?? lastUpdated)}
+            </span>
+          }
+        />
+        <PropertyRow icon={User} label="Responsável" value={responsible} />
+      </dl>
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full gap-2"
+          onClick={handleViewResponses}
+        >
+          <ClipboardList className="size-3.5" />
+          Visualizar respostas
+        </Button>
+        {lead ? (
+          <Link
+            href={`/leads?lead=${lead.id}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "w-full gap-2",
+            )}
+          >
+            <UserPlus className="size-3.5" />
+            Abrir lead
+          </Link>
+        ) : null}
+      </div>
+    </section>
   )
 }
 

@@ -6,12 +6,20 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "postinstall": "node scripts/prisma-generate.cjs",
+    "db:generate": "npm run build -w @repo/database",
+    "db:seed:dev": "node scripts/seed-dev.cjs",
+    "db:validate": "npm run db:validate -w @repo/database",
+    "db:deploy": "npm run db:deploy -w @repo/database",
+    "db:migrate": "npm run prisma:migrate -w @repo/database",
+    "db:seed": "npm run db:seed -w @repo/database",
+    "ci": "npm run lint && npm run check-types && npm run db:validate && npx turbo run build --filter=web --filter=api"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
     "turbo": "^2.9.14",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   },
   "engines": {
     "node": ">=18"
@@ -20,5 +28,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "@prisma/client": "6.19.3",
+    "prisma": "6.19.3",
+    "node-emoji": "^2.2.0",
+    "typescript": "5.9.3"
+  }
 }

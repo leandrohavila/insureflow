@@ -1,7 +1,17 @@
 import type { UniqueIdentifier } from "@dnd-kit/core"
 
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
-import { pipelineStages } from "@/lib/crm-api"
+import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
+import { pipelineStages } from "@/lib/data-access/modules/crm"
+
+import {
+  logPipelineDnd,
+  pipelineDndDebugEnabled,
+} from "./pipeline-dnd-debug"
+import {
+  computePipelineOrderAtIndex,
+  getSortedStageDeals,
+  sortDealsForPipeline,
+} from "./pipeline-order"
 
 export const stageDroppableId = (stageId: CrmStageId) => `stage:${stageId}`
 
@@ -14,7 +24,7 @@ export function parseStageId(id: UniqueIdentifier): CrmStageId | null {
 
 export function resolveDropStage(
   overId: UniqueIdentifier | undefined,
-  deals: CrmDeal[]
+  deals: CrmDeal[],
 ): CrmStageId | null {
   if (!overId) return null
   const stage = parseStageId(overId)
@@ -22,61 +32,258 @@ export function resolveDropStage(
   return deals.find((d) => d.id === overId)?.stage ?? null
 }
 
-export function getDealsForStage(deals: CrmDeal[], stageId: CrmStageId): CrmDeal[] {
-  return deals.filter((d) => d.stage === stageId)
+export function getDealsForStage(deals: CrmDeal[], stageId: CrmStageId) {
+  return getSortedStageDeals(deals, stageId)
 }
 
-export function getStageValue(deals: CrmDeal[], stageId: CrmStageId): number {
+export function getStageValue(deals: CrmDeal[], stageId: CrmStageId) {
   return getDealsForStage(deals, stageId).reduce((sum, d) => sum + d.value, 0)
 }
 
-/** Reordena / move negócio para a coluna ou posição alvo. */
-export function reorderDeals(
-  deals: CrmDeal[],
+export type ReorderInsertDebug = {
+  activeId: string
+  overId: string
+  activeIndex: number
+  overIndex: number
+  targetIndex: number
+  currentActiveIndex: number
+  currentOverIndex: number
+  sameColumn: boolean
+  movingDown: boolean
+  alreadyApplied: boolean
+  skipReason?: string
+}
+
+function stageDealIds(deals: CrmDeal[], stageId: CrmStageId) {
+  return getSortedStageDeals(deals, stageId).map((deal) => deal.id)
+}
+
+/**
+ * Índice de inserção na lista da coluna alvo (sem o card ativo).
+ * A direção (subir vs descer) usa a ordem de referência no início do drag —
+ * não a lista já reordenada durante dragOver (evita flip ao mover para cima).
+ */
+function findInsertIndex(
+  stageDealsWithoutActive: CrmDeal[],
+  overId: UniqueIdentifier,
   activeId: UniqueIdentifier,
-  overId: UniqueIdentifier | undefined
-): CrmDeal[] {
-  if (!overId || activeId === overId) return deals
+  referenceStageDeals: CrmDeal[],
+  currentStageDeals: CrmDeal[],
+  activeStage: CrmStageId,
+  targetStage: CrmStageId,
+): { insertIndex: number; debug: ReorderInsertDebug } {
+  const activeIdStr = String(activeId)
+  const overIdStr = String(overId)
+  const sameColumn = activeStage === targetStage
+  const activeIndex = referenceStageDeals.findIndex((deal) => deal.id === activeId)
+  const currentActiveIndex = currentStageDeals.findIndex((deal) => deal.id === activeId)
+  const currentOverIndex = currentStageDeals.findIndex((deal) => deal.id === overId)
 
-  const activeIndex = deals.findIndex((d) => d.id === activeId)
-  if (activeIndex === -1) return deals
+  const overIndexInReference = referenceStageDeals.findIndex(
+    (deal) => deal.id === overId,
+  )
 
-  const overStage = resolveDropStage(overId, deals)
-  if (!overStage) return deals
+  const movingDown =
+    sameColumn &&
+    activeIndex >= 0 &&
+    overIndexInReference >= 0 &&
+    activeIndex < overIndexInReference
 
-  const activeDeal = deals[activeIndex]!
-  const rest = deals.filter((d) => d.id !== activeId)
-  const moved: CrmDeal = { ...activeDeal, stage: overStage }
+  const baseDebug = {
+    activeId: activeIdStr,
+    overId: overIdStr,
+    activeIndex,
+    overIndex: overIndexInReference,
+    currentActiveIndex,
+    currentOverIndex,
+    sameColumn,
+    movingDown,
+    alreadyApplied: false,
+  } satisfies Omit<ReorderInsertDebug, "targetIndex" | "skipReason">
 
-  const overDealIndex = rest.findIndex((d) => d.id === overId)
-  if (overDealIndex >= 0) {
-    const next = [...rest]
-    next.splice(overDealIndex, 0, moved)
-    return dealsEqual(deals, next) ? deals : next
-  }
-
-  const stageOrder = pipelineStages.map((s) => s.id)
-  const stageDeals = rest.filter((d) => d.stage === overStage)
-  let insertAt = rest.length
-
-  if (stageDeals.length > 0) {
-    const last = stageDeals[stageDeals.length - 1]
-    insertAt = rest.findIndex((d) => d.id === last!.id) + 1
-  } else {
-    const nextStageIdx = stageOrder.indexOf(overStage) + 1
-    const nextStage = stageOrder[nextStageIdx]
-    if (nextStage) {
-      const firstOfNext = rest.findIndex((d) => d.stage === nextStage)
-      if (firstOfNext >= 0) insertAt = firstOfNext
+  if (parseStageId(overId)) {
+    let targetIndex = stageDealsWithoutActive.length
+    if (
+      sameColumn &&
+      activeIndex > 0 &&
+      currentActiveIndex === 0
+    ) {
+      targetIndex = 0
+    }
+    return {
+      insertIndex: targetIndex,
+      debug: { ...baseDebug, targetIndex },
     }
   }
 
-  const next = [...rest]
-  next.splice(insertAt, 0, moved)
-  return dealsEqual(deals, next) ? deals : next
+  const overIndex = stageDealsWithoutActive.findIndex((deal) => deal.id === overId)
+  if (overIndex < 0) {
+    const targetIndex = stageDealsWithoutActive.length
+    return {
+      insertIndex: targetIndex,
+      debug: { ...baseDebug, targetIndex },
+    }
+  }
+
+  const targetIndex = movingDown ? overIndex + 1 : overIndex
+
+  return {
+    insertIndex: targetIndex,
+    debug: { ...baseDebug, targetIndex },
+  }
 }
 
-function dealsEqual(a: CrmDeal[], b: CrmDeal[]): boolean {
-  if (a.length !== b.length) return false
-  return a.every((d, i) => d.id === b[i]?.id && d.stage === b[i]?.stage)
+function logReorderInsert(debug: ReorderInsertDebug) {
+  logPipelineDnd("reorderInsert", debug)
+  if (!pipelineDndDebugEnabled) return
+  console.table({
+    activeId: debug.activeId,
+    overId: debug.overId,
+    activeIndex: debug.activeIndex,
+    overIndex: debug.overIndex,
+    targetIndex: debug.targetIndex,
+    movingDown: debug.movingDown,
+    alreadyApplied: debug.alreadyApplied,
+    currentActiveIndex: debug.currentActiveIndex,
+    currentOverIndex: debug.currentOverIndex,
+    skipReason: debug.skipReason ?? "",
+  })
 }
+
+function rebuildDealsByStage(
+  withoutActive: CrmDeal[],
+  targetStage: CrmStageId,
+  targetStageDeals: CrmDeal[],
+) {
+  const result: CrmDeal[] = []
+
+  for (const stage of pipelineStages) {
+    if (stage.id === targetStage) {
+      result.push(...targetStageDeals)
+    } else {
+      result.push(...getSortedStageDeals(withoutActive, stage.id))
+    }
+  }
+
+  return result
+}
+
+/** Move/reordena negócio e recalcula pipelineOrder (single-card update). */
+export function reorderDeals(
+  deals: CrmDeal[],
+  activeId: UniqueIdentifier,
+  overId: UniqueIdentifier | undefined,
+  /** Snapshot do início do drag — mantém direção correta durante dragOver. */
+  dragBaseline?: CrmDeal[],
+): CrmDeal[] {
+  if (!overId || activeId === overId) return deals
+
+  const sorted = sortDealsForPipeline(deals)
+  const activeDeal = sorted.find((deal) => deal.id === activeId)
+  if (!activeDeal) return deals
+
+  const targetStage = resolveDropStage(overId, sorted)
+  if (!targetStage) return deals
+
+  const baselineSorted = dragBaseline
+    ? sortDealsForPipeline(dragBaseline)
+    : sorted
+  const referenceStageDeals = getSortedStageDeals(
+    baselineSorted,
+    activeDeal.stage,
+  )
+  const withoutActive = sorted.filter((deal) => deal.id !== activeId)
+  const targetListWithoutActive = getSortedStageDeals(withoutActive, targetStage)
+  const currentStageDeals = getSortedStageDeals(sorted, targetStage)
+  const { insertIndex, debug: insertDebug } = findInsertIndex(
+    targetListWithoutActive,
+    overId,
+    activeId,
+    referenceStageDeals,
+    currentStageDeals,
+    activeDeal.stage,
+    targetStage,
+  )
+
+  const sameColumn = activeDeal.stage === targetStage
+  const currentActiveIndex = currentStageDeals.findIndex(
+    (deal) => deal.id === activeId,
+  )
+  const currentOverIndex = currentStageDeals.findIndex(
+    (deal) => deal.id === overId,
+  )
+
+  let skipReason: string | undefined
+
+  if (
+    sameColumn &&
+    !insertDebug.movingDown &&
+    currentActiveIndex >= 0 &&
+    currentOverIndex >= 0 &&
+    currentActiveIndex < currentOverIndex
+  ) {
+    skipReason = "already-above-over"
+  }
+
+  if (
+    sameColumn &&
+    currentActiveIndex >= 0 &&
+    currentActiveIndex === insertIndex
+  ) {
+    skipReason = skipReason ?? "active-at-target-index"
+  }
+
+  const targetStageDealsPreview = [...targetListWithoutActive]
+  targetStageDealsPreview.splice(insertIndex, 0, activeDeal)
+  const currentOrderIds = stageDealIds(sorted, targetStage)
+  const nextOrderIds = targetStageDealsPreview.map((deal) => deal.id)
+
+  if (
+    !skipReason &&
+    JSON.stringify(currentOrderIds) === JSON.stringify(nextOrderIds)
+  ) {
+    skipReason = "order-unchanged"
+  }
+
+  if (skipReason) {
+    logReorderInsert({
+      ...insertDebug,
+      alreadyApplied: true,
+      skipReason,
+    })
+    return deals
+  }
+
+  logReorderInsert(insertDebug)
+
+  const pipelineOrder = computePipelineOrderAtIndex(
+    targetListWithoutActive,
+    insertIndex,
+  )
+
+  const moved: CrmDeal = {
+    ...activeDeal,
+    stage: targetStage,
+    pipelineOrder,
+  }
+
+  const targetStageDeals = [...targetListWithoutActive]
+  targetStageDeals.splice(insertIndex, 0, moved)
+
+  const rebuiltOrderIds = targetStageDeals.map((deal) => deal.id)
+  if (JSON.stringify(currentOrderIds) === JSON.stringify(rebuiltOrderIds)) {
+    logReorderInsert({
+      ...insertDebug,
+      alreadyApplied: true,
+      skipReason: "rebuilt-order-unchanged",
+    })
+    return deals
+  }
+
+  return rebuildDealsByStage(withoutActive, targetStage, targetStageDeals)
+}
+
+export {
+  getSortedStageDeals,
+  sortDealsForPipeline,
+} from "./pipeline-order"

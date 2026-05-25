@@ -32,10 +32,7 @@ export class AuthController {
   @Post('logout')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Revogar refresh token' })
-  logout(
-    @Body() dto: RefreshDto,
-    @CurrentUser() user: JwtAccessPayload,
-  ) {
+  logout(@Body() dto: RefreshDto, @CurrentUser() user: JwtAccessPayload) {
     return this.auth.logout(dto.refreshToken, user.sub);
   }
 

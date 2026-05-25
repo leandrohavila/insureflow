@@ -9,6 +9,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const body = await request.json()
+  if (process.env.DEAL_CONTRACT_DEBUG === "1") {
+    console.debug("[deal-contract][bff.post]", JSON.stringify(body))
+  }
   const response = await backendFetch("/api/v1/crm/deals", {
     method: "POST",
     body: JSON.stringify(body),

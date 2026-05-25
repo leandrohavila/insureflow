@@ -6,5 +6,5 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["prisma/seed.ts"]
+  "include": ["prisma/seed.ts", "prisma/seed-dev.ts"]
 }

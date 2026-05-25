@@ -11,10 +11,9 @@ import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const demoAccounts = [
-  { role: "Super Admin", email: "admin@insureflow.com", password: "Admin@2026!" },
-  { role: "Corretor", email: "pedro@insureflow.com", password: "Broker@2026!" },
-  { role: "Subscritor", email: "julia@insureflow.com", password: "Underwriter@2026!" },
+  { role: "Admin", email: "admin@insureflow.com", password: "Admin@2026!" },
   { role: "Visualizador", email: "viewer@insureflow.com", password: "Viewer@2026!" },
+  { role: "Comercial", email: "sales@insureflow.com", password: "Sales@2026!" },
 ] as const
 
 export function LoginForm() {

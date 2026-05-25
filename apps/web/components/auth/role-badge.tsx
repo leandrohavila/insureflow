@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 const roleStyles: Record<AppRole, string> = {
   super_admin: "border-violet-400/35 bg-violet-500/15 text-violet-200",
   admin: "border-primary/35 bg-primary/15 text-primary",
+  sales: "border-emerald-400/35 bg-emerald-500/10 text-emerald-200",
   broker: "border-sky-400/35 bg-sky-500/10 text-sky-200",
   underwriter: "border-amber-400/35 bg-amber-500/10 text-amber-200",
   viewer: "border-white/20 bg-white/[0.05] text-muted-foreground",

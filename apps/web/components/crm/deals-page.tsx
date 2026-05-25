@@ -1,14 +1,13 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
 import {
-  AlertCircle,
   Filter,
   Kanban,
   List,
-  Loader2,
   SlidersHorizontal,
   Upload,
 } from "lucide-react"
@@ -17,365 +16,370 @@ import { CrmMetrics } from "@/components/crm/crm-metrics"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
+import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
+import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { DealDetailSheet } from "@/components/crm/deal-detail-sheet"
+import { DealSheetV2 } from "@/components/crm/deal-sheet-v2"
+import { PermissionGate } from "@/components/auth/permission-gate"
+import { useCanManage } from "@/components/auth/session-provider"
+import { ErrorState, LoadingState } from "@/components/shared"
 import { Button, buttonVariants } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
+import { getErrorMessage } from "@/lib/data-access"
+import type { CrmDeal, DealPipelineUpdateInput } from "@/lib/data-access/modules/crm"
 import {
-  pipelineStages,
   useCreateCrmDeal,
   useCrmDeals,
+  useDeleteCrmDeal,
   useUpdateCrmDeal,
-} from "@/lib/crm-api"
+} from "@/lib/data-access/modules/crm"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
+import { useFocusReturn } from "@/lib/hooks/use-focus-return"
+import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
 import { easeOut } from "@/lib/motion"
+import { buildCrmReturnHref } from "@/lib/questionnaires/questionnaire-crm-navigation"
+import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
+import {
+  CRM_FILTER_INPUT,
+  CRM_PAGE_SHELL,
+  CRM_PAGE_SHELL_SCROLL,
+  CRM_TOOLBAR,
+  crmViewToggleButton,
+  CRM_VIEW_TOGGLE_WRAP,
+} from "@/lib/crm/crm-layout-classes"
 import { cn } from "@/lib/utils"
 
 type ViewMode = "board" | "list"
 const EMPTY_DEALS: CrmDeal[] = []
+const SEARCH_DEBOUNCE_MS = 400
+
+function isDealsView(value: string): value is ViewMode {
+  return value === "board" || value === "list"
+}
 
 export function DealsPage() {
-  const [view, setView] = useState<ViewMode>("board")
-  const [query, setQuery] = useState("")
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [persistedView, setPersistedView] = useCrmPersistedValue(
+    "deals.view",
+    isDealsView,
+  )
+  const view: ViewMode = isDealsView(persistedView) ? persistedView : "board"
+  const setView = (next: ViewMode) => setPersistedView(next)
+  const [queryInput, setQueryInput] = useState("")
+  const query = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null)
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null)
   const reduce = useReducedMotion()
+  const canManageCrm = useCanManage("crm:view")
+  const { captureFocus, restoreFocus } = useFocusReturn()
   const dealsQuery = useCrmDeals()
   const createDeal = useCreateCrmDeal()
   const updateDeal = useUpdateCrmDeal()
+  const deleteDeal = useDeleteCrmDeal()
 
   const deals = dealsQuery.data ?? EMPTY_DEALS
+
+  const syncDealParam = useCallback(
+    (dealId: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (dealId) {
+        params.set("deal", dealId)
+      } else {
+        params.delete("deal")
+      }
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
+  useEffect(() => {
+    const dealId = searchParams.get("deal")
+    setSelectedDealId(dealId)
+  }, [searchParams])
+
   const filteredDeals = useMemo(() => {
     const term = query.trim().toLowerCase()
     if (!term) return deals
     return deals.filter((deal) =>
       [deal.title, deal.company, deal.assignedTo, deal.status, deal.stage]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term))
+        .some((value) => String(value).toLowerCase().includes(term)),
     )
   }, [deals, query])
 
   const selectedDeal = selectedDealId
-    ? deals.find((deal) => deal.id === selectedDealId) ?? null
+    ? (deals.find((deal) => deal.id === selectedDealId) ?? null)
     : null
 
-  const handleDealSelect = (deal: CrmDeal) => {
-    setSelectedDealId(deal.id)
+  const buildCrmReturnHrefForDeal = useCallback(
+    (dealId: string) => buildCrmReturnHref(dealId, searchParams.toString()),
+    [searchParams],
+  )
+
+  const handleDealSelect = useCallback(
+    (deal: CrmDeal) => {
+      captureFocus()
+      setSelectedDealId(deal.id)
+      syncDealParam(deal.id)
+    },
+    [captureFocus, syncDealParam],
+  )
+
+  const handleDealMove = useCallback(
+    async (deal: CrmDeal, update: DealPipelineUpdateInput) => {
+      if (!canManageCrm) return
+      await updateDeal.mutateAsync({
+        id: deal.id,
+        input: { stage: update.stage, pipelineOrder: update.pipelineOrder },
+      })
+    },
+    [canManageCrm, updateDeal],
+  )
+
+  const handleDealEdit = (deal: CrmDeal) => {
+    setSelectedDealId(null)
+    syncDealParam(null)
+    setEditingDeal(deal)
+    setCreateOpen(true)
   }
 
-  const handleDealStageChange = (deal: CrmDeal, stage: CrmStageId) => {
-    updateDeal.mutate({ id: deal.id, input: { stage } })
+  const handleDealDelete = (deal: CrmDeal) => {
+    if (!window.confirm(`Excluir negócio ${deal.title}?`)) return
+    deleteDeal.mutate(deal.id, {
+      onSuccess: () => {
+        if (selectedDealId === deal.id) {
+          setSelectedDealId(null)
+          syncDealParam(null)
+        }
+      },
+    })
   }
+
+  const dealsToolbar = (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.4, ease: easeOut }}
+      className={CRM_TOOLBAR}
+    >
+      <motion.div className="relative min-w-0 w-full flex-1 lg:max-w-sm">
+        <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-foreground/45" />
+        <Input
+          placeholder="Filtrar negócios, empresas ou contatos…"
+          className={CRM_FILTER_INPUT}
+          value={queryInput}
+          onChange={(event) => setQueryInput(event.target.value)}
+        />
+      </motion.div>
+      <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+        <CRMRightSidebarToggle />
+        <Button variant="outline" size="sm" className="shrink-0 gap-2">
+          <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+          Filtros
+        </Button>
+        <div className={CRM_VIEW_TOGGLE_WRAP}>
+          <button
+            type="button"
+            onClick={() => setView("board")}
+            className={crmViewToggleButton(view === "board")}
+          >
+            <Kanban className="size-3.5" strokeWidth={1.5} />
+            Kanban
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className={crmViewToggleButton(view === "list")}
+          >
+            <List className="size-3.5" strokeWidth={1.5} />
+            Lista
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  )
 
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: easeOut }}
-      className="flex flex-1 flex-col gap-8 px-4 py-8 md:gap-10 md:px-8 md:py-10"
+      className={CRM_PAGE_SHELL}
     >
       <CrmPageHeader
         badge="Pipeline comercial"
         title="Negócios"
-        description="Funil visual de oportunidades — arraste entre estágios, filtre e acompanhe cada negócio em detalhe."
-        primaryAction={{ label: "Novo negócio", onClick: () => setCreateOpen(true) }}
+        description="Funil visual — arraste entre estágios e acompanhe cada negócio."
+        compact
+        primaryAction={
+          canManageCrm
+            ? {
+                label: "Novo negócio",
+                onClick: () => {
+                  setEditingDeal(null)
+                  setCreateOpen(true)
+                },
+              }
+            : undefined
+        }
       >
         <Link
           href="/crm"
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "h-9 gap-2",
+          )}
         >
           Visão geral
         </Link>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Upload className="size-3.5" strokeWidth={1.5} />
-          Importar
-        </Button>
+        <PermissionGate permission="crm:manage">
+          <Button variant="outline" size="sm" className="h-9 gap-2">
+            <Upload className="size-3.5" strokeWidth={1.5} />
+            Importar
+          </Button>
+        </PermissionGate>
       </CrmPageHeader>
 
       <CrmMetrics deals={deals} />
 
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.4, ease: easeOut }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      <CRMRightSidebar
+        className="min-h-0 flex-1"
+        sidebar={<CrmActivityFeed deals={deals} />}
+        header={dealsToolbar}
       >
-        <motion.div className="relative max-w-md flex-1">
-          <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
-          <Input
-            placeholder="Filtrar negócios, empresas ou contatos…"
-            className="h-10 rounded-full border-white/[0.08] bg-white/[0.04] pl-10"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+        {dealsQuery.isLoading ? (
+          <LoadingState label="Carregando negócios do CRM…" />
+        ) : dealsQuery.isError ? (
+          <ErrorState
+            title="Não foi possível carregar o CRM."
+            description={getErrorMessage(
+              dealsQuery.error,
+              "Erro ao carregar negócios",
+            )}
+            onRetry={() => dealsQuery.refetch()}
           />
-        </motion.div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
-            Filtros
-          </Button>
-          <div className="flex rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
-            <button
-              type="button"
-              onClick={() => setView("board")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                view === "board"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Kanban className="size-3.5" strokeWidth={1.5} />
-              Kanban
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                view === "list"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <List className="size-3.5" strokeWidth={1.5} />
-              Lista
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      {dealsQuery.isLoading ? (
-        <div className="glass-panel flex min-h-[320px] items-center justify-center rounded-2xl">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando negócios do CRM…
-          </div>
-        </div>
-      ) : dealsQuery.isError ? (
-        <div className="glass-panel flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center">
-          <AlertCircle className="size-8 text-destructive" />
-          <div>
-            <p className="font-medium text-foreground">Não foi possível carregar o CRM.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {(dealsQuery.error as Error).message}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => dealsQuery.refetch()}>
-            Tentar novamente
-          </Button>
-        </div>
-      ) : (
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px] xl:gap-8">
-        <motion.div
-          key={view}
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: easeOut }}
-          className="min-w-0"
-        >
-          {view === "board" ? (
-            <PipelineBoard
-              deals={filteredDeals}
-              onDealSelect={handleDealSelect}
-              onDealStageChange={handleDealStageChange}
-            />
-          ) : (
-            <CrmDealsList deals={filteredDeals} onDealSelect={handleDealSelect} />
-          )}
-        </motion.div>
-        <aside className="hidden xl:block">
-          <motion.div className="sticky top-36">
-            <CrmActivityFeed />
+        ) : (
+          <motion.div
+            key={view}
+            initial={reduce ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut }}
+            className={cn(
+              "flex min-h-0 min-w-0 flex-1 flex-col",
+              view === "list"
+                ? cn(CRM_PAGE_SHELL_SCROLL, "gap-0")
+                : "overflow-hidden",
+            )}
+          >
+            {view === "board" ? (
+              <PipelineBoard
+                deals={filteredDeals}
+                interactive={canManageCrm}
+                onDealSelect={handleDealSelect}
+                onDealEdit={handleDealEdit}
+                onDealDelete={handleDealDelete}
+                onDealMove={handleDealMove}
+              />
+            ) : (
+              <CrmDealsList
+                deals={filteredDeals}
+                onDealSelect={handleDealSelect}
+                onDealEdit={handleDealEdit}
+                onDealDelete={handleDealDelete}
+                deletePending={deleteDeal.isPending}
+                stickyHeader
+              />
+            )}
           </motion.div>
-        </aside>
-      </div>
+        )}
+      </CRMRightSidebar>
+
+      {/*
+        Feature flag `?sheet=v2` — Fase 2.3.
+        Ambos os sheets têm a mesma interface; o swap é puramente visual.
+        DealDetailSheet legado permanece default; DealSheetV2 é opt-in para
+        validação lado a lado sem afetar usuários ativos.
+      */}
+      {searchParams.get("sheet") === "v2" ? (
+        <DealSheetV2
+          deal={selectedDeal}
+          open={selectedDealId !== null}
+          crmReturnHref={
+            selectedDeal
+              ? buildCrmReturnHrefForDeal(selectedDeal.id)
+              : undefined
+          }
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedDealId(null)
+              closeEntitySheetNavigation({
+                router,
+                pathname,
+                searchParams,
+                entityType: "deal",
+              })
+              restoreFocus()
+            }
+          }}
+        />
+      ) : (
+        <DealDetailSheet
+          deal={selectedDeal}
+          open={selectedDealId !== null}
+          crmReturnHref={
+            selectedDeal
+              ? buildCrmReturnHrefForDeal(selectedDeal.id)
+              : undefined
+          }
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedDealId(null)
+              closeEntitySheetNavigation({
+                router,
+                pathname,
+                searchParams,
+                entityType: "deal",
+              })
+              restoreFocus()
+            }
+          }}
+        />
       )}
 
-      <div className="xl:hidden">
-        <CrmActivityFeed />
-      </div>
-
-      <DealDetailSheet
-        deal={selectedDeal}
-        open={selectedDealId !== null}
+      <DealFormDialog
+        open={canManageCrm && createOpen}
+        deal={editingDeal}
+        pending={createDeal.isPending || updateDeal.isPending}
+        error={createDeal.error ?? updateDeal.error}
         onOpenChange={(open) => {
-          if (!open) setSelectedDealId(null)
+          setCreateOpen(open)
+          if (!open) setEditingDeal(null)
         }}
-      />
-
-      <NewDealDialog
-        open={createOpen}
-        pending={createDeal.isPending}
-        error={createDeal.error as Error | null}
-        onOpenChange={setCreateOpen}
         onSubmit={(input) => {
+          if (editingDeal) {
+            updateDeal.mutate(
+              { id: editingDeal.id, input },
+              {
+                onSuccess: () => {
+                  setCreateOpen(false)
+                  setEditingDeal(null)
+                },
+              },
+            )
+            return
+          }
+
           createDeal.mutate(input, {
             onSuccess: () => setCreateOpen(false),
           })
         }}
       />
     </motion.div>
-  )
-}
-
-type NewDealForm = {
-  title: string
-  company: string
-  value: string
-  stage: CrmStageId
-  assignedTo: string
-}
-
-function NewDealDialog({
-  open,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-}: {
-  open: boolean
-  pending: boolean
-  error: Error | null
-  onOpenChange: (open: boolean) => void
-  onSubmit: (input: {
-    title: string
-    company: string
-    value: number
-    stage: CrmStageId
-    status: "open"
-    assignedTo?: string
-  }) => void
-}) {
-  const [form, setForm] = useState<NewDealForm>({
-    title: "",
-    company: "",
-    value: "",
-    stage: "novo",
-    assignedTo: "",
-  })
-
-  function update<K extends keyof NewDealForm>(key: K, value: NewDealForm[K]) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const value = Number(form.value)
-    if (!form.title.trim() || !form.company.trim() || Number.isNaN(value)) return
-
-    onSubmit({
-      title: form.title.trim(),
-      company: form.company.trim(),
-      value,
-      stage: form.stage,
-      status: "open",
-      assignedTo: form.assignedTo.trim() || undefined,
-    })
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-lg">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>Novo negócio</DialogTitle>
-            <DialogDescription>
-              Crie uma oportunidade real no backend e atualize o pipeline automaticamente.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Título</span>
-              <Input
-                required
-                value={form.title}
-                onChange={(event) => update("title", event.target.value)}
-                placeholder="Ex.: Frota corporativa"
-              />
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Empresa</span>
-              <Input
-                required
-                value={form.company}
-                onChange={(event) => update("company", event.target.value)}
-                placeholder="Ex.: Transportes Sul"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Valor</span>
-              <Input
-                required
-                min={0}
-                step="0.01"
-                type="number"
-                value={form.value}
-                onChange={(event) => update("value", event.target.value)}
-                placeholder="67000"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Estágio</span>
-              <select
-                value={form.stage}
-                onChange={(event) => update("stage", event.target.value as CrmStageId)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {pipelineStages.map((stage) => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Responsável</span>
-              <Input
-                value={form.assignedTo}
-                onChange={(event) => update("assignedTo", event.target.value)}
-                placeholder="Ex.: Ana Costa"
-              />
-            </label>
-          </div>
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {error.message}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : (
-                "Salvar negócio"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

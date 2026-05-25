@@ -15,133 +15,118 @@ import { CrmMetrics } from "@/components/crm/crm-metrics"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
+import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
+import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle"
+import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { PermissionGate } from "@/components/auth/permission-gate"
+import { useCanManage } from "@/components/auth/session-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useCrmDeals } from "@/lib/data-access/modules/crm"
+import {
+  CRM_FILTER_INPUT,
+  CRM_PAGE_SHELL,
+  CRM_TOOLBAR,
+  crmViewToggleButton,
+  CRM_VIEW_TOGGLE_WRAP,
+} from "@/lib/crm/crm-layout-classes"
 import { easeOut } from "@/lib/motion"
-import { cn } from "@/lib/utils"
 
 type ViewMode = "board" | "list"
 
 export function CrmPage() {
   const [view, setView] = useState<ViewMode>("board")
   const reduce = useReducedMotion()
+  const canManageCrm = useCanManage("crm:view")
+  const dealsQuery = useCrmDeals()
+  const deals = dealsQuery.data ?? []
 
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: easeOut }}
-      className="flex flex-1 flex-col gap-8 px-4 py-8 md:gap-10 md:px-8 md:py-10 lg:px-10 lg:py-12"
+      className={CRM_PAGE_SHELL}
     >
-      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <motion.div
-          initial={reduce ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: easeOut }}
-          className="space-y-3"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-[11px] font-semibold text-primary">
-            Pipeline comercial
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-[-0.04em] md:text-4xl">
-              <span className="text-gradient-brand">CRM</span>
-            </h1>
-            <p className="max-w-xl text-[15px] leading-relaxed text-muted-foreground">
-              Gerencie leads, negócios e follow-ups em um funil visual — estilo
-              HubSpot e Salesforce Lightning.
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={reduce ? false : { opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1, duration: 0.4, ease: easeOut }}
-          className="flex flex-wrap items-center gap-2"
-        >
-          <Button variant="outline" size="sm" className="gap-2">
+      <CrmPageHeader
+        badge="Pipeline comercial"
+        title={<span className="text-gradient-brand">CRM</span>}
+        description="Leads, negócios e follow-ups em funil visual."
+        compact
+      >
+        <PermissionGate permission="crm:manage">
+          <Button variant="outline" size="sm" className="h-9 gap-1.5 text-sm">
             <Upload className="size-3.5" strokeWidth={1.5} />
             Importar
           </Button>
-          <Button size="sm" className="gap-2 shadow-lg shadow-primary/20">
+          <Button size="sm" className="h-9 gap-1.5 text-sm shadow-md shadow-primary/15">
             <Plus className="size-3.5" strokeWidth={1.5} />
             Novo negócio
           </Button>
-        </motion.div>
-      </header>
+        </PermissionGate>
+      </CrmPageHeader>
 
-      <CrmMetrics />
+      <CrmMetrics deals={deals} />
 
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.4, ease: easeOut }}
-        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      <CRMRightSidebar
+        className="min-h-0 flex-1"
+        sidebar={<CrmActivityFeed deals={deals} />}
+        header={
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.3, ease: easeOut }}
+            className={CRM_TOOLBAR}
+          >
+            <div className="relative min-w-0 w-full flex-1 lg:max-w-sm">
+              <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-foreground/45" />
+              <Input
+                placeholder="Filtrar negócios, empresas ou contatos…"
+                className={CRM_FILTER_INPUT}
+              />
+            </div>
+            <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-auto">
+              <CRMRightSidebarToggle />
+              <Button variant="outline" size="sm" className="h-8 shrink-0 gap-1.5 text-sm">
+                <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+                Filtros
+              </Button>
+              <div className={CRM_VIEW_TOGGLE_WRAP}>
+                <button
+                  type="button"
+                  onClick={() => setView("board")}
+                  className={crmViewToggleButton(view === "board")}
+                >
+                  <Kanban className="size-3.5" strokeWidth={1.5} />
+                  Kanban
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("list")}
+                  className={crmViewToggleButton(view === "list")}
+                >
+                  <List className="size-3.5" strokeWidth={1.5} />
+                  Lista
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        }
       >
-        <div className="relative max-w-md flex-1">
-          <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
-          <Input
-            placeholder="Filtrar negócios, empresas ou contatos…"
-            className="h-10 rounded-full border-white/[0.08] bg-white/[0.04] pl-10"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
-            Filtros
-          </Button>
-          <div className="flex rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
-            <button
-              type="button"
-              onClick={() => setView("board")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                view === "board"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Kanban className="size-3.5" strokeWidth={1.5} />
-              Kanban
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all",
-                view === "list"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <List className="size-3.5" strokeWidth={1.5} />
-              Lista
-            </button>
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_300px] xl:gap-8">
         <motion.div
           key={view}
-          initial={reduce ? false : { opacity: 0, y: 12 }}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: easeOut }}
-          className="min-w-0"
+          transition={{ duration: 0.3, ease: easeOut }}
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
         >
-          {view === "board" ? <PipelineBoard /> : <CrmDealsList />}
+          {view === "board" ? (
+            <PipelineBoard deals={deals} interactive={canManageCrm} />
+          ) : (
+            <CrmDealsList deals={deals} />
+          )}
         </motion.div>
-        <aside className="hidden xl:block">
-          <div className="sticky top-20">
-            <CrmActivityFeed />
-          </div>
-        </aside>
-      </div>
-
-      <div className="xl:hidden">
-        <CrmActivityFeed />
-      </div>
+      </CRMRightSidebar>
     </motion.div>
   )
 }

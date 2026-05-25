@@ -61,6 +61,24 @@ export class CreateDealDto {
   @IsString()
   @MaxLength(120)
   assignedTo?: string;
+
+  @ApiPropertyOptional({
+    example: 1500,
+    description: 'Ordem manual no Kanban (fractional indexing).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pipelineOrder?: number;
 }
 
-export class UpdateDealDto extends PartialType(CreateDealDto) {}
+export class UpdateDealDto extends PartialType(CreateDealDto) {
+  @ApiPropertyOptional({
+    example: 1500,
+    description: 'Ordem manual no Kanban (fractional indexing).',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  pipelineOrder?: number;
+}

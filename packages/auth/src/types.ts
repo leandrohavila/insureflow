@@ -1,6 +1,7 @@
 export const APP_ROLES = [
   "super_admin",
   "admin",
+  "sales",
   "broker",
   "underwriter",
   "viewer",
@@ -31,6 +32,7 @@ export const PERMISSIONS = [
   "settings:view",
   "settings:manage",
   "users:manage",
+  "tenants:manage",
   "audit:view",
 ] as const
 

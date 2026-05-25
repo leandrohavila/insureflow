@@ -1,0 +1,1524 @@
+/* Densidade e legibilidade operacional — escopo CRM */
+.crm-workspace {
+  /* Altura do chrome de tabs (conteúdo + padding vertical do header). */
+  --insure-crm-chrome-height: auto;
+}
+
+.crm-workspace .crm-page-shell {
+  font-size: 14px;
+}
+
+.crm-chrome {
+  isolation: isolate;
+}
+
+.crm-chrome__tabs {
+  min-height: 2.25rem;
+}
+
+.crm-page-header {
+  margin-top: 0;
+  padding-top: 0.125rem;
+  padding-bottom: 0.25rem;
+}
+
+.crm-workspace [data-slot="glass-card"],
+.crm-workspace .glass-panel {
+  border-color: rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.045);
+}
+
+.crm-workspace .crm-data-table thead th {
+  height: 2.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: color-mix(in oklab, var(--foreground) 72%, transparent);
+}
+
+.crm-workspace .crm-data-table tbody td {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* crm-v2 — camada visual aditiva sobre os tokens base de insureflow.css.     */
+/* Não substitui nem remove nada existente: apenas expõe um sistema de        */
+/* surfaces, strokes, accents e tipografia operacional consumível pelas       */
+/* primitivas em components/crm/primitives/**.                                */
+/* -------------------------------------------------------------------------- */
+
+.crm-workspace {
+  /* Surface ladder — 5 níveis explícitos.
+     Regra: cada incremento substitui o uso "bg-white/[0.04x]" arbitrário. */
+  --crm-surface-base: var(--background);
+  --crm-surface-panel: color-mix(in oklch, var(--foreground) 3.5%, var(--background));
+  --crm-surface-panel-hover: color-mix(in oklch, var(--foreground) 5%, var(--background));
+  --crm-surface-row-hover: color-mix(in oklch, var(--primary) 5%, transparent);
+  --crm-surface-raised: color-mix(in oklch, var(--foreground) 5%, var(--background));
+  --crm-surface-overlay: color-mix(in oklch, var(--foreground) 7%, var(--background));
+  --crm-surface-selected: color-mix(in oklch, var(--primary) 8%, transparent);
+
+  /* Stroke tokens — substituem o uso ubíquo de border-white/10. */
+  --crm-stroke-faint: color-mix(in oklch, var(--foreground) 5%, transparent);
+  --crm-stroke-default: color-mix(in oklch, var(--foreground) 8%, transparent);
+  --crm-stroke-strong: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --crm-stroke-accent: color-mix(in oklch, var(--primary) 35%, transparent);
+
+  /* Stage accent palette — coerente com pipeline-column.tsx (sky/violet/primary/amber/emerald). */
+  --crm-stage-prospeccao: oklch(0.7 0.13 230);
+  --crm-stage-qualificacao: oklch(0.65 0.16 290);
+  --crm-stage-proposta: var(--primary);
+  --crm-stage-negociacao: oklch(0.72 0.16 75);
+  --crm-stage-fechado: oklch(0.62 0.14 158);
+
+  /* Status tones — semânticos, NÃO decorativos. */
+  --crm-tone-info: oklch(0.65 0.14 230);
+  --crm-tone-warn: oklch(0.75 0.16 75);
+  --crm-tone-danger: oklch(0.65 0.2 22);
+  --crm-tone-success: oklch(0.62 0.14 158);
+  --crm-tone-violet: oklch(0.65 0.16 290);
+  --crm-tone-neutral: color-mix(in oklch, var(--foreground) 50%, transparent);
+  --crm-tone-brand: var(--primary);
+}
+
+@layer utilities {
+  /* Surface ladder utilities (escopadas via .crm-workspace usando :where). */
+  .crm-surface-panel {
+    background-color: var(--crm-surface-panel);
+  }
+
+  .crm-surface-panel-interactive {
+    background-color: var(--crm-surface-panel);
+    transition: background-color var(--if-duration-base) var(--if-ease-standard);
+  }
+
+  .crm-surface-panel-interactive:hover {
+    background-color: var(--crm-surface-panel-hover);
+  }
+
+  .crm-surface-raised {
+    background-color: var(--crm-surface-raised);
+  }
+
+  .crm-surface-overlay {
+    background-color: var(--crm-surface-overlay);
+  }
+
+  .crm-surface-row {
+    background-color: transparent;
+    transition: background-color var(--if-duration-fast) var(--if-ease-standard);
+  }
+
+  .crm-surface-row:hover {
+    background-color: var(--crm-surface-row-hover);
+  }
+
+  .crm-surface-row[data-selected="true"],
+  .crm-surface-row[aria-selected="true"] {
+    background-color: var(--crm-surface-selected);
+  }
+
+  /* Stroke utilities. */
+  .crm-stroke-faint {
+    border-color: var(--crm-stroke-faint);
+  }
+
+  .crm-stroke-default {
+    border-color: var(--crm-stroke-default);
+  }
+
+  .crm-stroke-strong {
+    border-color: var(--crm-stroke-strong);
+  }
+
+  /* Accent rail (4px vertical à esquerda, transparente por padrão).
+     Cor controlada via inline `style={{ "--crm-accent-color": ... }}`. */
+  .crm-accent-rail {
+    position: relative;
+  }
+
+  .crm-accent-rail::before {
+    content: "";
+    position: absolute;
+    inset: 0.25rem auto 0.25rem 0;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--crm-accent-color, transparent);
+    transition: background-color var(--if-duration-base) var(--if-ease-standard);
+    pointer-events: none;
+  }
+
+  /* Tipografia operacional — 4 níveis que substituem o uso direto de
+     text-sm/text-xs/uppercase tracking-[0.12em] espalhados pelo CRM. */
+  .crm-text-title {
+    font-size: 0.8125rem;
+    line-height: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+  }
+
+  .crm-text-subtitle {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    color: color-mix(in oklch, var(--foreground) 62%, transparent);
+  }
+
+  .crm-text-meta {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+    color: var(--muted-foreground);
+  }
+
+  .crm-text-micro {
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+
+  .crm-text-metric {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* TimelineLane — filtro visual por tipo de atividade.                        */
+/* O wrapper ganha `data-filter="<type>"` quando o usuário seleciona um chip; */
+/* atividades de outros tipos são ocultadas via CSS, sem refetch e sem mexer  */
+/* na ActivityTimeline. Pareia com os atributos data-activity-type emitidos   */
+/* pelo <li> da timeline.                                                     */
+/* -------------------------------------------------------------------------- */
+.timeline-lane[data-filter="call"] [data-activity-type]:not([data-activity-type="call"]),
+.timeline-lane[data-filter="whatsapp"] [data-activity-type]:not([data-activity-type="whatsapp"]),
+.timeline-lane[data-filter="email"] [data-activity-type]:not([data-activity-type="email"]),
+.timeline-lane[data-filter="meeting"] [data-activity-type]:not([data-activity-type="meeting"]),
+.timeline-lane[data-filter="visit"] [data-activity-type]:not([data-activity-type="visit"]),
+.timeline-lane[data-filter="note"] [data-activity-type]:not([data-activity-type="note"]),
+.timeline-lane[data-filter="follow_up"] [data-activity-type]:not([data-activity-type="follow_up"]) {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Timeline rail — Fase 2.2A.                                                 */
+/*                                                                            */
+/* Camada visual aditiva sobre `ActivityTimeline`. Componentes JS controlam   */
+/* o agrupamento por dia e renderizam:                                        */
+/*                                                                            */
+/*   <ol class="timeline-rail">                                               */
+/*     <li class="timeline-day-header">…</li>                                 */
+/*     <li class="timeline-entry" data-activity-type="…"                      */
+/*         style="--crm-node-accent: …">                                      */
+/*       <span class="timeline-node">…</span>                                 */
+/*       <article class="timeline-card">…</article>                           */
+/*     </li>                                                                  */
+/*     …                                                                      */
+/*   </ol>                                                                    */
+/*                                                                            */
+/* Sem regras de negócio: apenas tipografia, ritmo vertical e identidade     */
+/* visual por tipo (via `--crm-node-accent`).                                 */
+/* -------------------------------------------------------------------------- */
+.timeline-rail {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Linha vertical contínua, gradiente leve nas extremidades para evitar
+   "corte duro" entre o último item e o footer da seção. */
+.timeline-rail::before {
+  content: "";
+  position: absolute;
+  top: 1.5rem;
+  bottom: 0.75rem;
+  left: 1.0625rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    var(--crm-stroke-default) 4%,
+    var(--crm-stroke-default) 96%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.timeline-day-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.375rem;
+  margin-top: 0.75rem;
+  background: linear-gradient(
+    to bottom,
+    var(--crm-surface-base) 0,
+    var(--crm-surface-base) 78%,
+    color-mix(in oklch, var(--crm-surface-base) 96%, transparent) 100%
+  );
+}
+
+.timeline-day-header:first-of-type {
+  margin-top: 0;
+}
+
+.timeline-day-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--foreground) 62%, transparent);
+  font-weight: 600;
+}
+
+.timeline-day-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--crm-stroke-faint);
+}
+
+.timeline-day-count {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklch, var(--foreground) 48%, transparent);
+}
+
+.timeline-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.25rem 1fr;
+  gap: 0.75rem;
+  padding: 0.125rem 0 0.875rem;
+}
+
+.timeline-entry:last-of-type {
+  padding-bottom: 0.25rem;
+}
+
+.timeline-node {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: color-mix(
+    in oklch,
+    var(--crm-node-accent, var(--crm-tone-neutral)) 14%,
+    var(--crm-surface-base)
+  );
+  color: var(--crm-node-accent, var(--crm-tone-neutral));
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in oklch,
+      var(--crm-node-accent, var(--crm-tone-neutral)) 28%,
+      transparent
+    );
+  transition:
+    box-shadow var(--if-duration-base) var(--if-ease-standard),
+    transform var(--if-duration-base) var(--if-ease-standard);
+}
+
+.timeline-entry:hover .timeline-node,
+.timeline-entry:focus-within .timeline-node {
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in oklch,
+      var(--crm-node-accent, var(--crm-tone-neutral)) 48%,
+      transparent
+    );
+}
+
+.timeline-entry__actions {
+  opacity: 0.55;
+  transition: opacity var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.timeline-entry:hover .timeline-entry__actions,
+.timeline-entry:focus-within .timeline-entry__actions {
+  opacity: 1;
+}
+
+.timeline-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  margin-left: -0.25rem;
+  background: transparent;
+  border: 1px solid transparent;
+  transition:
+    background-color var(--if-duration-fast) var(--if-ease-standard),
+    border-color var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.timeline-entry:hover .timeline-card,
+.timeline-entry:focus-within .timeline-card {
+  background: var(--crm-surface-panel);
+  border-color: var(--crm-stroke-faint);
+}
+
+.timeline-outcome {
+  margin-top: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  background: color-mix(in oklch, var(--crm-tone-success) 7%, transparent);
+  border: 1px solid
+    color-mix(in oklch, var(--crm-tone-success) 18%, transparent);
+  color: color-mix(in oklch, var(--foreground) 86%, transparent);
+  font-size: 0.75rem;
+  line-height: 1.1rem;
+}
+
+.timeline-outcome-label {
+  display: inline-block;
+  margin-right: 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--crm-tone-success) 90%, var(--foreground));
+}
+
+.timeline-followup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  font-size: 0.6875rem;
+  color: color-mix(in oklch, var(--crm-tone-warn) 80%, var(--foreground));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Timeline V2 — Fase 2.2 enterprise row + empty state.                       */
+/* -------------------------------------------------------------------------- */
+.timeline-rail--v2::before {
+  left: 1.125rem;
+}
+
+.timeline-entry--v2 {
+  grid-template-columns: 2.375rem 1fr;
+  gap: 0.625rem;
+  padding: 0.0625rem 0 0.75rem;
+}
+
+.timeline-entry--v2 .timeline-node {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 0.5rem;
+}
+
+.timeline-entry--v2 .timeline-card {
+  position: relative;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem 0.5rem 0.75rem;
+}
+
+.timeline-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.timeline-card__subject {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--foreground);
+}
+
+.timeline-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+}
+
+.timeline-card__time {
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+  color: color-mix(in oklch, var(--foreground) 52%, transparent);
+}
+
+.timeline-card__description {
+  color: color-mix(in oklch, var(--foreground) 72%, transparent);
+}
+
+.timeline-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+.timeline-card__signals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-card__performer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.timeline-outcome--compact {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin-top: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.timeline-followup--compact {
+  margin-top: 0;
+}
+
+.timeline-entry__actions--v2 {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border-radius: 0.375rem;
+  background: color-mix(in oklch, var(--crm-surface-base) 88%, transparent);
+  border: 1px solid var(--crm-stroke-faint);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--if-duration-fast) var(--if-ease-standard),
+    transform var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.timeline-entry--v2:hover .timeline-entry__actions--v2,
+.timeline-entry--v2:focus-within .timeline-entry__actions--v2 {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.timeline-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border-radius: 0.625rem;
+  border: 1px dashed var(--crm-stroke-default);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--foreground) 2%, var(--background)) 0%,
+    transparent 100%
+  );
+}
+
+.timeline-empty-state--filtered {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  text-align: left;
+}
+
+.timeline-empty-state__visual {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+}
+
+.timeline-empty-state__rail {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--crm-stroke-faint);
+}
+
+.timeline-empty-state__node {
+  position: absolute;
+  inset: 0.625rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: color-mix(in oklch, var(--crm-tone-brand) 80%, var(--foreground));
+  background: color-mix(in oklch, var(--crm-tone-brand) 10%, transparent);
+  box-shadow: 0 0 0 1px
+    color-mix(in oklch, var(--crm-tone-brand) 22%, transparent);
+}
+
+.timeline-empty-state__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  opacity: 0.55;
+}
+
+.timeline-empty-state__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+.timeline-empty-state__hint {
+  margin-top: 0.25rem;
+  max-width: 28rem;
+}
+
+.timeline-day-header {
+  backdrop-filter: blur(6px);
+}
+
+@media (max-width: 640px) {
+  .timeline-card__header {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .timeline-card__time {
+    text-align: left;
+  }
+
+  .timeline-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .timeline-entry__actions--v2 {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    margin-top: 0.25rem;
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* EntitySheetShell — refinamento de hover/active nos itens da rail.          */
+/* O `RecordRow` aplica `--crm-accent-color` para o rail visual e o estado    */
+/* selecionado para o background. Aqui adicionamos um leve translate-x no    */
+/* hover (premium feel) e um glow extra no item ativo.                       */
+/* -------------------------------------------------------------------------- */
+[role="tablist"][aria-orientation="vertical"] [data-rail-tab-id] {
+  transition:
+    transform var(--if-duration-fast) var(--if-ease-standard),
+    background-color var(--if-duration-fast) var(--if-ease-standard);
+}
+
+@media (min-width: 768px) {
+  [role="tablist"][aria-orientation="vertical"]
+    [data-rail-tab-id]:hover:not([data-selected="true"]) {
+    transform: translateX(1px);
+  }
+}
+
+[role="tablist"][aria-orientation="vertical"]
+  [data-rail-tab-id][data-selected="true"]::before {
+  background: var(--crm-tone-brand);
+  box-shadow: 0 0 6px
+    color-mix(in oklch, var(--crm-tone-brand) 35%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* ActivityFormDialog — superfícies/tokens do crm-v2.                         */
+/* -------------------------------------------------------------------------- */
+.activity-form-input {
+  border-color: var(--crm-stroke-default);
+  background-color: var(--crm-surface-panel);
+  color: var(--foreground);
+}
+
+.activity-form-input:hover {
+  background-color: var(--crm-surface-panel-hover);
+}
+
+.activity-form-input:focus-visible {
+  border-color: color-mix(in oklch, var(--crm-tone-info) 55%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in oklch, var(--crm-tone-info) 22%, transparent);
+}
+
+/* Sombra sutil no topo do footer sticky do modal, indicando conteúdo
+   scrollável acima quando o usuário rola a área de campos. */
+.activity-form-footer {
+  border-top: 1px solid var(--crm-stroke-faint);
+  background: color-mix(in oklch, var(--foreground) 4%, var(--background));
+  box-shadow: 0 -8px 16px -12px
+    color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* EntitySheetShell — transição suave entre seções do body.                   */
+/* -------------------------------------------------------------------------- */
+.entity-sheet-section {
+  animation: entity-sheet-section-in 0.22s var(--if-ease-standard) both;
+}
+
+@keyframes entity-sheet-section-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-sheet-section {
+    animation: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Timeline V2 — card operacional (hover definido acima em .timeline-card).   */
+/* -------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------- */
+/* Kanban V2 Enterprise — Fase 2.3                                           */
+/* -------------------------------------------------------------------------- */
+.pipeline-board-v2 {
+  align-items: flex-start;
+}
+
+.pipeline-lane {
+  --crm-lane-accent: var(--crm-tone-brand);
+}
+
+.pipeline-lane__header {
+  background: linear-gradient(
+    to bottom,
+    var(--crm-surface-base) 0%,
+    color-mix(in oklch, var(--crm-surface-base) 92%, transparent) 100%
+  );
+  backdrop-filter: blur(8px);
+}
+
+.pipeline-lane__header-accent {
+  height: 2px;
+  margin-bottom: 0.5rem;
+  border-radius: 1px;
+  background: var(--crm-lane-accent);
+  opacity: 0.85;
+}
+
+.pipeline-lane__count {
+  display: inline-flex;
+  min-width: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  padding: 0 0.3rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.125rem;
+  color: color-mix(in oklch, var(--foreground) 62%, transparent);
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+}
+
+.pipeline-lane__body {
+  border-left: 1px solid var(--crm-stroke-faint);
+  padding-left: 0.625rem;
+  transition: background-color var(--if-duration-base) var(--if-ease-standard);
+}
+
+.pipeline-lane__body--highlight {
+  border-left-color: color-mix(
+    in oklch,
+    var(--crm-lane-accent) 45%,
+    transparent
+  );
+}
+
+.pipeline-lane__drop-glow {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklch, var(--crm-lane-accent) 8%, transparent),
+    transparent 70%
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklch, var(--crm-lane-accent) 18%, transparent);
+}
+
+.pipeline-lane__empty {
+  border: 1px dashed var(--crm-stroke-faint);
+  color: color-mix(in oklch, var(--foreground) 45%, transparent);
+}
+
+.pipeline-lane__empty--highlight {
+  border-color: color-mix(in oklch, var(--crm-tone-brand) 30%, transparent);
+  color: color-mix(in oklch, var(--crm-tone-brand) 70%, transparent);
+}
+
+.deal-card-v2 {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem 0.625rem 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: var(--crm-surface-panel);
+  box-shadow: 0 1px 0
+    color-mix(in oklch, var(--foreground) 4%, transparent);
+  transition:
+    border-color var(--if-duration-base) var(--if-ease-standard),
+    box-shadow var(--if-duration-base) var(--if-ease-standard),
+    background-color var(--if-duration-base) var(--if-ease-standard),
+    transform var(--if-duration-base) var(--if-ease-standard);
+}
+
+.deal-card-v2--compact {
+  gap: 0.375rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+}
+
+.deal-card-v2:not(.deal-card-v2--overlay):not(.deal-card-v2--dragging):hover {
+  border-color: color-mix(
+    in oklch,
+    var(--crm-accent-color, var(--crm-tone-brand)) 22%,
+    transparent
+  );
+  background: var(--crm-surface-panel-hover);
+  box-shadow:
+    0 4px 14px -6px
+      color-mix(
+        in oklch,
+        var(--crm-accent-color, var(--crm-tone-brand)) 18%,
+        transparent
+      ),
+    0 1px 0 color-mix(in oklch, var(--foreground) 6%, transparent);
+}
+
+.deal-card-v2--dragging {
+  opacity: 0.55;
+}
+
+.deal-card-v2--overlay {
+  border-color: color-mix(in oklch, var(--crm-tone-brand) 35%, transparent);
+  background: var(--crm-surface-overlay);
+  box-shadow:
+    0 12px 28px -8px
+      color-mix(in oklch, var(--crm-tone-brand) 25%, transparent),
+    0 0 0 1px color-mix(in oklch, var(--crm-tone-brand) 28%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.deal-card-v2[data-stale="true"]:not(.deal-card-v2--overlay) {
+  background: color-mix(in oklch, var(--crm-tone-warn) 3%, var(--crm-surface-panel));
+}
+
+.deal-card-v2__priority-mark {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.1875rem;
+  width: 2px;
+  height: 0.875rem;
+  border-radius: 1px;
+  background: var(--crm-priority-accent);
+  pointer-events: none;
+}
+
+.deal-card-v2__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.375rem;
+}
+
+.deal-card-v2__title {
+  font-size: 0.8125rem;
+  line-height: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.deal-card-v2--compact .deal-card-v2__title {
+  -webkit-line-clamp: 1;
+  font-size: 0.75rem;
+}
+
+.deal-card-v2__company {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  color: color-mix(in oklch, var(--foreground) 58%, transparent);
+}
+
+.deal-card-v2__chrome {
+  display: flex;
+  shrink: 0;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.deal-card-v2__grip {
+  display: flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in oklch, var(--foreground) 38%, transparent);
+  opacity: 0;
+  transition: opacity var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.deal-card-v2:hover .deal-card-v2__grip,
+.deal-card-v2:focus-within .deal-card-v2__grip {
+  opacity: 1;
+}
+
+.deal-card-v2__body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.deal-card-v2__value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.1rem;
+  color: var(--foreground);
+}
+
+.deal-card-v2--compact .deal-card-v2__value {
+  font-size: 0.8125rem;
+}
+
+.deal-card-v2__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.deal-card-v2__owner {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.deal-card-v2__interaction {
+  color: color-mix(in oklch, var(--foreground) 50%, transparent);
+}
+
+.deal-card-v2__interaction--stale {
+  color: color-mix(in oklch, var(--crm-tone-warn) 85%, var(--foreground));
+}
+
+.deal-card-v2__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--crm-stroke-faint);
+}
+
+.deal-card-v2__badges {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deal-card-v2__chip {
+  max-width: 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 0.25rem;
+  padding: 0 0.375rem;
+  font-size: 0.625rem;
+  line-height: 1.125rem;
+  color: color-mix(in oklch, var(--foreground) 62%, transparent);
+  background: color-mix(in oklch, var(--foreground) 4%, transparent);
+}
+
+.deal-card-v2__indicators {
+  display: flex;
+  shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.deal-card-v2__indicator {
+  display: inline-flex;
+  width: 1.375rem;
+  height: 1.375rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.3125rem;
+}
+
+.deal-card-v2__indicator--warn {
+  color: color-mix(in oklch, var(--crm-tone-warn) 90%, var(--foreground));
+  background: color-mix(in oklch, var(--crm-tone-warn) 10%, transparent);
+}
+
+.deal-card-v2__indicator--danger {
+  color: color-mix(in oklch, var(--crm-tone-danger) 90%, var(--foreground));
+  background: color-mix(in oklch, var(--crm-tone-danger) 10%, transparent);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Agenda V2 — toolbar, seções e rows operacionais.                           */
+/* -------------------------------------------------------------------------- */
+.agenda-toolbar {
+  border: 1px solid var(--crm-stroke-faint);
+  background: color-mix(in oklch, var(--foreground) 2%, var(--background));
+}
+
+.agenda-row {
+  border-left: 2px solid transparent;
+  transition: background-color var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.agenda-row:hover {
+  background: var(--crm-surface-row-hover);
+}
+
+.agenda-row--overdue {
+  border-left-color: color-mix(in oklch, var(--crm-tone-danger) 55%, transparent);
+  background: color-mix(in oklch, var(--crm-tone-danger) 4%, transparent);
+}
+
+.agenda-row--today {
+  border-left-color: color-mix(in oklch, var(--crm-tone-info) 55%, transparent);
+  background: color-mix(in oklch, var(--crm-tone-info) 4%, transparent);
+}
+
+.agenda-row--upcoming {
+  border-left-color: var(--crm-stroke-strong);
+}
+
+.agenda-section-panel {
+  border: 1px solid var(--crm-stroke-faint);
+  background: var(--crm-surface-panel);
+  overflow: hidden;
+}
+
+.agenda-section-divider {
+  border-color: var(--crm-stroke-faint);
+}
+
+.agenda-type-node {
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in oklch,
+      var(--crm-node-accent, var(--crm-tone-neutral)) 22%,
+      transparent
+    );
+  background: color-mix(
+    in oklch,
+    var(--crm-node-accent, var(--crm-tone-neutral)) 12%,
+    var(--crm-surface-base)
+  );
+  color: var(--crm-node-accent, var(--crm-tone-neutral));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Task Workspace V2 — inbox operacional (/crm/tarefas).                      */
+/* -------------------------------------------------------------------------- */
+
+.task-quick-actions {
+  border: 1px solid var(--crm-stroke-faint);
+  border-radius: 0.5rem;
+  background: var(--crm-surface-panel);
+  padding: 0.5rem;
+}
+
+.task-quick-actions__btn {
+  border-color: var(--crm-stroke-faint);
+  background: color-mix(in oklch, var(--foreground) 2%, var(--background));
+}
+
+.task-toolbar {
+  min-width: 0;
+}
+
+.task-toolbar__filters {
+  border: 1px solid var(--crm-stroke-faint);
+  background: color-mix(in oklch, var(--foreground) 2%, var(--background));
+}
+
+.task-workspace-body {
+  min-width: 0;
+}
+
+.task-section-panel {
+  border: 1px solid var(--crm-stroke-faint);
+  background: var(--crm-surface-panel);
+  overflow: hidden;
+}
+
+.task-section-divider {
+  border-color: var(--crm-stroke-faint);
+}
+
+.task-section-count {
+  font-size: 0.625rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.125rem 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--crm-stroke-faint);
+  background: var(--crm-surface-panel);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklch, var(--foreground) 55%, transparent);
+}
+
+.task-row {
+  min-width: 0;
+  border-left: 2px solid transparent;
+  transition: background-color var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.task-row:hover {
+  background: var(--crm-surface-row-hover);
+}
+
+.task-row--overdue {
+  border-left-color: color-mix(in oklch, var(--crm-tone-danger) 55%, transparent);
+  background: color-mix(in oklch, var(--crm-tone-danger) 4%, transparent);
+}
+
+.task-row--today {
+  border-left-color: color-mix(in oklch, var(--crm-tone-info) 55%, transparent);
+  background: color-mix(in oklch, var(--crm-tone-info) 4%, transparent);
+}
+
+.task-row--upcoming,
+.task-row--undated {
+  border-left-color: var(--crm-stroke-strong);
+}
+
+.task-row--completed {
+  border-left-color: color-mix(in oklch, var(--crm-tone-success) 40%, transparent);
+  opacity: 0.82;
+}
+
+.task-type-node {
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px
+    color-mix(
+      in oklch,
+      var(--crm-node-accent, var(--crm-tone-neutral)) 22%,
+      transparent
+    );
+  background: color-mix(
+    in oklch,
+    var(--crm-node-accent, var(--crm-tone-neutral)) 12%,
+    var(--crm-surface-base)
+  );
+  color: var(--crm-node-accent, var(--crm-tone-neutral));
+}
+
+.task-context-option {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  text-align: left;
+  transition: background-color var(--if-duration-fast) var(--if-ease-standard);
+}
+
+.task-context-option:hover {
+  background: var(--crm-surface-panel-hover);
+}
+
+.task-context-option:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--primary) 35%, transparent);
+  outline-offset: 1px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* CRM V2 — Fase 2.6 Interaction Polish & Operational Experience              */
+/* -------------------------------------------------------------------------- */
+
+.crm-workspace {
+  /* Motion tokens — sincronizados com lib/crm/crm-motion.ts */
+  --crm-motion-instant: 80ms;
+  --crm-motion-fast: 120ms;
+  --crm-motion-base: 180ms;
+  --crm-motion-slow: 260ms;
+  --crm-motion-sheet: 320ms;
+  --crm-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --crm-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Density tokens (default = compact operacional) */
+  --crm-row-py: 0.625rem;
+  --crm-row-gap: 0.625rem;
+  --crm-section-gap: 1.25rem;
+  --crm-inline-action-size: 1.75rem;
+}
+
+.crm-density-comfortable {
+  --crm-row-py: 0.875rem;
+  --crm-row-gap: 0.75rem;
+  --crm-section-gap: 1.5rem;
+  --crm-inline-action-size: 2rem;
+}
+
+/* ── Focus ring unificado ─────────────────────────────────────────────────── */
+.crm-focus-ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--crm-surface-base),
+    0 0 0 4px color-mix(in oklch, var(--primary) 40%, transparent);
+}
+
+/* ── Interactive rows (tasks, agenda, timeline) ─────────────────────────── */
+.crm-interactive-row {
+  transition:
+    background-color var(--crm-motion-fast) var(--crm-ease-out),
+    border-color var(--crm-motion-fast) var(--crm-ease-out),
+    opacity var(--crm-motion-base) var(--crm-ease-out);
+}
+
+.crm-interactive-row:focus-within {
+  background-color: var(--crm-surface-row-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .crm-reveal-hover {
+    opacity: 0;
+    transform: translateX(2px);
+    transition:
+      opacity var(--crm-motion-fast) var(--crm-ease-out),
+      transform var(--crm-motion-fast) var(--crm-ease-out);
+  }
+
+  .crm-interactive-row:hover .crm-reveal-hover,
+  .crm-interactive-row:focus-within .crm-reveal-hover {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Density aplicada às superfícies operacionais */
+.crm-density-compact .task-row,
+.crm-density-compact .agenda-row {
+  padding-block: var(--crm-row-py);
+}
+
+.crm-density-comfortable .task-row,
+.crm-density-comfortable .agenda-row {
+  padding-block: var(--crm-row-py);
+}
+
+.crm-density-compact .task-workspace-body,
+.crm-density-compact .crm-page-shell {
+  gap: var(--crm-section-gap);
+}
+
+/* ── Microinteractions ──────────────────────────────────────────────────── */
+@keyframes crm-success-flash {
+  from {
+    background-color: color-mix(in oklch, var(--crm-tone-success) 16%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.task-row--completing,
+.agenda-row--completing {
+  animation: crm-success-flash var(--crm-motion-slow) var(--crm-ease-out);
+  pointer-events: none;
+}
+
+.crm-action-toast {
+  border-color: var(--crm-stroke-default);
+  background: color-mix(in oklch, var(--crm-surface-overlay) 92%, transparent);
+  box-shadow:
+    0 16px 40px -20px color-mix(in oklch, var(--foreground) 35%, transparent),
+    inset 0 0 0 1px var(--crm-stroke-faint);
+}
+
+.crm-action-toast--success {
+  border-color: color-mix(in oklch, var(--crm-tone-success) 35%, transparent);
+}
+
+/* ── Loading & skeleton ─────────────────────────────────────────────────── */
+.crm-section-loading--reserved {
+  min-height: 2.5rem;
+}
+
+.crm-section-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.crm-section-loading--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+}
+
+.crm-skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crm-skeleton-row {
+  height: 3rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--crm-stroke-faint);
+  background: linear-gradient(
+    90deg,
+    var(--crm-surface-panel) 0%,
+    color-mix(in oklch, var(--foreground) 6%, var(--crm-surface-panel)) 50%,
+    var(--crm-surface-panel) 100%
+  );
+  background-size: 200% 100%;
+  animation: crm-shimmer 1.2s var(--crm-ease-in-out) infinite;
+}
+
+@keyframes crm-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.crm-section-loading__label {
+  text-align: center;
+}
+
+/* ── Empty states premium ───────────────────────────────────────────────── */
+.crm-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--crm-stroke-default);
+  border-radius: 0.75rem;
+  background: color-mix(in oklch, var(--crm-surface-panel) 80%, transparent);
+}
+
+.crm-empty-state--filtered {
+  border-style: solid;
+  border-color: var(--crm-stroke-faint);
+}
+
+.crm-empty-state--success {
+  border-color: color-mix(in oklch, var(--crm-tone-success) 30%, transparent);
+  background: color-mix(in oklch, var(--crm-tone-success) 5%, transparent);
+}
+
+.crm-empty-state__icon-wrap {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: var(--crm-surface-panel);
+  box-shadow: inset 0 0 0 1px var(--crm-stroke-faint);
+}
+
+.crm-empty-state__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: color-mix(in oklch, var(--foreground) 45%, transparent);
+}
+
+.crm-empty-state__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.crm-empty-state__copy {
+  max-width: 28rem;
+}
+
+.crm-empty-state__action {
+  margin-top: 0.25rem;
+}
+
+/* ── Density toggle ─────────────────────────────────────────────────────── */
+.crm-density-toggle {
+  display: inline-flex;
+  shrink: 0;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--crm-stroke-faint);
+  background: var(--crm-surface-panel);
+}
+
+.crm-density-toggle__btn {
+  display: inline-flex;
+  height: 1.75rem;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  padding-inline: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--foreground) 65%, transparent);
+  transition:
+    background-color var(--crm-motion-fast) var(--crm-ease-out),
+    color var(--crm-motion-fast) var(--crm-ease-out),
+    box-shadow var(--crm-motion-fast) var(--crm-ease-out);
+}
+
+.crm-density-toggle__btn:hover {
+  color: var(--foreground);
+  background: var(--crm-surface-panel-hover);
+}
+
+.crm-density-toggle__btn--active {
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 28%, transparent);
+}
+
+.crm-density-toggle__btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--crm-surface-base),
+    0 0 0 4px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+/* ── Scroll & surface polish ────────────────────────────────────────────── */
+.crm-scroll-region {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 18%, transparent)
+    transparent;
+}
+
+.crm-scroll-region::-webkit-scrollbar {
+  width: 6px;
+}
+
+.crm-scroll-region::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--foreground) 14%, transparent);
+}
+
+.crm-scroll-fade-top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 0.75rem;
+  margin-bottom: -0.75rem;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--crm-surface-base),
+    transparent
+  );
+}
+
+.entity-sheet-shell__body-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.entity-sheet-shell__header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+/* ── Module tabs motion polish ──────────────────────────────────────────── */
+.crm-chrome__tabs a {
+  transition:
+    color var(--crm-motion-fast) var(--crm-ease-out),
+    background-color var(--crm-motion-fast) var(--crm-ease-out);
+}
+
+.crm-chrome__tabs a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--crm-surface-base),
+    0 0 0 4px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .crm-workspace {
+    --crm-motion-instant: 0ms;
+    --crm-motion-fast: 0ms;
+    --crm-motion-base: 0ms;
+    --crm-motion-slow: 0ms;
+    --crm-motion-sheet: 0ms;
+  }
+
+  .crm-skeleton-row {
+    animation: none;
+  }
+
+  .task-row--completing,
+  .agenda-row--completing {
+    animation: none;
+  }
+
+  .crm-reveal-hover {
+    opacity: 1;
+    transform: none;
+  }
+}

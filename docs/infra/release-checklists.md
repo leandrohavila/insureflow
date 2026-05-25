@@ -1,0 +1,66 @@
+# Release checklists
+
+## Migration checklist
+
+Antes de mergear PR com `prisma/migrations/`:
+
+- [ ] Migration testada localmente (`npm run db:migrate`)
+- [ ] `prisma migrate deploy` testado contra branch Neon isolada
+- [ ] Migration é **forward-only** (sem editar SQL já aplicado)
+- [ ] Sem `DROP` destrutivo sem backup documentado
+- [ ] Seed não alterado de forma incompatível com dados existentes
+- [ ] `npm run db:validate` passa no CI
+- [ ] Rollback plano documentado no PR (nova migration ou restore)
+
+## Deploy checklist
+
+### API (Railway)
+
+- [ ] `DATABASE_URL` (pooled) configurada
+- [ ] `JWT_SECRET` ≥ 32 chars (novo ou rotacionado)
+- [ ] `CORS_ORIGIN` inclui URL Vercel correta
+- [ ] `REDIS_URL` configurada (se filas ativas)
+- [ ] Release command: `npm run start:release -w api` (migrate + start)
+- [ ] Healthcheck: `GET /api/v1/health` → 200
+- [ ] Healthcheck DB: `GET /api/v1/health/db` → 200
+- [ ] Swagger `/docs` acessível (opcional, restringir em prod)
+
+### Web (Vercel)
+
+- [ ] Root directory: `apps/web`
+- [ ] `AUTH_SECRET` ≥ 32 chars
+- [ ] `API_INTERNAL_URL` aponta para Railway API
+- [ ] Build passa (`turbo build --filter=web`)
+- [ ] Login funciona (auth + cookies)
+- [ ] BFF `/api/*` proxy responde
+
+### Pós-deploy
+
+- [ ] Smoke test CRM (listar deals, leads)
+- [ ] Verificar logs Railway/Vercel sem erros Prisma
+- [ ] Confirmar migration version: `_prisma_migrations` atualizada
+
+## Rollback checklist
+
+### Web (Vercel)
+
+1. Promover deployment anterior no dashboard Vercel
+2. Confirmar env vars inalteradas
+3. Smoke test login + CRM
+
+### API (Railway)
+
+1. Redeploy deployment anterior (imagem/commit)
+2. **Não** reverter migrations automaticamente
+3. Se migration causou problema:
+   - Opção A: nova migration corretiva (preferido)
+   - Opção B: restore Neon PITR + redeploy API compatível
+4. Validar `/api/v1/health/db`
+
+### Database
+
+1. Identificar timestamp pré-deploy
+2. Neon: Restore branch ou PITR
+3. Atualizar `DATABASE_URL` se branch nova
+4. Redeploy API na versão compatível com schema restaurado
+5. Comunicar equipe — dados pós-restore podem ser perdidos

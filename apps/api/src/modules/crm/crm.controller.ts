@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -9,6 +19,10 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
+import {
+  isRuntimeAudit,
+  logDealContract,
+} from '../../common/utils/deal-contract-debug';
 import { CrmService } from './crm.service';
 import { CreateDealDto, UpdateDealDto } from './dto/deal.dto';
 
@@ -31,7 +45,17 @@ export class CrmController {
   createDeal(
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateDealDto,
+    @Req() req: Request,
   ) {
+    if (isRuntimeAudit()) {
+      console.warn('[runtime-audit][crm.create] rawBody', req.body);
+
+      console.warn('[runtime-audit][crm.create] dto', dto);
+    }
+    logDealContract('controller.create', {
+      keys: Object.keys(dto),
+      pipelineOrder: dto.pipelineOrder,
+    });
     return this.crm.createDeal(user.tenantId, dto);
   }
 
@@ -43,8 +67,19 @@ export class CrmController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
     @Body() dto: UpdateDealDto,
+    @Req() req: Request,
   ) {
-    return this.crm.updateDeal(user.tenantId, id, dto);
+    if (isRuntimeAudit()) {
+      console.warn('[runtime-audit][crm.update] rawBody', req.body);
+
+      console.warn('[runtime-audit][crm.update] dto', dto);
+    }
+    logDealContract('controller.update', {
+      id,
+      keys: Object.keys(dto),
+      pipelineOrder: dto.pipelineOrder,
+    });
+    return this.crm.updateDeal(user.tenantId, id, dto, user.sub);
   }
 
   @Delete(':id')

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../../common/decorators/public.decorator';
@@ -32,11 +32,11 @@ export class HealthController {
         timestamp: new Date().toISOString(),
       };
     } catch {
-      return {
+      throw new ServiceUnavailableException({
         status: 'error',
         database: 'disconnected',
         timestamp: new Date().toISOString(),
-      };
+      });
     }
   }
 }

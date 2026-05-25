@@ -1,3 +1,5 @@
+import "@/app/crm-operational.css"
+
 import { CrmShell } from "@/components/crm/crm-shell"
 import { requirePermission } from "@/lib/auth/guards"
 

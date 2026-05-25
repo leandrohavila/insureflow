@@ -12,8 +12,13 @@ import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { ActivitiesModule } from './modules/activities/activities.module';
+import { PoliciesModule } from './modules/policies/policies.module';
+import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
@@ -22,7 +27,15 @@ import { UsersModule } from './modules/users/users.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        '.env.local',
+        '.env',
+        '../../.env.local',
+        '../../.env',
+        '../../.env.development',
+        '../../.env.staging',
+        '../../.env.production',
+      ],
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -62,6 +75,11 @@ import { UsersModule } from './modules/users/users.module';
     QueueModule,
     AuthModule,
     CrmModule,
+    CustomersModule,
+    LeadsModule,
+    ActivitiesModule,
+    PoliciesModule,
+    QuestionnairesModule,
     UsersModule,
     TenantsModule,
     PermissionsModule,

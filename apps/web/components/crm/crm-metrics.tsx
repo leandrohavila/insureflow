@@ -3,28 +3,25 @@
 import { motion } from "framer-motion"
 import { Percent, Target, Timer, TrendingUp, Wallet } from "lucide-react"
 
-import { crmMetrics } from "@/lib/crm-mock"
-import { formatCurrency, type CrmDeal } from "@/lib/crm-api"
+import { formatCurrency, type CrmDeal } from "@/lib/data-access/modules/crm"
 import { GlassCard } from "@/components/dashboard/glass-card"
+import { CRM_MUTED_LABEL } from "@/lib/crm/crm-layout-classes"
 import { Stagger, StaggerItem } from "@/components/motion/primitives"
 import { cn } from "@/lib/utils"
 
 type CrmMetricsProps = {
-  deals?: CrmDeal[]
+  deals: CrmDeal[]
 }
 
 export function CrmMetrics({ deals }: CrmMetricsProps) {
-  const openDeals = deals?.filter((deal) => deal.status === "open") ?? []
-  const wonDeals = deals?.filter((deal) => deal.status === "won") ?? []
-  const pipelineValue =
-    deals === undefined
-      ? crmMetrics.pipelineValue
-      : openDeals.reduce((sum, deal) => sum + deal.value, 0)
-  const totalDeals = deals?.length ?? crmMetrics.openDeals
+  const openDeals = deals.filter((deal) => deal.status === "open")
+  const wonDeals = deals.filter((deal) => deal.status === "won")
+  const pipelineValue = openDeals.reduce((sum, deal) => sum + deal.value, 0)
+  const totalDeals = openDeals.length
   const winRate =
-    deals === undefined || deals.length === 0
-      ? crmMetrics.winRate
-      : Math.round((wonDeals.length / deals.length) * 100)
+    deals.length === 0 ? 0 : Math.round((wonDeals.length / deals.length) * 100)
+  const avgDealValue =
+    openDeals.length === 0 ? 0 : pipelineValue / openDeals.length
 
   const metrics = [
     {
@@ -37,7 +34,7 @@ export function CrmMetrics({ deals }: CrmMetricsProps) {
     {
       label: "Negócios abertos",
       value: String(totalDeals),
-      sub: deals ? "Carregado do banco" : `+${crmMetrics.newThisWeek} esta semana`,
+      sub: `${deals.length} no banco`,
       icon: Target,
       accent: "from-violet-500/20 to-violet-600/5",
     },
@@ -49,37 +46,40 @@ export function CrmMetrics({ deals }: CrmMetricsProps) {
       accent: "from-emerald-500/15 to-emerald-600/5",
     },
     {
-      label: "Ciclo médio",
-      value: `${crmMetrics.avgCycleDays}d`,
-      sub: "Lead → fechamento",
+      label: "Ticket médio",
+      value: formatCurrency(avgDealValue),
+      sub: "Em aberto",
       icon: Timer,
       accent: "from-amber-500/15 to-amber-600/5",
     },
   ] as const
 
   return (
-    <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <Stagger className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
       {metrics.map((m, i) => (
         <StaggerItem key={m.label}>
-          <GlassCard delay={i * 0.05} className="p-0">
-            <motion.div className="flex items-start gap-4 p-5 md:p-6">
+          <GlassCard delay={i * 0.03} className="p-0">
+            <motion.div className="flex items-center gap-3 px-3.5 py-3">
               <div
                 className={cn(
-                  "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-white/10",
-                  m.accent
+                  "flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ring-1 ring-white/12",
+                  m.accent,
                 )}
               >
-                <m.icon className="size-5 text-primary" strokeWidth={1.5} />
+                <m.icon className="size-4 text-primary" strokeWidth={1.5} />
               </div>
               <motion.div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+                <p className={cn("truncate uppercase", CRM_MUTED_LABEL)}>
                   {m.label}
                 </p>
-                <p className="tabular-metric mt-1 text-2xl font-semibold text-foreground">
+                <p className="mt-0.5 truncate text-xl font-semibold tabular-nums tracking-tight text-foreground">
                   {m.value}
                 </p>
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <TrendingUp className="size-3 text-emerald-400/80" strokeWidth={1.5} />
+                <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-foreground/55">
+                  <TrendingUp
+                    className="size-3 shrink-0 text-emerald-400"
+                    strokeWidth={1.5}
+                  />
                   {m.sub}
                 </p>
               </motion.div>

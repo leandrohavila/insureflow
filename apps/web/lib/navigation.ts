@@ -55,7 +55,7 @@ export const mainNav: NavItem[] = [
   },
   {
     title: "Questionários",
-    href: "/questionarios",
+    href: "/questionarios/templates",
     icon: ClipboardList,
     segment: "questionarios",
     permission: "questionnaires:view",

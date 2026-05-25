@@ -33,6 +33,7 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   "settings:view": "Configurações (leitura)",
   "settings:manage": "Configurações (edição)",
   "users:manage": "Gestão de usuários",
+  "tenants:manage": "Gestão do tenant",
   "audit:view": "Auditoria",
 }
 

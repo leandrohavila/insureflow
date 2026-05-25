@@ -1,12 +1,22 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["API_INTERNAL_URL", "API_URL", "AUTH_SECRET", "NODE_ENV"],
+  "globalEnv": [
+    "API_INTERNAL_URL",
+    "API_URL",
+    "AUTH_SECRET",
+    "NODE_ENV",
+    "DEAL_CONTRACT_DEBUG",
+    "RUNTIME_AUDIT"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "@repo/database#build": {
+      "outputs": ["../../node_modules/.prisma/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
