@@ -196,6 +196,17 @@ export function LeadsPage() {
   )
 
   useEffect(() => {
+    if (searchParams.get("create") === "lead" && canManageLeads) {
+      setEditingLead(null)
+      setDialogOpen(true)
+      const params = new URLSearchParams(searchParams.toString())
+      params.delete("create")
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    }
+  }, [canManageLeads, pathname, router, searchParams])
+
+  useEffect(() => {
     const convertId = searchParams.get("convert")
     const leadId = searchParams.get("lead")
     const deepLinkId = convertId ?? leadId

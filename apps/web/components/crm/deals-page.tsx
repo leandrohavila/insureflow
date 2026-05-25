@@ -103,6 +103,16 @@ export function DealsPage() {
     setSelectedDealId(dealId)
   }, [searchParams])
 
+  useEffect(() => {
+    if (searchParams.get("create") !== "deal" || !canManageCrm) return
+    setEditingDeal(null)
+    setCreateOpen(true)
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("create")
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [canManageCrm, pathname, router, searchParams])
+
   const filteredDeals = useMemo(() => {
     const term = query.trim().toLowerCase()
     if (!term) return deals
@@ -209,7 +219,7 @@ export function DealsPage() {
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: easeOut }}
+      transition={{ duration: 0.12, ease: easeOut }}
       className={CRM_PAGE_SHELL}
     >
       <CrmPageHeader

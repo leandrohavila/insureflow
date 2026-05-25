@@ -12,15 +12,15 @@
     }
   },
   "scripts": {
-    "build": "prisma generate",
-    "db:deploy": "prisma migrate deploy",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "prisma:studio": "prisma studio",
-    "prisma:push": "prisma db push",
+    "build": "npx prisma generate",
+    "db:deploy": "npx prisma migrate deploy",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:deploy": "npx prisma migrate deploy",
+    "prisma:studio": "npx prisma studio",
+    "prisma:push": "npx prisma db push",
     "db:seed": "ts-node --project tsconfig.json prisma/seed.ts",
     "db:seed:dev": "node ../../scripts/seed-dev.cjs",
-    "db:validate": "prisma validate",
+    "db:validate": "npx prisma validate",
     "check-types": "echo skip"
   },
   "dependencies": {

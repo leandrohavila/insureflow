@@ -55,6 +55,10 @@ export class ActivitiesService {
     performedById: string,
     dto: CreateActivityDto,
   ) {
+    if (dto.type === undefined || dto.type === null) {
+      throw new BadRequestException('type is required');
+    }
+
     await this.assertRelations(tenantId, dto);
     await this.assertPerformer(tenantId, performedById);
 

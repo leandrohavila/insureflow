@@ -265,7 +265,6 @@ export function DealCardMenu({
           onOpenChange={(open) => {
             if (!open) setDialogMode(null)
           }}
-          initialType="call"
           leadId={leadId}
           dealId={deal.id}
           pending={createActivity.isPending}

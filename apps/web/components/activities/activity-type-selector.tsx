@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 
 type ActivityTypeSelectorProps = {
-  value: ActivityType
+  value: ActivityType | null
   onChange: (type: ActivityType) => void
   disabled?: boolean
   className?: string
@@ -114,7 +114,13 @@ export function ActivityTypeSelector({
               type="button"
               role="radio"
               aria-checked={selected}
-              tabIndex={selected ? 0 : -1}
+              tabIndex={
+                selected
+                  ? 0
+                  : value === null && index === 0
+                    ? 0
+                    : -1
+              }
               disabled={disabled}
               onClick={() => onChange(type)}
               onKeyDown={(event) => handleKeyDown(event, index)}

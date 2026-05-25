@@ -28,7 +28,19 @@ npm run dev
 ## Quick start (dev cloud)
 
 1. Criar projeto Neon → copiar URLs para `.env.development`
-2. Deploy API no Railway → `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`
-3. Deploy Web na Vercel → `AUTH_SECRET`, `API_INTERNAL_URL`
-4. Rodar `prisma migrate deploy` no release da API
-5. Rodar seed apenas em ambientes não-produtivos
+2. `npm run dev:cloud:migrate` (usa `DATABASE_URL_DIRECT` do arquivo)
+3. Deploy API no Railway → `DATABASE_URL`, `DATABASE_URL_DIRECT`, `JWT_SECRET`, `CORS_ORIGIN`, `REDIS_URL` (opcional)
+4. Deploy Web na Vercel → `AUTH_SECRET`, `API_INTERNAL_URL`
+5. Fechar loop CORS na Railway com URL Vercel
+6. `npm run dev:cloud:smoke` com `API_URL` + `WEB_URL`
+
+Runbook completo: [first-dev-deploy.md](first-dev-deploy.md). Checklist operacional: [release-checklists.md](release-checklists.md).
+
+## Scripts de homologação
+
+| Script | Uso |
+|--------|-----|
+| `npm run dev:local:check` | Env vars + health local antes do login |
+| `npm run dev:local:smoke` | Auth + health API (e rotas web com `WEB_URL`) |
+| `npm run dev:cloud:migrate` | `prisma migrate deploy` contra Neon (`.env.development`) |
+| `npm run dev:cloud:smoke` | Health + login + rotas web pós-deploy |

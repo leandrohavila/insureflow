@@ -24,12 +24,13 @@ import {
   closeEntitySheetNavigation,
 } from "@/lib/crm/entity-sheet-navigation"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
+import { useRelationshipIndexContext } from "@/components/crm/relationship-index-provider"
 import {
   filterCompanies,
   findCompanyById,
-  useRelationshipIndex,
   type OperationalCompany,
 } from "@/lib/crm/relationship"
+import { openCrmCreateDeal } from "@/lib/crm/crm-create-navigation"
 import { formatCurrency } from "@/lib/data-access/modules/crm"
 import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
@@ -127,7 +128,7 @@ export function CompaniesPage() {
   const search = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS)
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const { captureFocus, restoreFocus } = useFocusReturn()
-  const relationship = useRelationshipIndex()
+  const relationship = useRelationshipIndexContext()
 
   const syncCompanyParam = useCallback(
     (companyId: string | null) => {
@@ -176,14 +177,21 @@ export function CompaniesPage() {
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: easeOut }}
+      transition={{ duration: 0.12, ease: easeOut }}
       className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL, "gap-8")}
     >
       <CrmPageHeader
         badge="Hub empresarial"
         title="Empresas"
         description="Workspace V2 — contas corporativas consolidadas com negócios, contatos e timeline."
-        primaryAction={canManageCrm ? { label: "Nova empresa" } : undefined}
+        primaryAction={
+          canManageCrm
+            ? {
+                label: "Nova empresa",
+                onClick: () => openCrmCreateDeal(router),
+              }
+            : undefined
+        }
       >
         <PermissionGate permission="crm:manage">
           <Button variant="outline" size="sm" className="gap-2">

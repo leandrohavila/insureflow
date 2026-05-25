@@ -49,7 +49,9 @@ export function LoginForm() {
       router.push(callbackUrl)
       router.refresh()
     } catch {
-      setError("Não foi possível conectar ao servidor")
+      setError(
+        "Não foi possível conectar à API. Confirme que a API está online em http://localhost:4000 (npm run dev na raiz)."
+      )
     } finally {
       setLoading(false)
     }

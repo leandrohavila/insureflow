@@ -22,6 +22,8 @@ export function CrmModuleTabs() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch
+            scroll={false}
             className={cn(
               "relative isolate flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium leading-none transition-colors",
               active

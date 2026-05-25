@@ -11,6 +11,7 @@ import {
   Upload,
 } from "lucide-react"
 
+import { CustomerDialog } from "@/components/customers/customer-dialog"
 import { CustomerSheetV2 } from "@/components/crm/customer-sheet-v2"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { RelationshipWorkspaceBoundary } from "@/components/crm/relationship-workspace-boundary"
@@ -40,7 +41,10 @@ import {
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import { useCrmDeals } from "@/lib/data-access/modules/crm"
-import { useCustomers } from "@/lib/data-access/modules/customers"
+import {
+  useCreateCustomer,
+  useCustomers,
+} from "@/lib/data-access/modules/customers"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useFocusReturn } from "@/lib/hooks/use-focus-return"
 import { easeOut } from "@/lib/motion"
@@ -143,9 +147,11 @@ export function CustomersPortfolioPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   )
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const { captureFocus, restoreFocus } = useFocusReturn()
 
   const customersQuery = useCustomers({ page: 1, limit: PORTFOLIO_LIMIT })
+  const createCustomer = useCreateCustomer()
   const dealsQuery = useCrmDeals()
 
   const portfolio = useMemo(
@@ -209,14 +215,21 @@ export function CustomersPortfolioPage() {
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: easeOut }}
+      transition={{ duration: 0.12, ease: easeOut }}
       className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL, "gap-8")}
     >
       <CrmPageHeader
         badge="Carteira pós-venda"
         title="Clientes"
         description="Workspace operacional — segurados, apólices, renovações e health da carteira ativa."
-        primaryAction={canManage ? { label: "Novo cliente" } : undefined}
+        primaryAction={
+          canManage
+            ? {
+                label: "Novo cliente",
+                onClick: () => setCreateDialogOpen(true),
+              }
+            : undefined
+        }
       >
         <PermissionGate permission="clients:manage">
           <Button variant="outline" size="sm" className="gap-2">
@@ -317,6 +330,19 @@ export function CustomersPortfolioPage() {
             })
             restoreFocus()
           }
+        }}
+      />
+
+      <CustomerDialog
+        customer={null}
+        open={canManage && createDialogOpen}
+        pending={createCustomer.isPending}
+        error={createCustomer.error}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={(input) => {
+          createCustomer.mutate(input, {
+            onSuccess: () => setCreateDialogOpen(false),
+          })
         }}
       />
     </motion.div>

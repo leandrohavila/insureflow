@@ -28,6 +28,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { setActivityFormDialogOpenAttribute } from "@/lib/crm/crm-keyboard"
+import { isolateNestedSurfaceEvents } from "@/lib/crm/nested-surface-events"
 import { cn } from "@/lib/utils"
 
 type ActivityFormDialogProps = {
@@ -43,7 +45,7 @@ type ActivityFormDialogProps = {
 }
 
 type FormState = {
-  type: ActivityType
+  type: ActivityType | null
   subject: string
   description: string
   outcome: string
@@ -70,9 +72,10 @@ function toLocalInput(iso: string | null | undefined) {
   return date.toISOString().slice(0, 16)
 }
 
-function subjectMatchesDefault(subject: string, type: ActivityType) {
+function subjectMatchesDefault(subject: string, type: ActivityType | null) {
   const trimmed = subject.trim()
   if (!trimmed) return true
+  if (!type) return true
   return trimmed === activityTypeSubjects[type]
 }
 
@@ -101,10 +104,21 @@ const datetimeInputClass =
 const textareaClass =
   "activity-form-input w-full min-w-0 resize-y rounded-md border px-3 py-2 text-sm shadow-xs outline-none transition-colors placeholder:text-muted-foreground/70"
 
+function createEmptyForm(presetType: ActivityType | null): FormState {
+  return {
+    type: presetType,
+    subject: presetType ? activityTypeSubjects[presetType] : "",
+    description: "",
+    outcome: "",
+    occurredAt: defaultOccurredAtLocal(),
+    nextFollowUpAt: presetType === "follow_up" ? defaultOccurredAtLocal() : "",
+  }
+}
+
 export function ActivityFormDialog({
   open,
   onOpenChange,
-  initialType = "note",
+  initialType,
   leadId,
   dealId,
   pending,
@@ -112,20 +126,31 @@ export function ActivityFormDialog({
   activity,
   onSubmit,
 }: ActivityFormDialogProps) {
-  const [form, setForm] = useState<FormState>({
-    type: initialType,
-    subject: "",
-    description: "",
-    outcome: "",
-    occurredAt: defaultOccurredAtLocal(),
-    nextFollowUpAt: "",
-  })
+  const [form, setForm] = useState<FormState>(() => createEmptyForm(null))
+  /** Só true após clique num chip ou quando `initialType` veio de ação explícita (quick action). */
+  const [typeConfirmed, setTypeConfirmed] = useState(false)
 
-  const placeholders = activityFormPlaceholders[form.type]
-  const { required: requiredFields } = getActivityFormFields(form.type)
+  const selectedType = typeConfirmed ? form.type : null
+  const placeholders = selectedType
+    ? activityFormPlaceholders[selectedType]
+    : null
+  const requiredFields = selectedType
+    ? getActivityFormFields(selectedType).required
+    : []
+  const canSubmit = Boolean(selectedType) && !pending
 
   useEffect(() => {
-    if (!open) return
+    setActivityFormDialogOpenAttribute(open)
+    return () => setActivityFormDialogOpenAttribute(false)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) {
+      setForm(createEmptyForm(null))
+      setTypeConfirmed(false)
+      return
+    }
+
     if (activity) {
       setForm({
         type: activity.type,
@@ -135,21 +160,19 @@ export function ActivityFormDialog({
         occurredAt: toLocalInput(activity.occurredAt),
         nextFollowUpAt: toLocalInput(activity.nextFollowUpAt),
       })
+      setTypeConfirmed(true)
       return
     }
 
-    setForm({
-      type: initialType,
-      subject: activityTypeSubjects[initialType],
-      description: "",
-      outcome: "",
-      occurredAt: defaultOccurredAtLocal(),
-      nextFollowUpAt: initialType === "follow_up" ? defaultOccurredAtLocal() : "",
-    })
+    const preset = initialType ?? null
+    setForm(createEmptyForm(preset))
+    setTypeConfirmed(preset !== null)
   }, [activity, initialType, open])
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
+
+    if (!typeConfirmed || !form.type) return
 
     const subject =
       form.type === "note"
@@ -178,15 +201,17 @@ export function ActivityFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="crm-workspace flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0 sm:max-w-lg"
+        className="crm-workspace z-[60] flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0 sm:max-w-lg"
         style={{
           backgroundColor: "var(--crm-surface-base)",
           borderColor: "var(--crm-stroke-default)",
         }}
+        {...isolateNestedSurfaceEvents}
       >
         <form
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col"
+          {...isolateNestedSurfaceEvents}
         >
           {/* Header com surface ladder sutil e respiro premium. */}
           <DialogHeader
@@ -205,17 +230,33 @@ export function ActivityFormDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-7 sm:py-6">
-            <ActivityTypeSelector
-              value={form.type}
-              disabled={pending}
-              onChange={(type) =>
-                setForm((current) => handleTypeChange(current, type))
-              }
-            />
+          <div
+            className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-7 sm:py-6"
+            {...isolateNestedSurfaceEvents}
+          >
+            <div {...isolateNestedSurfaceEvents}>
+              <ActivityTypeSelector
+                value={selectedType}
+                disabled={pending}
+                onChange={(type) => {
+                  setTypeConfirmed(true)
+                  setForm((current) => handleTypeChange(current, type))
+                }}
+              />
+              {!activity && !typeConfirmed ? (
+                <p
+                  className="crm-text-meta text-destructive"
+                  role="alert"
+                  id="activity-type-required"
+                >
+                  Selecione o tipo da atividade
+                </p>
+              ) : null}
+            </div>
 
+            {selectedType ? (
             <div className="grid min-w-0 gap-x-4 gap-y-3.5 sm:grid-cols-2">
-              {isActivityFormFieldVisible(form.type, "subject") ? (
+              {isActivityFormFieldVisible(selectedType, "subject") ? (
                 <label className="min-w-0 space-y-1.5 sm:col-span-2">
                   <span className={fieldLabelClass}>
                     Assunto
@@ -232,21 +273,22 @@ export function ActivityFormDialog({
                         subject: event.target.value,
                       }))
                     }
-                    placeholder={placeholders.subject}
+                    placeholder={placeholders?.subject}
                     className={inputClass}
+                    {...isolateNestedSurfaceEvents}
                   />
                 </label>
               ) : null}
 
-              {isActivityFormFieldVisible(form.type, "description") ? (
+              {isActivityFormFieldVisible(selectedType, "description") ? (
                 <label className="min-w-0 space-y-1.5 sm:col-span-2">
                   <span className={fieldLabelClass}>
-                    {form.type === "note" ? "Observação" : "Descrição"}
+                    {selectedType === "note" ? "Observação" : "Descrição"}
                     {requiredFields.includes("description") ? (
                       <span className="text-destructive"> *</span>
                     ) : null}
                   </span>
-                  {form.type === "note" ? (
+                  {selectedType === "note" ? (
                     <textarea
                       required
                       rows={5}
@@ -257,8 +299,9 @@ export function ActivityFormDialog({
                           description: event.target.value,
                         }))
                       }
-                      placeholder={placeholders.description}
+                      placeholder={placeholders?.description}
                       className={textareaClass}
+                      {...isolateNestedSurfaceEvents}
                     />
                   ) : (
                     <Input
@@ -270,14 +313,15 @@ export function ActivityFormDialog({
                           description: event.target.value,
                         }))
                       }
-                      placeholder={placeholders.description}
+                      placeholder={placeholders?.description}
                       className={inputClass}
+                      {...isolateNestedSurfaceEvents}
                     />
                   )}
                 </label>
               ) : null}
 
-              {isActivityFormFieldVisible(form.type, "occurredAt") ? (
+              {isActivityFormFieldVisible(selectedType, "occurredAt") ? (
                 <label className="min-w-0 space-y-1.5">
                   <span className={fieldLabelClass}>
                     Quando ocorreu
@@ -296,19 +340,20 @@ export function ActivityFormDialog({
                       }))
                     }
                     className={datetimeInputClass}
+                    {...isolateNestedSurfaceEvents}
                   />
                 </label>
               ) : null}
 
-              {isActivityFormFieldVisible(form.type, "nextFollowUpAt") ? (
+              {isActivityFormFieldVisible(selectedType, "nextFollowUpAt") ? (
                 <label
                   className={cn(
                     "min-w-0 space-y-1.5",
-                    form.type === "follow_up" ? "sm:col-span-2" : "",
+                    selectedType === "follow_up" ? "sm:col-span-2" : "",
                   )}
                 >
                   <span className={fieldLabelClass}>
-                    {form.type === "follow_up"
+                    {selectedType === "follow_up"
                       ? "Data do follow-up"
                       : "Próximo follow-up"}
                     {requiredFields.includes("nextFollowUpAt") ? (
@@ -326,12 +371,13 @@ export function ActivityFormDialog({
                       }))
                     }
                     className={datetimeInputClass}
+                    {...isolateNestedSurfaceEvents}
                   />
                 </label>
               ) : null}
 
-              {isActivityFormFieldVisible(form.type, "outcome") &&
-              placeholders.outcome ? (
+              {isActivityFormFieldVisible(selectedType, "outcome") &&
+              placeholders?.outcome ? (
                 <label className="min-w-0 space-y-1.5 sm:col-span-2">
                   <span className={fieldLabelClass}>Resultado</span>
                   <Input
@@ -342,12 +388,14 @@ export function ActivityFormDialog({
                         outcome: event.target.value,
                       }))
                     }
-                    placeholder={placeholders.outcome}
+                    placeholder={placeholders?.outcome}
                     className={inputClass}
+                    {...isolateNestedSurfaceEvents}
                   />
                 </label>
               ) : null}
             </div>
+            ) : null}
 
             {error ? (
               <p
@@ -368,7 +416,10 @@ export function ActivityFormDialog({
           {/* Footer sticky com top-shadow indicando scroll acima.
               `activity-form-footer` (em crm-operational.css) aplica border-top
               hairline, background sutil e sombra superior elegante. */}
-          <DialogFooter className="activity-form-footer shrink-0 gap-2 px-5 py-4 sm:px-7 sm:py-5">
+          <DialogFooter
+            className="activity-form-footer shrink-0 gap-2 px-5 py-4 sm:px-7 sm:py-5"
+            {...isolateNestedSurfaceEvents}
+          >
             <Button
               type="button"
               variant="outline"
@@ -377,7 +428,12 @@ export function ActivityFormDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              aria-disabled={!canSubmit}
+              className={cn(!canSubmit && "pointer-events-none")}
+            >
               {pending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />

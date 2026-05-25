@@ -29,12 +29,13 @@ import {
   closeEntitySheetNavigation,
 } from "@/lib/crm/entity-sheet-navigation"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
+import { useRelationshipIndexContext } from "@/components/crm/relationship-index-provider"
 import {
   filterContacts,
   findContactById,
-  useRelationshipIndex,
   type OperationalContact,
 } from "@/lib/crm/relationship"
+import { openCrmCreateLead } from "@/lib/crm/crm-create-navigation"
 import {
   formatPhoneBrMask,
   formatStoredPhone,
@@ -124,7 +125,7 @@ export function ContactsPage() {
     null,
   )
   const { captureFocus, restoreFocus } = useFocusReturn()
-  const relationship = useRelationshipIndex()
+  const relationship = useRelationshipIndexContext()
 
   const syncContactParam = useCallback(
     (contactId: string | null) => {
@@ -173,14 +174,21 @@ export function ContactsPage() {
     <motion.div
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.35, ease: easeOut }}
+      transition={{ duration: 0.12, ease: easeOut }}
       className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL, "gap-8")}
     >
       <CrmPageHeader
         badge="Identidade operacional"
         title="Contatos"
         description="Workspace V2 — identidade consolidada a partir de leads, negócios e clientes."
-        primaryAction={canManageCrm ? { label: "Novo contato" } : undefined}
+        primaryAction={
+          canManageCrm
+            ? {
+                label: "Novo contato",
+                onClick: () => openCrmCreateLead(router),
+              }
+            : undefined
+        }
       >
         <PermissionGate permission="crm:manage">
           <Button variant="outline" size="sm" className="gap-2">

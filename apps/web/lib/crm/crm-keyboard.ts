@@ -39,3 +39,23 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true
   return target.isContentEditable
 }
+
+/**
+ * Set on `<html>` while `ActivityFormDialog` is open so window-level CRM
+ * listeners (search, sidebar, future command palette) stay inactive.
+ */
+export const CRM_ACTIVITY_FORM_DIALOG_OPEN_ATTR = "data-activity-form-dialog-open"
+
+export function isCrmGlobalShortcutSuppressed(): boolean {
+  if (typeof document === "undefined") return false
+  return document.documentElement.hasAttribute(CRM_ACTIVITY_FORM_DIALOG_OPEN_ATTR)
+}
+
+export function setActivityFormDialogOpenAttribute(open: boolean) {
+  if (typeof document === "undefined") return
+  if (open) {
+    document.documentElement.setAttribute(CRM_ACTIVITY_FORM_DIALOG_OPEN_ATTR, "")
+  } else {
+    document.documentElement.removeAttribute(CRM_ACTIVITY_FORM_DIALOG_OPEN_ATTR)
+  }
+}

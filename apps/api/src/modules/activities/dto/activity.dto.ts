@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Max,
@@ -96,6 +97,7 @@ export class ListActivitiesQueryDto {
 
 export class CreateActivityDto {
   @ApiProperty({ enum: ACTIVITY_TYPES })
+  @IsNotEmpty({ message: 'type is required' })
   @IsIn(ACTIVITY_TYPES)
   type!: ActivityType;
 

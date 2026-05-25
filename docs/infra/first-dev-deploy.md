@@ -2,10 +2,29 @@
 
 Runbook para o primeiro deploy remoto (Neon + Railway + Vercel).
 
+## Checklist variáveis (DEV cloud)
+
+| Variável | Onde | Obrigatório |
+|----------|------|-------------|
+| `DATABASE_URL` | Railway API | Sim (Neon pooled) |
+| `DATABASE_URL_DIRECT` | Railway release / migrate local | Sim (Neon direct) |
+| `JWT_SECRET` | Railway API | Sim (32+ chars) |
+| `JWT_EXPIRES_IN` | Railway API | Sim (`15m`) |
+| `JWT_REFRESH_DAYS` | Railway API | Sim (`7`) |
+| `CORS_ORIGIN` | Railway API | Sim (URL Vercel + localhost opcional) |
+| `AUTH_SECRET` | Vercel Web | Sim (32+ chars) |
+| `API_INTERNAL_URL` | Vercel Web | Sim (URL Railway) |
+| `REDIS_URL` | Railway API | Opcional DEV (filas) |
+| `PORT` | Railway API | `4000` |
+
+Template: `.env.development.example`. Detalhes: [environments.md](environments.md).
+
 ## Pré-requisitos
 
-- [ ] `npm run ci` verde localmente
+- [ ] GitHub Actions CI verde em `develop` (atualizar SHA após push consolidado)
+- [ ] `npm run ci` verde localmente (opcional; GHA é fonte de verdade)
 - [ ] Conta [Neon](https://neon.tech), [Railway](https://railway.app), [Vercel](https://vercel.com)
+- [ ] CLIs autenticados: `railway login`, `vercel login` (ou tokens em CI/secrets)
 - [ ] GitHub repo: `leandrohavila/insureflow`
 - [ ] Branches `main` e `develop` criadas
 
@@ -18,8 +37,13 @@ Runbook para o primeiro deploy remoto (Neon + Railway + Vercel).
    - **Direct** → `DATABASE_URL_DIRECT` (migrations)
 
 ```bash
-# Testar migrations (local, com URL direct)
-APP_ENV=development DATABASE_URL="<DIRECT_URL>" npm run db:deploy
+# Copiar template e preencher URLs Neon
+cp .env.development.example .env.development
+
+# Migrate deploy (usa DATABASE_URL_DIRECT do arquivo)
+node scripts/dev-cloud-migrate.cjs
+
+# Seeds (opcional DEV)
 APP_ENV=development DATABASE_URL="<DIRECT_URL>" npm run db:seed
 APP_ENV=development SEED_DEV_DATA=1 DATABASE_URL="<DIRECT_URL>" npm run db:seed:dev
 ```
@@ -81,16 +105,28 @@ Redeploy Railway API.
 
 ## 5. Smoke test pós-deploy
 
+Automatizado:
+
+```bash
+npm run dev:cloud:smoke
+# ou: API_URL=https://<railway> WEB_URL=https://<vercel> node scripts/dev-cloud-smoke.cjs
+```
+
+Manual (baseline operacional CRM):
+
 | Check | URL / ação |
 |-------|------------|
 | Health | `GET /api/v1/health` → 200 |
 | DB | `GET /api/v1/health/db` → 200 |
 | Login | `admin@insureflow.com` / `Admin@2026!` |
-| CRM deals | `/crm/negocios` — pipeline com seed |
+| CRM deals | `/crm/negocios` — kanban, sheet, registrar atividade (tipo obrigatório) |
 | Leads | `/leads` |
-| Customers | `/crm/clientes` |
+| Customers | `/crm/clientes` — `CustomerDialog` máscaras/validação |
 | Activities | `/crm/atividades` |
+| Quick actions / timeline | sheet negócio/lead |
 | BFF | Network tab — `/api/crm/deals` → 200 |
+
+Pré-deploy local: `npm run dev:local:check` e `npm run dev:local:smoke` (ver [release-checklists.md](release-checklists.md)).
 
 ## URLs DEV (Fase Infra 1.2 — preencher após deploy)
 

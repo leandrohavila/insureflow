@@ -40,6 +40,30 @@ Antes de mergear PR com `prisma/migrations/`:
 - [ ] Verificar logs Railway/Vercel sem erros Prisma
 - [ ] Confirmar migration version: `_prisma_migrations` atualizada
 
+## Pre-deploy smoke (local — baseline operacional CRM)
+
+Antes de promover para DEV cloud (`develop` → Railway/Vercel):
+
+```bash
+npm run dev:local:check    # env + health API/Web
+npm run dev:local:smoke    # login API (+ rotas web se WEB_URL setado)
+```
+
+| Check | Rota / ação |
+|-------|-------------|
+| Login | `/login` — credenciais seed |
+| Health API | `GET /api/v1/health` → 200 |
+| Health DB | `GET /api/v1/health/db` → 200 |
+| Negócios | `/crm/negocios` — kanban, sheet, menu *Registrar atividade* |
+| Clientes | `/crm/clientes` — portfolio, `CustomerDialog` (CPF/CNPJ, telefone, e-mail) |
+| Atividades | `/crm/atividades` |
+| Registrar atividade | tipo obrigatório, botão desabilitado sem chip, modal isolado (pointer/teclado) |
+| Quick actions | ligação / observação / WhatsApp / follow-up no sheet |
+| Timeline | histórico operacional no sheet lead/negócio |
+| Adicionar | contatos, empresas, clientes — botões do header com navegação |
+
+Pós-deploy cloud: `npm run dev:cloud:smoke` com `API_URL` e `WEB_URL` preenchidos.
+
 ## Rollback checklist
 
 ### Web (Vercel)

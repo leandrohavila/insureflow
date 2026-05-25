@@ -1,12 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 import {
   Building2,
   Edit3,
   Filter,
-  Loader2,
   Mail,
   Phone,
   Search,
@@ -26,18 +25,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { CustomerDialog } from "@/components/customers/customer-dialog"
 import { Input } from "@/components/ui/input"
-import { getErrorMessage } from "@/lib/data-access"
 import type {
-  CreateCustomerInput,
   Customer,
   CustomerListFilters,
   CustomerStatus,
@@ -397,189 +387,5 @@ function CustomerMetric({
         </div>
       </div>
     </div>
-  )
-}
-
-type CustomerForm = {
-  type: CustomerType
-  name: string
-  document: string
-  email: string
-  phone: string
-  status: CustomerStatus
-}
-
-function CustomerDialog({
-  customer,
-  open,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-}: {
-  customer: Customer | null
-  open: boolean
-  pending: boolean
-  error: unknown
-  onOpenChange: (open: boolean) => void
-  onSubmit: (input: CreateCustomerInput) => void
-}) {
-  const [form, setForm] = useState<CustomerForm>({
-    type: "PF",
-    name: "",
-    document: "",
-    email: "",
-    phone: "",
-    status: "active",
-  })
-
-  useEffect(() => {
-    if (!open) return
-    setForm({
-      type: customer?.type ?? "PF",
-      name: customer?.name ?? "",
-      document: customer?.document ?? "",
-      email: customer?.email ?? "",
-      phone: customer?.phone ?? "",
-      status: customer?.status ?? "active",
-    })
-  }, [customer, open])
-
-  function update<K extends keyof CustomerForm>(
-    key: K,
-    value: CustomerForm[K],
-  ) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!form.name.trim() || !form.document.trim()) return
-
-    onSubmit({
-      type: form.type,
-      name: form.name.trim(),
-      document: form.document.trim(),
-      email: form.email.trim() || undefined,
-      phone: form.phone.trim() || undefined,
-      status: form.status,
-    })
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>
-              {customer ? "Editar cliente" : "Novo cliente"}
-            </DialogTitle>
-            <DialogDescription>
-              Mantenha os dados essenciais do cliente em uma base única e
-              isolada por tenant.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Tipo</span>
-              <select
-                value={form.type}
-                onChange={(event) =>
-                  update("type", event.target.value as CustomerType)
-                }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {CUSTOMER_TYPES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Status</span>
-              <select
-                value={form.status}
-                onChange={(event) =>
-                  update("status", event.target.value as CustomerStatus)
-                }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {CUSTOMER_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {statusLabels[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Nome</span>
-              <Input
-                required
-                value={form.name}
-                onChange={(event) => update("name", event.target.value)}
-                placeholder="Ex.: Maria Oliveira ou Transportes Sul"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Documento</span>
-              <Input
-                required
-                value={form.document}
-                onChange={(event) => update("document", event.target.value)}
-                placeholder="CPF ou CNPJ"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">E-mail</span>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => update("email", event.target.value)}
-                placeholder="cliente@empresa.com.br"
-              />
-            </label>
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Telefone</span>
-              <Input
-                value={form.phone}
-                onChange={(event) => update("phone", event.target.value)}
-                placeholder="+55 11 99999-9999"
-              />
-            </label>
-          </div>
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {getErrorMessage(error, "Erro ao salvar cliente")}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : customer ? (
-                "Salvar alterações"
-              ) : (
-                "Salvar cliente"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

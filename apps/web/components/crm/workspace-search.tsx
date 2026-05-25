@@ -25,6 +25,7 @@ import {
   useRelationshipIndex,
 } from "@/lib/crm/relationship"
 import type { WorkspaceSearchResultKind } from "@/lib/crm/relationship"
+import { isCrmGlobalShortcutSuppressed } from "@/lib/crm/crm-keyboard"
 import { useCrmDeals } from "@/lib/data-access/modules/crm"
 import { useCustomers } from "@/lib/data-access/modules/customers"
 import { useLeads } from "@/lib/data-access/modules/leads"
@@ -185,6 +186,7 @@ export function WorkspaceSearchTrigger({ className }: WorkspaceSearchTriggerProp
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (isCrmGlobalShortcutSuppressed()) return
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault()
         setOpen(true)

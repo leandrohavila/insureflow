@@ -10,6 +10,7 @@ import {
 } from "@/lib/layout/operational-shell"
 import { cn } from "@/lib/utils"
 
+import { RelationshipIndexProvider } from "./relationship-index-provider"
 import { CrmWorkspaceDensityShell } from "./crm-workspace-density-shell"
 
 type CrmShellProps = {
@@ -33,7 +34,9 @@ export function CrmShell({ children }: CrmShellProps) {
           </div>
         </header>
 
-        <div className={cn(CRM_CONTENT_RAIL, "crm-content-rail")}>{children}</div>
+        <RelationshipIndexProvider>
+          <div className={cn(CRM_CONTENT_RAIL, "crm-content-rail")}>{children}</div>
+        </RelationshipIndexProvider>
       </CrmWorkspaceDensityShell>
     </CrmWorkspacePreferencesProvider>
   )

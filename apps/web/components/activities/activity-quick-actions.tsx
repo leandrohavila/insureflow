@@ -53,12 +53,17 @@ export function ActivityQuickActions({
   compact,
 }: ActivityQuickActionsProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedType, setSelectedType] = useState<ActivityType>("call")
+  const [presetType, setPresetType] = useState<ActivityType | null>(null)
   const createActivity = useCreateActivity({ leadId, dealId })
 
   function openQuickAction(type: ActivityType) {
-    setSelectedType(type)
+    setPresetType(type)
     setDialogOpen(true)
+  }
+
+  function handleDialogOpenChange(open: boolean) {
+    setDialogOpen(open)
+    if (!open) setPresetType(null)
   }
 
   function handleSubmit(input: CreateActivityInput) {
@@ -94,8 +99,8 @@ export function ActivityQuickActions({
 
       <ActivityFormDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        initialType={selectedType}
+        onOpenChange={handleDialogOpenChange}
+        initialType={dialogOpen ? (presetType ?? undefined) : undefined}
         leadId={leadId}
         dealId={dealId}
         pending={createActivity.isPending}
