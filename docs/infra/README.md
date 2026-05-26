@@ -7,6 +7,8 @@ Fundação de entrega do InsureFlow: Git, ambientes, PostgreSQL remoto, deploy (
 | [git-strategy.md](git-strategy.md) | Branches, PRs, squash merge, política de migrations |
 | [environments.md](environments.md) | Variáveis por ambiente (DATABASE, JWT, AUTH, STORAGE, CORS) |
 | [custom-domain.md](custom-domain.md) | Domínio .br, DNS Vercel/Railway, SSL e smoke produção |
+| [go-live-production.md](go-live-production.md) | Checklist final go-live `corretoraavila.com.br` (Railway + Vercel + DNS) |
+| [production-stabilization.md](production-stabilization.md) | Redis Railway, admin prod, health/redis, diagnóstico cloud |
 | [migrations.md](migrations.md) | Política Prisma migrate deploy |
 | [postgres-neon.md](postgres-neon.md) | Neon/Supabase/Railway, pooling, backup |
 | [ci-cd.md](ci-cd.md) | Pipeline GitHub Actions |

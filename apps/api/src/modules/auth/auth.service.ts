@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -10,6 +10,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class AuthService {
+  private readonly log = new Logger(AuthService.name);
   private readonly accessExpiresIn: JwtSignOptions['expiresIn'];
 
   constructor(
@@ -131,6 +132,10 @@ export class AuthService {
       resource: 'auth',
       severity: 'info',
     });
+
+    this.log.log(
+      `[auth] Login OK tenant=${tenantSlug} userId=${userEntity.id}`,
+    );
 
     return {
       accessToken,

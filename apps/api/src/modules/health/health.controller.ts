@@ -3,11 +3,15 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { RedisBootstrapService } from '../../infrastructure/redis/redis-bootstrap.service';
 
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisBootstrap: RedisBootstrapService,
+  ) {}
 
   @Public()
   @Get()
@@ -38,5 +42,27 @@ export class HealthController {
         timestamp: new Date().toISOString(),
       });
     }
+  }
+
+  @Public()
+  @Get('redis')
+  @ApiOperation({ summary: 'Redis connectivity (BullMQ)' })
+  redis() {
+    const s = this.redisBootstrap.getRuntimeStatus();
+    if (!s.ok) {
+      throw new ServiceUnavailableException({
+        status: 'error',
+        redis: 'disconnected',
+        target: s.label,
+        error: s.error,
+        timestamp: s.checkedAt,
+      });
+    }
+    return {
+      status: 'ok',
+      redis: 'connected',
+      target: s.label,
+      timestamp: s.checkedAt,
+    };
   }
 }

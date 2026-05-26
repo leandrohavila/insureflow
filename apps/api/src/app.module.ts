@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { buildRedisConnection } from './infrastructure/redis/redis-connection.util';
+import { RedisInfraModule } from './infrastructure/redis/redis.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AppController } from './app.controller';
@@ -50,27 +52,15 @@ import { UsersModule } from './modules/users/users.module';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => {
-        const redisUrl = cfg.get<string>('REDIS_URL');
-        if (redisUrl) {
-          const u = new URL(redisUrl);
-          return {
-            connection: {
-              host: u.hostname,
-              port: parseInt(u.port || '6379', 10),
-              password: u.password || undefined,
-              username: u.username || undefined,
-            },
-          };
-        }
-        return {
-          connection: {
-            host: cfg.get<string>('REDIS_HOST', '127.0.0.1'),
-            port: cfg.get<number>('REDIS_PORT', 6379),
-          },
-        };
-      },
+      useFactory: (cfg: ConfigService) => ({
+        connection: buildRedisConnection({
+          redisUrl: cfg.get<string>('REDIS_URL'),
+          host: cfg.get<string>('REDIS_HOST'),
+          port: cfg.get<number>('REDIS_PORT'),
+        }).connection,
+      }),
     }),
+    RedisInfraModule,
     PrismaModule,
     QueueModule,
     AuthModule,

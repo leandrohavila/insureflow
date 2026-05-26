@@ -98,6 +98,10 @@ async function bootstrap() {
 
   logDtoRuntimeContract();
 
+  const corsList = corsOrigins.join(', ');
+  logger.log(`[bootstrap] CORS origins: ${corsList}`);
+  logger.log(`[bootstrap] NODE_ENV=${config.get('NODE_ENV', 'development')}`);
+
   const port = config.get<string>('PORT', '4000');
   await app.listen(port, '0.0.0.0');
   logger.log(`HTTP + Swagger http://localhost:${port}/docs`);
