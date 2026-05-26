@@ -1,12 +1,16 @@
-# Railway — InsureFlow API (legado; preferir /railway.toml na raiz do monorepo)
+# Railway — InsureFlow API (monorepo root)
 # https://docs.railway.com/reference/config-as-code
 #
-# No dashboard: Config file = /railway.toml | Root Directory = vazio (/)
+# Dashboard (service insureflow):
+#   Root Directory: vazio (/)
+#   Config file: /railway.toml
+#   Branch: develop
+#   Builder: Dockerfile → apps/api/Dockerfile
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/api/Dockerfile"
-watchPatterns = ["apps/api/**", "packages/database/**"]
+watchPatterns = ["apps/api/**", "packages/database/**", "scripts/**", "package.json", "package-lock.json"]
 
 [deploy]
 startCommand = "node scripts/start-release.cjs"
@@ -17,3 +21,4 @@ restartPolicyMaxRetries = 3
 
 [deploy.env]
 NODE_ENV = "production"
+PORT = "4000"

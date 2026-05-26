@@ -50,8 +50,13 @@ APP_ENV=development SEED_DEV_DATA=1 DATABASE_URL="<DIRECT_URL>" npm run db:seed:
 
 ## 2. Railway (API)
 
-1. New Project → Deploy from GitHub repo
-2. Service: Dockerfile path `apps/api/Dockerfile`, root = monorepo root
+1. New Project → Deploy from GitHub repo (`leandrohavila/insureflow`)
+2. Service **insureflow** — Settings:
+   - **Root Directory**: vazio (`/`) — **não** usar `apps/api` (o Dockerfile copia `turbo.json`, `packages/`, `scripts/` da raiz)
+   - **Branch**: `develop`
+   - **Builder**: Dockerfile
+   - **Dockerfile path**: `apps/api/Dockerfile`
+   - **Config file**: `/railway.toml` (repo root)
 3. Variables:
 
 | Variable | Valor |
