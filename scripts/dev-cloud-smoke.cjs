@@ -37,11 +37,9 @@ async function main() {
 
   const login = await get('/api/v1/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Tenant-Slug': 'insureflow',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      tenantSlug: 'insureflow',
       email: 'admin@insureflow.com',
       password: 'Admin@2026!',
     }),
@@ -60,6 +58,47 @@ async function main() {
         url: `${web}${path}`,
         ok: res.status >= 200 && res.status < 400,
         status: res.status,
+      });
+    }
+
+    const corsProbe = await fetch(`${api}/api/v1/health`, {
+      headers: { Origin: web },
+    });
+    const allowOrigin = corsProbe.headers.get('access-control-allow-origin');
+    results.push({
+      name: 'CORS (API reflects web origin)',
+      url: `${api}/api/v1/health`,
+      ok: allowOrigin === web,
+      status: corsProbe.status,
+      body: allowOrigin || '(missing)',
+    });
+
+    const bffLogin = await fetch(`${web}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tenantSlug: 'insureflow',
+        email: 'admin@insureflow.com',
+        password: 'Admin@2026!',
+      }),
+    });
+    const setCookie = bffLogin.headers.getSetCookie?.() ?? [];
+    results.push({
+      name: 'POST /api/auth/login (BFF / SSR)',
+      url: `${web}/api/auth/login`,
+      ok: bffLogin.status === 200,
+      status: bffLogin.status,
+      body: setCookie.length > 0 ? 'session cookie set' : 'no cookie',
+    });
+
+    if (bffLogin.status === 200 && setCookie.length > 0) {
+      const cookie = setCookie.map((c) => c.split(';')[0]).join('; ');
+      const me = await fetch(`${web}/api/auth/me`, { headers: { Cookie: cookie } });
+      results.push({
+        name: 'GET /api/auth/me (JWT session)',
+        url: `${web}/api/auth/me`,
+        ok: me.status === 200,
+        status: me.status,
       });
     }
   }

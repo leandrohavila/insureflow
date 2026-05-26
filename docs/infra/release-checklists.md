@@ -18,9 +18,10 @@ Antes de mergear PR com `prisma/migrations/`:
 
 - [ ] `DATABASE_URL` (pooled) configurada
 - [ ] `JWT_SECRET` ≥ 32 chars (novo ou rotacionado)
-- [ ] `CORS_ORIGIN` inclui URL Vercel correta
+- [ ] `CORS_ORIGIN` inclui URL do frontend em produção (ex.: `https://corretoraavila.com.br`, `https://www.corretoraavila.com.br`)
 - [ ] `REDIS_URL` configurada (se filas ativas)
-- [ ] Release command: `npm run start:release -w api` (migrate + start)
+- [ ] **Start Command vazio** no serviço API (usa **CMD** do `apps/api/Dockerfile`: `node scripts/start-release.cjs` com `WORKDIR` `apps/api` — migrate + boot). Não usar `node scripts/start-release.cjs` na raiz do repo (503 no edge).
+- [ ] `PORT` = `4000` (variável ou `railway.toml` `[deploy.env]`)
 - [ ] Healthcheck: `GET /api/v1/health` → 200
 - [ ] Healthcheck DB: `GET /api/v1/health/db` → 200
 - [ ] Swagger `/docs` acessível (opcional, restringir em prod)

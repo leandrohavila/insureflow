@@ -72,7 +72,7 @@ APP_ENV=development SEED_DEV_DATA=1 DATABASE_URL="<DIRECT_URL>" npm run db:seed:
 | `REDIS_URL` | Railway Redis plugin (opcional dev) |
 
 4. Healthcheck: `/api/v1/health` (configurado em `railway.toml`)
-5. Start: `node scripts/start-release.cjs` (migrate + boot)
+5. Start: **Dockerfile CMD** `node scripts/start-release.cjs` com `WORKDIR` `apps/api` (migrate + boot). Não definir `startCommand` na raiz do monorepo — path errado causa **503** no edge.
 
 Validar:
 

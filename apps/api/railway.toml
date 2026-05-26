@@ -9,7 +9,7 @@ dockerfilePath = "apps/api/Dockerfile"
 watchPatterns = ["apps/api/**", "packages/database/**"]
 
 [deploy]
-startCommand = "node scripts/start-release.cjs"
+# Sem startCommand — o boot vem do CMD do Dockerfile (WORKDIR apps/api).
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
@@ -17,3 +17,4 @@ restartPolicyMaxRetries = 3
 
 [deploy.env]
 NODE_ENV = "production"
+PORT = "4000"

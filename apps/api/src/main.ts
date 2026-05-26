@@ -99,7 +99,7 @@ async function bootstrap() {
   logDtoRuntimeContract();
 
   const port = config.get<string>('PORT', '4000');
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`HTTP + Swagger http://localhost:${port}/docs`);
   if (isRuntimeAudit()) {
     logger.log(

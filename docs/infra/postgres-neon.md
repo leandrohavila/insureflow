@@ -34,7 +34,11 @@ Neon usa PgBouncer em modo transaction. Evite prepared statements long-lived —
 # Local contra Neon dev
 APP_ENV=development DATABASE_URL="$DATABASE_URL_DIRECT" npm run db:deploy
 
-# Release Railway (automático via start:release)
+# Railway produção (Docker): `prisma migrate deploy` roda no boot via
+# `apps/api/scripts/start-release.cjs` (CMD da imagem — ver `apps/api/Dockerfile`).
+# Não depende de `npm run start:release -w api` no painel.
+
+# Local após build (opcional, paridade com release script):
 npm run start:release -w api
 ```
 

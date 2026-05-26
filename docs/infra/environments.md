@@ -64,7 +64,7 @@ InsureFlow usa sessão custom (`AUTH_SECRET` + cookies httpOnly para tokens da A
 | Variável | Descrição |
 |----------|-----------|
 | `AUTH_SECRET` | Segredo de assinatura de sessão — mín. 32 chars em prod |
-| `API_INTERNAL_URL` | URL interna da API (server-side BFF) — ex.: `https://api.insureflow.app` |
+| `API_INTERNAL_URL` | URL interna da API (server-side BFF) — ex.: `https://api.corretoraavila.com.br` |
 | `API_URL` | Fallback público se `API_INTERNAL_URL` ausente |
 
 **Vercel**: configurar `AUTH_SECRET` e `API_INTERNAL_URL` no painel do projeto `web`.
@@ -100,7 +100,7 @@ CORS_ORIGIN=http://localhost:3000,http://127.0.0.1:3000
 CORS_ORIGIN=https://staging.insureflow.app
 
 # Produção
-CORS_ORIGIN=https://app.insureflow.app
+CORS_ORIGIN=https://corretoraavila.com.br,https://www.corretoraavila.com.br
 ```
 
 ### Redis (API — filas BullMQ)

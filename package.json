@@ -17,6 +17,10 @@
     "ci": "npm run lint && npm run check-types && npm run db:validate && npx turbo run build --filter=web --filter=api",
     "dev:cloud:migrate": "node scripts/dev-cloud-migrate.cjs",
     "dev:cloud:smoke": "node scripts/dev-cloud-smoke.cjs",
+    "dev:cloud:homologation": "node scripts/dev-cloud-homologation.cjs",
+    "prod:domain:plan": "node scripts/prod-domain-setup.cjs",
+    "prod:domain:smoke": "node scripts/prod-domain-setup.cjs --smoke",
+    "prod:railway:diagnose": "node scripts/railway-prod-diagnose.cjs",
     "dev:local:smoke": "node scripts/local-auth-smoke.cjs",
     "dev:local:check": "node scripts/check-local-runtime.cjs"
   },

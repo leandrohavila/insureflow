@@ -13,7 +13,8 @@ dockerfilePath = "apps/api/Dockerfile"
 watchPatterns = ["apps/api/**", "packages/database/**", "scripts/**", "package.json", "package-lock.json"]
 
 [deploy]
-startCommand = "node scripts/start-release.cjs"
+# Sem startCommand — Railway usa o CMD do Dockerfile (WORKDIR apps/api).
+# Qualquer startCommand na raiz do monorepo quebra o boot → 503 no edge / custom domain.
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
