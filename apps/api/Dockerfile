@@ -1,19 +1,21 @@
 # Build context: monorepo root (see docker-compose)
-FROM node:22 AS deps
-RUN apt-get update && apt-get install -y openssl libc6-dev && rm -rf /var/lib/apt/lists/*
+FROM node:20-alpine AS deps
+RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY scripts ./scripts
 COPY packages/database/package.json ./packages/database/
 COPY apps/api/package.json ./apps/api/
 
 RUN npm ci --omit=dev -w @repo/database -w api || npm install --omit=dev
 
-FROM node:22 AS builder
-RUN apt-get update && apt-get install -y openssl libc6-dev && rm -rf /var/lib/apt/lists/*
+FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY scripts ./scripts
 COPY packages/database ./packages/database
 COPY apps/api ./apps/api
 COPY turbo.json ./
@@ -22,8 +24,8 @@ RUN npm ci
 RUN npm run build -w @repo/database
 RUN npm run build -w api
 
-FROM node:22 AS runner
-RUN apt-get update && apt-get install -y openssl libc6-dev && rm -rf /var/lib/apt/lists/*
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 ENV NODE_ENV=production
 
