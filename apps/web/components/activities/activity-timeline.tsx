@@ -10,6 +10,7 @@ import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { buildTimelineGroups } from "@/lib/crm/timeline-groups"
 import { getErrorMessage } from "@/lib/data-access"
 import {
+  pickActivityRelationFields,
   useActivityTimeline,
   useCreateActivity,
   useDeleteActivity,
@@ -74,7 +75,11 @@ export function ActivityTimeline({
       updateActivity.mutate(
         {
           id: activity.id,
-          input: { status: "completed", nextFollowUpAt: null },
+          input: {
+            status: "completed",
+            nextFollowUpAt: null,
+            ...pickActivityRelationFields(activity),
+          },
         },
         { onSettled: () => setCompletingId(null) },
       )
@@ -228,7 +233,11 @@ export function ActivityTimeline({
                 if (source?.status === "pending") {
                   updateActivity.mutate({
                     id: source.id,
-                    input: { status: "completed", nextFollowUpAt: null },
+                    input: {
+                      status: "completed",
+                      nextFollowUpAt: null,
+                      ...pickActivityRelationFields(source),
+                    },
                   })
                 }
               },

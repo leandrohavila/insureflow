@@ -77,6 +77,21 @@ export type CreateActivityInput = {
   leadId?: string
   dealId?: string
   customerId?: string
+  policyId?: string
+}
+
+/** Vínculos atuais da atividade — incluir em PATCH que não alteram FK (ex.: concluir). */
+export function pickActivityRelationFields(
+  activity: Activity,
+): Partial<
+  Pick<CreateActivityInput, "leadId" | "dealId" | "customerId" | "policyId">
+> {
+  return {
+    ...(activity.leadId ? { leadId: activity.leadId } : {}),
+    ...(activity.dealId ? { dealId: activity.dealId } : {}),
+    ...(activity.customerId ? { customerId: activity.customerId } : {}),
+    ...(activity.policyId ? { policyId: activity.policyId } : {}),
+  }
 }
 
 export type UpdateActivityInput = Partial<Omit<CreateActivityInput, "nextFollowUpAt">> & {

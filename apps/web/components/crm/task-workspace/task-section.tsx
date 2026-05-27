@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 
 import { TaskCard } from "./task-card"
 import type { EnrichedTask } from "./task-workspace-utils"
+import type { Activity } from "@/lib/data-access/modules/activities"
 
 type TaskSectionProps = {
   title: string
@@ -16,7 +17,7 @@ type TaskSectionProps = {
   items: EnrichedTask[]
   emptyLabel: string
   delay: number
-  onComplete: (id: string) => void
+  onComplete: (activity: Activity) => void
   onRegisterContact: (task: EnrichedTask) => void
   onReschedule: (task: EnrichedTask) => void
   completingId: string | null

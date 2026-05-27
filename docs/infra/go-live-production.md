@@ -115,6 +115,7 @@ API_URL=https://api.corretoraavila.com.br WEB_URL=https://corretoraavila.com.br 
 3. **CORS:** só afeta chamadas browser direto à API; BFF server-side usa `API_INTERNAL_URL` sem CORS.
 4. **Railway Fallback:** se `X-Railway-Fallback: true` no custom domain, revisar TXT + Active no painel ([custom-domain.md](custom-domain.md)).
 5. **Admin produção:** `npm run prod:seed:admin` com `.env.production` (não commitar secrets).
+6. **Atividades CRM (2026-05-27):** após deploy da API + web que incluem o ajuste de `PATCH /activities/:id`, atividades **órfãs** (sem `leadId`/`dealId`/`customerId`/`policyId`, p.ex. após exclusão manual de entidades) voltam a ser **concluídas/editadas/excluídas** sem erro 400 de vínculo. `assertRelations` só roda quando o body altera FKs; conclusão por status preserva FKs no payload quando existem. Timeline agregada (Contact/Company) passou a usar as mesmas mutations da timeline do negócio.
 
 ---
 

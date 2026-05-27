@@ -41,6 +41,7 @@ import {
   useActivities,
   useCreateActivity,
   useUpdateActivity,
+  pickActivityRelationFields,
   type Activity,
   type ActivityListResponse,
   type CreateActivityInput,
@@ -58,12 +59,16 @@ type DialogState =
       originalId: string
       leadId?: string | null
       dealId?: string | null
+      customerId?: string | null
+      policyId?: string | null
     }
   | {
       mode: "reschedule"
       originalId: string
       leadId?: string | null
       dealId?: string | null
+      customerId?: string | null
+      policyId?: string | null
     }
 
 function enrichActivity(
@@ -273,6 +278,8 @@ export function TasksPage() {
       originalId: task.activity.id,
       leadId: task.activity.leadId,
       dealId: task.activity.dealId,
+      customerId: task.activity.customerId,
+      policyId: task.activity.policyId,
     })
   }
 
@@ -282,15 +289,24 @@ export function TasksPage() {
       originalId: task.activity.id,
       leadId: task.activity.leadId,
       dealId: task.activity.dealId,
+      customerId: task.activity.customerId,
+      policyId: task.activity.policyId,
     })
   }
 
-  function handleComplete(activityId: string) {
-    setCompletingId(activityId)
-    removeFromPendingCaches(activityId)
+  function handleComplete(activity: Activity) {
+    setCompletingId(activity.id)
+    removeFromPendingCaches(activity.id)
 
     updateMutation.mutate(
-      { id: activityId, input: { status: "completed", nextFollowUpAt: null } },
+      {
+        id: activity.id,
+        input: {
+          status: "completed",
+          nextFollowUpAt: null,
+          ...pickActivityRelationFields(activity),
+        },
+      },
       {
         onSuccess: (activity) => {
           prependToCompletedCache(activity)
@@ -309,9 +325,20 @@ export function TasksPage() {
     if (!currentDialog) return
 
     const completeOriginal = (originalId: string, msg: string) => {
+      const rel = {
+        ...(currentDialog.leadId ? { leadId: currentDialog.leadId } : {}),
+        ...(currentDialog.dealId ? { dealId: currentDialog.dealId } : {}),
+        ...(currentDialog.customerId
+          ? { customerId: currentDialog.customerId }
+          : {}),
+        ...(currentDialog.policyId ? { policyId: currentDialog.policyId } : {}),
+      }
       removeFromPendingCaches(originalId)
       updateMutation.mutate(
-        { id: originalId, input: { status: "completed", nextFollowUpAt: null } },
+        {
+          id: originalId,
+          input: { status: "completed", nextFollowUpAt: null, ...rel },
+        },
         {
           onSuccess: (activity) => {
             prependToCompletedCache(activity)
@@ -330,6 +357,8 @@ export function TasksPage() {
           ...input,
           leadId: currentDialog.leadId ?? undefined,
           dealId: currentDialog.dealId ?? undefined,
+          customerId: currentDialog.customerId ?? undefined,
+          policyId: currentDialog.policyId ?? undefined,
         },
         {
           onSuccess: () => {
@@ -345,6 +374,8 @@ export function TasksPage() {
           type: "follow_up",
           leadId: currentDialog.leadId ?? undefined,
           dealId: currentDialog.dealId ?? undefined,
+          customerId: currentDialog.customerId ?? undefined,
+          policyId: currentDialog.policyId ?? undefined,
         },
         {
           onSuccess: () => {

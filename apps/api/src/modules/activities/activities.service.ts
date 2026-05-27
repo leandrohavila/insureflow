@@ -89,12 +89,31 @@ export class ActivitiesService {
 
   async updateActivity(tenantId: string, id: string, dto: UpdateActivityDto) {
     const existing = await this.findActivityOrThrow(tenantId, id);
-    await this.assertRelations(tenantId, {
-      leadId: dto.leadId ?? existing.leadId ?? undefined,
-      dealId: dto.dealId ?? existing.dealId ?? undefined,
-      customerId: dto.customerId ?? existing.customerId ?? undefined,
-      policyId: dto.policyId ?? existing.policyId ?? undefined,
-    });
+
+    const linkKeys: Array<
+      'leadId' | 'dealId' | 'customerId' | 'policyId'
+    > = ['leadId', 'dealId', 'customerId', 'policyId'];
+    const dtoTouchesActivityLinks = linkKeys.some((key) =>
+      Object.prototype.hasOwnProperty.call(dto, key),
+    );
+
+    if (dtoTouchesActivityLinks) {
+      const mergedForAssert = {
+        leadId: Object.prototype.hasOwnProperty.call(dto, 'leadId')
+          ? (dto.leadId ?? null)
+          : existing.leadId,
+        dealId: Object.prototype.hasOwnProperty.call(dto, 'dealId')
+          ? (dto.dealId ?? null)
+          : existing.dealId,
+        customerId: Object.prototype.hasOwnProperty.call(dto, 'customerId')
+          ? (dto.customerId ?? null)
+          : existing.customerId,
+        policyId: Object.prototype.hasOwnProperty.call(dto, 'policyId')
+          ? (dto.policyId ?? null)
+          : existing.policyId,
+      };
+      await this.assertRelations(tenantId, mergedForAssert);
+    }
 
     const activity = await this.prisma.activity.update({
       where: { id },

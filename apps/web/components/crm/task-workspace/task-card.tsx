@@ -37,6 +37,7 @@ import {
   TASK_STATUS_CONFIG,
   type EnrichedTask,
 } from "./task-workspace-utils"
+import type { Activity } from "@/lib/data-access/modules/activities"
 import {
   buildEntitySheetHref,
   buildReturnToFromCurrentLocation,
@@ -46,7 +47,7 @@ import {
 type TaskCardProps = {
   task: EnrichedTask
   index: number
-  onComplete: (activityId: string) => void
+  onComplete: (activity: Activity) => void
   onRegisterContact: (task: EnrichedTask) => void
   onReschedule: (task: EnrichedTask) => void
   isCompleting: boolean
@@ -152,7 +153,7 @@ export function TaskCard({
           variant="ghost"
           size="icon-xs"
           disabled={completed || isCompleting}
-          onClick={() => onComplete(activity.id)}
+          onClick={() => onComplete(activity)}
           className={cn(
             "task-row__check mt-0.5 size-7 shrink-0 rounded-md border",
             completed
@@ -311,7 +312,7 @@ export function TaskCard({
                 <>
                   {(showOpenLead || showOpenDeal) && <DropdownMenuSeparator />}
                   <DropdownMenuItem
-                    onClick={() => onComplete(activity.id)}
+                    onClick={() => onComplete(activity)}
                     disabled={isCompleting}
                     className="gap-2 text-emerald-400 focus:text-emerald-300"
                   >

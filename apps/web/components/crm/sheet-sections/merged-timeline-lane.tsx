@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
+import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
 import { TimelineEmptyState } from "@/components/activities/timeline-empty-state"
 import { TimelineEntry } from "@/components/activities/timeline-entry"
 import { CrmSectionLoading } from "@/components/crm/interaction"
@@ -16,7 +17,13 @@ import { buildTimelineGroups } from "@/lib/crm/timeline-groups"
 import { useMergedActivityTimeline } from "@/lib/crm/relationship/hooks"
 import {
   ACTIVITY_TYPES,
+  pickActivityRelationFields,
+  useCreateActivity,
+  useDeleteActivity,
+  useUpdateActivity,
+  type Activity,
   type ActivityType,
+  type CreateActivityInput,
 } from "@/lib/data-access/modules/activities"
 import { cn } from "@/lib/utils"
 
@@ -28,6 +35,8 @@ type MergedTimelineLaneProps = {
   showFilters?: boolean
   density?: "default" | "compact"
 }
+
+const emptyCtx = {}
 
 /**
  * Timeline operacional agregada para Contact/Company workspaces.
@@ -44,7 +53,67 @@ export function MergedTimelineLane({
   const timeline = useMergedActivityTimeline({ leadIds, dealIds })
   const activities = timeline.data
 
+  const updateActivity = useUpdateActivity(emptyCtx)
+  const createActivity = useCreateActivity(emptyCtx)
+  const deleteActivity = useDeleteActivity(emptyCtx)
+
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
+  const [rescheduleSource, setRescheduleSource] = useState<Activity | null>(
+    null,
+  )
+  const [rescheduleContext, setRescheduleContext] = useState<{
+    leadId?: string | null
+    dealId?: string | null
+  } | null>(null)
+  const [completingId, setCompletingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const [activeFilter, setActiveFilter] = useState<ActivityType | null>(null)
+
+  const handleEdit = useCallback((activity: Activity) => {
+    setEditingActivity(activity)
+  }, [])
+
+  const handleComplete = useCallback(
+    (activity: Activity) => {
+      setCompletingId(activity.id)
+      updateActivity.mutate(
+        {
+          id: activity.id,
+          input: {
+            status: "completed",
+            nextFollowUpAt: null,
+            ...pickActivityRelationFields(activity),
+          },
+        },
+        { onSettled: () => setCompletingId(null) },
+      )
+    },
+    [updateActivity],
+  )
+
+  const handleReschedule = useCallback((activity: Activity) => {
+    setRescheduleSource(activity)
+    setRescheduleContext({
+      leadId: activity.leadId,
+      dealId: activity.dealId,
+    })
+  }, [])
+
+  const handleDelete = useCallback(
+    (activity: Activity) => {
+      if (
+        !window.confirm("Excluir esta atividade do histórico operacional?")
+      ) {
+        return
+      }
+      setDeletingId(activity.id)
+      deleteActivity.mutate(activity.id, {
+        onSettled: () => setDeletingId(null),
+      })
+    },
+    [deleteActivity],
+  )
 
   const countsByType = useMemo(() => {
     const map = new Map<ActivityType, number>()
@@ -82,7 +151,7 @@ export function MergedTimelineLane({
       dividedHeader
       className={cn("timeline-lane-v2", className)}
       title={
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center gap-2">
           {title}
           {!timeline.isLoading ? (
             <span className="crm-text-meta tabular-nums">
@@ -100,6 +169,13 @@ export function MergedTimelineLane({
       }
     >
       <div className="flex flex-col gap-4">
+        {timeline.isError ? (
+          <p className="text-sm text-destructive">
+            Não foi possível carregar parte do histórico. Atualize a página ou
+            tente novamente em instantes.
+          </p>
+        ) : null}
+
         {showFilters && !isEmpty && availableTypes.length > 0 ? (
           <nav
             aria-label="Filtrar timeline por tipo"
@@ -150,23 +226,87 @@ export function MergedTimelineLane({
                 <h4 className="crm-text-micro sticky top-0 z-[1] bg-[var(--crm-surface-panel)] py-1 text-muted-foreground/80">
                   {group.label}
                 </h4>
-                <div className="flex flex-col gap-2">
+                <ol className="timeline-rail timeline-rail--v2 m-0 list-none p-0">
                   {group.activities.map((activity) => (
                     <TimelineEntry
                       key={activity.id}
                       activity={activity}
-                      onEdit={() => undefined}
-                      onComplete={() => undefined}
-                      onReschedule={() => undefined}
-                      onDelete={() => undefined}
+                      contextLeadId={undefined}
+                      contextDealId={undefined}
+                      isCompleting={completingId === activity.id}
+                      isDeleting={deletingId === activity.id}
+                      onEdit={handleEdit}
+                      onComplete={handleComplete}
+                      onReschedule={handleReschedule}
+                      onDelete={handleDelete}
                     />
                   ))}
-                </div>
+                </ol>
               </section>
             ))}
           </div>
         ) : null}
       </div>
+
+      <ActivityFormDialog
+        open={editingActivity !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingActivity(null)
+        }}
+        activity={editingActivity}
+        leadId={editingActivity?.leadId}
+        dealId={editingActivity?.dealId}
+        pending={updateActivity.isPending}
+        error={updateActivity.error}
+        onSubmit={(input: CreateActivityInput) => {
+          if (!editingActivity) return
+          updateActivity.mutate(
+            { id: editingActivity.id, input },
+            { onSuccess: () => setEditingActivity(null) },
+          )
+        }}
+      />
+
+      <ActivityFormDialog
+        open={rescheduleContext !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRescheduleContext(null)
+            setRescheduleSource(null)
+          }
+        }}
+        initialType="follow_up"
+        leadId={rescheduleContext?.leadId}
+        dealId={rescheduleContext?.dealId}
+        pending={createActivity.isPending}
+        error={createActivity.error}
+        onSubmit={(input: CreateActivityInput) => {
+          const source = rescheduleSource
+          createActivity.mutate(
+            {
+              ...input,
+              type: "follow_up",
+              ...(source ? pickActivityRelationFields(source) : {}),
+            },
+            {
+              onSuccess: () => {
+                setRescheduleContext(null)
+                setRescheduleSource(null)
+                if (source?.status === "pending") {
+                  updateActivity.mutate({
+                    id: source.id,
+                    input: {
+                      status: "completed",
+                      nextFollowUpAt: null,
+                      ...pickActivityRelationFields(source),
+                    },
+                  })
+                }
+              },
+            },
+          )
+        }}
+      />
     </SectionPanel>
   )
 }

@@ -48,6 +48,7 @@ import {
   useCreateActivity,
   useUpdateActivity,
   ACTIVITY_TYPES,
+  pickActivityRelationFields,
   type Activity,
   type ActivityListResponse,
   type ActivityType,
@@ -86,12 +87,16 @@ type DialogState =
       originalId: string
       leadId?: string | null
       dealId?: string | null
+      customerId?: string | null
+      policyId?: string | null
     }
   | {
       mode: "reschedule"
       originalId: string
       leadId?: string | null
       dealId?: string | null
+      customerId?: string | null
+      policyId?: string | null
     }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -245,7 +250,7 @@ type CardProps = {
   index: number
   onRegisterContact: (item: EnrichedFollowUp) => void
   onReschedule: (item: EnrichedFollowUp) => void
-  onComplete: (activityId: string) => void
+  onComplete: (activity: Activity) => void
   isCompleting: boolean
 }
 
@@ -421,7 +426,7 @@ function AgendaFollowUpCard({
                 </>
               ) : null}
               <DropdownMenuItem
-                onClick={() => onComplete(activity.id)}
+                onClick={() => onComplete(activity)}
                 disabled={isCompleting}
                 className="gap-2 text-emerald-400 focus:text-emerald-300"
               >
@@ -451,7 +456,7 @@ type SectionProps = {
   delay: number
   onRegisterContact: (item: EnrichedFollowUp) => void
   onReschedule: (item: EnrichedFollowUp) => void
-  onComplete: (id: string) => void
+  onComplete: (activity: Activity) => void
   completingId: string | null
 }
 
@@ -651,6 +656,8 @@ export function AgendaPage() {
       originalId: item.activity.id,
       leadId: item.activity.leadId,
       dealId: item.activity.dealId,
+      customerId: item.activity.customerId,
+      policyId: item.activity.policyId,
     })
   }
 
@@ -660,15 +667,24 @@ export function AgendaPage() {
       originalId: item.activity.id,
       leadId: item.activity.leadId,
       dealId: item.activity.dealId,
+      customerId: item.activity.customerId,
+      policyId: item.activity.policyId,
     })
   }
 
-  function handleComplete(activityId: string) {
-    setCompletingId(activityId)
+  function handleComplete(activity: Activity) {
+    setCompletingId(activity.id)
     // Optimistic removal for instant UX
-    removeFromAgendaCache(activityId)
+    removeFromAgendaCache(activity.id)
     updateMutation.mutate(
-      { id: activityId, input: { status: "completed", nextFollowUpAt: null } },
+      {
+        id: activity.id,
+        input: {
+          status: "completed",
+          nextFollowUpAt: null,
+          ...pickActivityRelationFields(activity),
+        },
+      },
       {
         onSuccess: () => setToastMsg("Follow-up concluído"),
         onError: () => {
@@ -685,10 +701,21 @@ export function AgendaPage() {
     if (!currentDialog) return
 
     const completeOriginal = (originalId: string, msg: string) => {
+      const rel = {
+        ...(currentDialog.leadId ? { leadId: currentDialog.leadId } : {}),
+        ...(currentDialog.dealId ? { dealId: currentDialog.dealId } : {}),
+        ...(currentDialog.customerId
+          ? { customerId: currentDialog.customerId }
+          : {}),
+        ...(currentDialog.policyId ? { policyId: currentDialog.policyId } : {}),
+      }
       // Optimistic removal before the PATCH round-trip
       removeFromAgendaCache(originalId)
       updateMutation.mutate(
-        { id: originalId, input: { status: "completed", nextFollowUpAt: null } },
+        {
+          id: originalId,
+          input: { status: "completed", nextFollowUpAt: null, ...rel },
+        },
         {
           onSuccess: () => setToastMsg(msg),
           onError: () => void activitiesQuery.refetch(),
@@ -702,6 +729,8 @@ export function AgendaPage() {
           ...input,
           leadId: currentDialog.leadId ?? undefined,
           dealId: currentDialog.dealId ?? undefined,
+          customerId: currentDialog.customerId ?? undefined,
+          policyId: currentDialog.policyId ?? undefined,
         },
         {
           onSuccess: () => {
@@ -718,6 +747,8 @@ export function AgendaPage() {
           type: "follow_up",
           leadId: currentDialog.leadId ?? undefined,
           dealId: currentDialog.dealId ?? undefined,
+          customerId: currentDialog.customerId ?? undefined,
+          policyId: currentDialog.policyId ?? undefined,
         },
         {
           onSuccess: () => {

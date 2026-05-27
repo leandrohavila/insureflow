@@ -17,6 +17,7 @@ import {
   type Activity,
   type ActivityType,
   type CreateActivityInput,
+  pickActivityRelationFields,
 } from "@/lib/data-access/modules/activities"
 import { Button } from "@/components/ui/button"
 import {
@@ -184,6 +185,10 @@ export function ActivityFormDialog({
     if (requiredFields.includes("nextFollowUpAt") && !form.nextFollowUpAt) return
     if (requiredFields.includes("occurredAt") && !form.occurredAt) return
 
+    const relationFromActivity = activity
+      ? pickActivityRelationFields(activity)
+      : {}
+
     onSubmit({
       type: form.type,
       subject,
@@ -193,6 +198,7 @@ export function ActivityFormDialog({
       nextFollowUpAt: form.nextFollowUpAt
         ? toIsoFromLocal(form.nextFollowUpAt)
         : undefined,
+      ...relationFromActivity,
       ...(leadId ? { leadId } : {}),
       ...(dealId ? { dealId } : {}),
     })
