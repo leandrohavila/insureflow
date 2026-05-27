@@ -42,6 +42,14 @@ Antes de mergear PR com `prisma/migrations/`:
 - [ ] Verificar logs Railway/Vercel sem erros Prisma
 - [ ] Confirmar migration version: `_prisma_migrations` atualizada
 
+### Go-live produção `corretoraavila.com.br` (2026-05-27)
+
+- [x] `CORS_ORIGIN` apex + www + redeploy API
+- [x] Vercel domínios + `API_INTERNAL_URL` + redirect www
+- [x] `npm run prod:domain:smoke` OK
+- [x] Health `/api/v1/health`, `/health/db`, `/health/redis` → 200
+- [ ] Limpeza dados demo: [prod-clean-demo-data.md](prod-clean-demo-data.md) (aguarda confirmação)
+
 ## Pre-deploy smoke (local — baseline operacional CRM)
 
 Antes de promover para DEV cloud (`develop` → Railway/Vercel):

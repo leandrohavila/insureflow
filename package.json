@@ -22,7 +22,10 @@
     "prod:domain:smoke": "node scripts/prod-domain-setup.cjs --smoke",
     "prod:railway:diagnose": "node scripts/railway-prod-diagnose.cjs",
     "prod:cloud:stabilize": "node scripts/cloud-prod-stabilize.cjs",
+    "prod:dns:watch": "node scripts/dns-propagation-watch.cjs",
     "prod:seed:admin": "node scripts/seed-prod-admin.cjs",
+    "prod:clean-demo-data": "node scripts/prod-clean-demo-data.cjs --dry-run",
+    "prod:seed:clean": "node scripts/seed-prod-clean.cjs",
     "dev:local:smoke": "node scripts/local-auth-smoke.cjs",
     "dev:local:check": "node scripts/check-local-runtime.cjs"
   },

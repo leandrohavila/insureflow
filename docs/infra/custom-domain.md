@@ -20,9 +20,10 @@ Valide **sempre** os valores exibidos no painel **Vercel → Domains** e **Railw
 |---|------|-------------|-------|-----|---------|
 | 1 | `A` | `@` (raiz / apex) | `76.76.21.21` | 3600 (ou mínimo permitido) | Vercel — `corretoraavila.com.br` |
 | 2 | `CNAME` | `www` | `cname.vercel-dns.com.` | 3600 | Vercel — `www.corretoraavila.com.br` |
-| 3 | `CNAME` | `api` | `<TARGET_RAILWAY>` | 3600 | Railway — substitua `<TARGET_RAILWAY>` pelo hostname que o painel mostrar (ex.: `xxxx.up.railway.app`) |
+| 3 | `CNAME` | `api` | `<TARGET_RAILWAY>` | 3600 | Railway — hostname `*.up.railway.app` **copiado do painel** (pode ser ≠ do “Generate Domain” do serviço) |
+| 4 | `TXT` | `_railway-verify.api` | `<valor copiado>` | 3600 | **Obrigatório** Railway — verificação de posse; sem TXT, domínio custom pode dar **404** mesmo com CNAME OK ([docs Railway](https://docs.railway.com/networking/domains/working-with-domains)) |
 
-**Sobre o registro 3:** em **Railway → serviço da API → Settings → Networking → Custom domains** adicione `api.corretoraavila.com.br`. O painel exibe o **CNAME target** exato — use esse valor no Registro.br (não invente).
+**Sobre os registros 3–4:** em **Railway → serviço da API → Settings → Networking → Custom domains** adicione `api.corretoraavila.com.br` e crie no Registro.br **CNAME + TXT** exatamente como a Railway mostrar (botão copiar).
 
 ### 1.2 Reservado para homologação (não criar ainda)
 
@@ -103,9 +104,8 @@ Marque na ordem que fizer sentido para o seu layout de menu:
 |---|------|-------------|-------|------------|
 | 1 | **A** | `@` | `76.76.21.21` | Apex → Vercel (confirmar no assistente de domínios da Vercel se o IP mudou). |
 | 2 | **CNAME** | `www` | `cname.vercel-dns.com` | `www.corretoraavila.com.br` → Vercel. |
-| 3 | **CNAME** | `api` | *Target copiado do Railway* | Só o valor que o painel mostra ao adicionar `api.corretoraavila.com.br` (ex.: `xxxx.up.railway.app`). |
-
-Não criar registros de homologação até a fase HML.
+| 3 | **CNAME** | `api` | *Target copiado do Railway* | Hostname `*.up.railway.app` exibido para **este** custom domain (pode ≠ do “Generate Domain”). |
+| 4 | **TXT** | `_railway-verify.api` | *Token completo* do Railway (`railway-verify=` + hex longo) | **Nunca** `railway-verify=...` — placeholder quebra verificação ([docs](https://docs.railway.com/networking/domains/working-with-domains)). |
 
 ## 5. Variáveis de ambiente (após DNS válido)
 
@@ -197,7 +197,36 @@ API_URL=https://api.corretoraavila.com.br WEB_URL=https://corretoraavila.com.br 
 
 `avilacorretora.com.br` pode continuar existindo na Locaweb ou outro DNS; este runbook assume **produção InsureFlow** na zona **`corretoraavila.com.br`**. Redirects entre marcas são opcionais (página estática ou outro projeto Vercel).
 
-## 10. Troubleshooting 503 no `api.*` (Railway edge)
+## 10. Troubleshooting — DNS OK mas `X-Railway-Fallback` (502 / 404)
+
+Sintoma típico após TXT corrigido:
+
+| URL | HTTP | `X-Railway-Fallback` |
+|-----|------|----------------------|
+| `https://<serviço>.up.railway.app/api/v1/health` | **200** JSON `insureflow-api` | ausente |
+| `https://api.corretoraavila.com.br/api/v1/health` | **502** `Application failed to respond` | **`true`** |
+| `https://<CNAME_TARGET>.up.railway.app/api/v1/health` | **404** | **`true`** |
+
+Isso significa: **Registro.br está certo**, mas a **Railway ainda não associou** o custom domain ao deployment (verificação pendente, target port errado, ou domínio “órfão” no edge).
+
+**Checklist painel (ordem):**
+
+1. **Custom domains** → `api.corretoraavila.com.br` com **check verde** (não só “DNS detected”).
+2. **Target port** do domínio = **4000** (mesmo `PORT` / `EXPOSE` / healthcheck).
+3. Domínio no **mesmo serviço** que responde em `insureflow-production-08c5.up.railway.app`.
+4. Se o CNAME target (`*.up.railway.app` copiado do painel) ainda retorna **404 + Fallback** após 30+ min: **Remove** o custom domain → **Add** de novo → atualize **CNAME + TXT** no Registro.br se a Railway exibir valores novos.
+5. **Redeploy** uma vez após status **Active**.
+
+```bash
+npm run prod:railway:diagnose
+curl.exe -sS -D - -o NUL "https://api.corretoraavila.com.br/api/v1/health" | findstr /i "HTTP X-Railway"
+```
+
+Go-live do custom domain: **HTTP 200** e **sem** `X-Railway-Fallback`.
+
+---
+
+## 11. Troubleshooting 503 no `api.*` (Railway edge)
 
 Sintoma: HTTPS responde, mas `GET /api/v1/health` → **503** sem JSON `{ service: "insureflow-api" }`.
 
@@ -214,7 +243,7 @@ Sintoma: HTTPS responde, mas `GET /api/v1/health` → **503** sem JSON `{ servic
 npm run prod:railway:diagnose
 ```
 
-## 11. Referências
+## 12. Referências
 
 - [environments.md](environments.md)
 - [release-checklists.md](release-checklists.md)
