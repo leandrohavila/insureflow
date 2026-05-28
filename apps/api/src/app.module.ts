@@ -11,6 +11,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { AccessModule } from './modules/access/access.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CrmModule } from './modules/crm/crm.module';
@@ -63,6 +64,7 @@ import { UsersModule } from './modules/users/users.module';
     RedisInfraModule,
     PrismaModule,
     QueueModule,
+    AccessModule,
     AuthModule,
     CrmModule,
     CustomersModule,

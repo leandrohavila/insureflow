@@ -6,6 +6,7 @@ import { createHash, randomBytes } from 'crypto';
 
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { OwnershipService } from '../access/ownership.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly cfg: ConfigService,
     private readonly auditLogs: AuditLogsService,
+    private readonly ownership: OwnershipService,
   ) {
     this.accessExpiresIn = this.cfg.get<string>(
       'JWT_EXPIRES_IN',
@@ -74,6 +76,12 @@ export class AuthService {
       }
     }
 
+    const accessCtx = await this.ownership.resolveContext(tenant.id, {
+      userId: user.id,
+      roles: roleSlugs,
+      permissions: [...permSet],
+    });
+
     const payload: JwtAccessPayload = {
       sub: user.id,
       email: user.email,
@@ -81,6 +89,8 @@ export class AuthService {
       tenantSlug: tenant.slug,
       roles: roleSlugs,
       permissions: [...permSet],
+      dataScope: accessCtx.dataScope,
+      teamIds: accessCtx.teamIds,
     };
 
     await this.prisma.user.update({

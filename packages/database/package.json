@@ -19,6 +19,7 @@
     "prisma:studio": "npx prisma studio",
     "prisma:push": "npx prisma db push",
     "db:seed": "ts-node --project tsconfig.json prisma/seed.ts",
+    "db:backfill:lead-ownership": "ts-node --project tsconfig.json prisma/scripts/backfill-lead-ownership.ts",
     "db:seed:dev": "node ../../scripts/seed-dev.cjs",
     "db:validate": "npx prisma validate",
     "check-types": "echo skip"

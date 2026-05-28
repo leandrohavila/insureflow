@@ -9,6 +9,7 @@ Registro de decisões arquiteturais e de produto com impacto duradouro.
 | [ADR-003](ADR-003-warning-first-validation.md) | Validação warning-first | Aceito (parcial) |
 | [ADR-004](ADR-004-frontend-first-operational-ux.md) | UX operacional frontend-first | Aceito |
 | [ADR-005](ADR-005-lead-deduplication-strategy.md) | Deduplicação de leads | Aceito (não implementado) |
+| [ADR-006](ADR-006-rbac-and-ownership.md) | RBAC, perfis e ownership | Proposto |
 
 ## Formato
 

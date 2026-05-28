@@ -5,6 +5,9 @@
  * - admin@insureflow.com / Admin@2026!
  * - viewer@insureflow.com / Viewer@2026!
  * - sales@insureflow.com / Sales@2026!
+ * - comercial@insureflow.com / Comercial@2026!
+ * - gerencia@insureflow.com / Gerencia@2026!
+ * - parceiro@insureflow.com / Parceiro@2026!
  */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -19,6 +22,7 @@ const PERMISSIONS: { key: string; description: string }[] = [
   { key: 'clients:manage', description: 'Gerenciar clientes' },
   { key: 'leads:view', description: 'Ver leads' },
   { key: 'leads:manage', description: 'Gerenciar leads' },
+  { key: 'leads:share', description: 'Compartilhar leads com parceiros' },
   { key: 'questionnaires:view', description: 'Ver questionários' },
   { key: 'questionnaires:manage', description: 'Gerenciar questionários' },
   { key: 'quotes:view', description: 'Ver cotações' },
@@ -178,6 +182,9 @@ async function main() {
     'users:',
     SEED_USERS.map((user) => user.email).join(', '),
   );
+
+  const { seedOwnershipFoundation } = await import('./seed-ownership');
+  await seedOwnershipFoundation(tenant.slug);
 
   if (process.env.SEED_DEV_DATA === '1') {
     const { seedDevData } = await import('./seed-dev');

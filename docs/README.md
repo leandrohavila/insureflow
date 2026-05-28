@@ -13,7 +13,7 @@ Documentação viva do monorepo InsureFlow (Turbo · NestJS · Next.js · Prisma
 
 | Pasta | Conteúdo |
 |-------|----------|
-| [architecture/](architecture/) | Padrões técnicos frontend e backend |
+| [architecture/](architecture/) | Padrões técnicos frontend e backend; [RBAC e ownership](architecture/rbac-architecture.md) |
 | [domain/](domain/) | Modelo de domínio comercial (leads, negócios, questionários) |
 | [workflows/](workflows/) | Fluxos operacionais do corretor |
 | [decisions/](decisions/) | ADRs — Architecture Decision Records |
@@ -28,10 +28,15 @@ Documentação viva do monorepo InsureFlow (Turbo · NestJS · Next.js · Prisma
 1. [Ciclo de vida do lead](domain/lead-lifecycle.md)
 2. [Padrões frontend](architecture/frontend-patterns.md)
 3. [Padrões backend](architecture/backend-patterns.md)
-4. [Fluxo comercial](workflows/commercial-flow.md)
-5. [ADRs](decisions/README.md)
-6. [Roadmap CRM](roadmap/crm-evolution.md)
-7. [Princípios UX operacional](ux/operational-principles.md)
+4. [Arquitetura RBAC](architecture/rbac-architecture.md) — usuários, perfis, permissões (planejado)
+5. [Arquitetura Ownership](architecture/ownership-architecture.md) — escopos, parceiros, migrations (Sprint 1)
+6. [RBAC — papéis e escopos](architecture/rbac-roles-and-scopes.md) · [Matriz permissões](architecture/rbac-phase-2-matrix.md) · [Matriz ownership](architecture/rbac-ownership-matrix.md) (Sprint 1b)
+7. [Fluxo comercial](workflows/commercial-flow.md)
+8. [ADRs](decisions/README.md) — incl. [ADR-006 RBAC + ownership](decisions/ADR-006-rbac-and-ownership.md)
+9. [Roadmap CRM](roadmap/crm-evolution.md)
+10. [Princípios UX operacional](ux/operational-principles.md)
+11. [Sprint 1 Ownership](sprint-notes/sprint-1-ownership-rbac.md) · [Sprint 1b Fase 2](sprint-notes/sprint-1b-phase-2-matrix.md)
+12. [Sprint 2 — HML checklist](architecture/sprint-2-hml-checklist.md) · [Rollout e riscos](architecture/sprint-2-rollout-risks.md) (leads only)
 
 ## Convenções
 

@@ -35,6 +35,14 @@ import { LeadsService } from './leads.service';
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}
 
+  private actorFrom(user: JwtAccessPayload) {
+    return {
+      userId: user.sub,
+      roles: user.roles,
+      permissions: user.permissions,
+    };
+  }
+
   @Get()
   @RequirePermissions('leads:view')
   @ApiOperation({ summary: 'Listar leads do tenant' })
@@ -53,7 +61,7 @@ export class LeadsController {
     @CurrentUser() user: JwtAccessPayload,
     @Query() query: ListLeadsQueryDto,
   ) {
-    return this.leads.findLeads(user.tenantId, query, { userId: user.sub });
+    return this.leads.findLeads(user.tenantId, query, this.actorFrom(user));
   }
 
   @Get('duplicates')
@@ -78,7 +86,7 @@ export class LeadsController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
   ) {
-    return this.leads.findLeadContext(user.tenantId, id);
+    return this.leads.findLeadContext(user.tenantId, id, this.actorFrom(user));
   }
 
   @Get(':id')
@@ -86,7 +94,7 @@ export class LeadsController {
   @ApiOperation({ summary: 'Detalhe do lead do tenant' })
   @ApiParam({ name: 'id', description: 'ID do lead' })
   findLead(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
-    return this.leads.findLead(user.tenantId, id);
+    return this.leads.findLead(user.tenantId, id, this.actorFrom(user));
   }
 
   @Post()
@@ -96,7 +104,7 @@ export class LeadsController {
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateLeadDto,
   ) {
-    return this.leads.createLead(user.tenantId, dto, { userId: user.sub });
+    return this.leads.createLead(user.tenantId, dto, this.actorFrom(user));
   }
 
   @Patch(':id')
@@ -108,7 +116,7 @@ export class LeadsController {
     @Param('id') id: string,
     @Body() dto: UpdateLeadDto,
   ) {
-    return this.leads.updateLead(user.tenantId, id, dto, { userId: user.sub });
+    return this.leads.updateLead(user.tenantId, id, dto, this.actorFrom(user));
   }
 
   @Delete(':id')
@@ -116,7 +124,7 @@ export class LeadsController {
   @ApiOperation({ summary: 'Excluir lead do tenant' })
   @ApiParam({ name: 'id', description: 'ID do lead' })
   deleteLead(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
-    return this.leads.deleteLead(user.tenantId, id);
+    return this.leads.deleteLead(user.tenantId, id, this.actorFrom(user));
   }
 
   @Post(':id/convert')
@@ -128,6 +136,6 @@ export class LeadsController {
     @Param('id') id: string,
     @Body() dto: ConvertLeadDto,
   ) {
-    return this.leads.convertLead(user.tenantId, id, dto);
+    return this.leads.convertLead(user.tenantId, id, dto, this.actorFrom(user));
   }
 }

@@ -25,7 +25,10 @@ import { ActivityTimeline } from "@/components/activities/activity-timeline"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { useCanManage, useSession } from "@/components/auth/session-provider"
+import {
+  useCanManage,
+  useShowMineLeadsFilter,
+} from "@/components/auth/session-provider"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
 import { LeadQuestionnaireBadge } from "@/components/questionnaires/lead-questionnaire-badge"
@@ -133,6 +136,7 @@ export function LeadsPage() {
   const reduce = useReducedMotion()
   const canManageLeads = useCanManage("leads:view")
   const canManageQuestionnaires = useCanManage("questionnaires:view")
+  const showMineFilter = useShowMineLeadsFilter()
   // Feature flag de rollout do LeadSheetV2 — espelho de `?sheet=v2` do
   // `DealsPage`. Default = legado, opt-in via querystring. Quando OFF, o
   // sheet v2 nem é montado, garantindo zero impacto sobre usuários atuais.
@@ -240,6 +244,12 @@ export function LeadsPage() {
 
   const leads = leadsQuery.data?.data ?? []
   const meta = leadsQuery.data?.meta
+
+  useEffect(() => {
+    if (!showMineFilter && mineOnly) {
+      setMineOnly(false)
+    }
+  }, [mineOnly, showMineFilter])
 
   useEffect(() => {
     setPage(1)
@@ -447,15 +457,17 @@ export function LeadsPage() {
             placeholder="Origem"
             className="h-9 w-36 border-white/[0.08] bg-white/[0.04]"
           />
-          <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="size-3.5 accent-primary"
-              checked={mineOnly}
-              onChange={(event) => setMineOnly(event.target.checked)}
-            />
-            Meus leads
-          </label>
+          {showMineFilter ? (
+            <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.04] px-3 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                className="size-3.5 accent-primary"
+                checked={mineOnly}
+                onChange={(event) => setMineOnly(event.target.checked)}
+              />
+              Meus leads
+            </label>
+          ) : null}
         </div>
       </motion.div>
 

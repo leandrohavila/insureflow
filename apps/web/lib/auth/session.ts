@@ -4,6 +4,7 @@ import { SignJWT, jwtVerify } from "jose"
 import {
   buildSessionPayload,
   type AppRole,
+  type DataScope,
   type Permission,
   type SessionUser,
   type SessionPayload,
@@ -30,11 +31,19 @@ type BackendLoginResponse = {
     tenantSlug: string
     roles: string[]
     permissions: string[]
+    dataScope?: DataScope
+    teamIds?: string[]
   }
 }
 
 const API_ROLE_TO_APP_ROLE: Record<string, AppRole> = {
   admin: "admin",
+  gerencia: "gerencia",
+  comercial: "comercial",
+  operacional: "operacional",
+  financeiro: "financeiro",
+  parceiro: "parceiro",
+  leitura: "leitura",
   sales: "sales",
   broker: "broker",
   underwriter: "underwriter",
@@ -44,6 +53,12 @@ const API_ROLE_TO_APP_ROLE: Record<string, AppRole> = {
 const ROLE_LABELS: Record<AppRole, string> = {
   super_admin: "Super Admin",
   admin: "Administrador",
+  gerencia: "Gerência",
+  comercial: "Comercial",
+  operacional: "Operacional",
+  financeiro: "Financeiro",
+  parceiro: "Parceiro",
+  leitura: "Leitura",
   sales: "Comercial",
   broker: "Corretor",
   underwriter: "Subscritor",
@@ -82,11 +97,21 @@ function toBackendSessionUser(payload: BackendLoginResponse["user"]): SessionUse
 
 export async function createSessionToken(
   user: ReturnType<typeof toSessionUser>,
-  permissions?: Permission[],
+  options?: {
+    permissions?: Permission[]
+    dataScope?: DataScope
+    teamIds?: string[]
+  },
 ) {
   const payload = buildSessionPayload(user)
-  if (permissions) {
-    payload.permissions = permissions
+  if (options?.permissions) {
+    payload.permissions = options.permissions
+  }
+  if (options?.dataScope) {
+    payload.dataScope = options.dataScope
+  }
+  if (options?.teamIds) {
+    payload.teamIds = options.teamIds
   }
   const secret = getAuthSecret()
 
@@ -101,6 +126,8 @@ export async function createSessionToken(
     organizationName: payload.organizationName,
     title: payload.title,
     permissions: payload.permissions,
+    dataScope: payload.dataScope,
+    teamIds: payload.teamIds,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -173,7 +200,13 @@ export async function loginWithBackendCredentials(
   const sessionUser = toBackendSessionUser(backend.user)
   const session = buildSessionPayload(sessionUser)
   session.permissions = backend.user.permissions as Permission[]
-  const token = await createSessionToken(sessionUser, session.permissions)
+  session.dataScope = backend.user.dataScope
+  session.teamIds = backend.user.teamIds
+  const token = await createSessionToken(sessionUser, {
+    permissions: session.permissions,
+    dataScope: session.dataScope,
+    teamIds: session.teamIds,
+  })
 
   await setSessionCookie(token)
   await setBackendTokenCookies({

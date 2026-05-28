@@ -10,6 +10,8 @@ import {
   canManage,
   hasAnyPermission,
   hasPermission,
+  showMineLeadsFilter,
+  type DataScope,
   type Permission,
   type SessionPayload,
 } from "@repo/auth"
@@ -90,4 +92,14 @@ export function useAnyPermission(permissions: readonly Permission[]) {
 
 export function useCanManage(permission: ManageablePermission) {
   return usePermission(canManage(permission))
+}
+
+export function useDataScope(): DataScope | undefined {
+  const { session } = useSession()
+  return session?.dataScope
+}
+
+export function useShowMineLeadsFilter(): boolean {
+  const { session } = useSession()
+  return showMineLeadsFilter(session)
 }

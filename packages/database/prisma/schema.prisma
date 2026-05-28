@@ -17,6 +17,19 @@ enum TenantStatus {
   archived
 }
 
+/// Escopo de visibilidade de registros (ownership)
+enum DataScope {
+  own
+  team
+  tenant
+  shared
+}
+
+enum LeadSharePermission {
+  read
+  comment
+}
+
 /// Organização (tenant) — isolamento lógico de dados
 model Tenant {
   id        String       @id @default(cuid())
@@ -39,6 +52,7 @@ model Tenant {
   questionnaireFields      QuestionnaireField[]
   questionnaireSubmissions QuestionnaireSubmission[]
   activities               Activity[]
+  teams                    Team[]
 
   @@map("tenants")
 }
@@ -57,11 +71,17 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  userRoles     UserRole[]
-  auditLogs     AuditLog[]
+  userRoles        UserRole[]
+  auditLogs        AuditLog[]
   refreshTokens    RefreshToken[]
   activities       Activity[]
   brokeredPolicies Policy[]       @relation("PolicyBroker")
+  primaryTeamId    String?         @map("primary_team_id")
+  primaryTeam      Team?           @relation("UserPrimaryTeam", fields: [primaryTeamId], references: [id], onDelete: SetNull)
+  teamMemberships  TeamMember[]
+  ownedLeads       Lead[]          @relation("LeadOwner")
+  leadsSharedWith  LeadShare[]     @relation("LeadSharedWith")
+  leadsSharedBy    LeadShare[]     @relation("LeadSharedBy")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -89,9 +109,10 @@ model Role {
   name        String
   slug        String
   description String?
-  isSystem    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isSystem         Boolean   @default(false)
+  defaultDataScope DataScope @default(own) @map("default_data_scope")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   userRoles       UserRole[]
   rolePermissions RolePermission[]
@@ -119,6 +140,59 @@ model UserRole {
 
   @@id([userId, roleId])
   @@map("user_roles")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      TeamMember[]
+  primaryUsers User[] @relation("UserPrimaryTeam")
+  ownedLeads   Lead[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("teams")
+}
+
+model TeamMember {
+  teamId   String
+  userId   String
+  isLead   Boolean  @default(false)
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+model LeadShare {
+  id               String              @id @default(cuid())
+  tenantId         String
+  leadId           String
+  lead             Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sharedWithUserId String              @map("shared_with_user_id")
+  sharedWithUser   User                @relation("LeadSharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedByUserId   String              @map("shared_by_user_id")
+  sharedByUser     User                @relation("LeadSharedBy", fields: [sharedByUserId], references: [id], onDelete: Restrict)
+  permission       LeadSharePermission @default(read)
+  expiresAt        DateTime?           @map("expires_at")
+  revokedAt        DateTime?           @map("revoked_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  @@unique([leadId, sharedWithUserId])
+  @@index([tenantId, sharedWithUserId])
+  @@index([leadId])
+  @@map("lead_shares")
 }
 
 model RefreshToken {
@@ -311,6 +385,10 @@ model Lead {
   status        String    @default("new")
   notes         String?
   assignedTo    String?
+  ownerUserId   String?   @map("owner_user_id")
+  ownerUser     User?     @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  ownerTeamId   String?   @map("owner_team_id")
+  ownerTeam     Team?     @relation(fields: [ownerTeamId], references: [id], onDelete: SetNull)
   lastContactAt DateTime?
   dealId        String?   @unique
   deal          Deal?     @relation("LeadConvertedDeal", fields: [dealId], references: [id], onDelete: SetNull)
@@ -319,11 +397,14 @@ model Lead {
 
   questionnaireSubmissions QuestionnaireSubmission[]
   activities               Activity[]
+  shares                   LeadShare[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, source])
   @@index([tenantId, assignedTo])
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, ownerTeamId])
   @@index([tenantId, createdAt])
   @@index([tenantId, document])
   @@map("leads")

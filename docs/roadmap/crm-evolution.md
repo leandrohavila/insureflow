@@ -32,9 +32,30 @@
 
 ---
 
+## Fase 1b — RBAC, usuários e perfis (estrutural)
+
+**Objetivo:** Multiusuário com permissões granulares e ownership sistemático. **Arquitetura:** [rbac-architecture.md](../architecture/rbac-architecture.md) · [ownership-architecture.md](../architecture/ownership-architecture.md) · **ADR:** [ADR-006](../decisions/ADR-006-rbac-and-ownership.md) · **Sprint:** [sprint-1-ownership-rbac.md](../sprint-notes/sprint-1-ownership-rbac.md).
+
+| Item | Status |
+|------|--------|
+| Modelagem RBAC (doc) | ✅ |
+| Modelagem Ownership Sprint 1 (doc + schema proposal) | ✅ |
+| Matriz permissões + escopos Sprint 1b Fase 2 (doc) | ✅ |
+| Catálogo DB único + sync `@repo/auth` | 📋 |
+| Papéis sistema corretora (`comercial`, `operacional`, …) | 📋 |
+| API CRUD users / roles | 📋 |
+| UI admin usuários e perfis | 📋 |
+| `ownerUserId` + enforcement backend | 📋 |
+| Equipes (`Team`) para escopo gerente | 📋 |
+| Auditoria global em mutações | 📋 |
+
+**Fora de escopo desta fase:** WhatsApp, IA, automações, financeiro, BI.
+
+---
+
 ## Fase 2 — Ownership comercial
 
-**Objetivo:** Responsável claro por lead/negócio, filtros “meus”, políticas por tenant.
+**Objetivo:** Responsável claro por lead/negócio, filtros “meus”, políticas por tenant. Evolui para enforcement completo na Fase 1b.
 
 | Item | Status |
 |------|--------|

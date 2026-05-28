@@ -17,6 +17,8 @@ import {
   deriveQuestionnaireCommercialStatus,
 } from '../../common/utils/questionnaire-commercial.util';
 import { nextPipelineOrder } from '../../common/utils/pipeline-order.util';
+import { OwnershipService } from '../access/ownership.service';
+import type { LeadAccessActor } from '../access/ownership.types';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   resolveLeadLastInteractionAt,
@@ -32,13 +34,14 @@ import type {
   UpdateLeadDto,
 } from './dto/lead.dto';
 
-export type LeadActor = {
-  userId: string;
-};
+export type LeadActor = LeadAccessActor;
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ownership: OwnershipService,
+  ) {}
 
   async findLeads(
     tenantId: string,
@@ -107,7 +110,9 @@ export class LeadsService {
     };
   }
 
-  async findLead(tenantId: string, id: string) {
+  async findLead(tenantId: string, id: string, actor?: LeadActor) {
+    await this.assertLeadAccess(tenantId, id, actor);
+
     const lead = await this.prisma.lead.findFirst({
       where: { id, tenantId },
     });
@@ -130,7 +135,9 @@ export class LeadsService {
     });
   }
 
-  async findLeadContext(tenantId: string, id: string) {
+  async findLeadContext(tenantId: string, id: string, actor?: LeadActor) {
+    await this.assertLeadAccess(tenantId, id, actor);
+
     const lead = await this.prisma.lead.findFirst({
       where: { id, tenantId },
       include: {
@@ -238,6 +245,9 @@ export class LeadsService {
     const assignedTo =
       dto.assignedTo?.trim() ||
       (await this.resolveDefaultAssignedTo(tenantId, actor?.userId));
+    const ownerFields = actor
+      ? await this.resolveOwnerFieldsForCreate(tenantId, actor)
+      : { ownerUserId: null as string | null, ownerTeamId: null as string | null };
     const documentFields = this.resolveDocumentFields(
       dto.documentType,
       dto.document,
@@ -255,6 +265,8 @@ export class LeadsService {
         status: dto.status,
         notes: dto.notes,
         assignedTo,
+        ownerUserId: ownerFields.ownerUserId,
+        ownerTeamId: ownerFields.ownerTeamId,
         lastContactAt: now,
         ...documentFields,
       },
@@ -275,7 +287,7 @@ export class LeadsService {
     dto: UpdateLeadDto,
     actor?: LeadActor,
   ) {
-    await this.ensureLeadBelongsToTenant(tenantId, id);
+    await this.assertLeadAccess(tenantId, id, actor);
 
     const documentPatch = this.buildDocumentPatch(dto);
     const now = new Date();
@@ -315,14 +327,19 @@ export class LeadsService {
     });
   }
 
-  async deleteLead(tenantId: string, id: string) {
-    await this.ensureLeadBelongsToTenant(tenantId, id);
+  async deleteLead(tenantId: string, id: string, actor?: LeadActor) {
+    await this.assertLeadAccess(tenantId, id, actor);
     await this.prisma.lead.delete({ where: { id } });
     return { deleted: true, id };
   }
 
-  async convertLead(tenantId: string, id: string, dto: ConvertLeadDto) {
-    const lead = await this.findLead(tenantId, id);
+  async convertLead(
+    tenantId: string,
+    id: string,
+    dto: ConvertLeadDto,
+    actor?: LeadActor,
+  ) {
+    const lead = await this.findLead(tenantId, id, actor);
     if (lead.dealId) {
       throw new ConflictException('Lead já convertido em negócio');
     }
@@ -487,7 +504,7 @@ export class LeadsService {
       assignedToFilter = { in: values };
     }
 
-    return {
+    const legacyWhere: Prisma.LeadWhereInput = {
       tenantId,
       ...(query.status ? { status: query.status } : {}),
       ...(query.source ? { source: query.source } : {}),
@@ -506,15 +523,84 @@ export class LeadsService {
           }
         : {}),
     };
+
+    if (!actor?.userId) {
+      return legacyWhere;
+    }
+
+    const enforcement = await this.ownership.getEnforcementMode(tenantId);
+    if (enforcement === 'off') {
+      return legacyWhere;
+    }
+
+    const ctx = await this.ownership.resolveContext(tenantId, actor);
+    const ownershipWhere = this.ownership.buildLeadAccessWhere(ctx);
+
+    if (enforcement === 'shadow') {
+      void this.ownership.logLeadListShadowComparison(
+        tenantId,
+        ctx,
+        legacyWhere,
+        ownershipWhere,
+      );
+      return legacyWhere;
+    }
+
+    const { tenantId: _tid, ...filtersWithoutTenant } = legacyWhere;
+    void _tid;
+
+    return {
+      tenantId,
+      AND: [
+        filtersWithoutTenant,
+        ownershipWhere,
+      ],
+    };
   }
 
-  private async ensureLeadBelongsToTenant(tenantId: string, id: string) {
+  private async assertLeadAccess(
+    tenantId: string,
+    leadId: string,
+    actor?: LeadActor,
+  ): Promise<void> {
     const lead = await this.prisma.lead.findFirst({
-      where: { id, tenantId },
+      where: { id: leadId, tenantId },
       select: { id: true },
     });
     if (!lead) {
       throw new NotFoundException('Lead não encontrado');
     }
+
+    if (!actor?.userId) return;
+
+    const enforcement = await this.ownership.getEnforcementMode(tenantId);
+    if (enforcement === 'off') return;
+
+    const ctx = await this.ownership.resolveContext(tenantId, actor);
+
+    if (enforcement === 'shadow') {
+      void this.ownership.logLeadAccessShadowDenied(ctx, leadId);
+      return;
+    }
+
+    await this.ownership.assertCanAccessLead(ctx, leadId);
+  }
+
+  private async resolveOwnerFieldsForCreate(
+    tenantId: string,
+    actor: LeadAccessActor,
+  ): Promise<{ ownerUserId: string; ownerTeamId: string | null }> {
+    const ctx = await this.ownership.resolveContext(tenantId, actor);
+    let ownerTeamId: string | null = ctx.teamIds[0] ?? null;
+
+    if (!ownerTeamId) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: actor.userId, tenantId },
+        select: { primaryTeamId: true },
+      });
+      ownerTeamId = user?.primaryTeamId ?? null;
+    }
+
+    return { ownerUserId: actor.userId, ownerTeamId };
   }
 }
