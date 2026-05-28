@@ -19,7 +19,15 @@ Rollout **somente leads**. Produção permanece com `ownershipEnforcement: off` 
 | Comercial | comercial@insureflow.com       | Comercial@2026!  | own             |
 | Parceiro  | parceiro@insureflow.com        | Parceiro@2026!     | shared          |
 
-## Cenários (modo `on` em HML)
+## Fase 3 HML — somente `shadow` (atual)
+
+- [ ] `OWNERSHIP_ENFORCEMENT=shadow` na API HML
+- [ ] Produção confirmada com `off` (sem alteração)
+- [ ] **Não** definir `on` em HML até sign-off do [relatório de validação](./sprint-2-hml-validation-report.md)
+- [ ] Em shadow: usuários **não** são bloqueados; validar logs `[ownership:shadow]`
+- [ ] Preencher relatório com divergências e plano de correção
+
+## Cenários funcionais (aplicam com `on` — pós sign-off)
 
 ### V1 — Parceiro
 
@@ -44,10 +52,12 @@ Rollout **somente leads**. Produção permanece com `ownershipEnforcement: off` 
 - [ ] Vê todos os leads do tenant
 - [ ] Filtro "Meus leads" oculto (escopo tenant)
 
-## Modo shadow (antes de `on`)
+## Modo shadow (obrigatório nesta fase)
 
 - [ ] Logs `[ownership:shadow]` sem bloqueio de usuários
 - [ ] Comparar contagens legacy vs ownership; investigar divergências > 0
+- [ ] JWT: `dataScope` e `teamIds` corretos por persona (login API)
+- [ ] UI: filtro "Meus leads" e PermissionGate por escopo (independente do bloqueio API)
 
 ## Regressão
 
