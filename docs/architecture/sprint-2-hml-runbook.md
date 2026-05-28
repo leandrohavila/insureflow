@@ -20,6 +20,9 @@ Merge em `develop` somente após validação HML documentada.
 
 ## 2. Deploy HML
 
+Guia detalhado: **[sprint-2-hml-deploy-guide.md](./sprint-2-hml-deploy-guide.md)**  
+Browser: **[sprint-2-browser-validation-checklist.md](./sprint-2-browser-validation-checklist.md)**
+
 1. Deploy da branch `feature/rbac-ownership-foundations` (API Railway + Web Vercel preview/HML).
 2. Railway — variáveis API HML:
 

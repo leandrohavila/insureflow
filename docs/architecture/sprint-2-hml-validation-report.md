@@ -1,4 +1,7 @@
-# Sprint 2 — Relatório de validação (Fase 7 — estabilização local)
+# Sprint 2 — Relatório de validação HML + browser
+
+> **Fase 7 (local):** concluída — ver §1–3 abaixo.  
+> **Fase 8 (HML real):** aguardando deploy — preencher §10 após Railway/Vercel online.
 
 **Branch:** `feature/rbac-ownership-foundations`  
 **Ambiente:** Neon dev (`APP_ENV=development`) + API local `:4001` · `OWNERSHIP_ENFORCEMENT=shadow`  
@@ -25,7 +28,7 @@
 | Shadow — parceiro (`shared`) | Divergência **esperada** (legacy 4 vs ownership 2) |
 | Produção protegida | OK |
 | Browser / PermissionGate | **Pendente** (checklist §4) |
-| HML Railway/Vercel | **Pendente** deploy branch |
+| HML Railway/Vercel | **404** — redeploy necessário ([guia deploy](./sprint-2-hml-deploy-guide.md)) |
 
 ---
 
@@ -201,3 +204,63 @@ Validar: `/api/auth/me` com `dataScope`, troca de sessão, URL direta lead.
 | Pronto para HML deploy + browser | [ ] |
 | Pronto para `on` em HML | [ ] |
 | Pronto para produção | [ ] |
+
+---
+
+## 10. Fase 8 — HML real + browser (a preencher)
+
+### URLs (preencher após deploy)
+
+| Serviço | URL alvo | Status atual |
+|---------|----------|--------------|
+| API HML | `https://insureflow-api-dev.up.railway.app` | 404 Application not found |
+| Web HML | `https://insureflow-web-dev.vercel.app` | 404 DEPLOYMENT_NOT_FOUND |
+| API produção | `https://api.corretoraavila.com.br` | 200 — **sem** Sprint 2 (`dataScope` ausente) |
+
+### Comandos pós-deploy
+
+```powershell
+$env:APP_ENV = "development"
+npm run hml:sprint2:db migrate
+npm run hml:sprint2:db seed
+npm run hml:sprint2:align-owners
+npm run hml:sprint2:db backfill-dry
+
+$env:API_URL = "https://<API_HML>"
+$env:WEB_URL = "https://<WEB_HML>"
+npm run hml:deploy:verify
+npm run hml:sprint2:validate
+```
+
+### Browser checklist
+
+Preencher: [sprint-2-browser-validation-checklist.md](./sprint-2-browser-validation-checklist.md)
+
+| Persona | Login | dataScope (me) | Meus leads | PermissionGate | OK |
+|---------|-------|----------------|------------|----------------|-----|
+| Admin | | tenant | oculto | | [ ] |
+| Gerência | | team | visível | | [ ] |
+| Comercial | | own | visível | | [ ] |
+| Parceiro | | shared | oculto | | [ ] |
+
+### Screenshots / evidências
+
+| Item | Arquivo / link |
+|------|----------------|
+| Admin lista leads | |
+| Parceiro menu restrito | |
+| Comercial criar lead | |
+| Railway shadow logs | |
+
+### Readiness Sprint 3 (após Fase 8)
+
+| Critério | Status |
+|----------|--------|
+| HML API+Web 200 | [ ] |
+| `hml:deploy:verify` OK | [ ] |
+| `hml:sprint2:validate` 0 issues | [ ] |
+| Browser checklist completo | [ ] |
+| Shadow estável em HML | [ ] |
+| Sign-off produto/ops | [ ] |
+
+**Sprint 3 sugerida:** deals ownership, `on` em HML piloto, UI admin roles — **somente após** linhas acima marcadas.

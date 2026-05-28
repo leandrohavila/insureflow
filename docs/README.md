@@ -36,7 +36,7 @@ Documentação viva do monorepo InsureFlow (Turbo · NestJS · Next.js · Prisma
 9. [Roadmap CRM](roadmap/crm-evolution.md)
 10. [Princípios UX operacional](ux/operational-principles.md)
 11. [Sprint 1 Ownership](sprint-notes/sprint-1-ownership-rbac.md) · [Sprint 1b Fase 2](sprint-notes/sprint-1b-phase-2-matrix.md)
-12. [Sprint 2 — HML checklist](architecture/sprint-2-hml-checklist.md) · [Runbook HML](architecture/sprint-2-hml-runbook.md) · [Relatório](architecture/sprint-2-hml-validation-report.md) · [Riscos](architecture/sprint-2-rollout-risks.md)
+12. [Sprint 2 — HML checklist](architecture/sprint-2-hml-checklist.md) · [Deploy HML](architecture/sprint-2-hml-deploy-guide.md) · [Browser UI](architecture/sprint-2-browser-validation-checklist.md) · [Relatório](architecture/sprint-2-hml-validation-report.md)
 
 ## Convenções
 
