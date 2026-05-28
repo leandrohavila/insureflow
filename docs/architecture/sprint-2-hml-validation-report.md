@@ -8,12 +8,16 @@
 
 | Campo | Valor |
 |-------|--------|
-| Data | |
+| Data | _preencher após execução_ |
 | Responsável | |
-| PR | |
-| API URL HML | |
-| Web URL HML | |
-| Commit deployado | |
+| PR | https://github.com/leandrohavila/insureflow/compare/develop...feature/rbac-ownership-foundations |
+| API URL HML | _Railway HML — pós deploy branch_ |
+| Web URL HML | _Vercel preview/HML_ |
+| Commit deployado | `feature/rbac-ownership-foundations` @ _SHA_ |
+| Flag API HML | `OWNERSHIP_ENFORCEMENT=shadow` |
+| Flag produção | `OWNERSHIP_ENFORCEMENT=off` (confirmado) |
+| Script API | `pnpm hml:sprint2:validate` → `sprint-2-hml-validation-run.json` |
+| Runbook | [sprint-2-hml-runbook.md](./sprint-2-hml-runbook.md) |
 
 ---
 

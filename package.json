@@ -18,6 +18,8 @@
     "dev:cloud:migrate": "node scripts/dev-cloud-migrate.cjs",
     "dev:cloud:smoke": "node scripts/dev-cloud-smoke.cjs",
     "dev:cloud:homologation": "node scripts/dev-cloud-homologation.cjs",
+    "hml:sprint2:db": "node scripts/hml-sprint2-db.cjs",
+    "hml:sprint2:validate": "node scripts/hml-sprint2-validation.cjs",
     "prod:domain:plan": "node scripts/prod-domain-setup.cjs",
     "prod:domain:smoke": "node scripts/prod-domain-setup.cjs --smoke",
     "prod:railway:diagnose": "node scripts/railway-prod-diagnose.cjs",

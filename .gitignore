@@ -36,6 +36,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# HML validation artifacts (gerados localmente)
+docs/architecture/sprint-2-hml-validation-run.json
+
 # Misc
 .DS_Store
 *.pem
