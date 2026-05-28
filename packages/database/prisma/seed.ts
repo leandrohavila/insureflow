@@ -9,8 +9,19 @@
  * - gerencia@insureflow.com / Gerencia@2026!
  * - parceiro@insureflow.com / Parceiro@2026!
  */
+import path from 'node:path';
+import { config } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+
+const monorepoRoot = path.resolve(__dirname, '../../..');
+const appEnv = process.env.APP_ENV ?? 'development';
+for (const file of ['.env', `.env.${appEnv}`]) {
+  config({ path: path.join(monorepoRoot, file), override: true });
+}
+if (process.env.DATABASE_URL_DIRECT) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_DIRECT;
+}
 
 const prisma = new PrismaClient();
 

@@ -26,19 +26,25 @@ import { QueueModule } from './modules/queue/queue.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
 
+function resolveEnvFilePath(): string[] {
+  const appEnv = process.env.APP_ENV ?? 'local';
+  if (appEnv === 'development') {
+    return ['../../.env.development', '../../.env', '.env'];
+  }
+  if (appEnv === 'staging') {
+    return ['../../.env.staging', '../../.env', '.env'];
+  }
+  if (appEnv === 'production') {
+    return ['../../.env.production', '../../.env', '.env'];
+  }
+  return ['.env.local', '../../.env.local', '../../.env', '.env'];
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        '.env.local',
-        '.env',
-        '../../.env.local',
-        '../../.env',
-        '../../.env.development',
-        '../../.env.staging',
-        '../../.env.production',
-      ],
+      envFilePath: resolveEnvFilePath(),
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],

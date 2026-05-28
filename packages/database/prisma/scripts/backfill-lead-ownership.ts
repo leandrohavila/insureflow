@@ -2,12 +2,22 @@
  * Backfill assignedTo (texto) → ownerUserId / ownerTeamId
  *
  * Uso local/HML:
- *   npx ts-node --project packages/database/tsconfig.json packages/database/prisma/scripts/backfill-lead-ownership.ts
- *   npx ts-node ... --execute
+ *   APP_ENV=development npm run hml:sprint2:db backfill-dry
  *
  * NÃO rodar em produção sem revisão do relatório dry-run.
  */
+import path from 'node:path';
+import { config } from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+
+const monorepoRoot = path.resolve(__dirname, '../../../..');
+const appEnv = process.env.APP_ENV ?? 'development';
+for (const file of ['.env', `.env.${appEnv}`]) {
+  config({ path: path.join(monorepoRoot, file), override: true });
+}
+if (process.env.DATABASE_URL_DIRECT) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_DIRECT;
+}
 
 const prisma = new PrismaClient();
 const execute = process.argv.includes('--execute');

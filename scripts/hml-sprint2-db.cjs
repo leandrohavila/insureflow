@@ -14,6 +14,10 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const dbPkg = path.join(root, 'packages', 'database');
+const { loadMonorepoEnv } = require('./load-monorepo-env.cjs');
+
+const envInfo = loadMonorepoEnv(root);
+console.log(`[hml-sprint2-db] APP_ENV=${envInfo.appEnv} DB host=${envInfo.databaseHost}`);
 
 const cmd = process.argv[2];
 
@@ -59,7 +63,10 @@ switch (cmd) {
     ]);
     break;
   case 'seed':
-    run('db seed', ['ts-node', '--project', 'tsconfig.json', 'prisma/seed.ts']);
+    run('db seed', ['ts-node', '--project', 'tsconfig.json', 'prisma/seed.ts'], {
+      SEED_DEV_DATA: process.env.SEED_DEV_DATA ?? '1',
+      APP_ENV: process.env.APP_ENV || 'development',
+    });
     break;
   case 'backfill-dry':
     run('backfill dry-run', [
