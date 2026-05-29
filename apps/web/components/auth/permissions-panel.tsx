@@ -18,6 +18,7 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   "clients:manage": "Clientes (edição)",
   "leads:view": "Leads (leitura)",
   "leads:manage": "Leads (edição)",
+  "leads:share": "Compartilhar leads",
   "questionnaires:view": "Questionários (leitura)",
   "questionnaires:manage": "Questionários (edição)",
   "quotes:view": "Cotações (leitura)",
