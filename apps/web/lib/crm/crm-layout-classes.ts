@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 
 /** Shell padrão das páginas CRM — densidade operacional desktop-first. */
 export const CRM_PAGE_SHELL =
-  "crm-page-shell flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col gap-4 overflow-hidden px-4 pb-4 pt-4 md:gap-4 md:px-6 md:pb-5 md:pt-5"
+  "crm-page-shell flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col gap-5 overflow-hidden px-5 pb-5 pt-5 sm:px-6 md:gap-6 md:px-8 md:pb-6 md:pt-6 xl:px-10"
 
 /** Corpo rolável em páginas de listagem (contatos, empresas, tarefas). */
 export const CRM_PAGE_SHELL_SCROLL =
