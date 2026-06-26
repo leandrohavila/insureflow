@@ -68,11 +68,11 @@ export function LoginForm() {
       initial={reduce ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: easeOut }}
-      className="w-full max-w-md"
+      className="w-full max-w-lg"
     >
-      <div className="mb-8 space-y-3 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.52_0.16_258)] shadow-xl shadow-primary/30 ring-1 ring-white/20">
-          <Shield className="size-7 text-white" strokeWidth={1.25} />
+      <div className="mb-9 space-y-4 text-center">
+        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.52_0.16_258)] shadow-xl shadow-primary/30 ring-1 ring-white/20">
+          <Shield className="size-8 text-white" strokeWidth={1.25} />
         </div>
         <h1 className="text-2xl font-semibold tracking-[-0.04em]">
           <span className="text-gradient-brand">InsureFlow</span>
@@ -84,9 +84,9 @@ export function LoginForm() {
 
       <form
         onSubmit={handleSubmit}
-        className="glass-panel space-y-5 rounded-2xl border border-white/[0.08] p-6 shadow-2xl md:p-8"
+        className="glass-panel space-y-6 rounded-2xl border border-white/[0.08] p-7 shadow-2xl md:p-9"
       >
-        <motion.div className="space-y-2">
+        <motion.div className="space-y-2.5">
           <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
             E-mail corporativo
           </label>
@@ -98,14 +98,14 @@ export function LoginForm() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 border-white/[0.08] bg-white/[0.04] pl-10"
+              className="h-12 border-white/[0.08] bg-white/[0.04] pl-11"
               placeholder="voce@empresa.com"
               required
             />
           </div>
         </motion.div>
 
-        <motion.div className="space-y-2">
+        <motion.div className="space-y-2.5">
           <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
             Senha
           </label>
@@ -117,7 +117,7 @@ export function LoginForm() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-11 border-white/[0.08] bg-white/[0.04] pl-10"
+              className="h-12 border-white/[0.08] bg-white/[0.04] pl-11"
               placeholder="••••••••"
               required
             />
@@ -130,7 +130,7 @@ export function LoginForm() {
           </p>
         )}
 
-        <Button type="submit" className="h-11 w-full shadow-lg shadow-primary/25" disabled={loading}>
+        <Button type="submit" className="h-12 w-full shadow-lg shadow-primary/25" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="size-4 animate-spin" />
@@ -142,18 +142,18 @@ export function LoginForm() {
         </Button>
       </form>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-8 space-y-4">
         <p className="text-center text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
           Contas de demonstração
         </p>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {demoAccounts.map((account) => (
             <button
               key={account.email}
               type="button"
               onClick={() => fillDemo(account)}
               className={cn(
-                "rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-left text-xs transition-colors",
+                "rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-left text-xs transition-colors",
                 "hover:border-primary/30 hover:bg-primary/5"
               )}
             >
