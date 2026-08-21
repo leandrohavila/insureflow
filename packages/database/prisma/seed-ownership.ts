@@ -48,6 +48,7 @@ const OFFICIAL_ROLES: RoleDef[] = [
       'policies:view',
       'audit:view',
       'settings:view',
+      'business-units:view-all',
     ],
   },
   {

@@ -143,12 +143,19 @@ export type QuestionnaireSubmissionLeadSummary = {
   assignedTo?: string | null;
 };
 
+export type QuestionnaireSubmissionUserSummary = {
+  id: string;
+  name: string;
+  email?: string | null;
+};
+
 export type QuestionnaireSubmission = {
   id: string;
   tenantId: string;
   templateId: string;
   template?: QuestionnaireSubmissionTemplateSummary | null;
   lead?: QuestionnaireSubmissionLeadSummary | null;
+  updatedBy?: QuestionnaireSubmissionUserSummary | null;
   mode: QuestionnaireSubmissionMode;
   origin: QuestionnaireOrigin;
   status: QuestionnaireSubmissionStatus;
@@ -223,11 +230,12 @@ export type BackendQuestionnaireTemplateListResponse = {
 
 export type BackendQuestionnaireSubmission = Omit<
   QuestionnaireSubmission,
-  "answers" | "template" | "lead"
+  "answers" | "template" | "lead" | "updatedBy"
 > & {
   answers?: JsonObject | null;
   template?: QuestionnaireSubmissionTemplateSummary | null;
   lead?: QuestionnaireSubmissionLeadSummary | null;
+  updatedBy?: QuestionnaireSubmissionUserSummary | null;
 };
 
 export type BackendQuestionnaireSubmissionListResponse = {

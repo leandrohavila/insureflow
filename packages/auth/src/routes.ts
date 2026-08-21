@@ -7,6 +7,7 @@ const ROUTE_RULES: { prefix: string; permission: Permission }[] = [
   { prefix: "/leads", permission: "leads:view" },
   { prefix: "/questionarios", permission: "questionnaires:view" },
   { prefix: "/cotacoes", permission: "quotes:view" },
+  { prefix: "/propostas", permission: "quotes:view" },
   { prefix: "/apolices", permission: "policies:view" },
   { prefix: "/sinistros", permission: "claims:view" },
   { prefix: "/whatsapp", permission: "whatsapp:view" },

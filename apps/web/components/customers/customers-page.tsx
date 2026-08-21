@@ -181,7 +181,7 @@ export function CustomersPage() {
       initial={reduce ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: easeOut }}
-      className="flex flex-1 flex-col gap-8 px-4 py-8 md:gap-10 md:px-8 md:py-10"
+      className="flex flex-1 flex-col gap-6 px-5 py-6 sm:px-6 md:gap-8 md:px-8 md:py-8 xl:px-10 xl:py-10"
     >
       <CrmPageHeader
         badge="Base de clientes"

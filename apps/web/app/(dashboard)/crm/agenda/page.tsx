@@ -1,9 +1,5 @@
-import { AgendaPage } from "@/components/crm/agenda-page"
+import { CommercialAgendaWorkspace } from "@/components/crm/commercial-agenda-workspace"
 
-export const metadata = {
-  title: "Agenda | CRM",
-}
-
-export default function AgendaRoute() {
-  return <AgendaPage />
+export default function CrmAgendaPage() {
+  return <CommercialAgendaWorkspace />
 }

@@ -1,11 +1,19 @@
-export { formatCurrency, pipelineStages, stageLabelMap } from "./constants"
+export { formatCurrency, pipelineStages, realEstatePipelineStages, allPipelineStages, stageLabelMap } from "./constants"
 
-export { createDeal, deleteDeal, fetchDeals, updateDeal } from "./api"
+export { createDeal, deleteDeal, fetchDeals, updateDeal, updateDealPipelinePosition } from "./api"
+export { CRM_DEAL_API_CONTRACT } from "./deal-contract"
 export {
   useCreateCrmDeal,
   useCrmDeals,
+  useCrmPipelines,
+  useExecutiveDashboard,
+  useSlaDashboard,
+  usePerformanceDashboard,
+  usePerformanceRanking,
+  useSalesTargets,
   useDeleteCrmDeal,
   useUpdateCrmDeal,
+  useUpdateCrmDealPipeline,
 } from "./hooks"
 export type {
   BackendCrmDeal,
@@ -14,6 +22,7 @@ export type {
   CrmDealCommercialContext,
   CrmDealQuestionnaireStatus,
   CrmDealLeadSummary,
+  CrmDealQuoteSummary,
   CrmDealStatus,
   CrmStageId,
   DealPipelineUpdateInput,

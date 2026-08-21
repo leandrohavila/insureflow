@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import type { Request } from 'express';
@@ -24,7 +25,11 @@ import {
   logDealContract,
 } from '../../common/utils/deal-contract-debug';
 import { CrmService } from './crm.service';
-import { CreateDealDto, UpdateDealDto } from './dto/deal.dto';
+import {
+  CreateDealDto,
+  ListDealsQueryDto,
+  UpdateDealDto,
+} from './dto/deal.dto';
 
 @ApiTags('crm')
 @ApiBearerAuth('access-token')
@@ -32,11 +37,32 @@ import { CreateDealDto, UpdateDealDto } from './dto/deal.dto';
 export class CrmController {
   constructor(private readonly crm: CrmService) {}
 
+  private actorFrom(user: JwtAccessPayload) {
+    return {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    };
+  }
+
   @Get()
   @RequirePermissions('crm:view')
   @ApiOperation({ summary: 'Listar negócios do tenant' })
-  findDeals(@CurrentUser() user: JwtAccessPayload) {
-    return this.crm.findDeals(user.tenantId);
+  findDeals(
+    @CurrentUser() user: JwtAccessPayload,
+    @Query() query: ListDealsQueryDto,
+  ) {
+    return this.crm.findDeals(user.tenantId, query, this.actorFrom(user));
+  }
+
+  @Get(':id')
+  @RequirePermissions('crm:view')
+  @ApiOperation({ summary: 'Detalhe do negócio do tenant' })
+  @ApiParam({ name: 'id', description: 'ID do negócio' })
+  findDeal(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
+    return this.crm.findDeal(user.tenantId, id, this.actorFrom(user));
   }
 
   @Post()
@@ -56,7 +82,11 @@ export class CrmController {
       keys: Object.keys(dto),
       pipelineOrder: dto.pipelineOrder,
     });
-    return this.crm.createDeal(user.tenantId, dto);
+    return this.crm.createDeal(user.tenantId, dto, {
+      userId: user.sub,
+      roles: user.roles,
+      permissions: user.permissions,
+    });
   }
 
   @Patch(':id')

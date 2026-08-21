@@ -19,5 +19,8 @@ export async function GET() {
     organizationName: session.organizationName,
     title: session.title,
     permissions: session.permissions,
+    dataScope: session.dataScope,
+    teamIds: session.teamIds,
+    currentBusinessUnitId: session.currentBusinessUnitId,
   })
 }

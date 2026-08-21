@@ -7,12 +7,20 @@ import {
   PropertyCell,
   PropertyGrid,
 } from "@/components/crm/sheet-sections/sheet-shared"
-import type { Lead } from "@/lib/data-access/modules/leads"
+import { FormSelect } from "@/components/design-system/forms"
+import {
+  LEAD_STATUSES,
+  type Lead,
+  type LeadStatus,
+} from "@/lib/data-access/modules/leads"
 
 import { LEAD_STATUS_LABEL, LEAD_STATUS_TONE } from "../lead-shared"
 
 type LeadDataSectionProps = {
   lead: Lead
+  canEditStatus?: boolean
+  statusPending?: boolean
+  onStatusChange?: (status: LeadStatus) => void
 }
 
 function formatBrDateTime(value: string | null | undefined): string {
@@ -33,7 +41,12 @@ function formatBrDateTime(value: string | null | undefined): string {
  * poluição das seções narrativas (Overview / Comercial / Origem) sem
  * esconder a verdade do dado.
  */
-export function LeadDataSection({ lead }: LeadDataSectionProps) {
+export function LeadDataSection({
+  lead,
+  canEditStatus = false,
+  statusPending = false,
+  onStatusChange,
+}: LeadDataSectionProps) {
   return (
     <div className="flex flex-col gap-4">
       <SectionPanel title="Estado técnico" tone="default">
@@ -42,16 +55,38 @@ export function LeadDataSection({ lead }: LeadDataSectionProps) {
             icon={Tag}
             label="Status atual"
             value={
-              <StatusPill
-                tone={LEAD_STATUS_TONE[lead.status]}
-                variant="soft"
-                size="sm"
-                dot
-              >
-                {LEAD_STATUS_LABEL[lead.status]}
-              </StatusPill>
+              canEditStatus && onStatusChange ? (
+                <div className="space-y-1.5">
+                  <FormSelect
+                    value={lead.status}
+                    disabled={statusPending}
+                    aria-label="Status do lead"
+                    onChange={(event) =>
+                      onStatusChange(event.target.value as LeadStatus)
+                    }
+                    options={LEAD_STATUSES.map((item) => ({
+                      value: item,
+                      label: LEAD_STATUS_LABEL[item],
+                    }))}
+                  />
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Fluxo padrão: Novo → Contatado → Qualificado → Convertido →
+                    Perdido.
+                  </p>
+                </div>
+              ) : (
+                <StatusPill
+                  tone={LEAD_STATUS_TONE[lead.status]}
+                  variant="soft"
+                  size="sm"
+                  dot
+                >
+                  {LEAD_STATUS_LABEL[lead.status]}
+                </StatusPill>
+              )
             }
             className="bg-[var(--crm-surface-panel)]"
+            span={canEditStatus && onStatusChange ? 2 : 1}
           />
           <PropertyCell
             icon={Database}

@@ -7,11 +7,12 @@ import {
 import { PolicyRenewalStatus, PolicyStatus, Prisma } from '@prisma/client';
 
 import {
-  computeCustomerPolicyAggregates,
   resolveLifecycleAfterPolicyIssuance,
   syncCustomerPolicyAggregates,
 } from '../../common/utils/customer-policy-aggregates';
+import type { ActivityEventKind } from '../../common/utils/activity-event-kinds.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ActivityEngineService } from '../activities/activity-engine.service';
 import { CustomerActivationService } from '../customers/customer-activation.service';
 import type {
   CancelPolicyDto,
@@ -44,6 +45,7 @@ export class PoliciesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly customerActivation: CustomerActivationService,
+    private readonly activityEngine: ActivityEngineService,
   ) {}
 
   async findPolicies(tenantId: string, query: ListPoliciesQueryDto) {
@@ -114,7 +116,7 @@ export class PoliciesService {
           await this.advanceCustomerLifecycle(tx, tenantId, policy.customerId);
         }
 
-        await this.recordOperationalEvent(tx, {
+        await this.publishPolicyEvent(tx, {
           tenantId,
           performedById,
           policy,
@@ -310,7 +312,7 @@ export class PoliciesService {
         policy.customerId,
       );
 
-      await this.recordOperationalEvent(tx, {
+      await this.publishPolicyEvent(tx, {
         tenantId,
         performedById,
         policy,
@@ -353,7 +355,7 @@ export class PoliciesService {
           },
         });
 
-        await this.recordOperationalEvent(tx, {
+        await this.publishPolicyEvent(tx, {
           tenantId,
           performedById,
           policy: existing,
@@ -393,7 +395,7 @@ export class PoliciesService {
 
         await this.advanceCustomerLifecycle(tx, tenantId, renewed.customerId);
 
-        await this.recordOperationalEvent(tx, {
+        await this.publishPolicyEvent(tx, {
           tenantId,
           performedById,
           policy: renewed,
@@ -412,23 +414,6 @@ export class PoliciesService {
     } catch (error) {
       this.handleWriteError(error);
     }
-  }
-
-  async getCustomerPolicyAggregates(tenantId: string, customerId: string) {
-    await this.assertCustomer(tenantId, customerId);
-    const policies = await this.prisma.policy.findMany({
-      where: { tenantId, customerId },
-      select: {
-        status: true,
-        renewalStatus: true,
-        premiumValue: true,
-        commissionValue: true,
-        effectiveTo: true,
-        issuedAt: true,
-        updatedAt: true,
-      },
-    });
-    return computeCustomerPolicyAggregates(policies);
   }
 
   private buildWhere(
@@ -505,7 +490,7 @@ export class PoliciesService {
     });
   }
 
-  private async recordOperationalEvent(
+  private async publishPolicyEvent(
     tx: Prisma.TransactionClient,
     input: {
       tenantId: string;
@@ -517,21 +502,20 @@ export class PoliciesService {
       occurredAt: Date;
     },
   ) {
-    await tx.activity.create({
-      data: {
+    await this.activityEngine.publish(
+      {
         tenantId: input.tenantId,
-        type: 'note',
-        status: 'completed',
+        performedById: input.performedById,
+        operationalEventKind: input.operationalEventKind as ActivityEventKind,
         subject: input.subject,
         description: input.description,
-        operationalEventKind: input.operationalEventKind,
         occurredAt: input.occurredAt,
         customerId: input.policy.customerId,
         dealId: input.policy.dealId,
         policyId: input.policy.id,
-        performedById: input.performedById,
       },
-    });
+      tx,
+    );
   }
 
   private async assertPolicyRelations(

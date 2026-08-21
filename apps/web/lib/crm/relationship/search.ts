@@ -43,7 +43,7 @@ function buildHref(kind: WorkspaceSearchResultKind, id: string): string {
     case "company":
       return `/crm/empresas?company=${encodeURIComponent(id)}&sheet=v2`
     case "deal":
-      return `/crm/negocios?deal=${encodeURIComponent(id)}&sheet=v2`
+      return `/crm/negocios?deal=${encodeURIComponent(id)}`
     case "lead":
       return `/leads?lead=${encodeURIComponent(id)}&sheet=v2`
     case "customer":

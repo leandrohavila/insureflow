@@ -90,7 +90,6 @@ function printReport(params: {
     counts.deals +
     counts.leads +
     counts.customers +
-    counts.questionnaire_fields +
     counts.questionnaire_templates +
     counts.refresh_tokens +
     counts.audit_logs;
@@ -99,18 +98,21 @@ function printReport(params: {
   console.log('Modo:', mode);
   console.log('Tenant:', tenantSlug, `(${tenantId})`);
   console.log('Admins preservados (usuários intactos):', PROTECTED_ADMIN_EMAILS.join(', '));
-  console.log('\n--- Tabelas afetadas (ordem de DELETE) ---');
+  console.log('\n--- Tabelas afetadas (ordem real de DELETE na transação) ---');
   console.log('1. questionnaire_submissions →', counts.questionnaire_submissions);
   console.log('2. activities                 →', counts.activities);
   console.log('3. policies                   →', counts.policies);
   console.log('4. deals                      →', counts.deals);
   console.log('5. leads                      →', counts.leads);
   console.log('6. customers                  →', counts.customers);
-  console.log('7. questionnaire_fields       →', counts.questionnaire_fields);
-  console.log('8. questionnaire_templates    →', counts.questionnaire_templates);
-  console.log('9. refresh_tokens             →', counts.refresh_tokens);
-  console.log('10. audit_logs                →', counts.audit_logs);
-  console.log('\nTotal registros operacionais:', totalOperational);
+  console.log(
+    '7. questionnaire_templates    →',
+    counts.questionnaire_templates,
+    `(+ ${counts.questionnaire_fields} fields em cascade ao apagar templates)`,
+  );
+  console.log('8. refresh_tokens             →', counts.refresh_tokens);
+  console.log('9. audit_logs                 →', counts.audit_logs);
+  console.log('\nTotal linhas a apagar (soma das contagens acima; fields em cascade não entram no total):', totalOperational);
   console.log('Usuários no tenant (preservados):', counts.users_preserved);
 
   console.log('\n--- Fora do escopo Prisma (manual se existir) ---');
@@ -121,7 +123,7 @@ function printReport(params: {
 
   console.log('\n--- Dependências FK (ordem respeitada) ---');
   console.log(
-    'Submissions → Activities/Policies → Deals → Leads/Customers → Templates/Fields → Tokens/Audit',
+    'Grafo: submissions (→ template restrict) antes de templates; activities refs deal/lead/customer/policy; policies→customer; deals↔lead unique; customers→deal sourceDealId; templates cascade fields.',
   );
 
   console.log('\n--- Riscos ---');

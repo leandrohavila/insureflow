@@ -1,8 +1,9 @@
 "use client"
 
-import { useMemo } from "react"
-import { useQueries } from "@tanstack/react-query"
+import { useCallback, useMemo } from "react"
+import { useQueries, useQueryClient } from "@tanstack/react-query"
 
+import { ACTIVITY_TIMELINE_PAGE_LIMIT } from "@/lib/crm/commercial-timeline"
 import { fetchActivities } from "@/lib/data-access/modules/activities/api"
 import type { Activity } from "@/lib/data-access/modules/activities"
 import { queryKeys } from "@/lib/data-access/query-keys"
@@ -87,6 +88,7 @@ export function useMergedActivityTimeline({
   dealIds = [],
   enabled = true,
 }: MergedTimelineInput) {
+  const queryClient = useQueryClient()
   const uniqueLeadIds = useMemo(
     () => Array.from(new Set((leadIds ?? []).filter(Boolean))),
     [leadIds],
@@ -99,14 +101,22 @@ export function useMergedActivityTimeline({
   const queries = useQueries({
     queries: [
       ...uniqueLeadIds.map((leadId) => ({
-        queryKey: queryKeys.activities.list({ leadId, limit: 50 }),
-        queryFn: () => fetchActivities({ leadId, limit: 50 }),
+        queryKey: queryKeys.activities.list({
+          leadId,
+          limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+        }),
+        queryFn: () =>
+          fetchActivities({ leadId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
         enabled: enabled && Boolean(leadId),
         staleTime: 30_000,
       })),
       ...uniqueDealIds.map((dealId) => ({
-        queryKey: queryKeys.activities.list({ dealId, limit: 50 }),
-        queryFn: () => fetchActivities({ dealId, limit: 50 }),
+        queryKey: queryKeys.activities.list({
+          dealId,
+          limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+        }),
+        queryFn: () =>
+          fetchActivities({ dealId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
         enabled: enabled && Boolean(dealId),
         staleTime: 30_000,
       })),
@@ -143,11 +153,16 @@ export function useMergedActivityTimeline({
       )[0] ?? null
   }, [data])
 
+  const refetch = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.activities.all })
+  }, [queryClient])
+
   return {
     data,
     isLoading,
     isError,
     nextFollowUpAt,
     total: data.length,
+    refetch,
   }
 }

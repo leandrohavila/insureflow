@@ -1,17 +1,26 @@
 import { apiClient } from "@/lib/data-access/api-client"
 import { sortDealsForPipeline } from "@/lib/pipeline-order"
 
+import {
+  toCreateDealPayload,
+  toPipelineMovePayload,
+  toUpdateDealPayload,
+} from "./deal-contract"
 import { normalizeDeal } from "./normalizers"
 import type {
   BackendCrmDeal,
   CreateCrmDealInput,
+  DealPipelineUpdateInput,
   UpdateCrmDealInput,
 } from "./types"
 
 const CRM_DEALS_PATH = "/api/crm/deals"
 
 export async function fetchDeals() {
-  const deals = await apiClient.get<BackendCrmDeal[]>(CRM_DEALS_PATH)
+  const response = await apiClient.get<
+    BackendCrmDeal[] | { data: BackendCrmDeal[] }
+  >(CRM_DEALS_PATH)
+  const deals = Array.isArray(response) ? response : response.data
   return sortDealsForPipeline(deals.map(normalizeDeal))
 }
 
@@ -25,15 +34,28 @@ function logDealContractMutation(
 }
 
 export async function createDeal(input: CreateCrmDealInput) {
-  logDealContractMutation("POST", CRM_DEALS_PATH, input)
-  const deal = await apiClient.post<BackendCrmDeal>(CRM_DEALS_PATH, input)
+  const body = toCreateDealPayload(input)
+  logDealContractMutation("POST", CRM_DEALS_PATH, body)
+  const deal = await apiClient.post<BackendCrmDeal>(CRM_DEALS_PATH, body)
   return normalizeDeal(deal)
 }
 
 export async function updateDeal(id: string, input: UpdateCrmDealInput) {
   const path = `${CRM_DEALS_PATH}/${id}`
-  logDealContractMutation("PATCH", path, input)
-  const deal = await apiClient.patch<BackendCrmDeal>(path, input)
+  const body = toUpdateDealPayload(input)
+  logDealContractMutation("PATCH", path, body)
+  const deal = await apiClient.patch<BackendCrmDeal>(path, body)
+  return normalizeDeal(deal)
+}
+
+export async function updateDealPipelinePosition(
+  id: string,
+  input: DealPipelineUpdateInput,
+) {
+  const path = `${CRM_DEALS_PATH}/${id}`
+  const body = toPipelineMovePayload(input)
+  logDealContractMutation("PATCH", path, body)
+  const deal = await apiClient.patch<BackendCrmDeal>(path, body)
   return normalizeDeal(deal)
 }
 

@@ -11,6 +11,8 @@ import {
   type OptimisticSnapshot,
 } from "@/lib/data-access/optimistic"
 import { queryKeys } from "@/lib/data-access/query-keys"
+import { bug010LeadCreateLog } from "@/lib/performance/bug010-lead-create"
+import { bug010DrawerLog } from "@/lib/performance/bug010-drawer-flow"
 
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import {
@@ -25,10 +27,13 @@ import {
   fetchLead,
   fetchLeadDuplicates,
   fetchLeads,
+  linkLeadBusinessUnit,
+  unlinkLeadBusinessUnit,
   updateLead,
 } from "./api"
 import type {
   ConvertLeadInput,
+  CreateLeadRequestInput,
   Lead,
   LeadListFilters,
   LeadListResponse,
@@ -78,11 +83,98 @@ export function useLeadDuplicates({
 export function useCreateLead() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: createLead,
-    onSuccess: (lead) => {
+  return useMutation<Lead, unknown, CreateLeadRequestInput>({
+    mutationFn: async (input: CreateLeadRequestInput) => {
+      bug010DrawerLog("mutationFn() start")
+      try {
+        const lead = await createLead(input)
+        bug010DrawerLog("mutationFn() resolve")
+        return lead
+      } catch (error) {
+        bug010DrawerLog("mutationFn() reject")
+        throw error
+      }
+    },
+    onSuccess: (lead, variables) => {
+      bug010DrawerLog("onSuccess hook")
+      console.log("[DRAWER] 4-onSuccess")
+      const traceId =
+        variables.perfTraceId ?? variables.idempotencyKey ?? "lead-create"
+      bug010LeadCreateLog("mutation.onSuccess", {}, traceId)
       queryClient.setQueryData<Lead>(queryKeys.leads.detail(lead.id), lead)
-      void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
+      const invalidateStartedAt = performance.now()
+      const queryFetches = new Map<string, number>()
+      const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+        const query = event.query
+        if (!query) return
+        const queryKey = JSON.stringify(query.queryKey)
+        const isFetching = query.state.fetchStatus === "fetching"
+        if (isFetching && !queryFetches.has(queryKey)) {
+          queryFetches.set(queryKey, performance.now())
+          bug010LeadCreateLog(`Query: ${queryKey} start`, {}, traceId)
+          return
+        }
+        const startedAt = queryFetches.get(queryKey)
+        if (!isFetching && startedAt !== undefined) {
+          queryFetches.delete(queryKey)
+          bug010LeadCreateLog(
+            `Query: ${queryKey} end`,
+            {
+              queryMs: Number((performance.now() - startedAt).toFixed(2)),
+              status: query.state.status,
+            },
+            traceId,
+          )
+        }
+      })
+      bug010LeadCreateLog(
+        "invalidateQueries()",
+        {
+          totalSinceSubmitMs: variables.perfSubmitStartedAt
+            ? Number(
+                (invalidateStartedAt - variables.perfSubmitStartedAt).toFixed(
+                  2,
+                ),
+              )
+            : undefined,
+        },
+        traceId,
+      )
+      console.log("[DRAWER] 9-before-invalidate")
+      bug010DrawerLog("before invalidateQueries")
+      void queryClient
+        .invalidateQueries({ queryKey: queryKeys.leads.all })
+        .then(() => {
+          console.log("[DRAWER] 10-after-invalidate")
+          bug010DrawerLog("after invalidateQueries")
+          const refreshCompletedAt = performance.now()
+          bug010LeadCreateLog(
+            "refetchQueries() via invalidate complete",
+            {
+              invalidateMs: Number(
+                (refreshCompletedAt - invalidateStartedAt).toFixed(2),
+              ),
+              totalSinceSubmitMs: variables.perfSubmitStartedAt
+                ? Number(
+                    (
+                      refreshCompletedAt - variables.perfSubmitStartedAt
+                    ).toFixed(2),
+                  )
+                : undefined,
+            },
+            traceId,
+          )
+          unsubscribe()
+        })
+        .catch(() => {
+          unsubscribe()
+        })
+    },
+    onError: () => {
+      bug010DrawerLog("onError hook")
+    },
+    onSettled: () => {
+      bug010DrawerLog("onSettled hook")
     },
   })
 }
@@ -123,6 +215,38 @@ export function useUpdateLead(filters: LeadListFilters = {}) {
       })
       queryClient.setQueryData<Lead>(queryKeys.leads.detail(lead.id), lead)
     },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
+    },
+  })
+}
+
+export function useLinkLeadBusinessUnit() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      leadId,
+      businessUnitId,
+    }: {
+      leadId: string
+      businessUnitId: string
+    }) => linkLeadBusinessUnit(leadId, businessUnitId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
+    },
+  })
+}
+
+export function useUnlinkLeadBusinessUnit() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      leadId,
+      businessUnitId,
+    }: {
+      leadId: string
+      businessUnitId: string
+    }) => unlinkLeadBusinessUnit(leadId, businessUnitId),
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
     },

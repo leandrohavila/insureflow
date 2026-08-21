@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@repo/ui/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { InsureFlowThemeProvider } from "@/lib/design-system/providers/theme-provider";
 import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
@@ -44,11 +44,11 @@ export default function RootLayout({
           "min-h-svh font-sans"
         )}
       >
-        <ThemeProvider defaultTheme="dark">
+        <InsureFlowThemeProvider defaultTheme="dark">
           <QueryProvider>
             <TooltipProvider>{children}</TooltipProvider>
           </QueryProvider>
-        </ThemeProvider>
+        </InsureFlowThemeProvider>
       </body>
     </html>
   );

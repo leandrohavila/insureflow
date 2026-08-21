@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Loader2 } from "lucide-react"
 
+import { FormSelect } from "@/components/design-system/forms"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -51,7 +52,7 @@ type CustomerForm = {
   status: CustomerStatus
 }
 
-type ValidatedField = "document" | "email"
+type ValidatedField = "name" | "document" | "email"
 
 export type CustomerDialogProps = {
   customer: Customer | null
@@ -116,16 +117,6 @@ export function CustomerDialog({
     return getCustomerEmailError(value)
   }
 
-  function runValidation(next: CustomerForm) {
-    const documentError = validateDocument(next.document, next.type)
-    const emailError = validateEmail(next.email)
-    setFieldErrors({
-      ...(documentError ? { document: documentError } : {}),
-      ...(emailError ? { email: emailError } : {}),
-    })
-    return !documentError && !emailError
-  }
-
   function handleTypeChange(nextType: CustomerType) {
     setForm((current) => {
       const document = formatCustomerDocument(
@@ -179,20 +170,34 @@ export function CustomerDialog({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setTouched({ document: true, email: true })
-    if (!form.name.trim() || !stripNonDigits(form.document)) return
-    if (!runValidation(form)) return
+    setTouched({ name: true, document: true, email: true })
+
+    const nameError = !form.name.trim() ? "Informe o nome do cliente" : null
+    const documentDigits = stripNonDigits(form.document)
+    const documentError = !documentDigits
+      ? `Informe o ${form.type === "PF" ? "CPF" : "CNPJ"}`
+      : validateDocument(form.document, form.type)
+    const emailError = validateEmail(form.email)
+
+    setFieldErrors({
+      ...(nameError ? { name: nameError } : {}),
+      ...(documentError ? { document: documentError } : {}),
+      ...(emailError ? { email: emailError } : {}),
+    })
+
+    if (nameError || documentError || emailError) return
 
     onSubmit({
       type: form.type,
       name: form.name.trim(),
-      document: stripNonDigits(form.document),
+      document: documentDigits,
       email: form.email.trim() || undefined,
       phone: stripNonDigits(form.phone) || undefined,
       status: form.status,
     })
   }
 
+  const showNameError = Boolean(touched.name && fieldErrors.name)
   const showDocumentError = Boolean(touched.document && fieldErrors.document)
   const showEmailError = Boolean(touched.email && fieldErrors.email)
 
@@ -213,35 +218,29 @@ export function CustomerDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="space-y-2">
               <span className="text-sm font-medium">Tipo</span>
-              <select
+              <FormSelect
                 value={form.type}
                 onChange={(event) =>
                   handleTypeChange(event.target.value as CustomerType)
                 }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {CUSTOMER_TYPES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
+                options={CUSTOMER_TYPES.map((item) => ({
+                  value: item,
+                  label: item,
+                }))}
+              />
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium">Status</span>
-              <select
+              <FormSelect
                 value={form.status}
                 onChange={(event) =>
                   update("status", event.target.value as CustomerStatus)
                 }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {CUSTOMER_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {statusLabels[item]}
-                  </option>
-                ))}
-              </select>
+                options={CUSTOMER_STATUSES.map((item) => ({
+                  value: item,
+                  label: statusLabels[item],
+                }))}
+              />
             </label>
             <label className="space-y-2 sm:col-span-2">
               <span className="text-sm font-medium">Nome</span>
@@ -249,8 +248,21 @@ export function CustomerDialog({
                 required
                 value={form.name}
                 onChange={(event) => update("name", event.target.value)}
+                onBlur={() => markTouched("name")}
                 placeholder="Ex.: Maria Oliveira ou Transportes Sul"
+                aria-invalid={showNameError || undefined}
+                aria-describedby={showNameError ? "customer-name-error" : undefined}
+                className={cn(showNameError && "border-destructive")}
               />
+              {showNameError ? (
+                <p
+                  id="customer-name-error"
+                  className="text-xs text-destructive"
+                  role="alert"
+                >
+                  {fieldErrors.name}
+                </p>
+              ) : null}
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium">

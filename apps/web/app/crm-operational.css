@@ -707,14 +707,27 @@
 /* -------------------------------------------------------------------------- */
 
 /* -------------------------------------------------------------------------- */
-/* Kanban V2 Enterprise — Fase 2.3                                           */
+/* Kanban — visual das lanes/cards (layout estrutural via dsPipeline + Flex). */
 /* -------------------------------------------------------------------------- */
-.pipeline-board-v2 {
-  align-items: flex-start;
-}
 
 .pipeline-lane {
   --crm-lane-accent: var(--crm-tone-brand);
+  flex: 0 0 auto;
+  min-width: 280px;
+  min-height: 0;
+}
+
+.pipeline-lane:not(.pipeline-lane--compact) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-lane__body {
+  border-left: 1px solid var(--crm-stroke-faint);
+  padding-left: 0.625rem;
+  transition: background-color var(--if-duration-base) var(--if-ease-standard);
+  min-height: 0;
 }
 
 .pipeline-lane__header {
@@ -724,6 +737,11 @@
     color-mix(in oklch, var(--crm-surface-base) 92%, transparent) 100%
   );
   backdrop-filter: blur(8px);
+}
+
+.pipeline-lane__header--compact {
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .pipeline-lane__header-accent {
@@ -746,12 +764,6 @@
   line-height: 1.125rem;
   color: color-mix(in oklch, var(--foreground) 62%, transparent);
   background: color-mix(in oklch, var(--foreground) 4%, transparent);
-}
-
-.pipeline-lane__body {
-  border-left: 1px solid var(--crm-stroke-faint);
-  padding-left: 0.625rem;
-  transition: background-color var(--if-duration-base) var(--if-ease-standard);
 }
 
 .pipeline-lane__body--highlight {
@@ -1436,6 +1448,40 @@
   box-shadow:
     0 0 0 2px var(--crm-surface-base),
     0 0 0 4px color-mix(in oklch, var(--primary) 35%, transparent);
+}
+
+/* Variante header — segmented control utilitário, não compete com CTAs */
+.crm-density-toggle--header {
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
+  background: color-mix(in oklch, var(--foreground) 3%, transparent);
+}
+
+.crm-density-toggle--header .crm-density-toggle__btn {
+  height: 1.75rem;
+  padding-inline: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: color-mix(in oklch, var(--foreground) 52%, transparent);
+}
+
+.crm-density-toggle--header .crm-density-toggle__btn:hover {
+  color: color-mix(in oklch, var(--foreground) 78%, transparent);
+  background: color-mix(in oklch, var(--foreground) 5%, transparent);
+}
+
+.crm-density-toggle--header .crm-density-toggle__btn--active {
+  color: color-mix(in oklch, var(--foreground) 88%, transparent);
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 12%, transparent);
+}
+
+.crm-density-toggle--header .crm-density-toggle__btn:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--crm-surface-base),
+    0 0 0 4px color-mix(in oklch, var(--foreground) 18%, transparent);
 }
 
 /* ── Scroll & surface polish ────────────────────────────────────────────── */

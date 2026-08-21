@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -41,19 +42,45 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+const Button = React.forwardRef<
+  HTMLButtonElement,
+  ButtonPrimitive.Props & VariantProps<typeof buttonVariants>
+>(function Button(
+  { className, variant = "default", size = "default", type, ...props },
+  ref,
+) {
+  const classes = cn(buttonVariants({ variant, size, className }))
+  const resolvedType = type ?? "button"
+
+  // Base UI Button always merges `type: "button"` after consumer props, which
+  // breaks native form submission. Use a plain <button> for submit/reset.
+  if (resolvedType === "submit" || resolvedType === "reset") {
+    const { render: _render, style, ...nativeProps } = props
+    const nativeStyle = typeof style === "function" ? undefined : style
+
+    return (
+      <button
+        ref={ref}
+        type={resolvedType}
+        data-slot="button"
+        className={classes}
+        style={nativeStyle}
+        {...(nativeProps as React.ComponentProps<"button">)}
+      />
+    )
+  }
+
   return (
     <ButtonPrimitive
+      ref={ref}
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      type={resolvedType}
+      className={classes}
       {...props}
     />
   )
-}
+})
+
+Button.displayName = "Button"
 
 export { Button, buttonVariants }

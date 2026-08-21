@@ -3,11 +3,14 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -39,6 +42,8 @@ import { QuestionnairesService } from './questionnaires.service';
 @ApiBearerAuth('access-token')
 @Controller('questionnaires')
 export class QuestionnairesController {
+  private readonly logger = new Logger(QuestionnairesController.name);
+
   constructor(private readonly questionnaires: QuestionnairesService) {}
 
   @Get('templates')
@@ -193,8 +198,14 @@ export class QuestionnairesController {
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   findSubmissions(
     @CurrentUser() user: JwtAccessPayload,
+    @Req() request: Request,
     @Query() query: ListQuestionnaireSubmissionsQueryDto,
   ) {
+    if (process.env.BUG003_DEBUG === 'true') {
+      this.logger.warn(
+        `[BUG-003] GET submissions rawQuery=${JSON.stringify(request.query)} validated=${JSON.stringify(query)}`,
+      );
+    }
     return this.questionnaires.findSubmissions(user.tenantId, query);
   }
 
@@ -216,7 +227,7 @@ export class QuestionnairesController {
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateQuestionnaireSubmissionDto,
   ) {
-    return this.questionnaires.createSubmission(user.tenantId, dto);
+    return this.questionnaires.createSubmission(user.tenantId, dto, user.sub);
   }
 
   @Patch('submissions/:id')
@@ -228,7 +239,12 @@ export class QuestionnairesController {
     @Param('id') id: string,
     @Body() dto: UpdateQuestionnaireSubmissionDto,
   ) {
-    return this.questionnaires.updateSubmission(user.tenantId, id, dto);
+    return this.questionnaires.updateSubmission(
+      user.tenantId,
+      id,
+      dto,
+      user.sub,
+    );
   }
 
   @Delete('submissions/:id')

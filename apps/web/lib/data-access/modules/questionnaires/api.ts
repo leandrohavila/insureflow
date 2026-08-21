@@ -159,10 +159,17 @@ export async function deleteQuestionnaireField(
 export async function fetchQuestionnaireSubmissions(
   filters: QuestionnaireSubmissionListFilters = {},
 ) {
+  const path = `${QUESTIONNAIRE_SUBMISSIONS_PATH}${toSubmissionQueryString(filters)}`;
+
+  if (process.env.NEXT_PUBLIC_BUG003_DEBUG === "true") {
+    console.debug("[BUG-003][web] fetchQuestionnaireSubmissions", {
+      filters,
+      path,
+    });
+  }
+
   const response =
-    await apiClient.get<BackendQuestionnaireSubmissionListResponse>(
-      `${QUESTIONNAIRE_SUBMISSIONS_PATH}${toSubmissionQueryString(filters)}`,
-    );
+    await apiClient.get<BackendQuestionnaireSubmissionListResponse>(path);
   return normalizeQuestionnaireSubmissionList(response);
 }
 

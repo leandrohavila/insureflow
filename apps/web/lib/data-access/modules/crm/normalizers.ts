@@ -39,7 +39,7 @@ export function normalizeDeal(deal: BackendCrmDeal): CrmDeal {
     owner,
     ownerInitials: initials(owner),
     priority: value >= 50000 ? "alta" : value >= 15000 ? "media" : "baixa",
-    product: "Seguro",
+    product: deal.businessUnit?.type === "REAL_ESTATE" ? "Imóvel" : "Seguro",
     lastActivity,
     tags: [
       deal.status === "won"
@@ -52,5 +52,6 @@ export function normalizeDeal(deal: BackendCrmDeal): CrmDeal {
     commercialContext: deal.commercialContext ?? null,
     customerId: deal.customerId ?? null,
     wonAt: deal.wonAt ?? null,
+    businessUnit: deal.businessUnit ?? null,
   }
 }

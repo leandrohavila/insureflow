@@ -1,5 +1,4 @@
 import type { ConfigService } from '@nestjs/config';
-import type { Prisma } from '@prisma/client';
 
 import type { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { OwnershipEnforcement } from './ownership.types';
@@ -34,15 +33,4 @@ export async function getOwnershipEnforcement(
 
   const settings = (tenant?.settings ?? {}) as TenantSettingsJson;
   return parseEnforcement(settings.ownershipEnforcement) ?? 'off';
-}
-
-export function mergeTenantSettings(
-  current: Prisma.JsonValue | null | undefined,
-  patch: TenantSettingsJson,
-): Prisma.InputJsonValue {
-  const base =
-    current && typeof current === 'object' && !Array.isArray(current)
-      ? { ...(current as Record<string, unknown>) }
-      : {};
-  return { ...base, ...patch } as Prisma.InputJsonValue;
 }

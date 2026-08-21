@@ -9,6 +9,7 @@ import {
   Loader2,
   Pencil,
   RefreshCw,
+  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react"
@@ -21,6 +22,10 @@ import {
   activityTypeIcons,
   activityTypeTones,
 } from "@/lib/crm/activity-type-visual"
+import {
+  activityEventLabel,
+  isSystemActivity,
+} from "@/lib/crm/commercial-timeline"
 import {
   formatTimelineCompactTime,
   formatTimelineFullDateTime,
@@ -61,10 +66,17 @@ function TimelineEntryComponent({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const Icon = activityTypeIcons[activity.type]
-  const typeLabel = activityTypeLabels[activity.type]
-  const accentVar = activityTypeAccentVar[activity.type]
-  const typeTone = activityTypeTones[activity.type]
+  const isSystemEvent = isSystemActivity(activity)
+  const Icon = isSystemEvent
+    ? Sparkles
+    : activityTypeIcons[activity.type]
+  const typeLabel = isSystemEvent
+    ? activityEventLabel(activity.operationalEventKind)
+    : activityTypeLabels[activity.type]
+  const accentVar = isSystemEvent
+    ? "var(--crm-tone-brand)"
+    : activityTypeAccentVar[activity.type]
+  const typeTone = isSystemEvent ? "brand" : activityTypeTones[activity.type]
 
   const showComplete =
     activity.status === "pending" &&
@@ -116,6 +128,7 @@ function TimelineEntryComponent({
       data-occurred-at={activity.occurredAt}
       data-activity-type={activity.type}
       data-activity-status={activity.status}
+      data-system-event={isSystemEvent ? "true" : undefined}
       style={entryStyle}
     >
       <span
@@ -164,7 +177,7 @@ function TimelineEntryComponent({
 
         <div className="timeline-card__footer">
           <div className="timeline-card__signals min-w-0 flex-1">
-            {activity.outcome ? (
+            {activity.outcome && !isSystemEvent ? (
               <p className="timeline-outcome timeline-outcome--compact">
                 <span className="timeline-outcome-label">Resultado</span>
                 <span className="truncate">{activity.outcome}</span>
@@ -203,6 +216,7 @@ function TimelineEntryComponent({
         </div>
 
         <PermissionGate permission="crm:manage">
+          {!isSystemEvent ? (
           <div className="timeline-entry__actions timeline-entry__actions--v2">
             <Button
               type="button"
@@ -290,6 +304,7 @@ function TimelineEntryComponent({
               )}
             </Button>
           </div>
+          ) : null}
         </PermissionGate>
       </article>
     </li>

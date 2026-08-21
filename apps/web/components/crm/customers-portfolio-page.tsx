@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
 import {
   AlertTriangle,
@@ -63,6 +64,13 @@ const columns: CrmTableColumn<PortfolioCustomer>[] = [
         <p className="text-xs text-muted-foreground">
           {row.companyName ?? row.email ?? "Sem empresa"}
         </p>
+        <Link
+          href={`/crm/customer-360/${row.id}`}
+          onClick={(event) => event.stopPropagation()}
+          className="mt-1 inline-block text-[11px] font-medium text-primary hover:underline"
+        >
+          Customer 360
+        </Link>
       </div>
     ),
   },

@@ -1,6 +1,12 @@
 export * as activitiesDataAccess from "./activities";
+export * as automationDataAccess from "./automation";
+export * as businessUnitsDataAccess from "./business-units";
+export * as commercialDashboardDataAccess from "./commercial-dashboard";
 export * as crmDataAccess from "./crm";
 export * as customersDataAccess from "./customers";
+export * as leadFollowUpsDataAccess from "./lead-follow-ups";
+export * as leadLossReasonsDataAccess from "./lead-loss-reasons";
 export * as leadsDataAccess from "./leads";
+export * as policyRenewalsDataAccess from "./policy-renewals";
 export * as questionnairesDataAccess from "./questionnaires";
 export * as sessionDataAccess from "./session";

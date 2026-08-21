@@ -8,12 +8,23 @@ import { cn } from "@/lib/utils"
 /**
  * Toggle compact / comfortable — persistido no workspace CRM.
  */
-export function CrmDensityToggle({ className }: { className?: string }) {
+export function CrmDensityToggle({
+  className,
+  variant = "default",
+}: {
+  className?: string
+  /** Visual utilitário no cabeçalho — segmented control discreto. */
+  variant?: "default" | "header"
+}) {
   const { density, setDensity } = useCrmWorkspacePreferences()
 
   return (
     <div
-      className={cn("crm-density-toggle", className)}
+      className={cn(
+        "crm-density-toggle",
+        variant === "header" && "crm-density-toggle--header",
+        className,
+      )}
       role="group"
       aria-label="Densidade operacional"
     >

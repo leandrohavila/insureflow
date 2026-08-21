@@ -8,6 +8,7 @@ import type { CSSProperties } from "react"
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
 import { formatCurrency } from "@/lib/data-access/modules/crm"
 import { stageDroppableId } from "@/lib/pipeline-dnd"
+import { dsPipeline } from "@/lib/design-system"
 import { STAGE_ACCENT_VAR } from "@/components/crm/sheet-sections/deal-shared"
 import { DealCard } from "@/components/crm/deal-card"
 import { DraggableDealCard } from "@/components/crm/draggable-deal-card"
@@ -60,23 +61,24 @@ export function PipelineColumn({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.06 * columnIndex, duration: 0.4, ease: easeOut }}
       className={cn(
-        "pipeline-lane flex shrink-0 flex-col",
-        compact ? "w-[212px]" : "w-[252px] sm:w-[268px]",
+        "pipeline-lane flex h-full min-h-0 shrink-0 grow-0 flex-col",
+        compact && "pipeline-lane--compact",
       )}
-      style={{ ["--crm-lane-accent" as string]: stageAccent } as CSSProperties}
+      style={{
+        ["--crm-lane-accent" as string]: stageAccent,
+        width: compact ? dsPipeline.laneCompactWidthPx : dsPipeline.laneWidthPx,
+        minWidth: dsPipeline.laneMinWidthPx,
+      } as CSSProperties}
       aria-label={`Coluna ${label}`}
     >
-      {/* Sticky header — métricas compactas */}
-      <header className="pipeline-lane__header sticky top-0 z-[1] pb-2">
-        <div className="pipeline-lane__header-accent" aria-hidden />
-        <div className="flex items-center justify-between gap-2 px-0.5 pt-0.5">
-          <div className="flex min-w-0 items-center gap-2">
-            <h3 className="crm-text-title truncate text-[12.5px]">{label}</h3>
-            <span className="pipeline-lane__count tabular-nums">
-              {deals.length}
-            </span>
+      {/* Cabeçalho compacto — estágio, contagem e valor na mesma linha. */}
+      <header className="pipeline-lane__header pipeline-lane__header--compact shrink-0 sticky top-0 z-[1]">
+        <div className="flex items-center justify-between gap-2 border-b border-white/10 px-0.5 py-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h3 className="crm-text-title truncate text-[12px]">{label}</h3>
+            <span className="pipeline-lane__count tabular-nums">{deals.length}</span>
           </div>
-          <span className="crm-text-metric crm-text-meta shrink-0 font-medium tabular-nums">
+          <span className="crm-text-metric shrink-0 text-[11px] font-medium tabular-nums text-foreground/70">
             {formatCurrency(total)}
           </span>
         </div>
@@ -86,10 +88,7 @@ export function PipelineColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "pipeline-lane__body relative flex flex-1 flex-col gap-1.5",
-          compact
-            ? "min-h-[140px] max-h-[220px] overflow-y-auto"
-            : "min-h-[min(380px,52vh)]",
+          "pipeline-lane__body relative flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-y-contain",
           highlighted && "pipeline-lane__body--highlight",
         )}
       >

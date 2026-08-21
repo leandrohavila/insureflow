@@ -4,10 +4,9 @@ import Link from "next/link"
 import { Target } from "lucide-react"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { GlassCard } from "@/components/dashboard/glass-card"
+import { AppCard, EmptyState } from "@/components/design-system"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
-  CRM_SECTION_SUBTITLE,
   CRM_SECTION_TITLE,
 } from "@/lib/crm/crm-layout-classes"
 import {
@@ -28,7 +27,7 @@ export function CrmUpcomingActions({
   const openDeals = deals.filter((deal) => deal.status === "open")
 
   return (
-    <GlassCard delay={0.12} hover={false} className="p-3.5">
+    <AppCard>
       <div className="mb-2.5 flex items-center justify-between">
         <h2 className={CRM_SECTION_TITLE}>Próximas ações</h2>
         <PermissionGate permission="crm:manage">
@@ -39,14 +38,17 @@ export function CrmUpcomingActions({
             aria-label="Novo negócio"
             onClick={onCreateDeal}
           >
-            <Target className="size-3.5" />
+            <Target className="size-3.5" aria-hidden />
           </Button>
         </PermissionGate>
       </div>
       <ul className="space-y-2">
         {openDeals.length === 0 ? (
-          <li className={CRM_SECTION_SUBTITLE}>
-            Nenhum negócio aberto no pipeline.
+          <li>
+            <EmptyState
+              title="Nenhum negócio aberto"
+              description="Nenhum negócio aberto no pipeline."
+            />
           </li>
         ) : (
           openDeals.slice(0, 4).map((deal) => (
@@ -73,6 +75,6 @@ export function CrmUpcomingActions({
       >
         Ver todos os negócios
       </Link>
-    </GlassCard>
+    </AppCard>
   )
 }

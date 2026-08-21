@@ -6,6 +6,7 @@ import {
   UserPlus,
   ClipboardList,
   FileSpreadsheet,
+  FileText,
   Shield,
   AlertTriangle,
   MessageCircle,
@@ -65,6 +66,13 @@ export const mainNav: NavItem[] = [
     href: "/cotacoes",
     icon: FileSpreadsheet,
     segment: "cotacoes",
+    permission: "quotes:view",
+  },
+  {
+    title: "Propostas",
+    href: "/propostas",
+    icon: FileText,
+    segment: "propostas",
     permission: "quotes:view",
   },
   {

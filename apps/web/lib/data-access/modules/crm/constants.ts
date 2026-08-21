@@ -1,20 +1,35 @@
-import type { CrmStageId } from "./types"
-
 export const pipelineStages: {
-  id: CrmStageId
+  id: import("./types").CrmStageId
   label: string
   accent: string
 }[] = [
-  { id: "novo", label: "Novo", accent: "sky" },
+  { id: "novo", label: "Novo Lead", accent: "sky" },
+  { id: "contato", label: "Contato", accent: "violet" },
+  { id: "cotacao", label: "Cotação", accent: "primary" },
+  { id: "proposta", label: "Proposta", accent: "amber" },
+  { id: "fechamento", label: "Fechamento", accent: "emerald" },
+]
+
+export const realEstatePipelineStages: typeof pipelineStages = [
+  { id: "novo", label: "Novo Lead", accent: "sky" },
+  { id: "visita", label: "Visita", accent: "violet" },
+  { id: "proposta", label: "Proposta", accent: "amber" },
+  { id: "contrato", label: "Contrato", accent: "primary" },
+  { id: "fechamento", label: "Fechamento", accent: "emerald" },
+]
+
+export const allPipelineStages: typeof pipelineStages = [
+  ...pipelineStages,
+  { id: "visita", label: "Visita", accent: "violet" },
+  { id: "contrato", label: "Contrato", accent: "primary" },
   { id: "qualificacao", label: "Qualificação", accent: "violet" },
-  { id: "proposta", label: "Proposta", accent: "primary" },
   { id: "negociacao", label: "Negociação", accent: "amber" },
-  { id: "fechado", label: "Fechado", accent: "emerald" },
+  { id: "fechado", label: "Fechamento", accent: "emerald" },
 ]
 
 export const stageLabelMap = Object.fromEntries(
-  pipelineStages.map((stage) => [stage.id, stage.label]),
-) as Record<CrmStageId, string>
+  allPipelineStages.map((stage) => [stage.id, stage.label]),
+) as Record<string, string>
 
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("pt-BR", {

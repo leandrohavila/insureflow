@@ -3,10 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import {
-  resolveEffectiveDataScope,
-  scopeForRoleSlug,
-} from './data-scope.util';
+import { resolveEffectiveDataScope, scopeForRoleSlug } from './data-scope.util';
 import { getOwnershipEnforcement } from './tenant-settings.util';
 import type {
   AccessContext,
@@ -62,6 +59,54 @@ export class OwnershipService {
     };
   }
 
+  /**
+   * Filtro de visibilidade de negócios via lead convertido (ownerUserId/ownerTeamId).
+   * Negócios sem lead convertido permanecem visíveis apenas em escopo tenant.
+   */
+  buildDealAccessWhere(ctx: AccessContext): Prisma.DealWhereInput {
+    switch (ctx.dataScope) {
+      case 'tenant':
+        return {};
+      case 'own':
+        return {
+          OR: [
+            { ownerUserId: ctx.userId },
+            {
+              ownerUserId: null,
+              convertedLead: { ownerUserId: ctx.userId },
+            },
+          ],
+        };
+      case 'team':
+        if (ctx.teamIds.length === 0) {
+          return { convertedLead: { ownerTeamId: { in: [] } } };
+        }
+        return { convertedLead: { ownerTeamId: { in: ctx.teamIds } } };
+      case 'shared':
+        return {
+          OR: [
+            {
+              convertedLead: {
+                shares: {
+                  some: {
+                    sharedWithUserId: ctx.userId,
+                    revokedAt: null,
+                    OR: [
+                      { expiresAt: null },
+                      { expiresAt: { gt: new Date() } },
+                    ],
+                  },
+                },
+              },
+            },
+            { ownerUserId: ctx.userId },
+          ],
+        };
+      default:
+        return { ownerUserId: ctx.userId };
+    }
+  }
+
   buildLeadAccessWhere(ctx: AccessContext): Prisma.LeadWhereInput {
     switch (ctx.dataScope) {
       case 'tenant':
@@ -102,9 +147,48 @@ export class OwnershipService {
     }
   }
 
+  async assertCanAccessDeal(ctx: AccessContext, dealId: string): Promise<void> {
+    const deal = await this.prisma.deal.findFirst({
+      where: {
+        id: dealId,
+        tenantId: ctx.tenantId,
+        ...this.buildDealAccessWhere(ctx),
+      },
+      select: { id: true },
+    });
+    if (!deal) {
+      throw new NotFoundException('Negócio não encontrado');
+    }
+  }
+
   /**
    * Shadow: compara contagem legacy (assignedTo mine) vs ownership sem bloquear.
    */
+  async logDealListShadowComparison(
+    tenantId: string,
+    ctx: AccessContext,
+    legacyWhere: Prisma.DealWhereInput,
+    ownershipWhere: Prisma.DealWhereInput,
+  ): Promise<void> {
+    const [legacyCount, ownershipCount, intersectionCount] =
+      await this.prisma.$transaction([
+        this.prisma.deal.count({ where: legacyWhere }),
+        this.prisma.deal.count({
+          where: { tenantId, ...ownershipWhere },
+        }),
+        this.prisma.deal.count({
+          where: { tenantId, AND: [legacyWhere, ownershipWhere] },
+        }),
+      ]);
+
+    if (legacyCount !== ownershipCount || intersectionCount < legacyCount) {
+      this.log.warn(
+        `[ownership:shadow:deals] tenant=${tenantId} user=${ctx.userId} scope=${ctx.dataScope} ` +
+          `legacy=${legacyCount} ownership=${ownershipCount} intersection=${intersectionCount}`,
+      );
+    }
+  }
+
   async logLeadListShadowComparison(
     tenantId: string,
     ctx: AccessContext,

@@ -1,7 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import {
   Activity,
+  FileSpreadsheet,
   FileText,
   LayoutGrid,
   Link2,
@@ -11,6 +13,8 @@ import {
 } from "lucide-react"
 
 import { EntitySheetShell, StatusPill } from "@/components/crm/primitives"
+import { EntityQuotesSection } from "@/components/quotes/entity-quotes-section"
+import { EntityProposalsSection } from "@/components/quotes/entity-proposals-section"
 import {
   CustomerClaimsSection,
   CustomerFinancialSection,
@@ -22,14 +26,18 @@ import {
 } from "@/components/crm/sheet-sections/customer-sections"
 import { OperationalTimelineLane } from "@/components/crm/sheet-sections/operational-timeline-lane"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { buttonVariants } from "@/components/ui/button"
 import type { PortfolioCustomer } from "@/lib/crm/customer-health"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import type { CrmDeal } from "@/lib/data-access/modules/crm"
 import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
+import { cn } from "@/lib/utils"
 
 type CustomerSheetV2Section =
   | "overview"
   | "policies"
+  | "quotes"
+  | "proposals"
   | "timeline"
   | "financial"
   | "claims"
@@ -41,6 +49,8 @@ const DEFAULT_SECTION: CustomerSheetV2Section = "overview"
 const CUSTOMER_SECTIONS: CustomerSheetV2Section[] = [
   "overview",
   "policies",
+  "quotes",
+  "proposals",
   "timeline",
   "financial",
   "claims",
@@ -120,6 +130,15 @@ export function CustomerSheetV2({
             <p className="crm-text-meta truncate">
               {customer.companyName ?? "Segurado · carteira ativa"}
             </p>
+            <Link
+              href={`/crm/customer-360/${customer.id}`}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "xs" }),
+                "mt-2",
+              )}
+            >
+              Abrir Customer 360
+            </Link>
           </div>
         </div>
 
@@ -136,6 +155,12 @@ export function CustomerSheetV2({
         </EntitySheetShell.RailItem>
         <EntitySheetShell.RailItem id="policies" icon={Shield}>
           Apólices
+        </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="quotes" icon={FileSpreadsheet}>
+          Cotações
+        </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="proposals" icon={FileText}>
+          Propostas
         </EntitySheetShell.RailItem>
         <EntitySheetShell.RailItem id="timeline" icon={Activity}>
           Timeline
@@ -163,6 +188,22 @@ export function CustomerSheetV2({
         {section === "policies" ? (
           <div className="entity-sheet-section">
             <CustomerPoliciesSection />
+          </div>
+        ) : null}
+        {section === "quotes" ? (
+          <div className="entity-sheet-section">
+            <EntityQuotesSection
+              customerId={customer.id}
+              returnTo={`/crm/clientes?customer=${customer.id}`}
+            />
+          </div>
+        ) : null}
+        {section === "proposals" ? (
+          <div className="entity-sheet-section">
+            <EntityProposalsSection
+              customerId={customer.id}
+              returnTo={`/crm/clientes?customer=${customer.id}`}
+            />
           </div>
         ) : null}
         {section === "timeline" ? (

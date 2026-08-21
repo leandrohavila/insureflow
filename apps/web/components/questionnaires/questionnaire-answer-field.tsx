@@ -22,11 +22,14 @@ export function QuestionnaireAnswerField({
   error,
   onChange,
   registerRef,
+  required,
+  disabled = false,
 }: QuestionnaireAnswerFieldProps) {
+  const isRequired = required ?? field.required
   const label = (
     <span className="text-sm font-medium">
       {field.label}
-      {field.required ? <span className="text-destructive"> *</span> : null}
+      {isRequired ? <span className="text-destructive"> *</span> : null}
     </span>
   )
   const invalid = Boolean(error)
@@ -59,7 +62,8 @@ export function QuestionnaireAnswerField({
           onChange={(event) => onChange(event.target.value)}
           placeholder={field.placeholder ?? undefined}
           aria-invalid={invalid}
-          className={cn(fieldClass, "min-h-24 resize-y")}
+          disabled={disabled}
+          className={cn(fieldClass, "min-h-24 resize-y", disabled && "opacity-60")}
         />
         {errorMessage}
         {field.helpText && !error ? (
@@ -85,6 +89,7 @@ export function QuestionnaireAnswerField({
                   type="radio"
                   name={field.id}
                   checked={value === option.value}
+                  disabled={disabled}
                   onChange={() => onChange(option.value)}
                 />
                 {option.label}
@@ -116,6 +121,7 @@ export function QuestionnaireAnswerField({
                 <input
                   type="checkbox"
                   checked={selected.includes(option.value)}
+                  disabled={disabled}
                   onChange={(event) => {
                     onChange(
                       event.target.checked
@@ -146,6 +152,7 @@ export function QuestionnaireAnswerField({
           value={String(Boolean(value))}
           onChange={(event) => onChange(event.target.value === "true")}
           aria-invalid={invalid}
+          disabled={disabled}
           className={cn(
             "flex h-9 w-full rounded-md border bg-background/40 px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:ring-[3px]",
             invalid
@@ -180,6 +187,7 @@ export function QuestionnaireAnswerField({
         inputMode={isDate ? "numeric" : undefined}
         maxLength={isDate ? 10 : undefined}
         value={String(value ?? "")}
+        disabled={disabled}
         onChange={(event) => {
           const next = isDate
             ? formatDateBrMask(event.target.value)

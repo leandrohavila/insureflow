@@ -238,8 +238,13 @@ export function QuestionnaireSubmissionDialog({
   )
 
   const finalizeValidationErrors = useMemo(
-    () => validateQuestionnaireAnswersForFinalize(orderedFields, answers),
-    [answers, orderedFields],
+    () =>
+      validateQuestionnaireAnswersForFinalize(
+        orderedFields,
+        answers,
+        selectedTemplate?.settings as Record<string, unknown> | undefined,
+      ),
+    [answers, orderedFields, selectedTemplate?.settings],
   )
 
   const mergedFinalizeErrors = useMemo(

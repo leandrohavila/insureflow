@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "npx turbo run build",
-    "dev": "npx turbo run dev",
+    "dev": "turbo run dev --parallel --filter=@repo/forms-engine --filter=@repo/forms-library --filter=api --filter=web",
     "lint": "npx turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "npx turbo run check-types",
@@ -31,7 +31,8 @@
     "prod:clean-demo-data": "node scripts/prod-clean-demo-data.cjs --dry-run",
     "prod:seed:clean": "node scripts/seed-prod-clean.cjs",
     "dev:local:smoke": "node scripts/local-auth-smoke.cjs",
-    "dev:local:check": "node scripts/check-local-runtime.cjs"
+    "dev:local:check": "node scripts/check-local-runtime.cjs",
+    "dev:local:validate": "node scripts/check-local-runtime.cjs"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

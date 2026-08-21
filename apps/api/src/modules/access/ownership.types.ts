@@ -15,4 +15,6 @@ export type LeadAccessActor = {
   userId: string;
   roles: string[];
   permissions: string[];
+  tenantId?: string;
+  currentBusinessUnitId?: string | null;
 };

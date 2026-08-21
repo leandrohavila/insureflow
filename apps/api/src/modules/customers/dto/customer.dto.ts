@@ -10,9 +10,12 @@ import {
   Max,
   MaxLength,
   Min,
+  IsArray,
+  ArrayUnique,
 } from 'class-validator';
 
 import { LIST_QUERY_MAX_LIMIT } from '../../../common/dto/pagination.constants';
+import { INTEREST_CATEGORIES } from '../../../common/constants/interest-categories';
 
 export const CUSTOMER_TYPES = ['PF', 'PJ'] as const;
 export const CUSTOMER_STATUSES = ['active', 'inactive', 'archived'] as const;
@@ -67,6 +70,17 @@ export class ListCustomersQueryDto {
   @IsOptional()
   @IsIn(CUSTOMER_RENEWAL_STATUSES)
   renewalStatus?: CustomerRenewalStatus;
+
+  @ApiPropertyOptional({ description: 'Filtrar por unidade de negócio.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  businessUnitId?: string;
+
+  @ApiPropertyOptional({ enum: INTEREST_CATEGORIES })
+  @IsOptional()
+  @IsIn(INTEREST_CATEGORIES)
+  interestCategory?: (typeof INTEREST_CATEGORIES)[number];
 
   @ApiPropertyOptional({ example: 1, minimum: 1, default: 1 })
   @IsOptional()
@@ -150,6 +164,32 @@ export class CreateCustomerDto {
   @IsString()
   @MaxLength(64)
   renewalPipeline?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  businessUnitId?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  businessUnitIds?: string[];
+
+  @ApiPropertyOptional({ enum: INTEREST_CATEGORIES, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(INTEREST_CATEGORIES, { each: true })
+  interestCategories?: (typeof INTEREST_CATEGORIES)[number][];
+
+  @ApiPropertyOptional({ description: 'Responsável comercial' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  ownerUserId?: string;
 }
 
 export class UpdateCustomerDto extends PartialType(CreateCustomerDto) {}

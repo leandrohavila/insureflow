@@ -4,19 +4,25 @@ import {
   Activity,
   ArrowRightLeft,
   ArrowUpRight,
+  Building2,
   ClipboardList,
   Compass,
   Database,
   Edit3,
+  FileSpreadsheet,
+  FileText,
   LayoutGrid,
 } from "lucide-react"
 
 import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { EntitySheetShell, StatusPill } from "@/components/crm/primitives"
+import { EntityQuotesSection } from "@/components/quotes/entity-quotes-section"
+import { EntityProposalsSection } from "@/components/quotes/entity-proposals-section"
 import { TimelineLane } from "@/components/crm/sheet-sections/timeline-lane"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
+import { leadOwnerDisplayName, leadOwnerInitials } from "@/lib/leads/lead-owner"
 import { useActivityTimeline } from "@/lib/data-access/modules/activities"
 import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
 import type { Lead } from "@/lib/data-access/modules/leads"
@@ -28,6 +34,7 @@ import { LeadConversionSection } from "./sheet-sections/lead-conversion-section"
 import { LeadDataSection } from "./sheet-sections/lead-data-section"
 import { LeadOverviewSection } from "./sheet-sections/lead-overview-section"
 import { LeadSourceSection } from "./sheet-sections/lead-source-section"
+import { LeadUnitsSection } from "./sheet-sections/lead-units-section"
 
 /* -------------------------------------------------------------------------- */
 /* Tipos                                                                        */
@@ -37,7 +44,10 @@ type LeadSheetV2Section =
   | "overview"
   | "timeline"
   | "commercial"
+  | "quotes"
+  | "proposals"
   | "source"
+  | "units"
   | "data"
   | "conversion"
 
@@ -47,7 +57,10 @@ const LEAD_SECTIONS: LeadSheetV2Section[] = [
   "overview",
   "timeline",
   "commercial",
+  "quotes",
+  "proposals",
   "source",
+  "units",
   "data",
   "conversion",
 ]
@@ -70,6 +83,10 @@ type LeadSheetV2Props = {
   onViewSubmission: (submissionId: string) => void
   /** Estado da mutation de conversão. Apenas reflexo visual no CTA. */
   isConverting?: boolean
+  /** Permite ajuste manual de status (administradores). */
+  canEditStatus?: boolean
+  statusPending?: boolean
+  onStatusChange?: (status: Lead["status"]) => void
 }
 
 /* -------------------------------------------------------------------------- */
@@ -104,6 +121,9 @@ export function LeadSheetV2({
   onFillQuestionnaire,
   onViewSubmission,
   isConverting = false,
+  canEditStatus = false,
+  statusPending = false,
+  onStatusChange,
 }: LeadSheetV2Props) {
   const [persistedSection, setPersistedSection] = useCrmPersistedValue(
     "leadSheetSection",
@@ -139,18 +159,8 @@ export function LeadSheetV2({
   const isConverted = lead.status === "converted" || Boolean(lead.dealId)
   const conversionTone = isConverted ? "success" : "neutral"
 
-  // Inferir iniciais do owner (campo livre). Se não houver responsável,
-  // caímos nas iniciais do próprio lead — não renderiza avatar vazio.
-  const ownerName = lead.assignedTo?.trim() || ""
-  const ownerInitials = ownerName
-    ? ownerName
-        .split(/\s+/)
-        .map((part) => part[0])
-        .filter(Boolean)
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : lead.initials
+  const ownerName = leadOwnerDisplayName(lead)
+  const ownerInitials = leadOwnerInitials(lead)
 
   return (
     <EntitySheetShell
@@ -293,8 +303,17 @@ export function LeadSheetV2({
         <EntitySheetShell.RailItem id="commercial" icon={ClipboardList}>
           Comercial
         </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="quotes" icon={FileSpreadsheet}>
+          Cotações
+        </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="proposals" icon={FileText}>
+          Propostas
+        </EntitySheetShell.RailItem>
         <EntitySheetShell.RailItem id="source" icon={Compass}>
           Origem
+        </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="units" icon={Building2}>
+          Unidades
         </EntitySheetShell.RailItem>
         <EntitySheetShell.RailItem id="data" icon={Database}>
           Dados
@@ -340,15 +359,44 @@ export function LeadSheetV2({
           </div>
         ) : null}
 
+        {section === "quotes" ? (
+          <div className="entity-sheet-section">
+            <EntityQuotesSection
+              leadId={lead.id}
+              returnTo={`/leads?lead=${lead.id}`}
+            />
+          </div>
+        ) : null}
+
+        {section === "proposals" ? (
+          <div className="entity-sheet-section">
+            <EntityProposalsSection
+              leadId={lead.id}
+              returnTo={`/leads?lead=${lead.id}`}
+            />
+          </div>
+        ) : null}
+
         {section === "source" ? (
           <div className="entity-sheet-section">
             <LeadSourceSection lead={lead} />
           </div>
         ) : null}
 
+        {section === "units" ? (
+          <div className="entity-sheet-section">
+            <LeadUnitsSection lead={lead} />
+          </div>
+        ) : null}
+
         {section === "data" ? (
           <div className="entity-sheet-section">
-            <LeadDataSection lead={lead} />
+            <LeadDataSection
+              lead={lead}
+              canEditStatus={canEditStatus}
+              statusPending={statusPending}
+              onStatusChange={onStatusChange}
+            />
           </div>
         ) : null}
 

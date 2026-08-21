@@ -21,6 +21,9 @@ const requiredDelegates = [
   'get questionnaireTemplate():',
   'get customer():',
   'get policy():',
+  'get communicationLog():',
+  'get communicationProviderConfig():',
+  'get userBusinessUnit():',
 ];
 
 const requiredActivityFields = ['policyId: string | null', 'policyId?: boolean'];

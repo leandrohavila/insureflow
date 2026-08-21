@@ -2,6 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+import {
+  ACTIVITY_TIMELINE_PAGE_LIMIT,
+} from "@/lib/crm/commercial-timeline"
+import { useMergedActivityTimeline } from "@/lib/crm/relationship/hooks"
 import { queryKeys } from "@/lib/data-access/query-keys"
 
 import {
@@ -25,10 +29,20 @@ type ActivityContext = {
 }
 
 function contextFilters(ctx: ActivityContext): ActivityListFilters {
-  if (ctx.customerId) return { customerId: ctx.customerId, limit: 50 }
-  if (ctx.dealId) return { dealId: ctx.dealId, limit: 50 }
-  if (ctx.leadId) return { leadId: ctx.leadId, limit: 50 }
-  return { limit: 50 }
+  if (ctx.customerId) {
+    return { customerId: ctx.customerId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }
+  }
+  if (ctx.dealId && !ctx.leadId) {
+    return { dealId: ctx.dealId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }
+  }
+  if (ctx.leadId && !ctx.dealId) {
+    return { leadId: ctx.leadId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }
+  }
+  return { limit: ACTIVITY_TIMELINE_PAGE_LIMIT }
+}
+
+function shouldMergeLeadDeal(ctx: ActivityContext): boolean {
+  return Boolean(ctx.leadId && ctx.dealId && !ctx.customerId)
 }
 
 function invalidateRelatedQueries(
@@ -63,10 +77,44 @@ export function useActivities(
 }
 
 export function useActivityTimeline(ctx: ActivityContext) {
+  const merge = shouldMergeLeadDeal(ctx)
   const filters = contextFilters(ctx)
   const enabled = Boolean(ctx.customerId || ctx.leadId || ctx.dealId)
 
-  return useActivities(filters, enabled)
+  const mergedTimeline = useMergedActivityTimeline({
+    leadIds: merge && ctx.leadId ? [ctx.leadId] : [],
+    dealIds: merge && ctx.dealId ? [ctx.dealId] : [],
+    enabled: merge && enabled,
+  })
+
+  const singleQuery = useActivities(filters, enabled && !merge)
+
+  if (merge) {
+    return {
+      data: {
+        data: mergedTimeline.data,
+        meta: {
+          page: 1,
+          limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+          total: mergedTimeline.total,
+          totalPages: 1,
+        },
+      },
+      isLoading: mergedTimeline.isLoading,
+      isError: mergedTimeline.isError,
+      error: undefined,
+      refetch: mergedTimeline.refetch,
+      isFetching: mergedTimeline.isLoading,
+      isPending: mergedTimeline.isLoading,
+      status: mergedTimeline.isLoading
+        ? ("pending" as const)
+        : mergedTimeline.isError
+          ? ("error" as const)
+          : ("success" as const),
+    }
+  }
+
+  return singleQuery
 }
 
 export function useActivity(id: string | null) {
@@ -135,4 +183,8 @@ export function useDeleteActivity(ctx: ActivityContext) {
       queryClient.removeQueries({ queryKey: queryKeys.activities.detail(id) })
     },
   })
+}
+
+export function useRecentActivities(limit = 5) {
+  return useActivities({ limit, page: 1 }, true)
 }

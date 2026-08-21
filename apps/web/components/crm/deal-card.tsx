@@ -9,6 +9,7 @@ import { DealCardMenu } from "@/components/crm/deal-card-menu"
 import { DealQuestionnaireBadge } from "@/components/crm/deal-questionnaire-badge"
 import { DealQuickContext } from "@/components/crm/deal-quick-context"
 import { StatusPill } from "@/components/crm/primitives"
+import { businessUnitPipelineBadge } from "@/lib/crm/business-unit-badge"
 import {
   PRIORITY_LABEL,
   PRIORITY_TONE,
@@ -84,7 +85,7 @@ export function DealCard({
       data-density={compact ? "compact" : "default"}
       data-status={deal.status}
       className={cn(
-        "deal-card-v2 crm-accent-rail group/deal min-w-0 max-w-full",
+        "deal-card-v2 crm-accent-rail group/deal w-full min-w-0",
         onClick && !isOverlay && "cursor-pointer",
         isOverlay && "deal-card-v2--overlay",
         isDragging && "deal-card-v2--dragging",
@@ -169,6 +170,36 @@ export function DealCard({
       {/* ── Rodapé: badges + indicadores ── */}
       <div className="deal-card-v2__foot">
         <div className="deal-card-v2__badges">
+          <StatusPill
+            tone={
+              deal.sla?.status === "overdue"
+                ? "danger"
+                : deal.sla?.status === "warning"
+                  ? "warn"
+                  : deal.businessUnit?.type === "REAL_ESTATE"
+                    ? "violet"
+                    : "info"
+            }
+            variant="ghost"
+            size="xs"
+          >
+            {businessUnitPipelineBadge(deal.businessUnit?.type)}
+          </StatusPill>
+          {deal.score ? (
+            <StatusPill
+              tone={
+                deal.score === "HIGH"
+                  ? "danger"
+                  : deal.score === "MEDIUM"
+                    ? "warn"
+                    : "neutral"
+              }
+              variant="ghost"
+              size="xs"
+            >
+              {deal.score}
+            </StatusPill>
+          ) : null}
           <StatusPill tone={STAGE_TONE[deal.stage]} variant="ghost" size="xs">
             {stageLabelMap[deal.stage]}
           </StatusPill>

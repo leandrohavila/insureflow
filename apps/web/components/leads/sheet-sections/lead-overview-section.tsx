@@ -23,6 +23,7 @@ import {
   formatStoredPhone,
 } from "@/lib/documents/document"
 import type { Lead } from "@/lib/data-access/modules/leads"
+import { leadOwnerDisplayName, leadOwnerInitials } from "@/lib/leads/lead-owner"
 
 type LeadOverviewSectionProps = {
   lead: Lead
@@ -50,16 +51,8 @@ export function LeadOverviewSection({ lead }: LeadOverviewSectionProps) {
       : formatCnpjMask(lead.document)
     : null
 
-  const ownerName = lead.assignedTo?.trim() || ""
-  const ownerInitials = ownerName
-    ? ownerName
-        .split(/\s+/)
-        .map((part) => part[0])
-        .filter(Boolean)
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : lead.initials
+  const ownerName = leadOwnerDisplayName(lead)
+  const ownerInitials = leadOwnerInitials(lead)
 
   return (
     <div className="flex flex-col gap-4">

@@ -6,6 +6,8 @@ export type QuestionnaireAnswerFieldProps = {
   error?: string
   onChange: (value: unknown) => void
   registerRef?: (element: HTMLDivElement | null) => void
+  required?: boolean
+  disabled?: boolean
 }
 
 function slugifyOptionValue(value: string) {

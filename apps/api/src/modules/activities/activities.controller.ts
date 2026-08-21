@@ -39,7 +39,13 @@ export class ActivitiesController {
     @CurrentUser() user: JwtAccessPayload,
     @Query() query: ListActivitiesQueryDto,
   ) {
-    return this.activities.findActivities(user.tenantId, query);
+    return this.activities.findActivities(user.tenantId, query, {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
   }
 
   @Get(':id')
@@ -47,7 +53,13 @@ export class ActivitiesController {
   @ApiOperation({ summary: 'Detalhe de atividade do tenant' })
   @ApiParam({ name: 'id' })
   findActivity(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
-    return this.activities.findActivity(user.tenantId, id);
+    return this.activities.findActivity(user.tenantId, id, {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
   }
 
   @Post()

@@ -1,11 +1,13 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
-import {
-  buildRedisConnection,
-  maskRedisUrl,
-} from './redis-connection.util';
+import { buildRedisConnection, maskRedisUrl } from './redis-connection.util';
 
 export type RedisRuntimeStatus = {
   ok: boolean;
@@ -54,7 +56,9 @@ export class RedisBootstrapService implements OnModuleInit, OnModuleDestroy {
       );
     }
 
-    this.log.log(`[redis] Configurado ${parsed.label} (${maskRedisUrl(redisUrl)})`);
+    this.log.log(
+      `[redis] Configurado ${parsed.label} (${maskRedisUrl(redisUrl)})`,
+    );
 
     this.client = new Redis({
       ...parsed.ioredis,
@@ -73,7 +77,9 @@ export class RedisBootstrapService implements OnModuleInit, OnModuleDestroy {
         checkedAt: new Date().toISOString(),
       };
       if (this.status.ok) {
-        this.log.log(`[redis] Conexão OK (PING ${pong}) — filas BullMQ podem subir`);
+        this.log.log(
+          `[redis] Conexão OK (PING ${pong}) — filas BullMQ podem subir`,
+        );
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

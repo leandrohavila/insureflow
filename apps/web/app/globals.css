@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@repo/ui/styles/insureflow.css";
+@import "../lib/design-system/foundation.css";
 
 @custom-variant dark (&:is(.dark *));
 

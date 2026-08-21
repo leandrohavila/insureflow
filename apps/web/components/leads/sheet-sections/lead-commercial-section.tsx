@@ -1,9 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
+import Link from "next/link"
 import {
+  ArrowUpRight,
   Calendar,
   ClipboardList,
+  FileSpreadsheet,
   FileText,
   Loader2,
   StickyNote,
@@ -15,7 +18,7 @@ import {
   PropertyCell,
   PropertyGrid,
 } from "@/components/crm/sheet-sections/sheet-shared"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   formatSubmissionDate,
   submissionResponsible,
@@ -28,6 +31,8 @@ import {
   type LeadContextSubmission,
 } from "@/lib/data-access/modules/leads"
 import type { QuestionnaireSubmissionStatus } from "@/lib/data-access/modules/questionnaires"
+import { useLeadQuoteComparisons } from "@/lib/data-access/modules/quotes"
+import { cn } from "@/lib/utils"
 
 type LeadCommercialSectionProps = {
   lead: Lead
@@ -76,8 +81,10 @@ export function LeadCommercialSection({
   onViewSubmission,
 }: LeadCommercialSectionProps) {
   const contextQuery = useLeadContext(lead.id)
+  const quotesQuery = useLeadQuoteComparisons(lead.id, { limit: 1 })
   const latest: LeadContextSubmission | null =
     contextQuery.data?.latestSubmission ?? null
+  const quoteCount = quotesQuery.data?.meta.total ?? 0
 
   const submissionState = useMemo<
     QuestionnaireSubmissionStatus | "pending" | "draft"
@@ -181,6 +188,20 @@ export function LeadCommercialSection({
               Ver respostas do questionário
             </Button>
           ) : null}
+
+          <Link
+            href={`/cotacoes?leadId=${lead.id}&returnTo=${encodeURIComponent(`/leads?lead=${lead.id}`)}`}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "w-full justify-start gap-2",
+            )}
+          >
+            <FileSpreadsheet className="size-3.5" />
+            {quoteCount > 0
+              ? `Ver cotações (${quoteCount})`
+              : "Abrir módulo de cotações"}
+            <ArrowUpRight className="ml-auto size-3.5 opacity-60" />
+          </Link>
 
           {contextQuery.isLoading ? (
             <p className="crm-text-meta flex items-center gap-1.5 px-2 pt-1 text-foreground/55">

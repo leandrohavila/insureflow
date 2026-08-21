@@ -42,6 +42,8 @@ export const PERMISSIONS = [
   "automation:manage",
   "settings:view",
   "settings:manage",
+  "business-units:view-all",
+  "business-units:manage",
   "users:manage",
   "tenants:manage",
   "audit:view",
@@ -79,6 +81,7 @@ export type SessionPayload = SessionUser & {
   /** Escopo efetivo de dados (ownership) — preenchido pelo login backend. */
   dataScope?: DataScope
   teamIds?: string[]
+  currentBusinessUnitId?: string | null
   iat?: number
   exp?: number
 }

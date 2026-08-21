@@ -11,6 +11,9 @@ import {
   activityTypeAccentVar,
   activityTypeIcons,
 } from "@/lib/crm/activity-type-visual"
+import {
+  dedupeAndSortActivities,
+} from "@/lib/crm/commercial-timeline"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
   ACTIVITY_TYPES,
@@ -24,7 +27,7 @@ type TimelineLaneProps = {
   leadId?: string | null
   dealId?: string | null
   className?: string
-  /** Título do header. Default: "Timeline operacional". */
+  /** Título do header. Default: "Timeline comercial". */
   title?: string
   /** Mostra o FilterBar de tipos. Default: true. */
   showFilters?: boolean
@@ -49,15 +52,15 @@ export function TimelineLane({
   leadId,
   dealId,
   className,
-  title = "Timeline operacional",
+  title = "Timeline comercial",
   showFilters = true,
   density = "default",
 }: TimelineLaneProps) {
   const timelineQuery = useActivityTimeline({ leadId, dealId })
-  const activities = useMemo<Activity[]>(
-    () => timelineQuery.data?.data ?? [],
-    [timelineQuery.data?.data],
-  )
+  const activities = useMemo<Activity[]>(() => {
+    const raw = timelineQuery.data?.data ?? []
+    return dedupeAndSortActivities(raw)
+  }, [timelineQuery.data?.data])
 
   const [activeFilter, setActiveFilter] = useState<ActivityType | null>(null)
 
@@ -176,16 +179,13 @@ export function TimelineLane({
         ) : null}
 
         {!isLoading && !isEmpty && !showEmptyFilterHint ? (
-          <div
-            className="timeline-lane"
-            data-filter={activeFilter ?? undefined}
-            data-total={total}
-          >
+          <div className="timeline-lane" data-total={total}>
             <ActivityTimeline
               leadId={leadId}
               dealId={dealId}
               showHeading={false}
               suppressEmptyState
+              filterType={activeFilter}
             />
           </div>
         ) : null}

@@ -22,9 +22,23 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { PoliciesModule } from './modules/policies/policies.module';
 import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { SalesPerformanceModule } from './modules/sales-performance/sales-performance.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
+import { BusinessUnitsModule } from './modules/business-units/business-units.module';
+import { MessageTemplatesModule } from './modules/message-templates/message-templates.module';
+import { LeadReactivationModule } from './modules/lead-reactivation/lead-reactivation.module';
+import { CrossSellModule } from './modules/cross-sell/cross-sell.module';
+import { LeadLossReasonsModule } from './modules/lead-loss-reasons/lead-loss-reasons.module';
+import { LeadFollowUpsModule } from './modules/lead-follow-ups/lead-follow-ups.module';
+import { PolicyRenewalsModule } from './modules/policy-renewals/policy-renewals.module';
+import { CommercialImportModule } from './modules/commercial-import/commercial-import.module';
+import { CommercialAgendaModule } from './modules/commercial-agenda/commercial-agenda.module';
+import { CommercialAutomationModule } from './modules/commercial-automation/commercial-automation.module';
+import { CommunicationsModule } from './modules/communications/communications.module';
+import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
 
 function resolveEnvFilePath(): string[] {
   const appEnv = process.env.APP_ENV ?? 'local';
@@ -78,11 +92,25 @@ function resolveEnvFilePath(): string[] {
     ActivitiesModule,
     PoliciesModule,
     QuestionnairesModule,
+    QuotesModule,
     UsersModule,
     TenantsModule,
     PermissionsModule,
     AuditLogsModule,
     HealthModule,
+    BusinessUnitsModule,
+    MessageTemplatesModule,
+    LeadReactivationModule,
+    CrossSellModule,
+    LeadLossReasonsModule,
+    LeadFollowUpsModule,
+    PolicyRenewalsModule,
+    CommercialImportModule,
+    CommercialAgendaModule,
+    CommercialAutomationModule,
+    CommunicationsModule,
+    OpportunitiesModule,
+    SalesPerformanceModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,5 +1,25 @@
 import type { QuestionnaireField } from "@/lib/data-access/modules/questionnaires"
 import { ApiClientError } from "@/lib/data-access/errors"
+import {
+  ValidationEngine,
+  RuleEngine,
+  applyInputMask,
+  createClientValidationContext,
+  errorsToFieldMap,
+  fieldsToDescriptors,
+  formatDateBrMask,
+  getFieldMask as engineGetFieldMask,
+  isEmptyAnswer as engineIsEmptyAnswer,
+  isValidCpf,
+  isValidDateBr,
+  isValidPhone,
+  onlyDigits,
+  parseDateBrToIso,
+  resolveValidationProfile,
+  toFormFieldDescriptor,
+  normalizeAnswerForSubmit as engineNormalizeAnswer,
+} from "@repo/forms-engine"
+import { evaluateQuestionnaireRules } from "@/lib/questionnaires/questionnaire-rules"
 
 export type FieldSettings = {
   section?: string
@@ -8,6 +28,9 @@ export type FieldSettings = {
 }
 
 export type QuestionnaireFieldErrors = Record<string, string>
+
+const engine = new ValidationEngine()
+const ruleEngine = new RuleEngine()
 
 const GENERIC_HTTP_MESSAGES = new Set([
   "Bad Request",
@@ -24,136 +47,17 @@ export function getFieldSettings(field: QuestionnaireField): FieldSettings {
 }
 
 export function getFieldMask(field: QuestionnaireField): FieldSettings["mask"] {
-  const settings = getFieldSettings(field)
-  if (settings.mask) return settings.mask
-  if (settings.inputKind === "cpf") return "cpf"
-  if (settings.inputKind === "cnpj") return "cnpj"
-  if (settings.inputKind === "cep") return "cep"
-  if (settings.inputKind === "plate") return "plate"
-  if (field.type === "PHONE" || settings.inputKind === "phone") return "phone"
-  return undefined
+  return engineGetFieldMask(toFormFieldDescriptor(field)) as FieldSettings["mask"]
 }
 
 export function isDateField(field: QuestionnaireField) {
   return field.type === "DATE"
 }
 
-export function onlyDigits(value: string, maxLength: number) {
-  return value.replace(/\D/g, "").slice(0, maxLength)
-}
-
-export function formatDateBrMask(value: string) {
-  const digits = onlyDigits(value, 8)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
-}
-
-export function parseDateBrToIso(value: string): string | null {
-  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
-  if (!match) return null
-
-  const day = Number(match[1])
-  const month = Number(match[2])
-  const year = Number(match[3])
-
-  if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1000 || year > 9999) {
-    return null
-  }
-
-  const date = new Date(year, month - 1, day)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null
-  }
-
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-}
-
-export function isValidDateBr(value: string) {
-  return parseDateBrToIso(value) !== null
-}
-
-export function applyInputMask(value: string, mask?: FieldSettings["mask"]) {
-  if (mask === "cpf") {
-    return onlyDigits(value, 11)
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-  }
-
-  if (mask === "cnpj") {
-    return onlyDigits(value, 14)
-      .replace(/(\d{2})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1/$2")
-      .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
-  }
-
-  if (mask === "cep") {
-    return onlyDigits(value, 8).replace(/(\d{5})(\d{1,3})$/, "$1-$2")
-  }
-
-  if (mask === "phone") {
-    const digits = onlyDigits(value, 11)
-    if (digits.length <= 10) {
-      return digits
-        .replace(/(\d{2})(\d)/, "($1) $2")
-        .replace(/(\d{4})(\d{1,4})$/, "$1-$2")
-    }
-    return digits
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{5})(\d{1,4})$/, "$1-$2")
-  }
-
-  if (mask === "plate") {
-    return value
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, 7)
-  }
-
-  return value
-}
+export { onlyDigits, formatDateBrMask, parseDateBrToIso, isValidDateBr, applyInputMask, isValidCpf, isValidPhone }
 
 export function isEmptyAnswer(field: QuestionnaireField, value: unknown) {
-  if (field.type === "BOOLEAN") return false
-  if (field.type === "MULTI_SELECT") {
-    return !Array.isArray(value) || value.length === 0
-  }
-  if (value === null || value === undefined) return true
-  if (typeof value === "string") return value.trim() === ""
-  if (Array.isArray(value)) return value.length === 0
-  return false
-}
-
-export function isValidCpf(value: string) {
-  const cpf = onlyDigits(value, 11)
-  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false
-
-  let sum = 0
-  for (let index = 0; index < 9; index += 1) {
-    sum += Number(cpf[index]) * (10 - index)
-  }
-  let digit = (sum * 10) % 11
-  if (digit === 10) digit = 0
-  if (digit !== Number(cpf[9])) return false
-
-  sum = 0
-  for (let index = 0; index < 10; index += 1) {
-    sum += Number(cpf[index]) * (11 - index)
-  }
-  digit = (sum * 10) % 11
-  if (digit === 10) digit = 0
-  return digit === Number(cpf[10])
-}
-
-export function isValidPhone(value: string) {
-  const digits = onlyDigits(value, 11)
-  return digits.length >= 10 && digits.length <= 11
+  return engineIsEmptyAnswer(toFormFieldDescriptor(field), value)
 }
 
 function friendlyMessageForBackend(raw: string, field?: QuestionnaireField) {
@@ -268,181 +172,117 @@ export function parseQuestionnaireSubmissionErrors(
   }
 }
 
-function validateFilledAnswerFormat(
-  field: QuestionnaireField,
-  value: unknown,
-): string | undefined {
-  const mask = getFieldMask(field)
+function validateWithEngine(
+  fields: QuestionnaireField[],
+  answers: Record<string, unknown>,
+  mode: "draft" | "finalize",
+  templateSettings?: Record<string, unknown> | null,
+  templateName = "Questionnaire",
+): QuestionnaireFieldErrors {
+  const descriptors = fieldsToDescriptors(fields)
+  const profile = resolveValidationProfile(templateSettings)
 
-  if (field.type === "DATE" || isDateField(field)) {
-    const display = String(value ?? "")
-    if (!isValidDateBr(display)) return "Informe uma data válida"
-    return undefined
-  }
+  const ruleResult = evaluateQuestionnaireRules(
+    { name: templateName, settings: templateSettings ?? {} },
+    fields,
+    answers,
+  )
 
-  if (mask === "cpf" || getFieldSettings(field).inputKind === "cpf") {
-    if (!isValidCpf(String(value))) return "Informe um CPF válido"
-    return undefined
-  }
+  const effectiveAnswers = ruleEngine.applyValueOverrides(answers, ruleResult)
 
-  if (
-    field.type === "PHONE" ||
-    mask === "phone" ||
-    getFieldSettings(field).inputKind === "phone"
-  ) {
-    if (!isValidPhone(String(value))) return "Informe um telefone válido"
-    return undefined
-  }
-
-  if (field.type === "EMAIL" && typeof value === "string") {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
-      return "Informe um e-mail válido"
-    }
-    return undefined
-  }
-
-  if ((field.type === "NUMBER" || field.type === "CURRENCY") && value !== "") {
-    const number = Number(value)
-    if (!Number.isFinite(number)) return "Informe um número válido"
-  }
-
-  return undefined
+  const context = createClientValidationContext(effectiveAnswers, {
+    mode,
+    profile,
+    visibleFieldKeys: ruleResult.visibleFieldKeys,
+    requiredFieldKeys: ruleResult.requiredFieldKeys,
+    optionalFieldKeys: ruleResult.optionalFieldKeys,
+    disabledFieldKeys: ruleResult.disabledFieldKeys,
+  })
+  const result = engine.validateSubmission(descriptors, effectiveAnswers, context)
+  return errorsToFieldMap(result.errors)
 }
 
 /** Apenas formato dos campos preenchidos — sem checar obrigatórios (rascunho/autosave). */
 export function validateFilledQuestionnaireAnswers(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
+  templateSettings?: Record<string, unknown> | null,
+  templateName?: string,
 ): QuestionnaireFieldErrors {
-  const errors: QuestionnaireFieldErrors = {}
-
-  for (const field of fields) {
-    const value = answers[field.key]
-    if (isEmptyAnswer(field, value)) continue
-
-    const formatError = validateFilledAnswerFormat(field, value)
-    if (formatError) errors[field.key] = formatError
-  }
-
-  return errors
+  return validateWithEngine(fields, answers, "draft", templateSettings, templateName)
 }
 
 /** Validação completa para finalizar (obrigatórios + formato). */
 export function validateQuestionnaireAnswersForFinalize(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
+  templateSettings?: Record<string, unknown> | null,
+  templateName?: string,
 ): QuestionnaireFieldErrors {
-  const errors: QuestionnaireFieldErrors = {}
-
-  for (const field of fields) {
-    const value = answers[field.key]
-
-    if (field.required && isEmptyAnswer(field, value)) {
-      errors[field.key] = "Preencha este campo"
-      continue
-    }
-
-    if (isEmptyAnswer(field, value)) continue
-
-    if (field.type === "MULTI_SELECT" && field.required) {
-      const selected = Array.isArray(value) ? value : []
-      if (selected.length === 0) {
-        errors[field.key] = "Selecione ao menos uma opção"
-        continue
-      }
-    }
-
-    if (field.type === "SELECT" && field.required) {
-      if (typeof value !== "string" || !value.trim()) {
-        errors[field.key] = "Selecione uma opção"
-        continue
-      }
-    }
-
-    const formatError = validateFilledAnswerFormat(field, value)
-    if (formatError) errors[field.key] = formatError
-  }
-
-  return errors
+  return validateWithEngine(fields, answers, "finalize", templateSettings, templateName)
 }
 
 /** @deprecated Use validateQuestionnaireAnswersForFinalize para submit final. */
 export function validateQuestionnaireAnswers(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
+  templateSettings?: Record<string, unknown> | null,
 ): QuestionnaireFieldErrors {
-  return validateQuestionnaireAnswersForFinalize(fields, answers)
+  return validateQuestionnaireAnswersForFinalize(fields, answers, templateSettings)
 }
 
 export function normalizeAnswerForSubmit(
   field: QuestionnaireField,
   value: unknown,
 ) {
-  if (field.type === "DATE" || isDateField(field)) {
-    const iso = parseDateBrToIso(String(value ?? ""))
-    return iso ?? undefined
-  }
-
-  if (field.type === "NUMBER" || field.type === "CURRENCY") {
-    if (value === "") return undefined
-    const number = Number(value)
-    return Number.isFinite(number) ? number : value
-  }
-
-  if (field.type === "MULTI_SELECT") {
-    return Array.isArray(value) ? value : []
-  }
-
-  return value
+  return engineNormalizeAnswer(toFormFieldDescriptor(field), value)
 }
 
 export function buildSubmitAnswers(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
 ) {
-  return Object.fromEntries(
-    fields
-      .map((field) => [
-        field.key,
-        normalizeAnswerForSubmit(field, answers[field.key]),
-      ])
-      .filter(([, value]) => value !== undefined),
-  )
+  return engine.buildSubmitAnswers(fieldsToDescriptors(fields), answers)
 }
 
 /** Respostas parciais para rascunho — ignora vazios, inválidos e incompletos. */
 export function buildDraftAnswers(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
+  templateSettings?: Record<string, unknown> | null,
+  templateName = "Questionnaire",
 ) {
-  const invalidFilled = validateFilledQuestionnaireAnswers(fields, answers)
-  const result: Record<string, unknown> = {}
+  const descriptors = fieldsToDescriptors(fields)
+  const profile = resolveValidationProfile(templateSettings)
 
-  for (const field of fields) {
-    const value = answers[field.key]
-    if (isEmptyAnswer(field, value)) continue
-    if (invalidFilled[field.key]) continue
+  const ruleResult = evaluateQuestionnaireRules(
+    { name: templateName, settings: templateSettings ?? {} },
+    fields,
+    answers,
+  )
 
-    if (field.type === "DATE" || isDateField(field)) {
-      const iso = parseDateBrToIso(String(value ?? ""))
-      if (iso) result[field.key] = iso
-      continue
-    }
+  const effectiveAnswers = ruleEngine.applyValueOverrides(answers, ruleResult)
 
-    const normalized = normalizeAnswerForSubmit(field, value)
-    if (normalized !== undefined) result[field.key] = normalized
-  }
-
-  return result
+  const context = createClientValidationContext(effectiveAnswers, {
+    mode: "draft",
+    profile,
+    visibleFieldKeys: ruleResult.visibleFieldKeys,
+    requiredFieldKeys: ruleResult.requiredFieldKeys,
+    optionalFieldKeys: ruleResult.optionalFieldKeys,
+    disabledFieldKeys: ruleResult.disabledFieldKeys,
+  })
+  return engine.buildDraftAnswers(descriptors, effectiveAnswers, context)
 }
 
 export function hasQuestionnaireValidationErrors(
   fields: QuestionnaireField[],
   answers: Record<string, unknown>,
+  templateSettings?: Record<string, unknown> | null,
 ) {
   return (
-    Object.keys(validateQuestionnaireAnswersForFinalize(fields, answers)).length >
-    0
+    Object.keys(
+      validateQuestionnaireAnswersForFinalize(fields, answers, templateSettings),
+    ).length > 0
   )
 }
 
@@ -453,4 +293,18 @@ export function firstInvalidFieldKey(
   const orderedKey = orderedFields.find((field) => errors[field.key])?.key
   if (orderedKey) return orderedKey
   return Object.keys(errors)[0] ?? null
+}
+
+export function validateFieldRealtime(
+  field: QuestionnaireField,
+  value: unknown,
+  templateSettings?: Record<string, unknown> | null,
+) {
+  const profile = resolveValidationProfile(templateSettings)
+  const context = createClientValidationContext(
+    { [field.key]: value },
+    { mode: "finalize", profile },
+  )
+  const result = engine.validateField(toFormFieldDescriptor(field), value, context)
+  return result.errors[0]?.message ?? null
 }

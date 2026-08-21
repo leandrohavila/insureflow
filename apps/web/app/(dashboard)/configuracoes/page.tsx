@@ -1,5 +1,6 @@
 import { PermissionsPanel } from "@/components/auth/permissions-panel"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { SettingsNav } from "@/components/settings/settings-subnav"
 import { requirePermission } from "@/lib/auth/guards"
 
 export default async function SettingsPage() {
@@ -10,8 +11,9 @@ export default async function SettingsPage() {
       <CrmPageHeader
         badge="Governança"
         title="Configurações"
-        description="Perfil, organização e matriz de permissões RBAC do workspace."
+        description="Perfil, organização, unidades de negócio e matriz de permissões RBAC."
       />
+      <SettingsNav />
       <PermissionsPanel session={session} />
     </div>
   )

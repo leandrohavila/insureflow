@@ -1,3 +1,19 @@
+export {
+  ACTIVITY_EVENT_KINDS,
+  ACTIVITY_EVENT_LABELS,
+  COMMERCIAL_EVENT_KINDS,
+  POST_SALE_EVENT_KINDS,
+  OPERATIONAL_EVENT_KINDS,
+  activityEventLabel,
+  isActivityEventKind,
+  isCommercialEventKind,
+  isPostSaleEventKind,
+  type ActivityEventKind,
+  type CommercialEventKind,
+  type OperationalEventKind,
+  type PostSaleEventKind,
+} from './activity-event-kinds.util';
+
 export const CUSTOMER_LIFECYCLE_STAGES = [
   'won',
   'onboarding',
@@ -21,23 +37,6 @@ export const CUSTOMER_RENEWAL_STATUSES = [
 export type CustomerRenewalStatus = (typeof CUSTOMER_RENEWAL_STATUSES)[number];
 
 export const DEFAULT_RENEWAL_PIPELINE = 'default';
-
-export const OPERATIONAL_EVENT_KINDS = [
-  'deal_won',
-  'policy_issued',
-  'policy_issuance',
-  'policy_upload',
-  'renewal',
-  'renewal_started',
-  'renewal_completed',
-  'claim',
-  'follow_up',
-  'billing',
-  'cancellation',
-  'lifecycle_change',
-] as const;
-
-export type OperationalEventKind = (typeof OPERATIONAL_EVENT_KINDS)[number];
 
 const LIFECYCLE_RANK: Record<CustomerLifecycleStage, number> = {
   won: 0,

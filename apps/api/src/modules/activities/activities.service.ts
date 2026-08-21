@@ -2,11 +2,22 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { pickLatestDate } from '../../common/utils/activity-interaction.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { BusinessUnitAccessService } from '../access/business-unit-access.service';
+import {
+  assertActivityPerformer,
+  assertActivityRelations,
+  syncLeadLastContactFromActivities,
+} from './activity-write.util';
 import { activityInclude, serializeActivity } from './activity-serialize.util';
 import type {
   CreateActivityDto,
@@ -16,12 +27,19 @@ import type {
 
 @Injectable()
 export class ActivitiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly buAccess?: BusinessUnitAccessService,
+  ) {}
 
-  async findActivities(tenantId: string, query: ListActivitiesQueryDto) {
+  async findActivities(
+    tenantId: string,
+    query: ListActivitiesQueryDto,
+    actor?: BusinessUnitActor,
+  ) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
-    const where = this.buildWhere(tenantId, query);
+    const where = await this.buildWhere(tenantId, query, actor);
 
     const [total, activities] = await this.prisma.$transaction([
       this.prisma.activity.count({ where }),
@@ -45,7 +63,14 @@ export class ActivitiesService {
     };
   }
 
-  async findActivity(tenantId: string, id: string) {
+  async findActivity(
+    tenantId: string,
+    id: string,
+    actor?: BusinessUnitActor,
+  ) {
+    if (this.buAccess) {
+      await this.buAccess.assertActivityVisible(actor, tenantId, id);
+    }
     const activity = await this.findActivityOrThrow(tenantId, id);
     return serializeActivity(activity);
   }
@@ -59,8 +84,8 @@ export class ActivitiesService {
       throw new BadRequestException('type is required');
     }
 
-    await this.assertRelations(tenantId, dto);
-    await this.assertPerformer(tenantId, performedById);
+    await assertActivityRelations(this.prisma, tenantId, dto);
+    await assertActivityPerformer(this.prisma, tenantId, performedById);
 
     const activity = await this.prisma.activity.create({
       data: {
@@ -83,16 +108,23 @@ export class ActivitiesService {
       include: activityInclude,
     });
 
-    await this.syncLeadLastContact(tenantId, activity.leadId);
+    await syncLeadLastContactFromActivities(
+      this.prisma,
+      tenantId,
+      activity.leadId,
+    );
     return serializeActivity(activity);
   }
 
   async updateActivity(tenantId: string, id: string, dto: UpdateActivityDto) {
     const existing = await this.findActivityOrThrow(tenantId, id);
 
-    const linkKeys: Array<
-      'leadId' | 'dealId' | 'customerId' | 'policyId'
-    > = ['leadId', 'dealId', 'customerId', 'policyId'];
+    const linkKeys: Array<'leadId' | 'dealId' | 'customerId' | 'policyId'> = [
+      'leadId',
+      'dealId',
+      'customerId',
+      'policyId',
+    ];
     const dtoTouchesActivityLinks = linkKeys.some((key) =>
       Object.prototype.hasOwnProperty.call(dto, key),
     );
@@ -112,7 +144,7 @@ export class ActivitiesService {
           ? (dto.policyId ?? null)
           : existing.policyId,
       };
-      await this.assertRelations(tenantId, mergedForAssert);
+      await assertActivityRelations(this.prisma, tenantId, mergedForAssert);
     }
 
     const activity = await this.prisma.activity.update({
@@ -151,7 +183,7 @@ export class ActivitiesService {
       ),
     );
     for (const leadId of leadIds) {
-      await this.syncLeadLastContact(tenantId, leadId);
+      await syncLeadLastContactFromActivities(this.prisma, tenantId, leadId);
     }
 
     return serializeActivity(activity);
@@ -160,7 +192,11 @@ export class ActivitiesService {
   async deleteActivity(tenantId: string, id: string) {
     const existing = await this.findActivityOrThrow(tenantId, id);
     await this.prisma.activity.delete({ where: { id } });
-    await this.syncLeadLastContact(tenantId, existing.leadId);
+    await syncLeadLastContactFromActivities(
+      this.prisma,
+      tenantId,
+      existing.leadId,
+    );
     return { deleted: true, id };
   }
 
@@ -198,10 +234,11 @@ export class ActivitiesService {
     return map;
   }
 
-  private buildWhere(
+  private async buildWhere(
     tenantId: string,
     query: ListActivitiesQueryDto,
-  ): Prisma.ActivityWhereInput {
+    actor?: BusinessUnitActor,
+  ): Promise<Prisma.ActivityWhereInput> {
     const where: Prisma.ActivityWhereInput = { tenantId };
 
     if (query.status) where.status = query.status;
@@ -236,92 +273,12 @@ export class ActivitiesService {
       }
     }
 
+    if (actor && this.buAccess) {
+      const buWhere = await this.buAccess.activityWhere(actor);
+      if (buWhere) return andWhere(where, buWhere);
+    }
+
     return where;
-  }
-
-  private async assertRelations(
-    tenantId: string,
-    dto: {
-      leadId?: string | null;
-      dealId?: string | null;
-      customerId?: string | null;
-      policyId?: string | null;
-    },
-  ) {
-    const leadId = dto.leadId ?? undefined;
-    const dealId = dto.dealId ?? undefined;
-    const customerId = dto.customerId ?? undefined;
-    const policyId = dto.policyId ?? undefined;
-
-    if (!leadId && !dealId && !customerId && !policyId) {
-      throw new BadRequestException(
-        'Informe pelo menos um vínculo: leadId, dealId, customerId ou policyId',
-      );
-    }
-
-    if (leadId) {
-      const lead = await this.prisma.lead.findFirst({
-        where: { id: leadId, tenantId },
-        select: { id: true },
-      });
-      if (!lead) {
-        throw new NotFoundException('Lead não encontrado');
-      }
-    }
-
-    if (dealId) {
-      const deal = await this.prisma.deal.findFirst({
-        where: { id: dealId, tenantId },
-        select: { id: true },
-      });
-      if (!deal) {
-        throw new NotFoundException('Negócio não encontrado');
-      }
-    }
-
-    if (customerId) {
-      const customer = await this.prisma.customer.findFirst({
-        where: { id: customerId, tenantId },
-        select: { id: true },
-      });
-      if (!customer) {
-        throw new NotFoundException('Cliente não encontrado');
-      }
-    }
-
-    if (policyId) {
-      const policy = await this.prisma.policy.findFirst({
-        where: { id: policyId, tenantId },
-        select: { id: true },
-      });
-      if (!policy) {
-        throw new NotFoundException('Apólice não encontrada');
-      }
-    }
-  }
-
-  private async assertPerformer(tenantId: string, userId: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, tenantId },
-      select: { id: true },
-    });
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-  }
-
-  private async syncLeadLastContact(tenantId: string, leadId: string | null) {
-    if (!leadId) return;
-
-    const aggregate = await this.prisma.activity.aggregate({
-      where: { tenantId, leadId },
-      _max: { occurredAt: true },
-    });
-
-    await this.prisma.lead.update({
-      where: { id: leadId },
-      data: { lastContactAt: aggregate._max.occurredAt ?? null },
-    });
   }
 
   private async findActivityOrThrow(tenantId: string, id: string) {

@@ -50,7 +50,7 @@ export function DraggableDealCard({
     <div
       ref={setRef}
       className={cn(
-        "min-w-0 max-w-full touch-none",
+        "w-full min-w-0 touch-none",
         isDragging && "opacity-[0.35] saturate-50",
         !disabled && "cursor-grab active:cursor-grabbing",
       )}

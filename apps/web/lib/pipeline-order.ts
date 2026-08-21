@@ -1,10 +1,10 @@
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
-import { pipelineStages } from "@/lib/data-access/modules/crm"
+import { allPipelineStages } from "@/lib/data-access/modules/crm"
 
 export const PIPELINE_ORDER_STEP = 1000
 
 const stageRank = Object.fromEntries(
-  pipelineStages.map((stage, index) => [stage.id, index]),
+  allPipelineStages.map((stage, index) => [stage.id, index]),
 ) as Record<CrmStageId, number>
 
 export function normalizePipelineOrder(value: unknown) {

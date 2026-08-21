@@ -21,9 +21,7 @@ export const ROLE_SLUG_DEFAULT_SCOPE: Record<string, DataScope> = {
   super_admin: 'tenant',
 };
 
-export function resolveEffectiveDataScope(
-  roleScopes: DataScope[],
-): DataScope {
+export function resolveEffectiveDataScope(roleScopes: DataScope[]): DataScope {
   if (roleScopes.length === 0) return 'own';
 
   return roleScopes.reduce((best, current) =>

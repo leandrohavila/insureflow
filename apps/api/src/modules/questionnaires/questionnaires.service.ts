@@ -6,8 +6,18 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import {
+  RuleEngine,
+  ValidationEngine,
+  createServerValidationContext,
+  fieldsToDescriptors,
+  resolveValidationProfile,
+} from '@repo/forms-engine';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ActivityEngineService } from '../activities/activity-engine.service';
 import { LeadsService } from '../leads/leads.service';
+import { QuotesService } from '../quotes/quotes.service';
+import { buildQuestionnaireAnswerChanges } from './questionnaire-answer-audit.util';
 import type {
   CreateQuestionnaireFieldDto,
   CreateQuestionnaireSubmissionDto,
@@ -42,6 +52,13 @@ const submissionInclude = {
       assignedTo: true,
     },
   },
+  updatedBy: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
 } satisfies Prisma.QuestionnaireSubmissionInclude;
 
 type SubmissionAnswers = Record<string, unknown>;
@@ -57,9 +74,14 @@ type NormalizedFieldOption = {
 
 @Injectable()
 export class QuestionnairesService {
+  private readonly validationEngine = new ValidationEngine();
+  private readonly ruleEngine = new RuleEngine();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly leads: LeadsService,
+    private readonly activityEngine: ActivityEngineService,
+    private readonly quotes: QuotesService,
   ) {}
 
   async findTemplates(
@@ -333,6 +355,7 @@ export class QuestionnairesService {
   async createSubmission(
     tenantId: string,
     dto: CreateQuestionnaireSubmissionDto,
+    performedById?: string,
   ) {
     await this.ensureSubmissionReferencesBelongToTenant(tenantId, dto);
     const template = await this.getTemplateForSubmission(
@@ -371,6 +394,14 @@ export class QuestionnairesService {
       await this.leads.touchLastContact(tenantId, submission.leadId);
     }
 
+    await this.publishQuestionnaireStatusEvent(
+      tenantId,
+      performedById,
+      submission,
+      null,
+      submission.status,
+    );
+
     return submission;
   }
 
@@ -378,6 +409,7 @@ export class QuestionnairesService {
     tenantId: string,
     id: string,
     dto: UpdateQuestionnaireSubmissionDto,
+    performedById?: string,
   ) {
     const current = await this.getSubmissionForUpdate(tenantId, id);
     await this.ensureSubmissionReferencesBelongToTenant(tenantId, dto);
@@ -386,10 +418,8 @@ export class QuestionnairesService {
       dto.templateId ?? current.templateId,
     );
     this.validateTemplateIsSubmittable(template);
-    const answers =
-      dto.answers !== undefined
-        ? dto.answers
-        : this.toAnswerRecord(current.answers);
+    const previousAnswers = this.toAnswerRecord(current.answers);
+    const answers = dto.answers !== undefined ? dto.answers : previousAnswers;
     this.validateSubmissionAnswers(
       template,
       answers,
@@ -397,33 +427,79 @@ export class QuestionnairesService {
     );
 
     const nextStatus = dto.status ?? current.status;
+    const answerChanges =
+      dto.answers !== undefined
+        ? buildQuestionnaireAnswerChanges(
+            template.fields,
+            previousAnswers,
+            dto.answers,
+          )
+        : [];
 
-    const submission = await this.prisma.questionnaireSubmission.update({
-      where: { id },
-      data: {
-        ...(dto.templateId !== undefined ? { templateId: dto.templateId } : {}),
-        ...(dto.mode !== undefined ? { mode: dto.mode } : {}),
-        ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
-        ...(dto.answers !== undefined
-          ? { answers: this.toInputJson(dto.answers) }
-          : {}),
-        ...(dto.metadata !== undefined
-          ? { metadata: this.toInputJson(dto.metadata) }
-          : {}),
-        ...(dto.leadId !== undefined ? { leadId: dto.leadId } : {}),
-        ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
-        ...(dto.dealId !== undefined ? { dealId: dto.dealId } : {}),
-        ...(dto.submittedAt !== undefined
-          ? { submittedAt: new Date(dto.submittedAt) }
-          : {}),
-      },
-      include: submissionInclude,
+    const submission = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.questionnaireSubmission.update({
+        where: { id },
+        data: {
+          ...(dto.templateId !== undefined
+            ? { templateId: dto.templateId }
+            : {}),
+          ...(dto.mode !== undefined ? { mode: dto.mode } : {}),
+          ...(dto.origin !== undefined ? { origin: dto.origin } : {}),
+          ...(dto.status !== undefined ? { status: dto.status } : {}),
+          ...(answerChanges.length > 0
+            ? { answers: this.toInputJson(answers) }
+            : {}),
+          ...(dto.metadata !== undefined
+            ? { metadata: this.toInputJson(dto.metadata) }
+            : {}),
+          ...(dto.leadId !== undefined ? { leadId: dto.leadId } : {}),
+          ...(dto.customerId !== undefined
+            ? { customerId: dto.customerId }
+            : {}),
+          ...(dto.dealId !== undefined ? { dealId: dto.dealId } : {}),
+          ...(dto.submittedAt !== undefined
+            ? { submittedAt: new Date(dto.submittedAt) }
+            : {}),
+          ...(performedById ? { updatedById: performedById } : {}),
+        },
+        include: submissionInclude,
+      });
+
+      if (answerChanges.length > 0) {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            userId: performedById,
+            action: 'questionnaire_submission.answers_updated',
+            resource: 'QuestionnaireSubmission',
+            resourceId: id,
+            metadata: this.toInputJson({
+              submissionId: id,
+              templateId: updated.templateId,
+              status: updated.status,
+              changedAt: updated.updatedAt.toISOString(),
+              changedById: performedById ?? null,
+              changes: answerChanges,
+            }),
+            severity: 'info',
+          },
+        });
+      }
+
+      return updated;
     });
 
     if (nextStatus === 'submitted' && submission.leadId) {
       await this.leads.touchLastContact(tenantId, submission.leadId);
     }
+
+    await this.publishQuestionnaireStatusEvent(
+      tenantId,
+      performedById,
+      submission,
+      current.status,
+      nextStatus,
+    );
 
     return submission;
   }
@@ -583,113 +659,64 @@ export class QuestionnairesService {
       throw new BadRequestException('Respostas devem ser um objeto JSON');
     }
 
-    const fieldsByKey = new Map(
-      template.fields.map((field) => [field.key, field]),
+    const settings = this.isPlainObject(template.settings)
+      ? (template.settings as Record<string, unknown>)
+      : {};
+    const profile = resolveValidationProfile(settings);
+    const mode =
+      status === 'submitted' || status === 'reviewed' ? 'finalize' : 'draft';
+
+    const descriptors = fieldsToDescriptors(
+      template.fields.map((field) => ({
+        key: field.key,
+        label: field.label,
+        type: field.type,
+        required: field.required,
+        order: field.order,
+        placeholder: field.placeholder,
+        helpText: field.helpText,
+        options: field.options,
+        validation: field.validation,
+        settings: field.settings,
+      })),
     );
-    const invalidKeys = Object.keys(answers).filter(
-      (key) => !fieldsByKey.has(key),
+
+    const templateDescriptor = {
+      name: template.name,
+      settings,
+      fields: descriptors,
+    };
+
+    const ruleResult = this.ruleEngine.evaluateSubmission({
+      template: templateDescriptor,
+      answers,
+    });
+
+    const effectiveAnswers = this.ruleEngine.applyValueOverrides(
+      answers,
+      ruleResult,
     );
-    if (invalidKeys.length > 0) {
+
+    const context = createServerValidationContext(effectiveAnswers, {
+      mode,
+      profile,
+      enforceRequired: mode === 'finalize',
+      visibleFieldKeys: ruleResult.visibleFieldKeys,
+      requiredFieldKeys: ruleResult.requiredFieldKeys,
+      optionalFieldKeys: ruleResult.optionalFieldKeys,
+      disabledFieldKeys: ruleResult.disabledFieldKeys,
+    });
+
+    const result = this.validationEngine.validateSubmission(
+      descriptors,
+      effectiveAnswers,
+      context,
+    );
+
+    if (!result.valid) {
       throw new BadRequestException(
-        `Campos inexistentes no template: ${invalidKeys.join(', ')}`,
+        result.errors.map((error) => error.message),
       );
-    }
-
-    const requireAllRequiredFields =
-      status === 'submitted' || status === 'reviewed';
-
-    for (const field of template.fields) {
-      const value = answers[field.key];
-      if (
-        requireAllRequiredFields &&
-        field.required &&
-        this.isEmptyAnswer(value)
-      ) {
-        throw new BadRequestException(
-          `Campo obrigatório sem resposta: ${field.label}`,
-        );
-      }
-      if (this.isEmptyAnswer(value)) {
-        continue;
-      }
-      this.validateAnswerValue(field.type, field.label, value, field.options);
-    }
-  }
-
-  private validateAnswerValue(
-    type: QuestionnaireFieldType,
-    label: string,
-    value: unknown,
-    options: Prisma.JsonValue | null,
-  ) {
-    switch (type) {
-      case 'TEXT':
-      case 'TEXTAREA':
-      case 'PHONE':
-      case 'FILE':
-        if (typeof value !== 'string') {
-          throw new BadRequestException(`${label} deve ser texto`);
-        }
-        return;
-      case 'EMAIL':
-        if (
-          typeof value !== 'string' ||
-          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-        ) {
-          throw new BadRequestException(`${label} deve ser um e-mail válido`);
-        }
-        return;
-      case 'NUMBER':
-      case 'CURRENCY':
-        if (typeof value !== 'number' || !Number.isFinite(value)) {
-          throw new BadRequestException(`${label} deve ser número`);
-        }
-        return;
-      case 'DATE':
-        if (
-          typeof value !== 'string' ||
-          Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))
-        ) {
-          throw new BadRequestException(`${label} deve ser uma data válida`);
-        }
-        return;
-      case 'BOOLEAN':
-        if (typeof value !== 'boolean') {
-          throw new BadRequestException(
-            `${label} deve ser verdadeiro ou falso`,
-          );
-        }
-        return;
-      case 'SELECT':
-        if (typeof value !== 'string') {
-          throw new BadRequestException(`${label} deve ser uma opção`);
-        }
-        this.validateOption(label, value, options);
-        return;
-      case 'MULTI_SELECT':
-        if (
-          !Array.isArray(value) ||
-          value.some((item) => typeof item !== 'string')
-        ) {
-          throw new BadRequestException(
-            `${label} deve ser uma lista de opções`,
-          );
-        }
-        (value as string[]).forEach((item) =>
-          this.validateOption(label, item, options),
-        );
-        return;
-    }
-  }
-
-  private validateOption(
-    label: string,
-    value: string,
-    options: Prisma.JsonValue | null,
-  ) {
-    const allowedValues = this.getOptionValues(options);
-    if (allowedValues.length > 0 && !allowedValues.includes(value)) {
-      throw new BadRequestException(`${label} possui opção inválida`);
     }
   }
 
@@ -780,15 +807,6 @@ export class QuestionnairesService {
     return `${value}_${index}`;
   }
 
-  private isEmptyAnswer(value: unknown) {
-    return (
-      value === undefined ||
-      value === null ||
-      value === '' ||
-      (Array.isArray(value) && value.length === 0)
-    );
-  }
-
   private isPlainObject(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
@@ -824,6 +842,86 @@ export class QuestionnairesService {
     });
     if (!deal) {
       throw new NotFoundException('Negócio relacionado não encontrado');
+    }
+  }
+
+  private async publishQuestionnaireStatusEvent(
+    tenantId: string,
+    performedById: string | undefined,
+    submission: Prisma.QuestionnaireSubmissionGetPayload<{
+      include: typeof submissionInclude;
+    }>,
+    previousStatus: QuestionnaireSubmissionStatus | null,
+    nextStatus: QuestionnaireSubmissionStatus,
+  ) {
+    if (!performedById) return;
+    if (previousStatus === nextStatus) return;
+
+    const templateName = submission.template?.name ?? 'Questionário';
+    const relations = {
+      leadId: submission.leadId,
+      dealId: submission.dealId,
+      customerId: submission.customerId,
+    };
+
+    if (nextStatus === 'submitted' && previousStatus !== 'submitted') {
+      await this.activityEngine.publish({
+        tenantId,
+        performedById,
+        operationalEventKind: 'questionnaire_submitted',
+        subject: `Questionário enviado — ${templateName}`,
+        description: 'Resposta comercial registrada na timeline.',
+        leadId: relations.leadId,
+        dealId: relations.dealId,
+        customerId: relations.customerId,
+        metadata: {
+          submissionId: submission.id,
+          templateId: submission.templateId,
+          status: nextStatus,
+        },
+      });
+
+      await this.quotes.syncComparisonFromSubmission(
+        tenantId,
+        {
+          id: submission.id,
+          leadId: submission.leadId,
+          dealId: submission.dealId,
+          customerId: submission.customerId,
+        },
+        'received',
+        performedById,
+      );
+    }
+
+    if (nextStatus === 'reviewed' && previousStatus !== 'reviewed') {
+      await this.activityEngine.publish({
+        tenantId,
+        performedById,
+        operationalEventKind: 'questionnaire_reviewed',
+        subject: `Questionário revisado — ${templateName}`,
+        description: 'Revisão comercial concluída.',
+        leadId: relations.leadId,
+        dealId: relations.dealId,
+        customerId: relations.customerId,
+        metadata: {
+          submissionId: submission.id,
+          templateId: submission.templateId,
+          status: nextStatus,
+        },
+      });
+
+      await this.quotes.syncComparisonFromSubmission(
+        tenantId,
+        {
+          id: submission.id,
+          leadId: submission.leadId,
+          dealId: submission.dealId,
+          customerId: submission.customerId,
+        },
+        'in_analysis',
+        performedById,
+      );
     }
   }
 

@@ -1,8 +1,13 @@
 export type CrmStageId =
   | "novo"
   | "qualificacao"
+  | "contato"
+  | "cotacao"
+  | "visita"
   | "proposta"
   | "negociacao"
+  | "contrato"
+  | "fechamento"
   | "fechado"
 
 export type CrmDealStatus = "open" | "won" | "lost" | "archived"
@@ -14,12 +19,22 @@ export type CrmDealQuestionnaireStatus =
   | "reviewed"
   | "archived"
 
+export type CrmDealQuoteSummary = {
+  comparisonId: string
+  workflowStatus: string
+  title: string | null
+  lineCount: number
+  hasSelectedQuote: boolean
+  updatedAt: string
+}
+
 export type CrmDealCommercialContext = {
   questionnaire: {
     status: CrmDealQuestionnaireStatus
     submissionId: string | null
     updatedAt: string | null
   }
+  quote: CrmDealQuoteSummary | null
   phone: string | null
   lastContactAt: string | null
   lastInteractionAt: string | null
@@ -60,6 +75,24 @@ export type CrmDeal = {
   commercialContext?: CrmDealCommercialContext | null
   customerId?: string | null
   wonAt?: string | null
+  businessUnit?: {
+    id: string
+    name: string
+    slug: string
+    type: "INSURANCE" | "REAL_ESTATE"
+    isActive?: boolean
+  } | null
+  sourceType?: "LEAD" | "RENEWAL" | "CROSS_SELL" | "MANUAL" | "REACTIVATION" | null
+  score?: "LOW" | "MEDIUM" | "HIGH" | null
+  pipeline?: { id: string; name: string } | null
+  sla?: {
+    status: "ok" | "warning" | "overdue"
+    dueAt: string | null
+    elapsedHours: number
+    alertTarget: "OWNER" | "MANAGER" | null
+    color: string | null
+    stageLabel: string | null
+  } | null
 }
 
 export type CreateCrmDealInput = {
@@ -69,6 +102,7 @@ export type CreateCrmDealInput = {
   stage: CrmStageId
   status: CrmDealStatus
   assignedTo?: string
+  /** Reservado — não enviado no POST; o backend atribui ordem no estágio. */
   pipelineOrder?: number
 }
 
@@ -95,4 +129,15 @@ export type BackendCrmDeal = {
   commercialContext?: CrmDealCommercialContext | null
   customerId?: string | null
   wonAt?: string | null
+  businessUnit?: {
+    id: string
+    name: string
+    slug: string
+    type: "INSURANCE" | "REAL_ESTATE"
+    isActive?: boolean
+  } | null
+  sourceType?: "LEAD" | "RENEWAL" | "CROSS_SELL" | "MANUAL" | "REACTIVATION" | null
+  score?: "LOW" | "MEDIUM" | "HIGH" | null
+  pipeline?: { id: string; name: string } | null
+  sla?: CrmDeal["sla"]
 }

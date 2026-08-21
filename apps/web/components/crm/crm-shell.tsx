@@ -1,7 +1,6 @@
 "use client"
 
 import { CrmModuleTabs } from "@/components/crm/crm-module-tabs"
-import { CrmDensityToggle } from "@/components/crm/interaction"
 import { CrmWorkspacePreferencesProvider } from "@/lib/hooks/use-crm-workspace-preferences"
 import {
   CRM_CHROME,
@@ -26,11 +25,8 @@ export function CrmShell({ children }: CrmShellProps) {
     <CrmWorkspacePreferencesProvider>
       <CrmWorkspaceDensityShell className={CRM_WORKSPACE}>
         <header className={CRM_CHROME}>
-          <div className="mx-auto flex w-full min-w-0 max-w-[1600px] items-center gap-3 px-4 py-2 md:px-6">
-            <div className="min-w-0 flex-1">
-              <CrmModuleTabs />
-            </div>
-            <CrmDensityToggle className="shrink-0" />
+          <div className="mx-auto flex w-full min-w-0 max-w-[1600px] items-center px-4 py-2 md:px-6">
+            <CrmModuleTabs />
           </div>
         </header>
 

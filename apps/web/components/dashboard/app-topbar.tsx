@@ -8,6 +8,7 @@ import { Bell, ChevronDown, LogOut, Sparkles } from "lucide-react"
 import type { SessionPayload } from "@repo/auth"
 import { RoleBadge } from "@/components/auth/role-badge"
 import { WorkspaceSearchTrigger } from "@/components/crm/workspace-search"
+import { BusinessUnitSwitcher } from "@/components/dashboard/business-unit-switcher"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -97,8 +98,9 @@ export function AppTopbar({ session }: AppTopbarProps) {
       </nav>
 
       <motion.div
-        className="relative ml-auto flex min-w-0 flex-1 transition-transform duration-200 focus-within:scale-[1.005] md:max-w-md md:flex-none lg:max-w-xl"
+        className="relative ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 transition-transform duration-200 focus-within:scale-[1.005] md:max-w-xl md:flex-none lg:max-w-2xl"
       >
+        <BusinessUnitSwitcher />
         <WorkspaceSearchTrigger className="relative w-full" />
       </motion.div>
 

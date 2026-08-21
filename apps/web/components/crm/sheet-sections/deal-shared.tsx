@@ -16,8 +16,13 @@ import type { CrmStageId } from "@/lib/data-access/modules/crm"
 export const STAGE_TONE: Record<CrmStageId, StatusPillTone> = {
   novo: "info",
   qualificacao: "violet",
+  contato: "violet",
+  cotacao: "brand",
+  visita: "violet",
   proposta: "brand",
   negociacao: "warn",
+  contrato: "brand",
+  fechamento: "success",
   fechado: "success",
 }
 
@@ -28,8 +33,13 @@ export const STAGE_TONE: Record<CrmStageId, StatusPillTone> = {
 export const STAGE_ACCENT: Record<CrmStageId, RecordRowAccent> = {
   novo: "sky",
   qualificacao: "violet",
+  contato: "violet",
+  cotacao: "primary",
+  visita: "violet",
   proposta: "primary",
   negociacao: "amber",
+  contrato: "primary",
+  fechamento: "emerald",
   fechado: "emerald",
 }
 

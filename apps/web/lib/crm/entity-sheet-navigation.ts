@@ -7,7 +7,7 @@
  * Query params:
  * - `from` — origem semântica (tasks, agenda, timeline, …)
  * - `returnTo` — path interno explícito (prioridade sobre `from`)
- * - `sheet=v2` — feature flag existente (inalterada)
+ * - `sheet=v2` — feature flag para entidades ainda em rollout (exceto deal)
  */
 
 export type EntitySheetEntityType = "deal" | "lead" | "contact" | "company" | "customer"
@@ -119,7 +119,7 @@ export function buildEntitySheetHref({
 
   params.set(ENTITY_PARAM[entityType], entityId)
 
-  if (sheetVersion === "v2") {
+  if (sheetVersion === "v2" && entityType !== "deal") {
     params.set("sheet", "v2")
   }
 

@@ -1,0 +1,34 @@
+{
+  "name": "@repo/forms-library",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "check-types": "tsc -p tsconfig.json",
+    "test": "npx jest --config jest.config.cjs",
+    "lint": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@repo/forms-engine": "*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "5.9.3"
+  }
+}

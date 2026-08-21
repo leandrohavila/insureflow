@@ -7,6 +7,9 @@ import { ActivityFormDialog } from "@/components/activities/activity-form-dialog
 import { TimelineEmptyState } from "@/components/activities/timeline-empty-state"
 import { TimelineEntry } from "@/components/activities/timeline-entry"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
+import {
+  dedupeAndSortActivities,
+} from "@/lib/crm/commercial-timeline"
 import { buildTimelineGroups } from "@/lib/crm/timeline-groups"
 import { getErrorMessage } from "@/lib/data-access"
 import {
@@ -16,6 +19,7 @@ import {
   useDeleteActivity,
   useUpdateActivity,
   type Activity,
+  type ActivityType,
   type CreateActivityInput,
 } from "@/lib/data-access/modules/activities"
 import { Button } from "@/components/ui/button"
@@ -28,6 +32,7 @@ type ActivityTimelineProps = {
   showHeading?: boolean
   /** Quando true, não renderiza empty state (delegado ao TimelineLane). */
   suppressEmptyState?: boolean
+  filterType?: ActivityType | null
 }
 
 export function ActivityTimeline({
@@ -36,6 +41,7 @@ export function ActivityTimeline({
   className,
   showHeading = true,
   suppressEmptyState = false,
+  filterType = null,
 }: ActivityTimelineProps) {
   const ctx = { leadId, dealId }
   const timelineQuery = useActivityTimeline(ctx)
@@ -54,10 +60,12 @@ export function ActivityTimeline({
   const [completingId, setCompletingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const activities = useMemo(
-    () => timelineQuery.data?.data ?? [],
-    [timelineQuery.data?.data],
-  )
+  const activities = useMemo(() => {
+    const raw = timelineQuery.data?.data ?? []
+    const commercial = dedupeAndSortActivities(raw)
+    if (!filterType) return commercial
+    return commercial.filter((activity) => activity.type === filterType)
+  }, [timelineQuery.data?.data, filterType])
   const latestOccurredAt = activities[0]?.occurredAt ?? null
 
   const groups = useMemo(
@@ -152,7 +160,7 @@ export function ActivityTimeline({
         <div className="timeline-operational__heading mb-3 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h3 className="crm-text-micro tracking-[0.12em] uppercase">
-              Timeline operacional
+              Timeline comercial
             </h3>
             <p className="crm-text-meta mt-1">
               {formatLastInteraction(latestOccurredAt)}

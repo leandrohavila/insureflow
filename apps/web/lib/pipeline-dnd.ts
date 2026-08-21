@@ -1,7 +1,7 @@
 import type { UniqueIdentifier } from "@dnd-kit/core"
 
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
-import { pipelineStages } from "@/lib/data-access/modules/crm"
+import { allPipelineStages } from "@/lib/data-access/modules/crm"
 
 import {
   logPipelineDnd,
@@ -19,7 +19,7 @@ export function parseStageId(id: UniqueIdentifier): CrmStageId | null {
   const value = String(id)
   if (!value.startsWith("stage:")) return null
   const stage = value.slice(6) as CrmStageId
-  return pipelineStages.some((s) => s.id === stage) ? stage : null
+  return allPipelineStages.some((s) => s.id === stage) ? stage : null
 }
 
 export function resolveDropStage(
@@ -157,11 +157,12 @@ function rebuildDealsByStage(
 ) {
   const result: CrmDeal[] = []
 
-  for (const stage of pipelineStages) {
-    if (stage.id === targetStage) {
+  const uniqueStageIds = [...new Set(allPipelineStages.map((stage) => stage.id))]
+  for (const stageId of uniqueStageIds) {
+    if (stageId === targetStage) {
       result.push(...targetStageDeals)
     } else {
-      result.push(...getSortedStageDeals(withoutActive, stage.id))
+      result.push(...getSortedStageDeals(withoutActive, stageId))
     }
   }
 

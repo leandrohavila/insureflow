@@ -84,6 +84,30 @@ export function useCreateQuestionnaireTemplate() {
   });
 }
 
+export type UpdateQuestionnaireTemplateVariables = {
+  id: string;
+  input: UpdateQuestionnaireTemplateInput;
+  autosave?: boolean;
+};
+
+function patchTemplateInListCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  template: QuestionnaireTemplate,
+) {
+  queryClient.setQueriesData<{ data: QuestionnaireTemplate[]; meta: unknown }>(
+    { queryKey: queryKeys.questionnaires.templates.all },
+    (current) => {
+      if (!current?.data) return current;
+      return {
+        ...current,
+        data: current.data.map((item) =>
+          item.id === template.id ? { ...item, ...template } : item,
+        ),
+      };
+    },
+  );
+}
+
 export function useUpdateQuestionnaireTemplate() {
   const queryClient = useQueryClient();
 
@@ -91,15 +115,22 @@ export function useUpdateQuestionnaireTemplate() {
     mutationFn: ({
       id,
       input,
-    }: {
-      id: string;
-      input: UpdateQuestionnaireTemplateInput;
-    }) => updateQuestionnaireTemplate(id, input),
-    onSuccess: (template) => {
+      autosave,
+    }: UpdateQuestionnaireTemplateVariables) => {
+      void autosave;
+      return updateQuestionnaireTemplate(id, input);
+    },
+    onSuccess: (template, variables) => {
       queryClient.setQueryData<QuestionnaireTemplate>(
         queryKeys.questionnaires.templates.detail(template.id),
         template,
       );
+
+      if (variables.autosave) {
+        patchTemplateInListCaches(queryClient, template);
+        return;
+      }
+
       void queryClient.invalidateQueries({
         queryKey: queryKeys.questionnaires.templates.all,
       });
@@ -264,7 +295,7 @@ export function useLeadQuestionnaireSubmissions(
         templateId: options?.templateId,
         limit,
       })
-    : { page: 1, limit: 0 };
+    : { page: 1, limit: 1 };
 
   return useQuery({
     queryKey: byLeadKey,

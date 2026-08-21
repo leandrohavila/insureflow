@@ -1,5 +1,7 @@
 import type { LeadDocumentType } from "@/lib/documents/document"
 import type { CrmDeal, CrmStageId } from "@/lib/data-access/modules/crm"
+import type { InterestCategory } from "@/lib/business-units/constants"
+import type { BusinessUnitSummary } from "@/lib/data-access/modules/business-units"
 
 export const LEAD_STATUSES = [
   "new",
@@ -10,6 +12,12 @@ export const LEAD_STATUSES = [
 ] as const
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
+
+export type LeadOwner = {
+  id: string
+  name: string
+  initials: string
+}
 
 export type Lead = {
   id: string
@@ -24,8 +32,23 @@ export type Lead = {
   status: LeadStatus
   notes?: string | null
   assignedTo?: string | null
+  ownerUserId?: string | null
+  ownerTeamId?: string | null
+  owner?: LeadOwner | null
   lastContactAt?: string | null
   lastInteractionAt?: string | null
+  businessUnitId?: string | null
+  businessUnit?: BusinessUnitSummary | null
+  businessUnits?: BusinessUnitSummary[]
+  interestCategories?: InterestCategory[]
+  lostReason?: string | null
+  lossReasonId?: string | null
+  lostAt?: string | null
+  reactivationEnabled?: boolean
+  reactivationDays?: number | null
+  reactivationAttempts?: number
+  nextReactivationAt?: string | null
+  lastReactivatedAt?: string | null
   dealId?: string | null
   createdAt: string
   updatedAt: string
@@ -48,6 +71,8 @@ export type LeadListFilters = {
   status?: LeadStatus | "all"
   source?: string
   mine?: boolean
+  businessUnitId?: string
+  interestCategory?: InterestCategory | "all"
   page?: number
   limit?: number
 }
@@ -76,9 +101,22 @@ export type CreateLeadInput = {
   source?: string
   documentType?: LeadDocumentType
   document?: string
-  status: LeadStatus
+  status?: LeadStatus
   notes?: string
   assignedTo?: string
+  businessUnitId?: string
+  businessUnitIds?: string[]
+  interestCategories?: InterestCategory[]
+  lostReason?: string
+  lossReasonId?: string
+  followUpDays?: number
+  followUpType?: "CALL" | "WHATSAPP" | "EMAIL" | "MEETING"
+}
+
+export type CreateLeadRequestInput = CreateLeadInput & {
+  idempotencyKey?: string
+  perfSubmitStartedAt?: number
+  perfTraceId?: string
 }
 
 export type UpdateLeadInput = Partial<CreateLeadInput>
@@ -103,6 +141,7 @@ export type BackendLead = Omit<
   status?: LeadStatus | null
   createdAt?: string | null
   updatedAt?: string | null
+  owner?: LeadOwner | null
 }
 
 export type BackendLeadListResponse = {

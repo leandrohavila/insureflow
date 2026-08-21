@@ -45,6 +45,9 @@ import {
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
+import {
+  dsPipeline,
+} from "@/lib/design-system"
 import { cn } from "@/lib/utils"
 
 type PipelineBoardProps = {
@@ -54,6 +57,7 @@ type PipelineBoardProps = {
   onDealEdit?: (deal: CrmDeal) => void
   onDealDelete?: (deal: CrmDeal) => void
   deals?: CrmDeal[]
+  stages?: typeof pipelineStages
   onDealMove?: (
     deal: CrmDeal,
     update: DealPipelineUpdateInput,
@@ -67,6 +71,7 @@ export function PipelineBoard({
   onDealEdit,
   onDealDelete,
   deals: sourceDeals = [],
+  stages = pipelineStages,
   onDealMove,
 }: PipelineBoardProps) {
   const reduce = useReducedMotion()
@@ -279,28 +284,38 @@ export function PipelineBoard({
 
       const dropStickyOver = stickyOverRef.current
 
-      setActiveDeal(null)
-      setOverStageId(null)
-      isDraggingRef.current = false
-      dragSnapshotRef.current = null
-      lastProcessedOverRef.current = null
-      stickyOverRef.current = null
-      lastCollisionIdsRef.current = ""
-      overStageIdRef.current = null
       if (dragOverRafRef.current !== null) {
         cancelAnimationFrame(dragOverRafRef.current)
         dragOverRafRef.current = null
       }
 
+      const clearDragUiState = () => {
+        setActiveDeal(null)
+        setOverStageId(null)
+        lastProcessedOverRef.current = null
+        stickyOverRef.current = null
+        lastCollisionIdsRef.current = ""
+        overStageIdRef.current = null
+      }
+
+      const finishDragSession = () => {
+        isDraggingRef.current = false
+        dragSnapshotRef.current = null
+      }
+
       if (!over || !snapshot) {
         logPipelineDnd("dragEnd:revert", { reason: "no-over-or-snapshot" })
-        revertDragState()
+        clearDragUiState()
+        finishDragSession()
+        setDeals(snapshot ?? sortDealsForPipeline(sourceDeals))
         return
       }
 
       const original = snapshot.find((deal) => deal.id === active.id)
       if (!original) {
-        revertDragState()
+        clearDragUiState()
+        finishDragSession()
+        setDeals(sortDealsForPipeline(sourceDeals))
         return
       }
 
@@ -320,29 +335,50 @@ export function PipelineBoard({
       )
       const moved = finalDeals.find((deal) => deal.id === active.id)
       if (!moved) {
+        clearDragUiState()
+        finishDragSession()
         setDeals(snapshot)
         return
       }
 
+      const positionChanged = hasDealPipelinePositionChanged(original, moved)
+
+      if (positionChanged) {
+        persistInFlightRef.current = true
+      }
+
+      clearDragUiState()
+      isDraggingRef.current = false
+      dealsRef.current = finalDeals
       setDeals(finalDeals)
 
-      if (!hasDealPipelinePositionChanged(original, moved)) {
+      if (!positionChanged) {
+        finishDragSession()
         return
       }
 
-      persistInFlightRef.current = true
+      if (!onDealMove) {
+        finishDragSession()
+        persistInFlightRef.current = false
+        return
+      }
+
       try {
-        await onDealMove?.(moved, {
+        await onDealMove(moved, {
           stage: moved.stage,
           pipelineOrder: moved.pipelineOrder,
         })
       } catch {
+        dealsRef.current = snapshot
         setDeals(snapshot)
       } finally {
-        persistInFlightRef.current = false
+        finishDragSession()
+        queueMicrotask(() => {
+          persistInFlightRef.current = false
+        })
       }
     },
-    [onDealMove, revertDragState],
+    [onDealMove, sourceDeals],
   )
 
   const handleDragCancel = useCallback((event: DragCancelEvent) => {
@@ -350,21 +386,18 @@ export function PipelineBoard({
     revertDragState()
   }, [revertDragState])
 
-  const scrollClass = cn(
-    "w-full min-w-0 min-h-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:thin]",
-    "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10",
-    !compact && "overflow-y-auto",
-    compact && "max-h-[300px]",
-  )
+  const rootClass = dsPipeline.board.className
+
+  const scrollClass = dsPipeline.scroll.className
 
   const columnsClass = cn(
-    "pipeline-board-v2 flex w-max min-w-full gap-3 px-0.5",
+    dsPipeline.columns.className,
     activeId && "pipeline-board--dragging",
   )
 
   const columns = useMemo(
     () =>
-      pipelineStages.map((stage, i) => (
+      stages.map((stage, i) => (
         <PipelineColumn
           key={stage.id}
           stageId={stage.id}
@@ -389,18 +422,21 @@ export function PipelineBoard({
       onDealSelect,
       overStageId,
       activeId,
+      stages,
     ],
   )
 
   const boardContent = (
-    <div className={scrollClass}>
-      <motion.div
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={columnsClass}
-      >
-        {columns}
-      </motion.div>
+    <div className={rootClass}>
+      <div className={scrollClass}>
+        <motion.div
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className={columnsClass}
+        >
+          {columns}
+        </motion.div>
+      </div>
     </div>
   )
 
@@ -418,18 +454,20 @@ export function PipelineBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div
-        className={scrollClass}
-        role="region"
-        aria-label="Pipeline Kanban com arrastar e soltar"
-      >
-        <motion.div
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className={columnsClass}
+      <div className={rootClass}>
+        <div
+          className={scrollClass}
+          role="region"
+          aria-label="Pipeline Kanban com arrastar e soltar"
         >
-          {columns}
-        </motion.div>
+          <motion.div
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={columnsClass}
+          >
+            {columns}
+          </motion.div>
+        </div>
       </div>
 
       <DragOverlay
@@ -440,7 +478,10 @@ export function PipelineBoard({
         }}
       >
         {activeDeal ? (
-          <div className="pipeline-drag-overlay w-[268px] rotate-[1.25deg] scale-[1.02]">
+          <div
+            className="pipeline-drag-overlay rotate-[1.25deg] scale-[1.02]"
+            style={{ width: dsPipeline.laneWidthPx }}
+          >
             <DealCard deal={activeDeal} isOverlay />
           </div>
         ) : null}

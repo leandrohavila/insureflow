@@ -2,49 +2,23 @@ import type { Activity } from "@/lib/data-access/modules/activities"
 import type { CrmDeal } from "@/lib/data-access/modules/crm"
 import type { Customer } from "@/lib/data-access/modules/customers"
 
-export const OPERATIONAL_EVENT_KINDS = [
-  "deal_won",
-  "policy_issued",
-  "policy_issuance",
-  "policy_upload",
-  "renewal",
-  "renewal_started",
-  "renewal_completed",
-  "claim",
-  "follow_up",
-  "billing",
-  "cancellation",
-  "lifecycle_change",
-] as const
+import {
+  ACTIVITY_EVENT_LABELS,
+  activityEventLabel,
+  type ActivityEventKind,
+} from "./activity-event-kinds"
 
-export type OperationalEventKind = (typeof OPERATIONAL_EVENT_KINDS)[number]
-
-export const OPERATIONAL_EVENT_LABELS: Record<OperationalEventKind, string> = {
-  deal_won: "Negócio ganho",
-  policy_issued: "Apólice emitida",
-  policy_issuance: "Emissão de apólice",
-  policy_upload: "Upload de apólice",
-  renewal: "Renovação",
-  renewal_started: "Renovação iniciada",
-  renewal_completed: "Renovação concluída",
-  claim: "Sinistro",
-  follow_up: "Follow-up operacional",
-  billing: "Cobrança",
-  cancellation: "Cancelamento",
-  lifecycle_change: "Mudança de lifecycle",
-}
-
-export function operationalEventLabel(
-  kind: string | null | undefined,
-): string {
-  if (!kind) return "Evento operacional"
-  if (isOperationalEventKind(kind)) return OPERATIONAL_EVENT_LABELS[kind]
-  return kind.replace(/_/g, " ")
-}
+export {
+  ACTIVITY_EVENT_KINDS as OPERATIONAL_EVENT_KINDS,
+  ACTIVITY_EVENT_LABELS as OPERATIONAL_EVENT_LABELS,
+  activityEventLabel as operationalEventLabel,
+  isActivityEventKind as isOperationalEventKind,
+  type ActivityEventKind as OperationalEventKind,
+} from "./activity-event-kinds"
 
 export type OperationalTimelineItem = {
   id: string
-  kind: OperationalEventKind | Activity["type"]
+  kind: ActivityEventKind | Activity["type"]
   label: string
   subject: string
   description: string | null
@@ -59,7 +33,7 @@ export type OperationalTimelineItem = {
 
 function syntheticEvent(input: {
   id: string
-  kind: OperationalEventKind
+  kind: ActivityEventKind
   subject: string
   description?: string | null
   occurredAt: string
@@ -69,7 +43,7 @@ function syntheticEvent(input: {
   return {
     id: input.id,
     kind: input.kind,
-    label: OPERATIONAL_EVENT_LABELS[input.kind],
+    label: ACTIVITY_EVENT_LABELS[input.kind],
     subject: input.subject,
     description: input.description ?? null,
     occurredAt: input.occurredAt,
@@ -87,7 +61,11 @@ export function buildOperationalTimeline(input: {
   const items: OperationalTimelineItem[] = []
   const { customer, deals = [], activities = [] } = input
 
-  if (customer?.sourceDealId) {
+  const hasDealWonActivity = activities.some(
+    (activity) => activity.operationalEventKind === "deal_won",
+  )
+
+  if (customer?.sourceDealId && !hasDealWonActivity) {
     const sourceDeal = deals.find((deal) => deal.id === customer.sourceDealId)
     items.push(
       syntheticEvent({
@@ -97,7 +75,8 @@ export function buildOperationalTimeline(input: {
           ? `Negócio ganho — ${sourceDeal.title}`
           : "Negócio ganho",
         description: "Início do relacionamento operacional pós-venda.",
-        occurredAt: sourceDeal?.wonAt ?? sourceDeal?.updatedAt ?? customer.createdAt,
+        occurredAt:
+          sourceDeal?.wonAt ?? sourceDeal?.updatedAt ?? customer.createdAt,
         dealId: customer.sourceDealId,
         customerId: customer.id,
       }),
@@ -106,7 +85,7 @@ export function buildOperationalTimeline(input: {
 
   for (const activity of activities) {
     const operationalKind = activity.operationalEventKind as
-      | OperationalEventKind
+      | ActivityEventKind
       | null
       | undefined
 
@@ -114,7 +93,7 @@ export function buildOperationalTimeline(input: {
       id: activity.id,
       kind: operationalKind ?? activity.type,
       label: operationalKind
-        ? operationalEventLabel(operationalKind)
+        ? activityEventLabel(operationalKind)
         : activity.type,
       subject: activity.subject,
       description: activity.description,
@@ -130,14 +109,5 @@ export function buildOperationalTimeline(input: {
 
   return items.sort(
     (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
-  )
-}
-
-export function isOperationalEventKind(
-  value: string | null | undefined,
-): value is OperationalEventKind {
-  return (
-    typeof value === "string" &&
-    (OPERATIONAL_EVENT_KINDS as readonly string[]).includes(value)
   )
 }

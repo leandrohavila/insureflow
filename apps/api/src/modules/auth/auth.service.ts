@@ -76,22 +76,15 @@ export class AuthService {
       }
     }
 
-    const accessCtx = await this.ownership.resolveContext(tenant.id, {
+    const payload = await this.buildPayload({
       userId: user.id,
-      roles: roleSlugs,
-      permissions: [...permSet],
-    });
-
-    const payload: JwtAccessPayload = {
-      sub: user.id,
       email: user.email,
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       roles: roleSlugs,
       permissions: [...permSet],
-      dataScope: accessCtx.dataScope,
-      teamIds: accessCtx.teamIds,
-    };
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -203,14 +196,15 @@ export class AuthService {
       }
     }
 
-    const payload: JwtAccessPayload = {
-      sub: u.id,
+    const payload = await this.buildPayload({
+      userId: u.id,
       email: u.email,
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       roles: roleSlugs,
       permissions: [...permSet],
-    };
+      currentBusinessUnitId: u.currentBusinessUnitId,
+    });
 
     const accessToken = await this.jwt.signAsync(payload, {
       expiresIn: this.accessExpiresIn,
@@ -227,5 +221,85 @@ export class AuthService {
       where: { tokenHash, userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  async issueAccessTokenForUser(userId: string): Promise<{
+    accessToken: string;
+    expiresIn: string;
+    user: JwtAccessPayload;
+  }> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, isActive: true },
+      include: {
+        tenant: { select: { id: true, slug: true, status: true } },
+        userRoles: {
+          include: {
+            role: {
+              include: {
+                rolePermissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!user?.tenant || user.tenant.status !== 'active') {
+      throw new UnauthorizedException('Usuário inválido');
+    }
+
+    const roleSlugs = user.userRoles.map((ur) => ur.role.slug);
+    const permSet = new Set<string>();
+    for (const ur of user.userRoles) {
+      for (const rp of ur.role.rolePermissions) {
+        permSet.add(rp.permission.key);
+      }
+    }
+
+    const payload = await this.buildPayload({
+      userId: user.id,
+      email: user.email,
+      tenantId: user.tenant.id,
+      tenantSlug: user.tenant.slug,
+      roles: roleSlugs,
+      permissions: [...permSet],
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: this.accessExpiresIn,
+    });
+    return {
+      accessToken,
+      expiresIn: this.cfg.get<string>('JWT_EXPIRES_IN', '15m'),
+      user: payload,
+    };
+  }
+
+  private async buildPayload(params: {
+    userId: string;
+    email: string;
+    tenantId: string;
+    tenantSlug: string;
+    roles: string[];
+    permissions: string[];
+    currentBusinessUnitId?: string | null;
+  }): Promise<JwtAccessPayload> {
+    const accessCtx = await this.ownership.resolveContext(params.tenantId, {
+      userId: params.userId,
+      roles: params.roles,
+      permissions: params.permissions,
+    });
+
+    return {
+      sub: params.userId,
+      email: params.email,
+      tenantId: params.tenantId,
+      tenantSlug: params.tenantSlug,
+      roles: params.roles,
+      permissions: params.permissions,
+      dataScope: accessCtx.dataScope,
+      teamIds: accessCtx.teamIds,
+      currentBusinessUnitId: params.currentBusinessUnitId ?? null,
+    };
   }
 }

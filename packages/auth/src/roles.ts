@@ -36,6 +36,9 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "quotes:manage",
     "audit:view",
     "settings:view",
+    "business-units:view-all",
+    "automation:view",
+    "automation:manage",
   ],
   comercial: [
     "dashboard:view",
@@ -50,6 +53,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "quotes:view",
     "quotes:manage",
     "settings:view",
+    "automation:view",
+    "automation:manage",
   ],
   operacional: [
     "dashboard:view",
@@ -87,6 +92,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     "quotes:manage",
     "whatsapp:view",
     "whatsapp:manage",
+    "automation:view",
+    "automation:manage",
     "settings:view",
   ],
   underwriter: [

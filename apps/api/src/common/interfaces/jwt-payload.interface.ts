@@ -11,6 +11,8 @@ export type JwtAccessPayload = {
   /** Escopo efetivo de ownership (Sprint 2). */
   dataScope?: DataScope;
   teamIds?: string[];
+  /** Empresa ativa. `null` = Todas (dentro do ACL). */
+  currentBusinessUnitId?: string | null;
 };
 
 export type RequestWithUser = Request & { user: JwtAccessPayload };

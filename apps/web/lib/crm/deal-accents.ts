@@ -13,7 +13,12 @@ export const PRIORITY_ACCENT_VAR: Record<DealPriority, string> = {
 export const STAGE_ACCENT_VAR: Record<CrmStageId, string> = {
   novo: "var(--crm-stage-prospeccao)",
   qualificacao: "var(--crm-stage-qualificacao)",
+  contato: "var(--crm-stage-qualificacao)",
+  cotacao: "var(--crm-stage-proposta)",
+  visita: "var(--crm-stage-qualificacao)",
   proposta: "var(--crm-stage-proposta)",
   negociacao: "var(--crm-stage-negociacao)",
+  contrato: "var(--crm-stage-negociacao)",
+  fechamento: "var(--crm-stage-fechado)",
   fechado: "var(--crm-stage-fechado)",
 }

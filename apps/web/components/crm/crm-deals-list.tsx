@@ -4,14 +4,12 @@ import { Edit3, Trash2 } from "lucide-react"
 
 import { DealQuestionnaireBadge } from "@/components/crm/deal-questionnaire-badge"
 import type { CrmDeal } from "@/lib/data-access/modules/crm"
-import { formatCurrency, pipelineStages } from "@/lib/data-access/modules/crm"
+import { formatCurrency, stageLabelMap } from "@/lib/data-access/modules/crm"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { DataTable, type DataTableColumn } from "@/components/shared"
+import { DataTable, type DataTableColumn } from "@/components/design-system"
 
-const stageLabel = Object.fromEntries(
-  pipelineStages.map((s) => [s.id, s.label]),
-) as Record<string, string>
+const stageLabel = stageLabelMap
 
 type CrmDealsListProps = {
   onDealSelect?: (deal: CrmDeal) => void
@@ -104,6 +102,7 @@ export function CrmDealsList({
 }: CrmDealsListProps) {
   return (
     <DataTable
+      className="w-full"
       data={deals}
       columns={columns}
       getRowId={(deal) => deal.id}

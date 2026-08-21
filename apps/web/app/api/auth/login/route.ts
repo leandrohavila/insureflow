@@ -9,28 +9,40 @@ const loginSchema = z.object({
   tenantSlug: z.string().min(1).default("insureflow"),
 })
 
+function sanitizeLoginBody(body: unknown) {
+  if (!body || typeof body !== "object") return body
+  return { ...(body as Record<string, unknown>), password: "[REDACTED]" }
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    console.info("[BUG011.1][BFF login route] request", {
+      url: request.url,
+      payload: sanitizeLoginBody(body),
+      headers: Object.fromEntries(request.headers.entries()),
+      API_INTERNAL_URL: process.env.API_INTERNAL_URL ?? null,
+      API_URL: process.env.API_URL ?? null,
+    })
     const parsed = loginSchema.safeParse(body)
 
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.errors[0]?.message ?? "Dados inválidos" },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     const session = await loginWithBackendCredentials(
       parsed.data.email,
       parsed.data.password,
-      parsed.data.tenantSlug
+      parsed.data.tenantSlug,
     )
 
     if (!session) {
       return NextResponse.json(
         { error: "E-mail ou senha incorretos" },
-        { status: 401 }
+        { status: 401 },
       )
     }
 
@@ -44,7 +56,15 @@ export async function POST(request: Request) {
         organizationName: session.organizationName,
       },
     })
-  } catch {
-    return NextResponse.json({ error: "Erro interno ao autenticar" }, { status: 500 })
+  } catch (error) {
+    console.error("[BUG011.1][BFF login route] error", {
+      originalError: error,
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    console.error("[LOGIN ERROR]", error)
+    return NextResponse.json(
+      { error: "Erro interno ao autenticar" },
+      { status: 500 },
+    )
   }
 }

@@ -1,9 +1,6 @@
 import type { DataScope } from '@prisma/client';
 
-import {
-  resolveEffectiveDataScope,
-  scopeForRoleSlug,
-} from './data-scope.util';
+import { resolveEffectiveDataScope, scopeForRoleSlug } from './data-scope.util';
 import { OwnershipService } from './ownership.service';
 import type { AccessContext } from './ownership.types';
 
@@ -33,37 +30,67 @@ describe('data-scope.util', () => {
   });
 });
 
+describe('OwnershipService.buildDealAccessWhere', () => {
+  const service = new OwnershipService(null as never, null as never);
+
+  it('own scope prefers deal.ownerUserId with lead fallback', () => {
+    expect(service.buildDealAccessWhere(ctx({ dataScope: 'own' }))).toEqual({
+      OR: [
+        { ownerUserId: 'user-1' },
+        {
+          ownerUserId: null,
+          convertedLead: { ownerUserId: 'user-1' },
+        },
+      ],
+    });
+  });
+
+  it('team scope filters by converted lead ownerTeamId', () => {
+    expect(
+      service.buildDealAccessWhere(
+        ctx({ dataScope: 'team', teamIds: ['team-a'] }),
+      ),
+    ).toEqual({ convertedLead: { ownerTeamId: { in: ['team-a'] } } });
+  });
+});
+
 describe('OwnershipService.buildLeadAccessWhere', () => {
   const service = new OwnershipService(null as never, null as never);
 
-  const cases: Array<{ scope: DataScope; teamIds: string[]; expected: object }> =
-    [
-      { scope: 'tenant', teamIds: [], expected: {} },
-      { scope: 'own', teamIds: [], expected: { ownerUserId: 'user-1' } },
-      {
-        scope: 'team',
-        teamIds: ['team-a'],
-        expected: { ownerTeamId: { in: ['team-a'] } },
-      },
-      {
-        scope: 'team',
-        teamIds: [],
-        expected: { ownerTeamId: { in: [] } },
-      },
-      {
-        scope: 'shared',
-        teamIds: [],
-        expected: {
-          shares: {
-            some: {
-              sharedWithUserId: 'user-1',
-              revokedAt: null,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: expect.any(Date) } }],
-            },
+  const cases: Array<{
+    scope: DataScope;
+    teamIds: string[];
+    expected: object;
+  }> = [
+    { scope: 'tenant', teamIds: [], expected: {} },
+    { scope: 'own', teamIds: [], expected: { ownerUserId: 'user-1' } },
+    {
+      scope: 'team',
+      teamIds: ['team-a'],
+      expected: { ownerTeamId: { in: ['team-a'] } },
+    },
+    {
+      scope: 'team',
+      teamIds: [],
+      expected: { ownerTeamId: { in: [] } },
+    },
+    {
+      scope: 'shared',
+      teamIds: [],
+      expected: {
+        shares: {
+          some: {
+            sharedWithUserId: 'user-1',
+            revokedAt: null,
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: expect.any(Date) as Date } },
+            ],
           },
         },
       },
-    ];
+    },
+  ];
 
   it.each(cases)(
     'scope=$scope teamIds=$teamIds',

@@ -12,8 +12,9 @@ import { cn } from "@/lib/utils"
 
 const demoAccounts = [
   { role: "Admin", email: "admin@insureflow.com", password: "Admin@2026!" },
-  { role: "Visualizador", email: "viewer@insureflow.com", password: "Viewer@2026!" },
-  { role: "Comercial", email: "sales@insureflow.com", password: "Sales@2026!" },
+  { role: "Gerência", email: "gerencia@insureflow.com", password: "Gerencia@2026!" },
+  { role: "Comercial", email: "comercial@insureflow.com", password: "Comercial@2026!" },
+  { role: "Parceiro", email: "parceiro@insureflow.com", password: "Parceiro@2026!" },
 ] as const
 
 export function LoginForm() {

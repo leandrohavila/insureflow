@@ -10,6 +10,7 @@ import {
   type CrmStageId,
 } from "@/lib/data-access/modules/crm"
 import { getErrorMessage } from "@/lib/data-access"
+import { FormSelect } from "@/components/design-system/forms"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -129,19 +130,16 @@ export function DealFormDialog({
             </label>
             <label className="space-y-2">
               <span className="text-sm font-medium">Estágio</span>
-              <select
+              <FormSelect
                 value={form.stage}
                 onChange={(event) =>
                   update("stage", event.target.value as CrmStageId)
                 }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                {pipelineStages.map((stage) => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.label}
-                  </option>
-                ))}
-              </select>
+                options={pipelineStages.map((stage) => ({
+                  value: stage.id,
+                  label: stage.label,
+                }))}
+              />
             </label>
             <label className="space-y-2 sm:col-span-2">
               <span className="text-sm font-medium">Responsável</span>

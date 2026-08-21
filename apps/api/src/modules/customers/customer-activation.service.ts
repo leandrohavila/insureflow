@@ -10,6 +10,7 @@ import {
   stripDocumentDigits,
 } from '../../common/utils/document.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ActivityEngineService } from '../activities/activity-engine.service';
 
 type DealWithLead = Prisma.DealGetPayload<{
   include: {
@@ -23,6 +24,9 @@ type DealWithLead = Prisma.DealGetPayload<{
         document: true;
         documentType: true;
         assignedTo: true;
+        interestCategories: true;
+        businessUnitId: true;
+        businessUnits: { select: { businessUnitId: true; isOrigin: true } };
       };
     };
   };
@@ -39,7 +43,10 @@ type ActivationResult = {
 
 @Injectable()
 export class CustomerActivationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityEngine: ActivityEngineService,
+  ) {}
 
   async activateFromWonDeal(
     tenantId: string,
@@ -59,6 +66,9 @@ export class CustomerActivationService {
             document: true,
             documentType: true,
             assignedTo: true,
+            interestCategories: true,
+            businessUnitId: true,
+            businessUnits: { select: { businessUnitId: true, isOrigin: true } },
           },
         },
       },
@@ -113,6 +123,19 @@ export class CustomerActivationService {
             companyName: identity.companyName,
             renewalStatus: 'pending',
             renewalPipeline: DEFAULT_RENEWAL_PIPELINE,
+            businessUnitId:
+              deal.businessUnitId ?? deal.convertedLead?.businessUnitId ?? null,
+            interestCategories: deal.convertedLead?.interestCategories ?? [],
+            ...(deal.convertedLead?.businessUnits.length
+              ? {
+                  businessUnits: {
+                    create: deal.convertedLead.businessUnits.map((link) => ({
+                      businessUnitId: link.businessUnitId,
+                      isOrigin: link.isOrigin,
+                    })),
+                  },
+                }
+              : {}),
           },
         });
         customerId = customer.id;
@@ -157,22 +180,25 @@ export class CustomerActivationService {
         data: { customerId },
       });
 
-      await tx.activity.create({
-        data: {
+      await this.activityEngine.publish(
+        {
           tenantId,
-          type: 'note',
-          status: 'completed',
+          performedById,
+          operationalEventKind: 'deal_won',
           subject: `Negócio ganho — ${deal.title}`,
           description:
             'Cliente ativado na carteira operacional a partir do negócio.',
-          operationalEventKind: 'deal_won',
           occurredAt: now,
           dealId: deal.id,
           customerId,
           leadId: deal.convertedLead?.id ?? null,
-          performedById,
+          idempotencyKey: {
+            operationalEventKind: 'deal_won',
+            dealId: deal.id,
+          },
         },
-      });
+        tx,
+      );
 
       return {
         customerId,

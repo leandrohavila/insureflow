@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
+import { useState } from "react"
 import {
   ArrowRightLeft,
   ArrowUpRight,
@@ -13,6 +14,7 @@ import {
   UserCog,
 } from "lucide-react"
 
+import { FormSelect } from "@/components/design-system"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
 import { SectionPanel, StatusPill } from "@/components/crm/primitives"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -20,11 +22,14 @@ import {
   formatCurrency,
   stageLabelMap,
 } from "@/lib/data-access/modules/crm"
+import { useLeadLossReasons } from "@/lib/data-access/modules/lead-loss-reasons"
 import {
   useLeadContext,
+  useUpdateLead,
   type Lead,
   type LeadContextSubmission,
 } from "@/lib/data-access/modules/leads"
+import { leadOwnerDisplayName } from "@/lib/leads/lead-owner"
 import { cn } from "@/lib/utils"
 
 type LeadConversionSectionProps = {
@@ -47,7 +52,8 @@ function deriveChecklist(
   latestSubmission: LeadContextSubmission | null,
 ): ChecklistItem[] {
   const hasContact = Boolean(lead.email?.trim() || lead.phone?.trim())
-  const hasOwner = Boolean(lead.assignedTo?.trim())
+  const ownerLabel = leadOwnerDisplayName(lead)
+  const hasOwner = Boolean(ownerLabel)
   const submissionDone =
     latestSubmission?.status === "submitted" ||
     latestSubmission?.status === "reviewed"
@@ -58,7 +64,7 @@ function deriveChecklist(
       id: "owner",
       label: "Responsável definido",
       done: hasOwner,
-      hint: hasOwner ? lead.assignedTo ?? "" : "Atribua antes de converter",
+      hint: hasOwner ? ownerLabel : "Atribua antes de converter",
     },
     {
       id: "contact",
@@ -343,14 +349,58 @@ export function LeadConversionSection({
                 ? "Atualizar questionário"
                 : "Preencher questionário"}
           </Button>
-          {!lead.assignedTo?.trim() ? (
+          {!leadOwnerDisplayName(lead) ? (
             <p className="crm-text-meta flex items-center gap-1.5 px-2 text-foreground/55">
               <UserCog className="size-3" />
               Atribua um responsável antes de converter para evitar leads órfãos.
             </p>
           ) : null}
+          {lead.status !== "converted" && lead.status !== "lost" ? (
+            <LeadLostReasonControl lead={lead} />
+          ) : lead.status === "lost" ? (
+            <p className="crm-text-meta px-2">
+              Perdido{lead.lostReason ? ` · ${lead.lostReason}` : ""}
+            </p>
+          ) : null}
         </div>
       </SectionPanel>
+    </div>
+  )
+}
+
+function LeadLostReasonControl({ lead }: { lead: Lead }) {
+  const { data: reasons = [] } = useLeadLossReasons(true)
+  const updateLead = useUpdateLead()
+  const [reasonId, setReasonId] = useState("")
+
+  return (
+    <div className="space-y-2 rounded-md border border-white/[0.06] p-2">
+      <FormSelect
+        value={reasonId}
+        onChange={(event) => setReasonId(event.target.value)}
+        options={[
+          { value: "", label: "Motivo de perda" },
+          ...reasons.map((reason) => ({
+            value: reason.id,
+            label: reason.name,
+          })),
+        ]}
+      />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full"
+        disabled={!reasonId || updateLead.isPending}
+        onClick={() =>
+          updateLead.mutate({
+            id: lead.id,
+            input: { status: "lost", lossReasonId: reasonId },
+          })
+        }
+      >
+        Marcar como perdido
+      </Button>
     </div>
   )
 }

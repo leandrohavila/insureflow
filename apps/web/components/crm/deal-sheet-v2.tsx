@@ -4,19 +4,24 @@ import { useMemo } from "react"
 import {
   Activity,
   Briefcase,
+  FileSpreadsheet,
   FileText,
+  FileCheck,
   LayoutGrid,
   ShieldCheck,
   UserPlus,
 } from "lucide-react"
 
 import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
+import { CommercialIntelligencePanel } from "@/components/crm/commercial-intelligence"
 import { EntitySheetShell, StatusPill } from "@/components/crm/primitives"
 import { DealCommercialSection } from "@/components/crm/sheet-sections/deal-commercial-section"
 import { DealLeadSection } from "@/components/crm/sheet-sections/deal-lead-section"
 import { DealOverviewSection } from "@/components/crm/sheet-sections/deal-overview-section"
 import { PlaceholderSection } from "@/components/crm/sheet-sections/placeholder-section"
 import { TimelineLane } from "@/components/crm/sheet-sections/timeline-lane"
+import { DealQuotesSection } from "@/components/quotes/deal-quotes-section"
+import { EntityProposalsSection } from "@/components/quotes/entity-proposals-section"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
@@ -40,6 +45,8 @@ type DealSheetV2Section =
   | "overview"
   | "timeline"
   | "commercial"
+  | "quotations"
+  | "proposals"
   | "lead"
   | "documents"
   | "policies"
@@ -50,6 +57,8 @@ const DEAL_SECTIONS: DealSheetV2Section[] = [
   "overview",
   "timeline",
   "commercial",
+  "quotations",
+  "proposals",
   "lead",
   "documents",
   "policies",
@@ -71,18 +80,10 @@ type DealSheetV2Props = {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Workspace operacional de Negócio — v2.
+ * Workspace operacional de Negócio — implementação padrão do deal sheet.
  *
- * Consome `EntitySheetShell` (Fase 2.1) e `TimelineLane` (Fase 2.2). Cada
- * seção do rail é uma composição visual sobre os mesmos dados do `CrmDeal`
- * — nenhum hook, mutation ou query é alterado em relação ao `DealDetailSheet`
- * legado. Permanece atrás de feature flag `?sheet=v2` até validação.
- *
- * Princípios visuais aplicados:
- * - Cockpit operacional: header sticky com identidade, prioridade e ações.
- * - Hierarchy-first: surface ladder (raised > panel > base) no shell.
- * - Scanability: PropertyCell label-em-cima + gap-px hairlines.
- * - Single-section view: zero scrollspy, foco operacional por contexto.
+ * Consome `EntitySheetShell` e seções modulares sobre os mesmos dados do
+ * `CrmDeal`; hooks, mutations e queries permanecem inalterados.
  */
 export function DealSheetV2({
   deal,
@@ -210,6 +211,12 @@ export function DealSheetV2({
         <EntitySheetShell.RailItem id="commercial" icon={Briefcase}>
           Comercial
         </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="quotations" icon={FileSpreadsheet}>
+          Cotações
+        </EntitySheetShell.RailItem>
+        <EntitySheetShell.RailItem id="proposals" icon={FileCheck}>
+          Propostas
+        </EntitySheetShell.RailItem>
         <EntitySheetShell.RailItem
           id="lead"
           icon={UserPlus}
@@ -232,52 +239,56 @@ export function DealSheetV2({
       {/* -------------------------------------------------------------- */}
       {/* BODY                                                            */}
       {/* -------------------------------------------------------------- */}
-      <EntitySheetShell.Body>
-        {section === "overview" ? (
-          <div className="entity-sheet-section">
-            <DealOverviewSection deal={deal} />
-          </div>
-        ) : null}
+      <EntitySheetShell.Body className="overflow-y-auto px-0 md:px-0">
+        <div className="flex min-h-full flex-col xl:flex-row">
+          <div className="entity-sheet-section min-w-0 flex-1 px-5 md:px-7">
+            {section === "overview" ? <DealOverviewSection deal={deal} /> : null}
 
-        {section === "timeline" ? (
-          <div className="entity-sheet-section">
-            <TimelineLane dealId={deal.id} leadId={leadId} />
-          </div>
-        ) : null}
+            {section === "timeline" ? (
+              <TimelineLane dealId={deal.id} leadId={leadId} />
+            ) : null}
 
-        {section === "commercial" ? (
-          <div className="entity-sheet-section">
-            <DealCommercialSection deal={deal} crmReturnHref={crmReturnHref} />
-          </div>
-        ) : null}
+            {section === "commercial" ? (
+              <DealCommercialSection deal={deal} crmReturnHref={crmReturnHref} />
+            ) : null}
 
-        {section === "lead" ? (
-          <div className="entity-sheet-section">
-            <DealLeadSection deal={deal} />
-          </div>
-        ) : null}
+            {section === "quotations" ? (
+              <DealQuotesSection deal={deal} crmReturnHref={crmReturnHref} />
+            ) : null}
 
-        {section === "documents" ? (
-          <div className="entity-sheet-section">
-            <PlaceholderSection
-              title="Documentos"
-              icon={FileText}
-              description="Anexos, contratos e arquivos vinculados ao negócio. Disponível em uma próxima fase."
-              badge="Em desenvolvimento"
-            />
-          </div>
-        ) : null}
+            {section === "proposals" ? (
+              <EntityProposalsSection
+                dealId={deal.id}
+                returnTo={crmReturnHref ?? `/crm/negocios?deal=${deal.id}`}
+              />
+            ) : null}
 
-        {section === "policies" ? (
-          <div className="entity-sheet-section">
-            <PlaceholderSection
-              title="Apólices"
-              icon={ShieldCheck}
-              description="Apólices emitidas, vigências e renovações associadas a este negócio. Disponível em uma próxima fase."
-              badge="Em desenvolvimento"
-            />
+            {section === "lead" ? <DealLeadSection deal={deal} /> : null}
+
+            {section === "documents" ? (
+              <PlaceholderSection
+                title="Documentos"
+                icon={FileText}
+                description="Anexos, contratos e arquivos vinculados ao negócio. Disponível em uma próxima fase."
+                badge="Em desenvolvimento"
+              />
+            ) : null}
+
+            {section === "policies" ? (
+              <PlaceholderSection
+                title="Apólices"
+                icon={ShieldCheck}
+                description="Apólices emitidas, vigências e renovações associadas a este negócio. Disponível em uma próxima fase."
+                badge="Em desenvolvimento"
+              />
+            ) : null}
           </div>
-        ) : null}
+
+          <CommercialIntelligencePanel
+            deal={deal}
+            className="px-5 pb-8 md:px-7 xl:sticky xl:top-0 xl:max-h-full xl:overflow-y-auto xl:pb-10 xl:pr-7"
+          />
+        </div>
       </EntitySheetShell.Body>
     </EntitySheetShell>
   )

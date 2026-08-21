@@ -4,6 +4,26 @@ import { pickLatestDate } from '../../common/utils/activity-interaction.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { logLeadQuery, logLeadRuntime } from './lead-runtime.util';
 
+export const leadOwnerInclude = {
+  ownerUser: {
+    select: { id: true, name: true, initials: true },
+  },
+  businessUnit: {
+    select: { id: true, name: true, slug: true, type: true, isActive: true },
+  },
+  businessUnits: {
+    include: {
+      businessUnit: {
+        select: { id: true, name: true, slug: true, type: true, isActive: true },
+      },
+    },
+  },
+} satisfies Prisma.LeadInclude;
+
+export type LeadRecordWithOwner = Prisma.LeadGetPayload<{
+  include: typeof leadOwnerInclude;
+}>;
+
 /** Agrega MAX(occurredAt) por lead sem derrubar o endpoint se activities estiver indisponível. */
 export async function safeMaxOccurredAtByLeadIds(
   prisma: PrismaService,
@@ -54,11 +74,17 @@ export function resolveLeadLastInteractionAt(
 }
 
 export function serializeLeadRecord(
-  lead: Prisma.LeadGetPayload<object> & { lastInteractionAt?: string | null },
+  lead: Omit<LeadRecordWithOwner, 'lastInteractionAt'> & {
+    lastInteractionAt?: string | null;
+  },
 ) {
   const lastInteractionAt =
-    lead.lastInteractionAt ??
-    resolveLeadLastInteractionAt(undefined, lead.lastContactAt);
+    typeof lead.lastInteractionAt === 'string'
+      ? lead.lastInteractionAt
+      : resolveLeadLastInteractionAt(undefined, lead.lastContactAt);
+
+  const ownerUser = lead.ownerUser;
+  const businessUnits = serializeLeadBusinessUnits(lead);
 
   return {
     id: lead.id,
@@ -73,10 +99,55 @@ export function serializeLeadRecord(
     status: lead.status,
     notes: lead.notes,
     assignedTo: lead.assignedTo,
+    ownerUserId: lead.ownerUserId ?? null,
+    ownerTeamId: lead.ownerTeamId ?? null,
+    owner: ownerUser
+      ? {
+          id: ownerUser.id,
+          name: ownerUser.name?.trim() || 'Usuário',
+          initials: ownerUser.initials?.trim() || 'IF',
+        }
+      : null,
     lastContactAt: lead.lastContactAt?.toISOString() ?? null,
     lastInteractionAt,
+    businessUnitId: lead.businessUnitId ?? null,
+    businessUnit: lead.businessUnit
+      ? {
+          id: lead.businessUnit.id,
+          name: lead.businessUnit.name,
+          slug: lead.businessUnit.slug,
+          type: lead.businessUnit.type,
+          isActive: lead.businessUnit.isActive,
+        }
+      : null,
+    businessUnits,
+    interestCategories: lead.interestCategories ?? [],
+    lostReason: lead.lostReason ?? null,
+    lossReasonId: lead.lossReasonId ?? null,
+    lostAt: lead.lostAt?.toISOString() ?? null,
+    reactivationEnabled: lead.reactivationEnabled ?? true,
+    reactivationDays: lead.reactivationDays ?? null,
+    reactivationAttempts: lead.reactivationAttempts ?? 0,
+    nextReactivationAt: lead.nextReactivationAt?.toISOString() ?? null,
+    lastReactivatedAt: lead.lastReactivatedAt?.toISOString() ?? null,
     dealId: lead.dealId,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };
+}
+
+function serializeLeadBusinessUnits(lead: {
+  businessUnits?: LeadRecordWithOwner['businessUnits'];
+}) {
+  const links = Array.isArray(lead.businessUnits) ? lead.businessUnits : [];
+  return links
+    .filter((link) => link?.businessUnit)
+    .map((link) => ({
+      id: link.businessUnit.id,
+      name: link.businessUnit.name,
+      slug: link.businessUnit.slug,
+      type: link.businessUnit.type,
+      isActive: link.businessUnit.isActive,
+      isOrigin: link.isOrigin,
+    }));
 }

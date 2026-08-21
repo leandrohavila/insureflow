@@ -171,6 +171,17 @@ function normalizeSubmissionLead(
   };
 }
 
+function normalizeSubmissionUser(
+  user: BackendQuestionnaireSubmission["updatedBy"],
+): QuestionnaireSubmission["updatedBy"] {
+  if (!user?.id) return null;
+  return {
+    id: user.id,
+    name: user.name?.trim() || "Usuário",
+    email: normalizeText(user.email),
+  };
+}
+
 export function normalizeQuestionnaireSubmission(
   submission: BackendQuestionnaireSubmission,
 ): QuestionnaireSubmission {
@@ -178,6 +189,7 @@ export function normalizeQuestionnaireSubmission(
     ...submission,
     template: submission.template ?? null,
     lead: normalizeSubmissionLead(submission.lead),
+    updatedBy: normalizeSubmissionUser(submission.updatedBy),
     mode: submission.mode ?? "INTERNAL",
     origin: submission.origin ?? "INTERNAL",
     status: submission.status ?? "draft",

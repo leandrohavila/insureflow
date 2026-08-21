@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@repo/auth"],
+  transpilePackages: ["@repo/auth", "@repo/forms-engine", "@repo/forms-library"],
   eslint: {
     ignoreDuringBuilds: true,
   },
