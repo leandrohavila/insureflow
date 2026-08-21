@@ -1,0 +1,15 @@
+# Contexto Docker = raiz do monorepo (apps/api/Dockerfile)
+node_modules
+**/node_modules
+**/.next
+**/dist
+**/dist-test
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+apps/api/tsc.log
+coverage
+**/coverage
+docs
