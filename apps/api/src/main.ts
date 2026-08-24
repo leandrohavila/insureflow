@@ -154,7 +154,12 @@ async function bootstrap() {
   const corsOrigins = config
     .get<string>('CORS_ORIGIN')
     ?.split(',')
-    .map((s) => s.trim()) ?? ['http://localhost:3000', 'http://127.0.0.1:3000'];
+    .map((s) => s.trim()) ?? [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3002',
+      'http://127.0.0.1:3002',
+    ];
   app.enableCors({ origin: corsOrigins, credentials: true });
 
   const swaggerConfig = new DocumentBuilder()

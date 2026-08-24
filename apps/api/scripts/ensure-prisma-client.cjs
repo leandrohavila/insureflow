@@ -16,7 +16,7 @@ const clientTypes = path.join(
   'index.d.ts',
 );
 
-const requiredDelegates = [
+  const requiredDelegates = [
   'get lead():',
   'get questionnaireTemplate():',
   'get customer():',
@@ -24,6 +24,13 @@ const requiredDelegates = [
   'get communicationLog():',
   'get communicationProviderConfig():',
   'get userBusinessUnit():',
+  'get property():',
+  'get propertyImage():',
+  'get propertyLead():',
+  'get person():',
+  'get propertyOwner():',
+  'get propertyFeatureDefinition():',
+  'get propertyFeature():',
 ];
 
 const requiredActivityFields = ['policyId: string | null', 'policyId?: boolean'];

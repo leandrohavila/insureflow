@@ -39,6 +39,7 @@ import { CommercialAgendaModule } from './modules/commercial-agenda/commercial-a
 import { CommercialAutomationModule } from './modules/commercial-automation/commercial-automation.module';
 import { CommunicationsModule } from './modules/communications/communications.module';
 import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
+import { PropertiesModule } from './modules/properties/properties.module';
 
 function resolveEnvFilePath(): string[] {
   const appEnv = process.env.APP_ENV ?? 'local';
@@ -110,6 +111,7 @@ function resolveEnvFilePath(): string[] {
     CommercialAutomationModule,
     CommunicationsModule,
     OpportunitiesModule,
+    PropertiesModule,
     SalesPerformanceModule,
   ],
   controllers: [AppController],

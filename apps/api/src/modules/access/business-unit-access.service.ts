@@ -79,6 +79,15 @@ export class BusinessUnitAccessService {
     ) as Prisma.DealWhereInput | undefined;
   }
 
+  async propertyWhere(
+    actor: BusinessUnitActor,
+    requestedBusinessUnitId?: string | null,
+  ): Promise<Prisma.PropertyWhereInput | undefined> {
+    return directBusinessUnitWhere(
+      await this.resolveIds(actor, requestedBusinessUnitId),
+    ) as Prisma.PropertyWhereInput | undefined;
+  }
+
   async followUpWhere(
     actor: BusinessUnitActor,
     requestedBusinessUnitId?: string | null,
