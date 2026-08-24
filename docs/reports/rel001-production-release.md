@@ -44,9 +44,9 @@ Release 1 consolidada em commits organizados, com escopo limitado aos arquivos c
 | 6 | `0f39960` | `feat(api): add real-estate properties module and public catalog` |
 | 7 | `156cf3e` | `feat(db): include real-estate schema and inventory migrations` |
 | 8 | `b1e9abe` | `chore(monorepo): wire real-estate workspace scripts and ignore rules` |
-| 9 | *(este commit docs)* | `docs(rel001): production release consolidation report` |
+| 9 | `1d73577` | `docs(rel001): production release consolidation report` |
 
-**Hash final:** ver rodapé após push (HEAD da branch).
+**Hash final:** `1d73577c4406e8d68dcffa713d1d6371b5819a38` (`1d73577`)
 
 ---
 
@@ -181,4 +181,4 @@ Release 1 consolidada em commits organizados, com escopo limitado aos arquivos c
 | **Ticket** | REL-001 |
 | **Classificação** | **READY FOR DEPLOY** |
 | **Branch** | `release/crm-operacao-avila` |
-| **Hash final** | _preenchido após commit docs_ |
+| **Hash final** | `1d73577c4406e8d68dcffa713d1d6371b5819a38` |
