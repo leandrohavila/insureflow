@@ -49,6 +49,8 @@ const OFFICIAL_ROLES: RoleDef[] = [
       'audit:view',
       'settings:view',
       'business-units:view-all',
+      'properties:view',
+      'properties:manage',
     ],
   },
   {
@@ -68,6 +70,8 @@ const OFFICIAL_ROLES: RoleDef[] = [
       'questionnaires:manage',
       'quotes:view',
       'quotes:manage',
+      'properties:view',
+      'properties:manage',
       'settings:view',
     ],
   },

@@ -161,6 +161,40 @@ enum CommissionStatus {
   CANCELLED
 }
 
+enum PropertyPurpose {
+  SALE
+  RENT
+  SALE_AND_RENT
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  LAND
+  COMMERCIAL
+  OTHER
+}
+
+enum PropertyStatus {
+  DRAFT
+  AVAILABLE
+  RESERVED
+  SOLD
+  RENTED
+  INACTIVE
+}
+
+enum PersonKind {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum PropertyFeatureValueType {
+  BOOLEAN
+  TEXT
+  NUMBER
+}
+
 enum OpportunitySource {
   ENGINE
   MANUAL
@@ -209,6 +243,13 @@ model Tenant {
   salesTargets             SalesTarget[]
   salesCommissions         SalesCommission[]
   commissionRules          CommissionRule[]
+  properties               Property[]
+  propertyImages           PropertyImage[]
+  propertyLeads            PropertyLead[]
+  persons                  Person[]
+  propertyOwners           PropertyOwner[]
+  propertyFeatureDefinitions PropertyFeatureDefinition[]
+  propertyFeatures         PropertyFeature[]
 
   @@map("tenants")
 }
@@ -250,6 +291,7 @@ model User {
   dealStageChanges                DealStageHistory[]        @relation("DealStagePerformedBy")
   salesTargets                    SalesTarget[]
   salesCommissions                SalesCommission[]
+  createdProperties               Property[]                @relation("PropertyCreatedBy")
   businessUnits                   UserBusinessUnit[]
   currentBusinessUnitId           String?                   @map("current_business_unit_id")
   currentBusinessUnit             BusinessUnit?             @relation("UserActiveBusinessUnit", fields: [currentBusinessUnitId], references: [id], onDelete: SetNull)
@@ -519,6 +561,7 @@ model Customer {
   quoteComparisons         QuoteComparison[]
   policyRenewals           PolicyRenewal[]
   communicationLogs        CommunicationLog[]
+  persons                  Person[]
 
   @@unique([tenantId, document])
   @@index([tenantId])
@@ -971,6 +1014,8 @@ model BusinessUnit {
   salesTargets     SalesTarget[]
   salesCommissions SalesCommission[]
   commissionRules  CommissionRule[]
+  properties       Property[]
+  propertyLeads    PropertyLead[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1393,4 +1438,168 @@ model Opportunity {
   @@index([tenantId, businessUnitId])
   @@index([tenantId, assignedUserId])
   @@map("opportunities")
+}
+
+/// Imóvel de catálogo (independente de Customer360Property / Deal / Opportunity)
+model Property {
+  id             String          @id @default(cuid())
+  tenantId       String
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessUnitId String          @map("business_unit_id")
+  businessUnit   BusinessUnit    @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
+  slug           String
+  title          String
+  description    String?
+  purpose        PropertyPurpose
+  type           PropertyType    @default(OTHER)
+  city           String
+  neighborhood   String?         @map("neighborhood")
+  address        String?
+  state          String?
+  postalCode     String?         @map("postal_code")
+  price          Decimal         @db.Decimal(14, 2)
+  areaM2         Decimal?        @map("area_m2") @db.Decimal(10, 2)
+  bedrooms       Int?
+  bathrooms      Int?
+  parkingSpots   Int?            @map("parking_spots")
+  featured       Boolean         @default(false)
+  featuredUntil  DateTime?       @map("featured_until")
+  published      Boolean         @default(false)
+  publishedAt    DateTime?       @map("published_at")
+  status         PropertyStatus  @default(DRAFT)
+  createdByUserId String?        @map("created_by_user_id")
+  createdByUser   User?          @relation("PropertyCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  images   PropertyImage[]
+  leads    PropertyLead[]
+  owners   PropertyOwner[]
+  features PropertyFeature[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, businessUnitId])
+  @@index([tenantId, published, publishedAt])
+  @@index([tenantId, city, neighborhood])
+  @@index([tenantId, purpose, price])
+  @@index([tenantId, featured, published])
+  @@index([tenantId, featured, featuredUntil])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId String   @map("property_id")
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String
+  alt        String?
+  sortOrder  Int      @default(0) @map("sort_order")
+  isCover    Boolean  @default(false) @map("is_cover")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([propertyId, sortOrder])
+  @@index([tenantId])
+  @@map("property_images")
+}
+
+/// Interesse do portal público — não é o Lead do CRM
+model PropertyLead {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessUnitId String       @map("business_unit_id")
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
+  propertyId     String       @map("property_id")
+  property       Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name           String
+  email          String?
+  phone          String?
+  message        String?
+  source         String       @default("public_portal")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([tenantId, propertyId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, businessUnitId])
+  @@map("property_leads")
+}
+
+/// Pessoa do inventário imobiliário (não substitui Customer)
+model Person {
+  id         String     @id @default(cuid())
+  tenantId   String
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  kind       PersonKind @default(INDIVIDUAL)
+  name       String
+  document   String?
+  email      String?
+  phone      String?
+  customerId String?    @unique @map("customer_id")
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  propertyOwners PropertyOwner[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+  @@map("persons")
+}
+
+model PropertyOwner {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId    String   @map("property_id")
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  personId      String   @map("person_id")
+  person        Person   @relation(fields: [personId], references: [id], onDelete: Restrict)
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  publicVisible Boolean  @default(false) @map("public_visible")
+  sharePercent  Decimal? @map("share_percent") @db.Decimal(5, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([propertyId, personId])
+  @@index([tenantId, propertyId])
+  @@index([personId])
+  @@map("property_owners")
+}
+
+model PropertyFeatureDefinition {
+  id        String                    @id @default(cuid())
+  tenantId  String
+  tenant    Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  key       String
+  label     String
+  valueType PropertyFeatureValueType  @default(BOOLEAN) @map("value_type")
+  sortOrder Int                       @default(0) @map("sort_order")
+  isActive  Boolean                   @default(true) @map("is_active")
+  createdAt DateTime                  @default(now()) @map("created_at")
+  updatedAt DateTime                  @updatedAt
+
+  values PropertyFeature[]
+
+  @@unique([tenantId, key])
+  @@index([tenantId, isActive])
+  @@map("property_feature_definitions")
+}
+
+model PropertyFeature {
+  id            String                     @id @default(cuid())
+  tenantId      String
+  tenant        Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId    String                     @map("property_id")
+  property      Property                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  definitionId  String                     @map("definition_id")
+  definition    PropertyFeatureDefinition  @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  valueBoolean  Boolean?                   @map("value_boolean")
+  valueText     String?                    @map("value_text")
+  valueNumber   Decimal?                   @map("value_number") @db.Decimal(14, 2)
+  createdAt     DateTime                   @default(now()) @map("created_at")
+
+  @@unique([propertyId, definitionId])
+  @@index([tenantId, propertyId])
+  @@map("property_features")
 }

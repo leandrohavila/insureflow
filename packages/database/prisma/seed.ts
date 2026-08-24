@@ -51,6 +51,8 @@ const PERMISSIONS: { key: string; description: string }[] = [
   { key: 'settings:manage', description: 'Gerenciar configurações' },
   { key: 'business-units:view-all', description: 'Ver todas as unidades de negócio (VIEW_ALL_BUSINESS_UNITS)' },
   { key: 'business-units:manage', description: 'Gerenciar unidades de negócio e vínculos (MANAGE_BUSINESS_UNITS)' },
+  { key: 'properties:view', description: 'Ver inventário imobiliário' },
+  { key: 'properties:manage', description: 'Gerenciar inventário imobiliário e publicação' },
   { key: 'users:manage', description: 'Gerenciar usuários' },
   { key: 'tenants:manage', description: 'Gerenciar tenant' },
   { key: 'audit:view', description: 'Ver auditoria' },
@@ -59,7 +61,13 @@ const PERMISSIONS: { key: string; description: string }[] = [
 const ROLE_PERMISSIONS = {
   admin: PERMISSIONS.map((p) => p.key),
   viewer: PERMISSIONS.map((p) => p.key).filter((key) => key.endsWith(':view')),
-  sales: ['crm:manage', 'leads:manage', 'clients:view'],
+  sales: [
+    'crm:manage',
+    'leads:manage',
+    'clients:view',
+    'properties:view',
+    'properties:manage',
+  ],
 } as const;
 
 const SEED_USERS = [
