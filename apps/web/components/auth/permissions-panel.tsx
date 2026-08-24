@@ -35,6 +35,8 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   "settings:manage": "Configurações (edição)",
   "business-units:view-all": "Empresas (ver todas)",
   "business-units:manage": "Empresas (gerenciar)",
+  "properties:view": "Imóveis (leitura)",
+  "properties:manage": "Imóveis (edição)",
   "users:manage": "Gestão de usuários",
   "tenants:manage": "Gestão do tenant",
   "audit:view": "Auditoria",

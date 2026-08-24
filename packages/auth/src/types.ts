@@ -44,6 +44,8 @@ export const PERMISSIONS = [
   "settings:manage",
   "business-units:view-all",
   "business-units:manage",
+  "properties:view",
+  "properties:manage",
   "users:manage",
   "tenants:manage",
   "audit:view",
