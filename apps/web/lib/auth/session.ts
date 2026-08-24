@@ -126,7 +126,7 @@ function toBackendSessionUser(
     roleLabel: ROLE_LABELS[role],
     organizationId: payload.tenantId,
     organizationName: payload.tenantSlug,
-    title: "InsureFlow",
+    title: "Grupo Ávila",
   }
 }
 

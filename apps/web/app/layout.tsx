@@ -17,10 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "InsureFlow",
-    template: "%s · InsureFlow",
+    default: "Grupo Ávila",
+    template: "%s · Grupo Ávila",
   },
-  description: "Plataforma de gestão para seguradoras e corretoras.",
+  description: "Workspace operacional do Grupo Ávila — corretora e imóveis.",
 };
 
 export default function RootLayout({

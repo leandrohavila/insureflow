@@ -115,7 +115,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
           size="sm"
           className="hidden gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
         >
-          <Sparkles className="size-3.5 text-primary" strokeWidth={1.5} />
+          <Sparkles className="size-3.5 text-[#DEAE5D]" strokeWidth={1.5} />
           IA
         </Button>
 
@@ -132,7 +132,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 22, delay: 0.3 }}
             >
-              <Badge className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center border-2 border-background bg-primary px-0.5 text-[10px] font-bold leading-none text-primary-foreground shadow-lg shadow-primary/40">
+              <Badge className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center border-2 border-background bg-[#C09048] px-0.5 text-[10px] font-bold leading-none text-[#000C24] shadow-md">
                 3
               </Badge>
             </motion.span>
@@ -143,12 +143,12 @@ export function AppTopbar({ session }: AppTopbarProps) {
           <DropdownMenuTrigger
             className={cn(
               "hidden h-10 shrink-0 items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 pr-3 text-[13px] font-medium outline-none",
-              "transition-all duration-200 hover:border-white/[0.12] hover:bg-white/[0.06]",
-              "focus-visible:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-primary/20 md:inline-flex"
+              "transition-all duration-200 hover:border-[#C09048]/30 hover:bg-white/[0.06]",
+              "focus-visible:border-[#C09048]/40 focus-visible:ring-[3px] focus-visible:ring-[#C09048]/20 md:inline-flex",
             )}
           >
             <Avatar className="size-8 border border-white/10 shadow-md">
-              <AvatarFallback className="bg-gradient-to-br from-primary to-[oklch(0.52_0.16_258)] text-[11px] font-semibold text-white">
+              <AvatarFallback className="bg-[#10294B] text-[11px] font-semibold text-[#DEAE5D]">
                 {session.initials}
               </AvatarFallback>
             </Avatar>

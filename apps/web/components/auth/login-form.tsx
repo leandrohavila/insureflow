@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
-import { Loader2, Lock, Mail, Shield } from "lucide-react"
+import { Loader2, Lock, Mail } from "lucide-react"
 
+import { PoweredByInsureFlow } from "@/components/branding/powered-by-insureflow"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { easeOut } from "@/lib/motion"
@@ -51,7 +52,7 @@ export function LoginForm() {
       router.refresh()
     } catch {
       setError(
-        "Não foi possível conectar à API. Confirme que a API está online em http://localhost:4000 (npm run dev na raiz)."
+        "Não foi possível conectar à API. Confirme que a API está online em http://localhost:4000 (npm run dev na raiz).",
       )
     } finally {
       setLoading(false)
@@ -71,21 +72,18 @@ export function LoginForm() {
       transition={{ duration: 0.45, ease: easeOut }}
       className="w-full max-w-md"
     >
-      <div className="mb-8 space-y-3 text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.52_0.16_258)] shadow-xl shadow-primary/30 ring-1 ring-white/20">
-          <Shield className="size-7 text-white" strokeWidth={1.25} />
-        </div>
-        <h1 className="text-2xl font-semibold tracking-[-0.04em]">
-          <span className="text-gradient-brand">InsureFlow</span>
+      <div className="mb-8 space-y-2">
+        <h1 className="font-serif text-2xl font-semibold tracking-[-0.03em] text-[#10294B] dark:text-[#F6F1E8]">
+          Entrar
         </h1>
         <p className="text-sm text-muted-foreground">
-          Autenticação enterprise com controle de acesso por perfil (RBAC)
+          Corretora e Imóveis no mesmo tenant operacional.
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="glass-panel space-y-5 rounded-2xl border border-white/[0.08] p-6 shadow-2xl md:p-8"
+        className="space-y-5 rounded-2xl border border-[#d6cfc4] bg-white p-6 shadow-lg dark:border-white/[0.08] dark:bg-[#10294B] md:p-8"
       >
         <motion.div className="space-y-2">
           <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
@@ -99,7 +97,7 @@ export function LoginForm() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 border-white/[0.08] bg-white/[0.04] pl-10"
+              className="h-11 border-[#d6cfc4] bg-[#f6f1e8]/50 pl-10 dark:border-white/[0.08] dark:bg-white/[0.04]"
               placeholder="voce@empresa.com"
               required
             />
@@ -118,7 +116,7 @@ export function LoginForm() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-11 border-white/[0.08] bg-white/[0.04] pl-10"
+              className="h-11 border-[#d6cfc4] bg-[#f6f1e8]/50 pl-10 dark:border-white/[0.08] dark:bg-white/[0.04]"
               placeholder="••••••••"
               required
             />
@@ -126,12 +124,16 @@ export function LoginForm() {
         </motion.div>
 
         {error && (
-          <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+          <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-200">
             {error}
           </p>
         )}
 
-        <Button type="submit" className="h-11 w-full shadow-lg shadow-primary/25" disabled={loading}>
+        <Button
+          type="submit"
+          className="h-11 w-full bg-[#10294B] text-[#F6F1E8] shadow-md hover:bg-[#000C24] dark:bg-[#C09048] dark:text-[#000C24] dark:hover:bg-[#DEAE5D]"
+          disabled={loading}
+        >
           {loading ? (
             <>
               <Loader2 className="size-4 animate-spin" />
@@ -141,6 +143,8 @@ export function LoginForm() {
             "Entrar no workspace"
           )}
         </Button>
+
+        <PoweredByInsureFlow className="pt-1 text-center text-muted-foreground/70" />
       </form>
 
       <div className="mt-6 space-y-3">
@@ -154,8 +158,9 @@ export function LoginForm() {
               type="button"
               onClick={() => fillDemo(account)}
               className={cn(
-                "rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-left text-xs transition-colors",
-                "hover:border-primary/30 hover:bg-primary/5"
+                "rounded-xl border border-[#d6cfc4] bg-white px-3 py-2.5 text-left text-xs transition-colors",
+                "hover:border-[#C09048]/40 hover:bg-[#C09048]/5",
+                "dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#C09048]/30",
               )}
             >
               <span className="font-semibold text-foreground">{account.role}</span>

@@ -30,7 +30,7 @@ export const CRM_PAGE_SCROLL_BODY = "min-h-0 flex-1 overflow-y-auto overflow-x-h
 
 export function dashboardTopbarClassName(...extra: Parameters<typeof cn>) {
   return cn(
-    "glass-topbar isolate z-30 flex shrink-0 items-center gap-2 px-4 md:gap-4 md:px-6 xl:px-8",
+    "avila-topbar isolate z-30 flex shrink-0 items-center gap-2 px-4 md:gap-4 md:px-6 xl:px-8",
     DASHBOARD_TOPBAR_HEIGHT,
     DASHBOARD_TOPBAR_HEIGHT_VAR,
     ...extra,
