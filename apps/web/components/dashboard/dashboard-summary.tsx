@@ -35,7 +35,7 @@ export function DashboardSummary({ kpis }: DashboardSummaryProps) {
           key={item.key}
           padding="compact"
           aria-busy={item.kpi?.isLoading || undefined}
-          className={cn("min-w-0 py-1")}
+          className={cn("min-w-0 border-[#C09048]/10 py-1 dark:border-white/[0.06]")}
         >
           <p className="text-[0.5625rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             {item.label}
