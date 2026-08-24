@@ -93,10 +93,9 @@ Este banco local **já tem** as 27 migrations. **Não** foi resetado.
 
 | Item | Status |
 |------|--------|
-| Branch `release/crm-operacao-avila` | **Criada** a partir de `feature/rbac-ownership-foundations` (working tree intacto) |
-| `schema.prisma` | No working tree (pendente de commit se ainda dirty) |
-| 12 migrations 202607/202608 | Untracked no disco; manifesto em `crm-release-manifest.md` |
-| API / BFF / WEB / jobs / seeds | Presentes no working tree |
+| Branch `release/crm-operacao-avila` | **Criada** a partir de `feature/rbac-ownership-foundations` |
+| Commit local | `47702a5` — `feat(crm): pacote operacional Ávila (CRM-003 a CRM-006.4) para primeiro ambiente` (695 files) |
+| `schema.prisma` / 12 migrations / API / BFF / WEB / jobs / seeds | **Incluídos** nesse commit |
 | `main` | **Não** alterada |
 | Push | **Não** executado |
 

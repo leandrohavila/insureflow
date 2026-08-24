@@ -34,7 +34,8 @@ Documentação viva do monorepo InsureFlow (Turbo · NestJS · Next.js · Prisma
 7. [Fluxo comercial](workflows/commercial-flow.md)
 8. [ADRs](decisions/README.md) — incl. [ADR-006 RBAC + ownership](decisions/ADR-006-rbac-and-ownership.md)
 9. [Roadmap CRM](roadmap/crm-evolution.md)
-10. [Princípios UX operacional](ux/operational-principles.md)
+10. [Princípios UX operacional](ux/operational-principles.md) · **[UX-001 Identidade Grupo Ávila](ux/ux001-branding-grupo-avila.md)** (proposta, sem implementação)
+
 11. [Sprint 1 Ownership](sprint-notes/sprint-1-ownership-rbac.md) · [Sprint 1b Fase 2](sprint-notes/sprint-1b-phase-2-matrix.md)
 12. [Sprint 2 — HML checklist](architecture/sprint-2-hml-checklist.md) · [Deploy HML](architecture/sprint-2-hml-deploy-guide.md) · [Browser UI](architecture/sprint-2-browser-validation-checklist.md) · [Relatório](architecture/sprint-2-hml-validation-report.md)
 
