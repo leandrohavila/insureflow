@@ -32,13 +32,13 @@ export function BusinessUnitSwitcher() {
 
   return (
     <label className="flex min-w-0 items-center gap-2">
-      <Building2 className="size-3.5 shrink-0 text-muted-foreground" />
+      <Building2 className="size-3.5 shrink-0 text-[#DEAE5D]" />
       <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground lg:inline">
         Empresa
       </span>
       <FormSelect
         aria-label="Empresa ativa"
-        className="h-9 w-36 bg-white/[0.03] text-[13px] sm:w-48"
+        className="h-9 w-36 border-[#C09048]/20 bg-white/[0.03] text-[13px] focus-visible:border-[#C09048]/40 focus-visible:ring-[#C09048]/20 sm:w-48"
         disabled={update.isPending || (units.length === 0 && !showAll)}
         value={current || ALL_VALUE}
         onChange={(event) => {
