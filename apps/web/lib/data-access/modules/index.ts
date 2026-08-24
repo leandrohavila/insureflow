@@ -8,5 +8,6 @@ export * as leadFollowUpsDataAccess from "./lead-follow-ups";
 export * as leadLossReasonsDataAccess from "./lead-loss-reasons";
 export * as leadsDataAccess from "./leads";
 export * as policyRenewalsDataAccess from "./policy-renewals";
+export * as propertiesDataAccess from "./properties";
 export * as questionnairesDataAccess from "./questionnaires";
 export * as sessionDataAccess from "./session";

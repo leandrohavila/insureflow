@@ -146,6 +146,14 @@ export const queryKeys = {
   users: entityKeys("users"),
   policies: entityKeys("policies"),
   claims: entityKeys("claims"),
+  properties: {
+    ...entityKeys("properties"),
+    leads: (businessUnitId?: string) =>
+      ["properties", "leads", businessUnitId ?? ""] as const,
+    dashboardStats: (filters: Record<string, unknown> = {}) =>
+      ["properties", "dashboard-stats", filters] as const,
+    persons: (search?: string) => ["properties", "persons", search ?? ""] as const,
+  },
   whatsapp: entityKeys("whatsapp"),
   quotes: {
     all: ["quotes"] as const,
