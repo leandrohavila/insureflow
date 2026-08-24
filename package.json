@@ -4,6 +4,7 @@
   "scripts": {
     "build": "npx turbo run build",
     "dev": "turbo run dev --parallel --filter=@repo/forms-engine --filter=@repo/forms-library --filter=api --filter=web",
+    "dev:portal": "turbo run dev --filter=portal-imobiliario-publico",
     "lint": "npx turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "npx turbo run check-types",
