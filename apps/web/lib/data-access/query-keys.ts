@@ -144,6 +144,15 @@ export const queryKeys = {
     metrics: () => ["crossSell", "metrics"] as const,
   },
   users: entityKeys("users"),
+  governance: {
+    all: ["governance"] as const,
+    permissions: () => ["governance", "permissions"] as const,
+    roles: () => ["governance", "roles"] as const,
+    users: () => ["governance", "users"] as const,
+    user: (id: string) => ["governance", "users", id] as const,
+    auditLogs: (filters: Record<string, unknown> = {}) =>
+      ["governance", "audit-logs", filters] as const,
+  },
   policies: entityKeys("policies"),
   claims: entityKeys("claims"),
   properties: {

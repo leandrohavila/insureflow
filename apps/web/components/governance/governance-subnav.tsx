@@ -5,25 +5,24 @@ import { usePathname } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 
-const SETTINGS_LINKS = [
-  { href: "/configuracoes/governanca", label: "Governança" },
-  { href: "/configuracoes/comunicacao", label: "Comunicação" },
-  { href: "/configuracoes/crm/motivos-perda", label: "Motivos de perda" },
-]
+const GOVERNANCE_LINKS = [
+  { href: "/configuracoes/governanca", label: "Visão Geral", exact: true },
+  { href: "/configuracoes/governanca/perfis", label: "Perfis" },
+  { href: "/configuracoes/governanca/matriz", label: "Matriz de Permissões" },
+  { href: "/configuracoes/governanca/usuarios", label: "Usuários" },
+  { href: "/configuracoes/governanca/empresas", label: "Empresas" },
+  { href: "/configuracoes/governanca/auditoria", label: "Auditoria" },
+] as const
 
-export function SettingsSubnav({
-  items,
-}: {
-  items: { href: string; label: string }[]
-}) {
+export function GovernanceSubnav() {
   const pathname = usePathname()
 
   return (
     <nav className="flex flex-wrap gap-2">
-      {items.map((item) => {
+      {GOVERNANCE_LINKS.map((item) => {
         const active =
-          item.href === "/configuracoes/governanca"
-            ? pathname.startsWith("/configuracoes/governanca")
+          "exact" in item && item.exact
+            ? pathname === item.href
             : pathname === item.href || pathname.startsWith(`${item.href}/`)
         return (
           <Link
@@ -43,9 +42,3 @@ export function SettingsSubnav({
     </nav>
   )
 }
-
-export function SettingsNav() {
-  return <SettingsSubnav items={SETTINGS_LINKS} />
-}
-
-export { AutomationNav } from "./settings-subnav-automation"

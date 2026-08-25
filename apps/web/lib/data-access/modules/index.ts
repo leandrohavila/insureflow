@@ -10,4 +10,5 @@ export * as leadsDataAccess from "./leads";
 export * as policyRenewalsDataAccess from "./policy-renewals";
 export * as propertiesDataAccess from "./properties";
 export * as questionnairesDataAccess from "./questionnaires";
+export * as governanceDataAccess from "./governance";
 export * as sessionDataAccess from "./session";
