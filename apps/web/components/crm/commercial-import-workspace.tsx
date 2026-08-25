@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import {
   commitImport,
@@ -13,6 +13,7 @@ import {
   type ImportPreviewError,
 } from "@/lib/data-access/modules/commercial-import/api"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import { cn } from "@/lib/utils"
 
 type Kind = "leads" | "clientes"
 
@@ -83,9 +84,12 @@ export function CommercialImportWorkspace({ kind }: { kind: Kind }) {
         title={title}
         description="Valide a planilha antes de gravar. CPF/CNPJ existente atualiza o cadastro."
       >
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/crm/importacoes">Voltar</Link>
-        </Button>
+        <Link
+          href="/crm/importacoes"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        >
+          Voltar
+        </Link>
         <PermissionGate permission={permission}>
           <Button
             variant="outline"

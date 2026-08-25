@@ -1,0 +1,767 @@
+{
+  "ranAt": "2026-08-21T14:54:16.635Z",
+  "api": "http://localhost:4000",
+  "web": "http://localhost:3000",
+  "health": {
+    "api": {
+      "status": "ok",
+      "service": "insureflow-api",
+      "timestamp": "2026-08-21T14:54:16.697Z"
+    },
+    "db": {
+      "status": "ok",
+      "database": "connected",
+      "timestamp": "2026-08-21T14:54:16.721Z"
+    },
+    "redis": {
+      "status": "ok",
+      "redis": "connected",
+      "target": "127.0.0.1:6379",
+      "timestamp": "2026-08-21T14:53:08.768Z"
+    },
+    "web": {
+      "status": 307,
+      "location": "/login?callbackUrl=%2F"
+    }
+  },
+  "officialFiles": {
+    "leads": "C:\\Projetos\\InsureFlow\\docs\\templates\\importacao\\LEADS.xlsx",
+    "clientes": "C:\\Projetos\\InsureFlow\\docs\\templates\\importacao\\CLIENTES.xlsx",
+    "leadHeaders": [
+      "Nome",
+      "CPF/CNPJ",
+      "Telefone",
+      "WhatsApp",
+      "Email",
+      "Cidade",
+      "UF",
+      "Origem",
+      "Produto Interesse",
+      "Data Renovação",
+      "Seguradora Atual",
+      "Prêmio Atual",
+      "Observações",
+      "Responsável",
+      "Business Unit"
+    ],
+    "customerHeaders": [
+      "Nome",
+      "CPF/CNPJ",
+      "Telefone",
+      "WhatsApp",
+      "Email",
+      "Cidade",
+      "UF",
+      "Produto",
+      "Seguradora",
+      "Número Apólice",
+      "Vigência Inicial",
+      "Vigência Final",
+      "Prêmio",
+      "Responsável",
+      "Business Unit",
+      "Observações"
+    ]
+  },
+  "apiLeadTemplateHeaders": [
+    "Nome",
+    "CPF/CNPJ",
+    "Telefone",
+    "WhatsApp",
+    "Email",
+    "Cidade",
+    "UF",
+    "Origem",
+    "Produto Interesse",
+    "Data Renovação",
+    "Seguradora Atual",
+    "Prêmio Atual",
+    "Observações",
+    "Responsável",
+    "Business Unit"
+  ],
+  "apiCustomerTemplateHeaders": [
+    "Nome",
+    "CPF/CNPJ",
+    "Telefone",
+    "WhatsApp",
+    "Email",
+    "Cidade",
+    "UF",
+    "Produto",
+    "Seguradora",
+    "Número Apólice",
+    "Vigência Inicial",
+    "Vigência Final",
+    "Prêmio",
+    "Responsável",
+    "Business Unit",
+    "Observações"
+  ],
+  "templateMatch": {
+    "leads": true,
+    "clientes": true
+  },
+  "invalidLeadPreview": {
+    "status": 201,
+    "data": {
+      "total": 1,
+      "valid": 0,
+      "invalid": 3,
+      "errors": [
+        {
+          "row": 2,
+          "field": "Nome",
+          "message": "Nome é obrigatório"
+        },
+        {
+          "row": 2,
+          "field": "CPF/CNPJ",
+          "message": "CPF/CNPJ inválido"
+        },
+        {
+          "row": 2,
+          "field": "Prêmio Atual",
+          "message": "Prêmio inválido"
+        }
+      ],
+      "rows": [],
+      "errorLogCsv": "﻿linha,campo,erro\n2,\"Nome\",\"Nome é obrigatório\"\n2,\"CPF/CNPJ\",\"CPF/CNPJ inválido\"\n2,\"Prêmio Atual\",\"Prêmio inválido\""
+    }
+  },
+  "leadPreview": {
+    "status": 201,
+    "data": {
+      "total": 1,
+      "valid": 1,
+      "invalid": 0,
+      "errors": [],
+      "rows": [
+        {
+          "row": 2,
+          "name": "AVILA Lead 058324",
+          "phone": "13988880001",
+          "whatsapp": "13988880099",
+          "email": "avila.lead.058324@avila.test",
+          "document": "84405832498",
+          "documentType": "cpf",
+          "city": "Santos",
+          "uf": "SP",
+          "source": "carteira",
+          "interestCategories": [
+            "AUTO_INSURANCE"
+          ],
+          "currentInsurer": "Porto Seguro",
+          "coverageDueAt": "2026-10-05T12:00:00.000Z",
+          "premiumAtual": 3200,
+          "notes": "Auditoria produção",
+          "ownerLabel": "comercial@insureflow.com",
+          "businessUnitLabel": "corretora-avila"
+        }
+      ],
+      "errorLogCsv": "﻿linha,campo,erro"
+    }
+  },
+  "leadCommit1": {
+    "status": 201,
+    "data": {
+      "created": 1,
+      "updated": 0,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "leadCommit2": {
+    "status": 201,
+    "data": {
+      "created": 0,
+      "updated": 1,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "leadAfterUpsert": {
+    "id": "cmt32lhzw002bkwb4i3rnsrvn",
+    "name": "AVILA Lead 058324 ATUALIZADO",
+    "notes": "Auditoria produção\nCidade: Santos | UF: SP | WhatsApp: 13988880099 | Seguradora atual: Porto Seguro | Data renovação: 2026-10-05 | Prêmio atual: 3200",
+    "phone": "13988880001",
+    "ownerUserId": "cmt1yr7gj001skwg44hv7i5ml"
+  },
+  "customerPreview": {
+    "status": 201,
+    "data": {
+      "total": 4,
+      "valid": 4,
+      "invalid": 0,
+      "errors": [],
+      "rows": [
+        {
+          "row": 2,
+          "name": "AVILA Ren 60d 058324",
+          "phone": "13977770000",
+          "whatsapp": "13977771110",
+          "email": "avila.ren.058324.0@avila.test",
+          "document": "19058324001",
+          "documentType": "cpf",
+          "city": "Santos",
+          "uf": "SP",
+          "product": "Seguro Auto",
+          "insurer": "Porto Seguro",
+          "policyNumber": "AVILA-058324-d60",
+          "startDate": "2025-08-21T12:00:00.000Z",
+          "endDate": "2026-10-20T12:00:00.000Z",
+          "premium": 3500,
+          "ownerLabel": "comercial@insureflow.com",
+          "businessUnitLabel": "corretora-avila",
+          "notes": "Massa d60"
+        },
+        {
+          "row": 3,
+          "name": "AVILA Ren 30d 058324",
+          "phone": "13977770001",
+          "whatsapp": "13977771111",
+          "email": "avila.ren.058324.1@avila.test",
+          "document": "19058324192",
+          "documentType": "cpf",
+          "city": "Santos",
+          "uf": "SP",
+          "product": "Seguro Auto",
+          "insurer": "Porto Seguro",
+          "policyNumber": "AVILA-058324-d30",
+          "startDate": "2025-08-21T12:00:00.000Z",
+          "endDate": "2026-09-20T12:00:00.000Z",
+          "premium": 3600,
+          "ownerLabel": "comercial@insureflow.com",
+          "businessUnitLabel": "corretora-avila",
+          "notes": "Massa d30"
+        },
+        {
+          "row": 4,
+          "name": "AVILA Ren 15d 058324",
+          "phone": "13977770002",
+          "whatsapp": "13977771112",
+          "email": "avila.ren.058324.2@avila.test",
+          "document": "19058324273",
+          "documentType": "cpf",
+          "city": "Santos",
+          "uf": "SP",
+          "product": "Seguro Auto",
+          "insurer": "Porto Seguro",
+          "policyNumber": "AVILA-058324-d15",
+          "startDate": "2025-08-21T12:00:00.000Z",
+          "endDate": "2026-09-05T12:00:00.000Z",
+          "premium": 3700,
+          "ownerLabel": "comercial@insureflow.com",
+          "businessUnitLabel": "corretora-avila",
+          "notes": "Massa d15"
+        },
+        {
+          "row": 5,
+          "name": "AVILA Ren vencida 058324",
+          "phone": "13977770003",
+          "whatsapp": "13977771113",
+          "email": "avila.ren.058324.3@avila.test",
+          "document": "19058324354",
+          "documentType": "cpf",
+          "city": "Santos",
+          "uf": "SP",
+          "product": "Seguro Auto",
+          "insurer": "Porto Seguro",
+          "policyNumber": "AVILA-058324-overdue",
+          "startDate": "2025-08-21T12:00:00.000Z",
+          "endDate": "2026-08-11T12:00:00.000Z",
+          "premium": 3800,
+          "ownerLabel": "comercial@insureflow.com",
+          "businessUnitLabel": "corretora-avila",
+          "notes": "Massa overdue"
+        }
+      ],
+      "errorLogCsv": "﻿linha,campo,erro"
+    }
+  },
+  "customerCommit": {
+    "status": 201,
+    "data": {
+      "created": 4,
+      "updated": 0,
+      "policies": 4,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "customerCommit2": {
+    "status": 201,
+    "data": {
+      "created": 0,
+      "updated": 4,
+      "policies": 4,
+      "failed": 0,
+      "errors": []
+    }
+  },
+  "portfolio": {
+    "totalReturned": 10,
+    "avila": [
+      {
+        "id": "cmt32liii002zkwb4mzc5zp4d",
+        "policyNumber": "AVILA-058324-overdue",
+        "daysUntil": -10,
+        "status": "RENEWAL_PENDING",
+        "customerId": "cmt32lihz002vkwb47dzvz79r",
+        "customer": "AVILA Ren vencida 058324"
+      },
+      {
+        "id": "cmt32ligu002tkwb4dok8p7c3",
+        "policyNumber": "AVILA-058324-d15",
+        "daysUntil": 15,
+        "status": "RENEWAL_PENDING",
+        "customerId": "cmt32lifz002pkwb4f4v5gkra",
+        "customer": "AVILA Ren 15d 058324"
+      },
+      {
+        "id": "cmt32lifb002nkwb4i8t54ax7",
+        "policyNumber": "AVILA-058324-d30",
+        "daysUntil": 30,
+        "status": "RENEWAL_PENDING",
+        "customerId": "cmt32liew002jkwb4i66zwxgs",
+        "customer": "AVILA Ren 30d 058324"
+      },
+      {
+        "id": "cmt32lieh002hkwb4rz96c0t5",
+        "policyNumber": "AVILA-058324-d60",
+        "daysUntil": 60,
+        "status": "RENEWAL_PENDING",
+        "customerId": "cmt32lido002dkwb44sg8y1ka",
+        "customer": "AVILA Ren 60d 058324"
+      }
+    ]
+  },
+  "filters": {
+    "due30": {
+      "status": 200,
+      "avilaCount": 1,
+      "numbers": [
+        "AVILA-058324-d15"
+      ],
+      "daysUntil": [
+        15
+      ]
+    },
+    "due60": {
+      "status": 200,
+      "avilaCount": 2,
+      "numbers": [
+        "AVILA-058324-d15",
+        "AVILA-058324-d30"
+      ],
+      "daysUntil": [
+        15,
+        30
+      ]
+    },
+    "due90": {
+      "status": 200,
+      "avilaCount": 3,
+      "numbers": [
+        "AVILA-058324-d15",
+        "AVILA-058324-d30",
+        "AVILA-058324-d60"
+      ],
+      "daysUntil": [
+        15,
+        30,
+        60
+      ]
+    },
+    "customOverdue": {
+      "status": 200,
+      "avila": [
+        {
+          "n": "AVILA-058324-overdue",
+          "daysUntil": -10
+        }
+      ]
+    }
+  },
+  "renewalDeal": {
+    "status": 201,
+    "dealId": "cmt32liuk0039kwb4wr0al3wh",
+    "sourceType": "RENEWAL",
+    "dealStatus": 200
+  },
+  "activityFromRenewal": {
+    "status": 201,
+    "data": {
+      "id": "cmt32lifb002nkwb4i8t54ax7",
+      "tenantId": "cmp7m966u000o10zo1lhbgl5k",
+      "customerId": "cmt32liew002jkwb4i66zwxgs",
+      "policyId": "cmt32lif1002lkwb4dl3jj0m4",
+      "policyNumber": "AVILA-058324-d30",
+      "insurer": "Porto Seguro",
+      "product": "Seguro Auto",
+      "startDate": "2025-08-21T12:00:00.000Z",
+      "endDate": "2026-09-20T12:00:00.000Z",
+      "renewalDate": "2026-09-20T12:00:00.000Z",
+      "status": "RENEWAL_IN_PROGRESS",
+      "assignedUserId": "cmt1yr7gj001skwg44hv7i5ml",
+      "businessUnitId": "cmt1yr7ts0022kwg4vo0ipizl",
+      "dealId": "cmt32liuk0039kwb4wr0al3wh",
+      "taskCreatedAt": null,
+      "reminderSentAt": null,
+      "opportunityCreatedAt": "2026-08-21T14:54:19.814Z",
+      "convertedRevenue": null,
+      "createdAt": "2026-08-21T14:54:19.271Z",
+      "updatedAt": "2026-08-21T14:54:19.858Z",
+      "customer": {
+        "id": "cmt32liew002jkwb4i66zwxgs",
+        "name": "AVILA Ren 30d 058324",
+        "document": "19058324192",
+        "companyName": null
+      },
+      "assignedUser": {
+        "id": "cmt1yr7gj001skwg44hv7i5ml",
+        "name": "Bruno Comercial"
+      },
+      "businessUnit": {
+        "id": "cmt1yr7ts0022kwg4vo0ipizl",
+        "name": "Corretora Ávila",
+        "type": "INSURANCE"
+      },
+      "deal": {
+        "id": "cmt32liuk0039kwb4wr0al3wh",
+        "title": "Renovação — Seguro Auto — AVILA Ren 30d 058324",
+        "status": "open",
+        "value": 3600,
+        "stage": "novo"
+      },
+      "policy": {
+        "id": "cmt32lif1002lkwb4dl3jj0m4",
+        "premiumValue": 3600,
+        "effectiveFrom": "2025-08-21T12:00:00.000Z",
+        "effectiveTo": "2026-09-20T12:00:00.000Z"
+      },
+      "clientId": "cmt32liew002jkwb4i66zwxgs",
+      "daysUntil": 30
+    }
+  },
+  "createdActivities": [
+    {
+      "label": "overdue",
+      "status": 201,
+      "id": "cmt32lj08003jkwb44i96cydj"
+    },
+    {
+      "label": "today",
+      "status": 201,
+      "id": "cmt32lj16003lkwb43117d6gb"
+    },
+    {
+      "label": "next7",
+      "status": 201,
+      "id": "cmt32lj1w003nkwb4x18nxbbh"
+    },
+    {
+      "label": "next30",
+      "status": 201,
+      "id": "cmt32lj2v003pkwb4shd6dhf1"
+    }
+  ],
+  "customer360": {
+    "status": 200,
+    "data": {
+      "customer": {
+        "id": "cmt32lifz002pkwb4f4v5gkra",
+        "tenantId": "cmp7m966u000o10zo1lhbgl5k",
+        "type": "PF",
+        "name": "AVILA Ren 15d 058324",
+        "document": "19058324273",
+        "email": "avila.ren.058324.2@avila.test",
+        "phone": "13977770002",
+        "status": "active",
+        "lifecycleStage": "won",
+        "sourceDealId": null,
+        "companyName": null,
+        "renewalDate": "2026-09-05T12:00:00.000Z",
+        "renewalStatus": "RENEWAL_PENDING",
+        "renewalPipeline": null,
+        "businessUnitId": "cmt1yr7ts0022kwg4vo0ipizl",
+        "interestCategories": [
+          "Seguro Auto"
+        ],
+        "ownerUserId": "cmt1yr7gj001skwg44hv7i5ml",
+        "createdAt": "2026-08-21T14:54:19.295Z",
+        "updatedAt": "2026-08-21T14:54:19.522Z",
+        "ownerUser": {
+          "id": "cmt1yr7gj001skwg44hv7i5ml",
+          "name": "Bruno Comercial",
+          "initials": "BC"
+        },
+        "businessUnit": {
+          "id": "cmt1yr7ts0022kwg4vo0ipizl",
+          "name": "Corretora Ávila",
+          "slug": "corretora-avila",
+          "type": "INSURANCE",
+          "isActive": true
+        },
+        "businessUnits": [],
+        "policyAggregates": {
+          "policyCount": 1,
+          "activePolicies": 1,
+          "totalPremium": 3700,
+          "totalCommission": 0,
+          "nextRenewalAt": "2026-09-05T12:00:00.000Z",
+          "lastRenewalAt": null
+        },
+        "phones": [
+          "13977770002"
+        ],
+        "emails": [
+          "avila.ren.058324.2@avila.test"
+        ]
+      },
+      "timeline": [
+        {
+          "id": "renewal-cmt32ligu002tkwb4dok8p7c3",
+          "occurredAt": "2026-08-21T14:54:19.326Z",
+          "kind": "renewal_created",
+          "title": "Seguro Auto",
+          "description": null,
+          "source": "renewal",
+          "metadata": {}
+        }
+      ],
+      "leads": [],
+      "deals": [],
+      "policies": [
+        {
+          "id": "cmt32lig8002rkwb499e51tql",
+          "policyNumber": "AVILA-058324-d15",
+          "insurer": "Porto Seguro",
+          "productLine": "Seguro Auto",
+          "status": "active",
+          "premiumValue": 3700,
+          "effectiveFrom": "2025-08-21T12:00:00.000Z",
+          "effectiveTo": "2026-09-05T12:00:00.000Z"
+        }
+      ],
+      "properties": [],
+      "communications": [],
+      "followUps": [],
+      "renewals": [
+        {
+          "id": "cmt32ligu002tkwb4dok8p7c3",
+          "policyNumber": "AVILA-058324-d15",
+          "product": "Seguro Auto",
+          "insurer": "Porto Seguro",
+          "status": "RENEWAL_PENDING",
+          "startDate": "2025-08-21T12:00:00.000Z",
+          "endDate": "2026-09-05T12:00:00.000Z",
+          "renewalDate": "2026-09-05T12:00:00.000Z",
+          "convertedRevenue": null
+        }
+      ],
+      "agenda": {
+        "upcoming": [
+          {
+            "id": "cmt32lj2v003pkwb4shd6dhf1",
+            "type": "follow_up",
+            "status": "pending",
+            "subject": "AVILA agenda next30 058324",
+            "at": "2026-09-18T15:00:00.000Z"
+          },
+          {
+            "id": "cmt32lj1w003nkwb4x18nxbbh",
+            "type": "follow_up",
+            "status": "pending",
+            "subject": "AVILA agenda next7 058324",
+            "at": "2026-08-28T15:00:00.000Z"
+          },
+          {
+            "id": "cmt32lj16003lkwb43117d6gb",
+            "type": "follow_up",
+            "status": "pending",
+            "subject": "AVILA agenda today 058324",
+            "at": "2026-08-21T15:00:00.000Z"
+          },
+          {
+            "id": "cmt32lj08003jkwb44i96cydj",
+            "type": "follow_up",
+            "status": "pending",
+            "subject": "AVILA agenda overdue 058324",
+            "at": "2026-08-19T15:00:00.000Z"
+          }
+        ],
+        "completed": []
+      },
+      "renewalBook": {
+        "totalInsured": 3700,
+        "generatedRevenue": 0,
+        "past": 0,
+        "upcoming": 1
+      },
+      "crossSell": [],
+      "opportunities": [],
+      "pendencies": [
+        {
+          "id": "ren-cmt32ligu002tkwb4dok8p7c3",
+          "kind": "renewal_pending",
+          "title": "Renovação pendente",
+          "detail": "Seguro Auto · AVILA-058324-d15"
+        }
+      ],
+      "finance": {
+        "generatedRevenue": 0,
+        "closedDeals": 0,
+        "commissions": [],
+        "products": [
+          "Seguro Auto"
+        ],
+        "history": []
+      }
+    }
+  },
+  "customer360Summary": {
+    "http": 200,
+    "name": "AVILA Ren 15d 058324",
+    "tabsPresent": {
+      "customer": true,
+      "timeline": true,
+      "agenda": true,
+      "renewals": true,
+      "deals": true,
+      "finance": true,
+      "renewalBook": true
+    },
+    "timeline": 1,
+    "agendaUpcoming": 4,
+    "agendaCompleted": 0,
+    "renewals": 1,
+    "deals": 0,
+    "totalInsured": 3700,
+    "generatedRevenue": 0
+  },
+  "agenda": {
+    "today": {
+      "status": 200,
+      "count": 16,
+      "metrics": {
+        "today": 16,
+        "overdue": 52,
+        "renewalsUpcoming": 3,
+        "reactivationsPending": 0,
+        "slaOverdue": 24
+      },
+      "avilaHits": 2
+    },
+    "overdue": {
+      "status": 200,
+      "count": 52,
+      "metrics": {
+        "today": 16,
+        "overdue": 52,
+        "renewalsUpcoming": 3,
+        "reactivationsPending": 0,
+        "slaOverdue": 24
+      },
+      "avilaHits": 4
+    },
+    "next7": {
+      "status": 200,
+      "count": 20,
+      "metrics": {
+        "today": 16,
+        "overdue": 52,
+        "renewalsUpcoming": 3,
+        "reactivationsPending": 0,
+        "slaOverdue": 24
+      },
+      "avilaHits": 4
+    },
+    "next30": {
+      "status": 200,
+      "count": 27,
+      "metrics": {
+        "today": 16,
+        "overdue": 52,
+        "renewalsUpcoming": 3,
+        "reactivationsPending": 0,
+        "slaOverdue": 24
+      },
+      "avilaHits": 10
+    }
+  },
+  "ownership": {
+    "admin": {
+      "leadsHttp": 200,
+      "leadsTotal": 40,
+      "customersHttp": 200,
+      "customersTotal": 18,
+      "renewalsHttp": 200,
+      "renewalsTotal": 10,
+      "agendaHttp": 200,
+      "agendaCount": 27,
+      "importLeads": 201,
+      "importClientes": 201,
+      "patchLead": 200,
+      "deleteLead": 200,
+      "createLead": 201,
+      "customer360": 200
+    },
+    "gerencia": {
+      "leadsHttp": 200,
+      "leadsTotal": 3,
+      "customersHttp": 200,
+      "customersTotal": 18,
+      "renewalsHttp": 200,
+      "renewalsTotal": 10,
+      "agendaHttp": 200,
+      "agendaCount": 27,
+      "importLeads": 201,
+      "importClientes": 201,
+      "patchLead": 200,
+      "deleteLead": 200,
+      "createLead": 201,
+      "customer360": 200
+    },
+    "comercial": {
+      "leadsHttp": 200,
+      "leadsTotal": 4,
+      "customersHttp": 200,
+      "customersTotal": 18,
+      "renewalsHttp": 200,
+      "renewalsTotal": 10,
+      "agendaHttp": 500,
+      "agendaCount": null,
+      "importLeads": 201,
+      "importClientes": 403,
+      "patchLead": 404,
+      "deleteLead": 404,
+      "createLead": 201,
+      "customer360": 200
+    },
+    "parceiro": {
+      "leadsHttp": 200,
+      "leadsTotal": 1,
+      "customersHttp": 403,
+      "customersTotal": null,
+      "renewalsHttp": 403,
+      "renewalsTotal": null,
+      "agendaHttp": 403,
+      "agendaCount": null,
+      "importLeads": 403,
+      "importClientes": 403,
+      "patchLead": 403,
+      "deleteLead": 403,
+      "createLead": 403,
+      "customer360": 403
+    }
+  },
+  "ownershipCreate": {},
+  "frontend": {
+    "importacoes": 307,
+    "location": "/login?callbackUrl=%2Fcrm%2Fimportacoes",
+    "agenda": 307,
+    "carteira": 307,
+    "customer360": 307
+  }
+}

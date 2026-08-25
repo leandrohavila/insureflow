@@ -1,5 +1,7 @@
 # Limpeza de dados demo — produção
 
+**Checklist pré-`--execute` (backup, dry-run, relatório):** [prod-clean-pre-execute-checklist.md](prod-clean-pre-execute-checklist.md)
+
 Prepara o tenant **`insureflow`** para operação real da corretora, removendo apenas dados operacionais de demonstração/homologação.
 
 ## Preservado (nunca apagado)
@@ -23,6 +25,39 @@ Prepara o tenant **`insureflow`** para operação real da corretora, removendo a
 | 8 | `refresh_tokens` | Sessões (usuários permanecem) |
 | 9 | `audit_logs` | Logs funcionais não críticos |
 
+## Backup e rollback (Neon) — antes do `--execute`
+
+### Opção A — Branch de recuperação (recomendado)
+
+1. [Neon Console](https://console.neon.tech) → projeto de **produção** → **Branches**.
+2. Na branch que serve `DATABASE_URL`, crie uma **child branch** (ex.: `recovery-pre-clean-YYYY-MM-DD`).
+3. A branch é um snapshot lógico no momento da criação — útil para comparar dados ou restaurar manualmente (copiar tabelas) se necessário.
+
+### Opção B — Dump lógico (`pg_dump`)
+
+Use o host **direct** (não pooled) da Neon. Guarde o ficheiro **fora** do Git (ex.: cofre):
+
+```bash
+# Exemplo — ajuste host, user, database
+pg_dump "postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require" -Fc -f "insureflow-prod-pre-clean.dump"
+```
+
+### Opção C — Point-in-time restore (PITR)
+
+Se o plano Neon incluir **PITR**, na consola restaure a branch de produção para um instante **imediatamente anterior** à limpeza (anote o horário UTC ao iniciar o `--execute`).
+
+### Rollback na prática
+
+- O script **não** cria backup automático.
+- Rollback confiável: **restore** a partir do dump, **PITR**, ou recuperação manual a partir de uma branch de recovery (conforme capacidades do plano Neon).
+
+### Checklist imediato antes de `CONFIRM_PROD_CLEAN=... --execute`
+
+- [ ] Branch de recovery criada **ou** `pg_dump` concluído e ficheiro verificado.
+- [ ] Horário UTC de início anotado (PITR).
+- [ ] `npm run prod:domain:smoke` verde no momento da operação.
+- [ ] Dry-run executado com a **mesma** `DATABASE_URL` que será usada no `--execute`.
+
 ## Fora do schema atual
 
 Não existem tabelas dedicadas para: contatos, empresas, tarefas, agenda, pipelines (stages são strings em `deals`), cotações, sinistros, uploads, notificações. Interações estão em `activities`. Filas BullMQ ficam no Redis (limpar manualmente se necessário).
@@ -43,12 +78,14 @@ CONFIRM_PROD_CLEAN=YES-I-UNDERSTAND npm run prod:clean-demo-data -- --execute
 npm run prod:seed:clean
 ```
 
-Requer `.env.production` com `DATABASE_URL` ou `DATABASE_URL_DIRECT` (Neon).
+Requer `DATABASE_URL` ou `DATABASE_URL_DIRECT` apontando ao **Neon de produção**:
 
-## Rollback
+- Ficheiro **`.env.production`** na raiz do monorepo (recomendado, não commitar), **ou**
+- Variável de ambiente já definida na shell antes de `npm run` (o script não sobrescreve se já existir).
 
-- **Único rollback confiável:** restore de branch/snapshot Neon **antes** do `--execute`.
-- O script não gera backup automático.
+## Rollback (resumo)
+
+Ver secção **Backup e rollback (Neon)** acima. Não há rollback automático no script.
 
 ## Validação pós-limpeza
 

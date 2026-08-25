@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { FilterChip } from "@/components/crm/primitives"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
@@ -17,6 +17,7 @@ import {
   type CommercialAgendaType,
   type CommercialAgendaWindow,
 } from "@/lib/data-access/modules/commercial-agenda/api"
+import { cn } from "@/lib/utils"
 
 const WINDOWS: { id: CommercialAgendaWindow; label: string }[] = [
   { id: "today", label: "Hoje" },
@@ -52,6 +53,28 @@ function formatTime(value: string) {
   })
 }
 
+/** Parses composite agenda ids (`activity:<id>` | `follow_up:<id>`). */
+function parseAgendaItemId(
+  compositeId: string,
+): { source: "activity" | "follow_up"; id: string } | null {
+  if (!compositeId) return null
+
+  const separatorIndex = compositeId.indexOf(":")
+  if (separatorIndex <= 0 || separatorIndex >= compositeId.length - 1) {
+    return null
+  }
+
+  const source = compositeId.slice(0, separatorIndex)
+  const id = compositeId.slice(separatorIndex + 1).trim()
+  if (!id) return null
+
+  if (source === "activity" || source === "follow_up") {
+    return { source, id }
+  }
+
+  return null
+}
+
 export function CommercialAgendaWorkspace() {
   const queryClient = useQueryClient()
   const [window, setWindow] = useState<CommercialAgendaWindow>("today")
@@ -64,11 +87,13 @@ export function CommercialAgendaWorkspace() {
   const metrics = query.data?.metrics
 
   async function complete(item: (typeof items)[number]) {
-    const [source, id] = item.id.split(":")
-    if (source === "activity") {
-      await updateActivity(id, { status: "completed" })
-    } else if (source === "follow_up") {
-      await updateLeadFollowUp(id, { status: "COMPLETED" })
+    const parsed = parseAgendaItemId(item.id)
+    if (!parsed) return
+
+    if (parsed.source === "activity") {
+      await updateActivity(parsed.id, { status: "completed" })
+    } else {
+      await updateLeadFollowUp(parsed.id, { status: "COMPLETED" })
     }
     await queryClient.invalidateQueries({
       queryKey: queryKeys.commercialAgenda.all,
@@ -76,13 +101,15 @@ export function CommercialAgendaWorkspace() {
   }
 
   async function reschedule(item: (typeof items)[number]) {
+    const parsed = parseAgendaItemId(item.id)
+    if (!parsed) return
+
     const next = new Date()
     next.setDate(next.getDate() + 1)
-    const [source, id] = item.id.split(":")
-    if (source === "activity") {
-      await updateActivity(id, { nextFollowUpAt: next.toISOString() })
-    } else if (source === "follow_up") {
-      await updateLeadFollowUp(id, { scheduledAt: next.toISOString() })
+    if (parsed.source === "activity") {
+      await updateActivity(parsed.id, { nextFollowUpAt: next.toISOString() })
+    } else {
+      await updateLeadFollowUp(parsed.id, { scheduledAt: next.toISOString() })
     }
     await queryClient.invalidateQueries({
       queryKey: queryKeys.commercialAgenda.all,
@@ -189,30 +216,36 @@ export function CommercialAgendaWorkspace() {
                       ) : null}
                     </PermissionGate>
                     {item.leadId ? (
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/leads?leadId=${item.leadId}`}>Lead</Link>
-                      </Button>
+                      <Link
+                        href={`/leads?leadId=${item.leadId}`}
+                        className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                      >
+                        Lead
+                      </Link>
                     ) : null}
                     {item.customerId ? (
                       <>
-                        <Button size="sm" variant="ghost" asChild>
-                          <Link href={`/clientes?customerId=${item.customerId}`}>
-                            Cliente
-                          </Link>
-                        </Button>
-                        <Button size="sm" variant="ghost" asChild>
-                          <Link href={`/crm/customer-360/${item.customerId}`}>
-                            360
-                          </Link>
-                        </Button>
+                        <Link
+                          href={`/clientes?customerId=${item.customerId}`}
+                          className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                        >
+                          Cliente
+                        </Link>
+                        <Link
+                          href={`/crm/customer-360/${item.customerId}`}
+                          className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                        >
+                          360
+                        </Link>
                       </>
                     ) : null}
                     {item.dealId ? (
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/crm/negocios?dealId=${item.dealId}`}>
-                          Deal
-                        </Link>
-                      </Button>
+                      <Link
+                        href={`/crm/negocios?dealId=${item.dealId}`}
+                        className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                      >
+                        Deal
+                      </Link>
                     ) : null}
                   </div>
                 </td>

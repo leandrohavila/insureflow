@@ -46,3 +46,4 @@ docs/architecture/sprint-2-hml-validation-run.json
 # Uploads locais de imóveis (RE-004)
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
+.env*

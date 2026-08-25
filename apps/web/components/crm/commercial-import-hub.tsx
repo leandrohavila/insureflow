@@ -3,9 +3,10 @@
 import Link from "next/link"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import { cn } from "@/lib/utils"
 
 export function CommercialImportHub() {
   return (
@@ -22,9 +23,12 @@ export function CommercialImportHub() {
             Origem, produto de interesse e responsável comercial.
           </p>
           <PermissionGate permission="leads:manage">
-            <Button className="mt-4" size="sm" asChild>
-              <Link href="/crm/importacoes/leads">Importar leads</Link>
-            </Button>
+            <Link
+              href="/crm/importacoes/leads"
+              className={cn(buttonVariants({ size: "sm" }), "mt-4")}
+            >
+              Importar leads
+            </Link>
           </PermissionGate>
         </div>
         <div className="rounded-xl border border-white/[0.06] p-5">
@@ -33,9 +37,12 @@ export function CommercialImportHub() {
             Cadastro + apólice + fila de renovação.
           </p>
           <PermissionGate permission="clients:manage">
-            <Button className="mt-4" size="sm" asChild>
-              <Link href="/crm/importacoes/clientes">Importar clientes</Link>
-            </Button>
+            <Link
+              href="/crm/importacoes/clientes"
+              className={cn(buttonVariants({ size: "sm" }), "mt-4")}
+            >
+              Importar clientes
+            </Link>
           </PermissionGate>
         </div>
       </div>

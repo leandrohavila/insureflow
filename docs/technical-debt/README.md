@@ -30,6 +30,7 @@ Inventário vivo. Priorizar itens que afetam **integridade de dados** ou **UX do
 | TD-12 | FILE field validado como string apenas | Questionários |
 | TD-13 | Drift potencial validação questionário client/server | Frontend |
 | TD-14 | `apps/api/dist` e artefatos build no working tree | Repo hygiene |
+| TD-17 | `DataTable` oficial ainda depende de `GlassCard` legado | Frontend DS |
 
 ## Baixo
 

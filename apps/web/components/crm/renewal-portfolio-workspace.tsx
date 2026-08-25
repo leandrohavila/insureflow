@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { FormSelect } from "@/components/design-system"
 import {
@@ -20,6 +20,7 @@ import {
   usePolicyRenewalPortfolio,
   useUpdatePolicyRenewal,
 } from "@/lib/data-access/modules/policy-renewals"
+import { cn } from "@/lib/utils"
 
 const DUE_OPTIONS = [
   { value: "", label: "Todos os prazos" },
@@ -194,11 +195,12 @@ export function RenewalPortfolioWorkspace() {
                 <td className="px-3 py-2">
                   <div className="flex flex-wrap gap-1">
                     {item.customerId ? (
-                      <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/crm/customer-360/${item.customerId}`}>
-                          360
-                        </Link>
-                      </Button>
+                      <Link
+                        href={`/crm/customer-360/${item.customerId}`}
+                        className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
+                      >
+                        360
+                      </Link>
                     ) : null}
                     <PermissionGate permission="crm:manage">
                       <Button

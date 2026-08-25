@@ -1,0 +1,63 @@
+/**
+ * UX-001A — Grupo Ávila design tokens (DOCUMENTAÇÃO APENAS)
+ * Não importar em apps/web ou portal até aprovação e sprint de implementação.
+ */
+
+:root {
+  /* Brand */
+  --avila-navy-950: #000c24;
+  --avila-navy-900: #0c183c;
+  --avila-navy-800: #0c2448;
+  --avila-navy-700: #1a3a66;
+  --avila-gold-800: #7f5209;
+  --avila-gold-600: #c09048;
+  --avila-gold-400: #deae5d;
+  --avila-ivory: #f6f1e8;
+  --avila-paper: #fffcfa;
+  --avila-ink: #0c183c;
+
+  /* Semantic */
+  --avila-success: #2f6b4f;
+  --avila-success-dark: #5fa882;
+  --avila-warning: #c09048;
+  --avila-warning-dark: #deae5d;
+  --avila-danger: #9b2c2c;
+  --avila-danger-dark: #e07070;
+  --avila-info: #0c2448;
+  --avila-info-dark: #8ba3c7;
+
+  /* Layout */
+  --avila-sidebar-width: 16rem;
+  --avila-header-height: 3.5rem;
+  --avila-portal-max-width: 80rem;
+}
+
+/* CRM Light */
+[data-theme="avila-light"] {
+  --background: var(--avila-ivory);
+  --foreground: var(--avila-ink);
+  --card: var(--avila-paper);
+  --primary: var(--avila-navy-900);
+  --primary-foreground: var(--avila-ivory);
+  --sidebar: var(--avila-navy-950);
+  --sidebar-primary: var(--avila-gold-600);
+}
+
+/* CRM Dark */
+[data-theme="avila-dark"] {
+  --background: var(--avila-navy-950);
+  --foreground: var(--avila-ivory);
+  --card: var(--avila-navy-900);
+  --primary: var(--avila-gold-400);
+  --primary-foreground: var(--avila-navy-950);
+  --sidebar: var(--avila-navy-950);
+  --sidebar-primary: var(--avila-gold-400);
+}
+
+/* Portal (light-only v1) */
+[data-theme="avila-portal"] {
+  --background: var(--avila-ivory);
+  --foreground: var(--avila-ink);
+  --primary: var(--avila-gold-600);
+  --primary-foreground: var(--avila-navy-950);
+}
