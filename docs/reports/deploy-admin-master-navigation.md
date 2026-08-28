@@ -96,6 +96,8 @@ npx turbo run build --filter=web --filter=api
 | Commit curto | `d9d9a31` |
 | Commit completo | `d9d9a3144d349a4525e78a1a4ba21eb67c05fad0` |
 | Remote | `origin/release/crm-operacao-avila` |
+| Push | `c7673fd..1cf5c38` → `origin/release/crm-operacao-avila` |
+| Tip do branch | `1cf5c38` (relatório de deploy) |
 
 ---
 
