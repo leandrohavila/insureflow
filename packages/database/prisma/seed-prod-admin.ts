@@ -68,6 +68,24 @@ async function main() {
     data: { userId: user.id, roleId: role.id },
   });
 
+  for (const item of [
+    { key: 'properties:view', description: 'Ver inventário imobiliário' },
+    { key: 'properties:manage', description: 'Gerenciar inventário imobiliário e publicação' },
+  ] as const) {
+    const permission = await prisma.permission.upsert({
+      where: { key: item.key },
+      create: { key: item.key, description: item.description },
+      update: { description: item.description },
+    });
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: { roleId: role.id, permissionId: permission.id },
+      },
+      create: { roleId: role.id, permissionId: permission.id },
+      update: {},
+    });
+  }
+
   console.log('--- Prod admin OK ---');
   console.log('tenant:', TENANT_SLUG);
   console.log('email:', ADMIN_EMAIL);

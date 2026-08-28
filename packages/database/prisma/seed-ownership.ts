@@ -9,6 +9,8 @@ const prisma = new PrismaClient();
 
 const EXTRA_PERMISSIONS = [
   { key: 'leads:share', description: 'Compartilhar leads com parceiros' },
+  { key: 'properties:view', description: 'Ver inventário imobiliário' },
+  { key: 'properties:manage', description: 'Gerenciar inventário imobiliário e publicação' },
 ] as const;
 
 type RoleDef = {
@@ -25,7 +27,10 @@ const OFFICIAL_ROLES: RoleDef[] = [
     name: 'Administrador',
     description: 'Acesso total ao tenant',
     defaultDataScope: 'tenant',
-    permissions: [], // preenchido com todas :view + manage abaixo
+    permissions: [
+      'properties:view',
+      'properties:manage',
+    ], // demais chaves vêm de allPerms no loop abaixo
   },
   {
     slug: 'gerencia',
@@ -194,7 +199,9 @@ export async function seedOwnershipFoundation(tenantSlug = 'insureflow') {
   for (const def of OFFICIAL_ROLES) {
     const keys =
       def.slug === 'admin'
-        ? allPerms.map((p) => p.key)
+        ? Array.from(
+            new Set([...allPerms.map((p) => p.key), ...def.permissions]),
+          )
         : def.slug === 'leitura'
           ? allViewKeys
           : def.permissions;

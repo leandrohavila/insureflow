@@ -70,6 +70,28 @@ const ROLE_PERMISSIONS = {
   ],
 } as const;
 
+async function ensureAdminHasPropertyPermissions(
+  tenantId: string,
+  permByKey: Record<string, string>,
+) {
+  const required = ['properties:view', 'properties:manage'] as const;
+  const adminRole = await prisma.role.findUnique({
+    where: { tenantId_slug: { tenantId, slug: 'admin' } },
+  });
+  if (!adminRole) return;
+  for (const key of required) {
+    const permissionId = permByKey[key];
+    if (!permissionId) continue;
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId: { roleId: adminRole.id, permissionId },
+      },
+      create: { roleId: adminRole.id, permissionId },
+      update: {},
+    });
+  }
+}
+
 const SEED_USERS = [
   {
     email: 'admin@insureflow.com',
@@ -170,6 +192,8 @@ async function main() {
     }
     roles.set(slug, role.id);
   }
+
+  await ensureAdminHasPropertyPermissions(tenant.id, permByKey);
 
   for (const seedUser of SEED_USERS) {
     const passwordHash = await bcrypt.hash(seedUser.password, 10);

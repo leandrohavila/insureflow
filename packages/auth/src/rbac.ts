@@ -34,10 +34,13 @@ export function canManage(permission: Permission): Permission {
   return permission.replace(":view", ":manage") as Permission
 }
 
-export function buildSessionPayload(user: SessionUser): SessionPayload {
+export function buildSessionPayload(
+  user: SessionUser & { roles?: string[] },
+): SessionPayload {
   return {
     ...user,
     permissions: getPermissionsForRole(user.role),
+    roles: user.roles?.length ? user.roles : [user.role],
   }
 }
 

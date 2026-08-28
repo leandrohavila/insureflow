@@ -38,6 +38,7 @@ type BackendLoginResponse = {
 }
 
 const API_ROLE_TO_APP_ROLE: Record<string, AppRole> = {
+  super_admin: "super_admin",
   admin: "admin",
   gerencia: "gerencia",
   comercial: "comercial",
@@ -112,11 +113,24 @@ function initialsFromEmail(email: string) {
   )
 }
 
+function resolvePrimaryAppRole(slugs: string[]): AppRole {
+  const mapped = slugs
+    .map((slug) => API_ROLE_TO_APP_ROLE[slug])
+    .filter((role): role is AppRole => Boolean(role))
+  if (slugs.includes("super_admin") || mapped.includes("super_admin")) {
+    return "super_admin"
+  }
+  if (slugs.includes("admin") || mapped.includes("admin")) {
+    return "admin"
+  }
+  return mapped[0] ?? "viewer"
+}
+
 function toBackendSessionUser(
   payload: BackendLoginResponse["user"],
-): SessionUser {
-  const firstRole = payload.roles[0] ?? "viewer"
-  const role = API_ROLE_TO_APP_ROLE[firstRole] ?? "viewer"
+): SessionUser & { roles: string[] } {
+  const roles = payload.roles.length ? payload.roles : ["viewer"]
+  const role = resolvePrimaryAppRole(roles)
   return {
     id: payload.sub,
     email: payload.email,
@@ -127,16 +141,18 @@ function toBackendSessionUser(
     organizationId: payload.tenantId,
     organizationName: payload.tenantSlug,
     title: "Grupo Ávila",
+    roles,
   }
 }
 
 export async function createSessionToken(
-  user: ReturnType<typeof toSessionUser>,
+  user: ReturnType<typeof toSessionUser> & { roles?: string[] },
   options?: {
     permissions?: Permission[]
     dataScope?: DataScope
     teamIds?: string[]
     currentBusinessUnitId?: string | null
+    roles?: string[]
   },
 ) {
   const payload = buildSessionPayload(user)
@@ -151,6 +167,9 @@ export async function createSessionToken(
   }
   if (options?.currentBusinessUnitId !== undefined) {
     payload.currentBusinessUnitId = options.currentBusinessUnitId
+  }
+  if (options?.roles?.length) {
+    payload.roles = options.roles
   }
   const secret = getAuthSecret()
 
@@ -168,6 +187,7 @@ export async function createSessionToken(
     dataScope: payload.dataScope,
     teamIds: payload.teamIds,
     currentBusinessUnitId: payload.currentBusinessUnitId,
+    roles: payload.roles,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -184,6 +204,9 @@ export async function verifySessionToken(
     const session = payload as unknown as SessionPayload & { sub?: string }
     if (!session.id && session.sub) {
       session.id = session.sub
+    }
+    if (!session.roles?.length) {
+      session.roles = session.role ? [session.role] : []
     }
     return session
   } catch {
@@ -315,11 +338,13 @@ export async function loginWithBackendCredentials(
   session.dataScope = backend.user.dataScope
   session.teamIds = backend.user.teamIds
   session.currentBusinessUnitId = backend.user.currentBusinessUnitId
+  session.roles = sessionUser.roles
   const token = await createSessionToken(sessionUser, {
     permissions: session.permissions,
     dataScope: session.dataScope,
     teamIds: session.teamIds,
     currentBusinessUnitId: session.currentBusinessUnitId,
+    roles: session.roles,
   })
 
   await setSessionCookie(token)

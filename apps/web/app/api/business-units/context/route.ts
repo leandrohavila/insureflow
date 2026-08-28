@@ -86,6 +86,7 @@ export async function PATCH(request: Request) {
           payload.user?.currentBusinessUnitId ??
           payload.currentBusinessUnitId ??
           null,
+        roles: session.roles ?? [session.role],
       },
     )
     await setSessionCookie(token)

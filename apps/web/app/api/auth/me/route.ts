@@ -22,5 +22,6 @@ export async function GET() {
     dataScope: session.dataScope,
     teamIds: session.teamIds,
     currentBusinessUnitId: session.currentBusinessUnitId,
+    roles: session.roles ?? [session.role],
   })
 }

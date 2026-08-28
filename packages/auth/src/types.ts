@@ -80,6 +80,8 @@ export type SessionUser = {
 
 export type SessionPayload = SessionUser & {
   permissions: Permission[]
+  /** Todos os slugs de papel da sessão (API). `role` continua sendo o papel primário. */
+  roles?: string[]
   /** Escopo efetivo de dados (ownership) — preenchido pelo login backend. */
   dataScope?: DataScope
   teamIds?: string[]
