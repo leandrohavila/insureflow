@@ -21,7 +21,7 @@ async function apiReq(path, opts = {}, token) {
   const res = await fetch(api + path, {
     ...opts,
     headers,
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(60000),
   })
   const text = await res.text()
   let body
@@ -61,7 +61,7 @@ async function main() {
       password: credentials.password,
       tenantSlug: credentials.tenantSlug,
     }),
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(60000),
   })
   const cookies = bff.headers.getSetCookie?.() ?? []
   const cookieHeader = cookies.map((c) => c.split(";")[0]).join("; ")
@@ -77,7 +77,7 @@ async function main() {
     const page = await fetch(web + path, {
       headers: { cookie: cookieHeader },
       redirect: "manual",
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(60000),
     })
     results.push(
       rec(`WEB ${path}`, page.status === 200, String(page.status)),

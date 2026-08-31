@@ -1,7 +1,7 @@
 # Validação final — CrmCaptureActions
 
-**Data:** 2026-08-31  
-**Commit:** `a381d91` — `fix(ux): share CrmCaptureActions on Dashboard, Leads and Pipeline`  
+**Data:** 2026-08-31 (revalidado 19:30 BRT)  
+**Commit da implementação:** `a381d91` — `fix(ux): share CrmCaptureActions on Dashboard, Leads and Pipeline`  
 **Deploy:** **não realizado**
 
 ---
@@ -10,20 +10,22 @@
 
 | CTA | Permissão | Isolamento |
 |-----|-----------|------------|
-| + Lead Seguro | `leads:manage` (`useCanManage("leads:view")`) | Independente |
-| + Lead Imobiliário | `leads:manage` | Independente |
-| + Novo Negócio | `crm:manage` (`useCanManage("crm:view")`) | Independente |
+| + Lead Seguro | `leads:manage` (`useCanManage("leads:view")`) | Independente de `crm:manage` |
+| + Lead Imobiliário | `leads:manage` | Independente de `crm:manage` |
+| + Novo Negócio | `crm:manage` (`useCanManage("crm:view")`) | Independente de `leads:manage` |
 
-`resolveCrmCaptureVisibility` em `apps/web/lib/crm/crm-capture-visibility.ts`:
+`resolveCrmCaptureVisibility`:
 
-- só `leads:manage` → os dois leads; **não** esconde o deal porque ele já não entra no grupo
-- só `crm:manage` → **+ Novo Negócio** permanece
-- nenhuma das duas → o grupo inteiro some
-- as duas → os três CTAs
+| canManageLeads | canManageCrm | Resultado |
+|----------------|--------------|-----------|
+| sim | sim | os três CTAs |
+| sim | não | só os dois leads |
+| não | sim | só + Novo Negócio |
+| não | não | grupo oculto |
 
-Testes: `node --experimental-strip-types --test apps/web/lib/crm/crm-capture-visibility.spec.ts apps/web/lib/crm/crm-create-navigation.spec.ts` → **6/6 pass**.
+Testes: `node --test --experimental-strip-types apps/web/lib/crm/crm-capture-visibility.spec.ts apps/web/lib/crm/crm-create-navigation.spec.ts` → **6/6 pass**.
 
-Nenhum `PermissionGate` envolve o trio inteiro. Em Leads/Pipeline, `Importar` continua em gate próprio (`leads:manage` / `crm:manage`) e não controla os CTAs de captura.
+Nenhum `PermissionGate` envolve o trio. `Importar` tem gate próprio e não controla os CTAs de captura.
 
 ---
 
@@ -45,7 +47,7 @@ Prints:
 
 ## 3. Smoke
 
-`node scripts/local-capture-smoke.cjs` (localhost, ignora `API_URL` de produção):
+`node scripts/local-capture-smoke.cjs` (localhost):
 
 ```
 [OK] Health — 200
@@ -62,7 +64,7 @@ Prints:
 
 ---
 
-## 4. Arquivos alterados
+## 4. Arquivos da implementação (`a381d91`)
 
 | Arquivo | Papel |
 |---------|--------|
@@ -72,9 +74,10 @@ Prints:
 | `apps/web/lib/crm/crm-create-navigation.ts` | Hrefs canônicos |
 | `apps/web/lib/crm/crm-create-navigation.spec.ts` | Contratos dos hrefs |
 | `apps/web/components/dashboard/dashboard-home.tsx` | Usa `CrmCaptureActions` |
-| `apps/web/components/leads/leads-page.tsx` | Header + deep link `?create=` one-shot |
+| `apps/web/components/leads/leads-page.tsx` | Header + deep link `?create=` |
 | `apps/web/components/crm/deals-page.tsx` | Pipeline usa `CrmCaptureActions` |
 | `apps/web/components/crm/crm-page-header-actions.tsx` | `flex-wrap` no grupo primary |
+| `apps/web/components/leads/lead-create-menu.tsx` | Empty state (dois leads) |
 | `scripts/local-capture-smoke.cjs` | Smoke localhost das três rotas |
 | `docs/reports/crm-capture-actions-rca.md` | RCA |
 | `docs/reports/crm-capture-actions/*.png` | Prints |
