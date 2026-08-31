@@ -146,10 +146,11 @@ Customer 360 visual: sem cliente cadastrado em produção; estrutura em `custome
 - [x] Formulário **sem** campo Unidade de Negócio (texto: “O lead entra na Corretora Ávila”)
 - [x] Dialog imobiliário: “O lead entra na Ávila Imóveis” + interesses PROPERTY_*
 - [x] Imobiliário > Leads: busca, status, origem, contadores, empty state, **Novo Lead Imobiliário**
-- [ ] Imobiliário > Leads lista o lead da Ávila Imóveis com o seletor em Corretora (bloqueado pelo ACL antigo; corrige no deploy Railway deste follow-up)
-- [x] Dashboard: 8 KPIs visíveis (Leads Imobiliários = 0 no ACL antigo)
+- [x] Imobiliário > Leads lista o lead da Ávila Imóveis com o seletor em Corretora (`715b38f` + Railway)
+- [x] Dashboard: 8 KPIs visíveis
 - [x] Header estreito: busca quebra linha; Empresa e Notificações não se sobrepõem
 - [x] Header: IA visível a partir de `lg` (`hidden lg:inline-flex`)
 - [x] Governança abre sem regressão
 - [x] Clientes abre (0 registros — 360 não exercitado na UI)
 - [x] API health + login + POST Lead Seguro / Lead Imobiliário com `businessUnitId`
+- [x] GET lead imobiliário por id com header na Corretora
