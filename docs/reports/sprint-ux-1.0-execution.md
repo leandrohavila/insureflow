@@ -20,8 +20,8 @@
 | Build API | ✅ `tsc --noEmit` + `nest build` |
 | Build Web | ✅ `next typegen && tsc --noEmit` + `next build` |
 | Check-types | ✅ API e Web |
-| Deploy produção | ver seção 6 |
-| Smoke test | ver seção 7 |
+| Deploy produção | ✅ API Railway + Web Vercel aliased |
+| Smoke test | ✅ health, login, filtro BU, POST lead imobiliário, UI |
 
 ---
 
@@ -167,17 +167,42 @@ Módulos: Leads, Leads Imobiliários, Clientes, Imóveis, Proprietários, Questi
 
 ## 6. Deploy em produção
 
-| Superfície | URL | Status |
-|------------|-----|--------|
-| API Railway | `https://api.corretoraavila.com.br` | pendente nesta execução — ver atualização abaixo |
-| Web Vercel | `https://corretoraavila.com.br` | pendente nesta execução — ver atualização abaixo |
+| Superfície | Identificador | Status |
+|------------|---------------|--------|
+| API Railway | deploy `85e135bf-6275-4dc8-96d3-228ef446bd52` · `insureflow-api` / `thorough-spirit` | ✅ SUCCESS |
+| Web Vercel | `dpl_ED6Zh8z3mHHxV3eyPuV22ywQx3HU` aliased em `corretoraavila.com.br` | ✅ READY |
+| SHA publicado | `01280a6` (`feat(ux): operational real-estate leads workspace and header layout`) | ✅ worktree limpo |
+| Migration | Nenhuma neste sprint | n/a |
 
-Nenhuma migration a aplicar (`prisma migrate deploy` no-op esperado).
+Railway: `railway up --ci --yes --service insureflow-api --project 645fb36c-1714-408c-a927-ffdf838ed780 --environment production` a partir de `C:\Projetos\InsureFlow-ux-1.0` @ `01280a6`.
+
+Vercel: `npx vercel deploy --prod --yes` na raiz do mesmo worktree (Root Directory `apps/web`). Inspector: https://vercel.com/leandro-avila-s-projects/web/ED6Zh8z3mHHxV3eyPuV22ywQx3HU
 
 ---
 
 ## 7. Smoke test e URL validada
 
-A preencher após o deploy (health API, login, listagem de leads CRM, Leads Imobiliários, criar lead com BU imobiliária, header sem overlap).
+**URL operacional:** https://corretoraavila.com.br/real-estate/leads
 
-URL operacional: `https://corretoraavila.com.br/real-estate/leads`
+| Check | Resultado |
+|-------|-----------|
+| `GET /api/v1/health` | ✅ 200 |
+| `GET /api/v1/health/db` | ✅ 200 |
+| `GET /api/v1/health/redis` | ✅ 200 |
+| Login admin produção | ✅ 201 |
+| `GET /business-units` | ✅ Corretora Ávila \| Ávila Imóveis |
+| `GET /leads` (CRM, ambas empresas) | ✅ 200 · `counts.new/contacted/converted/qualified` |
+| `GET /leads?businessUnitId=` Ávila Imóveis | ✅ 200 (filtro por BU) |
+| `POST /leads` com BU imobiliária | ✅ criado com `businessUnitId=cmt9a5t900003kwjcabtgzvv9` |
+| `https://corretoraavila.com.br/login` | ✅ 200 |
+| `/real-estate/leads` sem sessão | ✅ 307 → login |
+| UI autenticada `/real-estate/leads` | ✅ botão Novo, 5 cards, empty state + CTA |
+
+Prints depois (produção autenticada):
+
+- `docs/reports/sprint-ux-1.0/leads-imobiliarios-after.png`
+- `docs/reports/sprint-ux-1.0/leads-imobiliarios-prod.png`
+
+Header: busca, notificações e avatar sem sobreposição. Seletor de empresa (`220px`) entra a partir do breakpoint `sm` para não comprimir a busca em viewports estreitas; em 1366+ o layout é `[Empresa] [Busca max 600px] [IA] [Notificações] [Usuário]`.
+
+`DELETE` do lead de smoke retornou 404 (ACL/rota); o cadastro via API com BU imobiliária foi confirmado.
