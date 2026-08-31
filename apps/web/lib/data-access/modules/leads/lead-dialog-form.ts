@@ -51,14 +51,22 @@ export function getLeadDialogSessionKey(lead: Lead | null) {
   return lead?.id ?? "__new__"
 }
 
+export type BuildLeadDialogFormOptions = {
+  lockedBusinessUnitId?: string
+  defaultInterestCategories?: InterestCategory[]
+}
+
 export function buildLeadDialogFormState(
   lead: Lead | null,
   sessionName?: string | null,
+  options?: BuildLeadDialogFormOptions,
 ): LeadDialogFormState {
   if (!lead) {
     return {
       ...EMPTY_LEAD_DIALOG_FORM,
       assignedTo: sessionName?.trim() ?? "",
+      businessUnitId: options?.lockedBusinessUnitId ?? "",
+      interestCategories: options?.defaultInterestCategories ?? [],
     }
   }
 
@@ -72,7 +80,8 @@ export function buildLeadDialogFormState(
     document: formatStoredDocument(lead.documentType, lead.document),
     notes: lead.notes ?? "",
     assignedTo: lead.assignedTo ?? sessionName ?? "",
-    businessUnitId: lead.businessUnitId ?? "",
+    businessUnitId:
+      options?.lockedBusinessUnitId || lead.businessUnitId || "",
     interestCategories: lead.interestCategories ?? [],
     followUpDays: "",
   }

@@ -148,15 +148,15 @@ export function RealEstateDashboard() {
               loading={leadsQuery.isLoading}
               error={leadsQuery.error}
               onRetry={() => leadsQuery.refetch()}
-              emptyTitle="Nenhum registro encontrado"
-              emptyDescription="Clique em Novo para começar."
+              emptyTitle="Nenhum lead imobiliário"
+              emptyDescription="A visão imobiliária lista os leads da Ávila Imóveis cadastrados em CRM > Leads."
               emptyAction={
                 canManage ? (
                   <Link
                     href="/real-estate/leads"
                     className={cn(buttonVariants({ size: "sm" }))}
                   >
-                    Novo Lead Imobiliário
+                    Ver leads imobiliários
                   </Link>
                 ) : null
               }

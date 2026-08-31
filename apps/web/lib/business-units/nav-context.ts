@@ -18,15 +18,27 @@ export function isRealEstateContext(
   return false
 }
 
-export function resolveRealEstateBusinessUnitId(
+function resolveBusinessUnitIdByType(
   context: BusinessUnitContext | null | undefined,
+  type: "INSURANCE" | "REAL_ESTATE",
 ): string | null {
   if (!context?.units.length) return null
   const currentId = context.currentBusinessUnitId
   if (currentId) {
     const current = context.units.find((unit) => unit.id === currentId)
-    if (current?.type === "REAL_ESTATE") return current.id
+    if (current?.type === type) return current.id
   }
-  const reUnit = context.units.find((unit) => unit.type === "REAL_ESTATE")
-  return reUnit?.id ?? null
+  return context.units.find((unit) => unit.type === type)?.id ?? null
+}
+
+export function resolveRealEstateBusinessUnitId(
+  context: BusinessUnitContext | null | undefined,
+): string | null {
+  return resolveBusinessUnitIdByType(context, "REAL_ESTATE")
+}
+
+export function resolveInsuranceBusinessUnitId(
+  context: BusinessUnitContext | null | undefined,
+): string | null {
+  return resolveBusinessUnitIdByType(context, "INSURANCE")
 }

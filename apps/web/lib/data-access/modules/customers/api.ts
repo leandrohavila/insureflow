@@ -20,6 +20,7 @@ function toQueryString(filters: CustomerListFilters = {}) {
     params.set("status", filters.status)
   if (filters.page) params.set("page", String(filters.page))
   if (filters.limit) params.set("limit", String(filters.limit))
+  if (filters.businessUnitId) params.set("businessUnitId", filters.businessUnitId)
 
   const query = params.toString()
   return query ? `?${query}` : ""

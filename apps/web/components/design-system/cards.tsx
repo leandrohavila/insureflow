@@ -128,7 +128,7 @@ export function StatCard({
   return (
     <AppCard
       aria-busy={loading || undefined}
-      className={cn("flex min-w-0 w-full flex-col gap-[var(--if-space-3)]", className)}
+        className={cn("flex min-h-[8.25rem] min-w-0 w-full flex-col gap-[var(--if-space-3)]", className)}
       {...props}
     >
       <div className="flex items-start justify-between gap-[var(--if-space-3)]">

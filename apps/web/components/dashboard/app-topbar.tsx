@@ -46,20 +46,18 @@ export function AppTopbar({ session }: AppTopbarProps) {
       initial={reduce ? false : { opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: easeOut }}
-      className={dashboardTopbarClassName(
-        "gap-3 overflow-hidden md:gap-4",
-      )}
+      className={dashboardTopbarClassName()}
     >
       <SidebarTrigger
         className="-ml-0.5 shrink-0 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
         aria-label="Alternar menu"
       />
 
-      <div className="hidden w-[220px] shrink-0 sm:block">
+      <div className="min-w-[140px] max-w-[240px] w-[160px] shrink-0 sm:w-[200px] lg:w-[220px]">
         <BusinessUnitSwitcher />
       </div>
 
-      <div className="min-w-0 flex-1 max-w-[600px]">
+      <div className="order-last min-w-[180px] max-w-[640px] flex-1 basis-full lg:order-none lg:basis-0">
         <WorkspaceSearchTrigger className="relative w-full min-w-0" />
       </div>
 
@@ -69,15 +67,6 @@ export function AppTopbar({ session }: AppTopbarProps) {
         transition={{ delay: 0.15, duration: 0.35, ease: easeOut }}
         className="ml-auto flex shrink-0 items-center gap-1"
       >
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden shrink-0 gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
-        >
-          <Sparkles className="size-3.5 text-[#DEAE5D]" strokeWidth={1.5} />
-          IA
-        </Button>
-
         <motion.div whileTap={reduce ? undefined : { scale: 0.92 }}>
           <Button
             variant="ghost"
@@ -97,6 +86,15 @@ export function AppTopbar({ session }: AppTopbarProps) {
             </motion.span>
           </Button>
         </motion.div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hidden shrink-0 gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
+        >
+          <Sparkles className="size-3.5 text-[#DEAE5D]" strokeWidth={1.5} />
+          IA
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger

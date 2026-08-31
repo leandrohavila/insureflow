@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useMemo, useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   CalendarDays,
   Edit3,
@@ -12,11 +13,14 @@ import {
 
 import { PermissionGate } from "@/components/auth/permission-gate"
 import { useCanManage, useSession } from "@/components/auth/session-provider"
-import { RealEstateLeadDialog } from "@/components/real-estate/real-estate-lead-dialog"
+import { LeadDialog } from "@/components/leads/lead-dialog"
 import { ActionToast } from "@/components/shared"
 import {
   ContentContainer,
   DataTable,
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
   Grid,
   PageActions,
   PageActionsGroup,
@@ -30,17 +34,24 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/data-access"
+import { queryKeys } from "@/lib/data-access/query-keys"
 import type {
   CreateLeadInput,
   Lead,
+  LeadListFilters,
+  LeadStatus,
 } from "@/lib/data-access/modules/leads"
 import {
+  fetchLead,
+  LEAD_STATUSES,
   useCreateLead,
   useDeleteLead,
   useLeads,
   useUpdateLead,
 } from "@/lib/data-access/modules/leads"
+import type { InterestCategory } from "@/lib/business-units/constants"
 import { dsContentLayoutVariant } from "@/lib/design-system"
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { isLeadConverted, leadOwnerDisplayName } from "@/lib/leads/lead-owner"
 import {
   REAL_ESTATE_LEAD_STATUS_LABELS,
@@ -50,6 +61,8 @@ import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-b
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 20
+const SEARCH_DEBOUNCE_MS = 400
+const REAL_ESTATE_DEFAULT_INTERESTS: InterestCategory[] = ["PROPERTY_BUY"]
 
 function createLeadIdempotencyKey() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -71,7 +84,12 @@ export function PropertyLeadsPage() {
   const { session } = useSession()
   const canManage = useCanManage("leads:view")
   const businessUnitId = useRealEstateBusinessUnitId()
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [searchInput, setSearchInput] = useState("")
+  const search = useDebouncedValue(searchInput, SEARCH_DEBOUNCE_MS)
+  const [status, setStatus] = useState<LeadStatus | "all">("all")
+  const [source, setSource] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
   const [toast, setToast] = useState<{
@@ -80,23 +98,31 @@ export function PropertyLeadsPage() {
   } | null>(null)
   const createLockRef = useRef(false)
   const createKeyRef = useRef<string | null>(null)
+  const submitLockedRef = useRef(false)
 
-  const leadsQuery = useLeads(
-    {
+  const filters = useMemo<LeadListFilters>(
+    () => ({
       businessUnitId: businessUnitId ?? undefined,
+      search,
+      status,
+      source,
       page,
       limit: PAGE_SIZE,
-    },
-    { enabled: Boolean(businessUnitId) },
+    }),
+    [businessUnitId, page, search, source, status],
   )
+
+  const leadsQuery = useLeads(filters, { enabled: Boolean(businessUnitId) })
   const createLead = useCreateLead()
-  const updateLead = useUpdateLead()
-  const deleteLead = useDeleteLead()
+  const updateLead = useUpdateLead(filters)
+  const deleteLead = useDeleteLead(filters)
 
   const leads = leadsQuery.data?.data ?? []
   const meta = leadsQuery.data?.meta
   const counts = meta?.counts
   const total = meta?.total ?? leads.length
+  const activeFilterCount =
+    (search.trim() ? 1 : 0) + (status !== "all" ? 1 : 0) + (source.trim() ? 1 : 0)
 
   const openCreate = useCallback(() => {
     setEditingLead(null)
@@ -108,12 +134,26 @@ export function PropertyLeadsPage() {
     setDialogOpen(true)
   }, [])
 
+  const openLeadById = useCallback(
+    async (leadId: string) => {
+      const lead = await queryClient.fetchQuery({
+        queryKey: queryKeys.leads.detail(leadId),
+        queryFn: () => fetchLead(leadId),
+      })
+      openEdit(lead)
+    },
+    [openEdit, queryClient],
+  )
+
   const handleSubmit = useCallback(
     async (input: CreateLeadInput) => {
       if (!businessUnitId) return
       try {
         if (editingLead) {
-          await updateLead.mutateAsync({ id: editingLead.id, input })
+          await updateLead.mutateAsync({
+            id: editingLead.id,
+            input: { ...input, businessUnitId },
+          })
           setToast({
             message: `Lead ${input.name} atualizado com sucesso.`,
             tone: "success",
@@ -146,13 +186,7 @@ export function PropertyLeadsPage() {
         })
       }
     },
-    [
-      businessUnitId,
-      createLead,
-      editingLead,
-      session?.name,
-      updateLead,
-    ],
+    [businessUnitId, createLead, editingLead, session?.name, updateLead],
   )
 
   const columns: DataTableColumn<Lead>[] = useMemo(
@@ -216,14 +250,14 @@ export function PropertyLeadsPage() {
       <ContentContainer variant={dsContentLayoutVariant.leads}>
         <Stack gap="xl">
           <PageHeader
-            eyebrow="Captação imobiliária"
+            eyebrow="Visão imobiliária"
             title={
               <span className="inline-flex items-center gap-2">
                 Leads Imobiliários
                 <Badge variant="secondary">{total}</Badge>
               </span>
             }
-            description="Leads da Ávila Imóveis — cadastro manual ou recebidos pelo Portal Imobiliário."
+            description="Filtro automático da Ávila Imóveis. Cadastro no mesmo Lead do CRM, com unidade já definida."
             actions={
               createAction ? (
                 <PageActions>
@@ -276,6 +310,54 @@ export function PropertyLeadsPage() {
           </Grid>
 
           <Section>
+            <FilterBar
+              activeCount={activeFilterCount}
+              clearLabel="Limpar filtros"
+              onClear={() => {
+                setSearchInput("")
+                setStatus("all")
+                setSource("")
+              }}
+            >
+              <FilterSearch
+                label="Buscar leads imobiliários"
+                placeholder="Buscar por nome, contato, origem ou responsável…"
+                value={searchInput}
+                onChange={(event) => {
+                  setSearchInput(event.target.value)
+                  setPage(1)
+                }}
+              />
+              <FilterSelect
+                label="Status do lead"
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value as LeadStatus | "all")
+                  setPage(1)
+                }}
+                options={[
+                  { value: "all", label: "Todos os status" },
+                  ...LEAD_STATUSES.map((item) => ({
+                    value: item,
+                    label: REAL_ESTATE_LEAD_STATUS_LABELS[item],
+                  })),
+                ]}
+              />
+              <FilterSearch
+                label="Origem"
+                grow={false}
+                containerClassName="w-36"
+                value={source}
+                onChange={(event) => {
+                  setSource(event.target.value)
+                  setPage(1)
+                }}
+                placeholder="Origem"
+              />
+            </FilterBar>
+          </Section>
+
+          <Section>
             <DataTable
               data={leads}
               columns={columns}
@@ -286,14 +368,14 @@ export function PropertyLeadsPage() {
               errorTitle="Não foi possível carregar leads imobiliários."
               onRetry={() => leadsQuery.refetch()}
               emptyIcon={UserPlus}
-              emptyTitle="Nenhum lead imobiliário cadastrado."
-              emptyDescription="Cadastre manualmente ou receba leads através do Portal Imobiliário."
+              emptyTitle="Nenhum lead imobiliário encontrado."
+              emptyDescription="Cadastre pelo botão Novo Lead Imobiliário ou em CRM > Leads com Lead Imobiliário."
               emptyAction={
                 canManage ? (
                   <PermissionGate permission="leads:manage">
                     <Button size="sm" className="gap-1.5" onClick={openCreate}>
                       <Plus className="size-3.5" />
-                      Cadastrar Primeiro Lead
+                      Novo Lead Imobiliário
                     </Button>
                   </PermissionGate>
                 ) : null
@@ -357,15 +439,27 @@ export function PropertyLeadsPage() {
       </ContentContainer>
 
       {businessUnitId ? (
-        <RealEstateLeadDialog
+        <LeadDialog
           open={dialogOpen}
           lead={editingLead}
-          businessUnitId={businessUnitId}
+          intent="real-estate"
+          lockedBusinessUnitId={businessUnitId}
+          defaultInterestCategories={REAL_ESTATE_DEFAULT_INTERESTS}
           pending={createLead.isPending || updateLead.isPending}
           error={createLead.error ?? updateLead.error}
+          onOpenExistingLead={(leadId) => {
+            void openLeadById(leadId)
+          }}
+          onSubmitLockedChange={(locked) => {
+            submitLockedRef.current = locked
+          }}
           onOpenChange={(open) => {
             setDialogOpen(open)
-            if (!open) setEditingLead(null)
+            if (!open) {
+              setEditingLead(null)
+              createLockRef.current = false
+              createKeyRef.current = null
+            }
           }}
           onSubmit={handleSubmit}
         />

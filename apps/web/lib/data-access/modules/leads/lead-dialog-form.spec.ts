@@ -53,6 +53,16 @@ describe("buildLeadDialogFormState", () => {
     expect(form.email).toBe("marina@email.com")
     expect(form.assignedTo).toBe("Ana Costa")
   })
+
+  it("locks business unit and default interests on create", () => {
+    const form = buildLeadDialogFormState(null, "Operador", {
+      lockedBusinessUnitId: "re-1",
+      defaultInterestCategories: ["PROPERTY_BUY"],
+    })
+    expect(form.businessUnitId).toBe("re-1")
+    expect(form.interestCategories).toEqual(["PROPERTY_BUY"])
+    expect(form.assignedTo).toBe("Operador")
+  })
 })
 
 describe("shouldShowPageLeadSaveError", () => {

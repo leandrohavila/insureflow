@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
  * Layout operacional desktop-first.
  * Topbar: manter `DASHBOARD_TOPBAR_HEIGHT` sincronizado com AppTopbar.
  */
-export const DASHBOARD_TOPBAR_HEIGHT = "h-14 md:h-16"
+export const DASHBOARD_TOPBAR_HEIGHT = "min-h-14 md:min-h-16 h-auto"
 
 /** Variável CSS derivada das mesmas utilities de altura da topbar. */
 export const DASHBOARD_TOPBAR_HEIGHT_VAR =
@@ -30,7 +30,7 @@ export const CRM_PAGE_SCROLL_BODY = "min-h-0 flex-1 overflow-y-auto overflow-x-h
 
 export function dashboardTopbarClassName(...extra: Parameters<typeof cn>) {
   return cn(
-    "avila-topbar isolate z-30 flex shrink-0 items-center gap-3 overflow-hidden px-4 md:gap-4 md:px-6 xl:px-8",
+    "avila-topbar isolate z-30 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 overflow-hidden px-4 md:gap-x-4 md:px-6 xl:px-8",
     DASHBOARD_TOPBAR_HEIGHT,
     DASHBOARD_TOPBAR_HEIGHT_VAR,
     ...extra,

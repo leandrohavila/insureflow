@@ -1,6 +1,6 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
   patchListItem,
@@ -26,10 +26,15 @@ import type {
   UpdateCustomerInput,
 } from "./types"
 
-export function useCustomers(filters: CustomerListFilters = {}) {
+export function useCustomers(
+  filters: CustomerListFilters = {},
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.customers.list(filters),
     queryFn: () => fetchCustomers(filters),
+    enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
   })
 }
 

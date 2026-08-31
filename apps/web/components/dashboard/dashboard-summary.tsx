@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils"
 import { formatDashboardMetricValue, pickDashboardKpi } from "./dashboard-utils"
 
 const SUMMARY_KEYS = [
-  { key: "activeLeads" as const, label: "Leads" },
   { key: "customers" as const, label: "Clientes" },
   { key: "openDeals" as const, label: "Negócios" },
   { key: "pendingActivities" as const, label: "Atividades" },
@@ -27,7 +26,7 @@ export function DashboardSummary({ kpis }: DashboardSummaryProps) {
 
   return (
     <Grid
-      columns={visible.length >= 4 ? "4" : "2"}
+      columns={visible.length >= 3 ? "3" : "2"}
       className="gap-[var(--if-layout-operational-metrics-gap)]"
     >
       {visible.map((item) => (

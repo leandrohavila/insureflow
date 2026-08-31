@@ -7,35 +7,31 @@ import {
   useMemo,
   useRef,
   useState,
-  type ComponentType,
-  type FormEvent,
 } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowRightLeft,
+  Building2,
   ClipboardList,
   Edit3,
   ExternalLink,
-  Filter,
-  Loader2,
   Mail,
   Phone,
+  Shield,
   Trash2,
   Upload,
   UserPlus,
 } from "lucide-react"
 
-import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
-import { ActivityTimeline } from "@/components/activities/activity-timeline"
-import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
 import { PermissionGate } from "@/components/auth/permission-gate"
 import {
   useCanManage,
-  useSession,
   useShowMineLeadsFilter,
 } from "@/components/auth/session-provider"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
+import { LeadCaptureMetricsGrid } from "@/components/leads/lead-capture-metrics"
+import { LeadDialog } from "@/components/leads/lead-dialog"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
 import { LeadQuestionnaireBadge } from "@/components/questionnaires/lead-questionnaire-badge"
 import { QuestionnaireSubmissionDetailSheet } from "@/components/questionnaires/questionnaire-submission-detail-sheet"
@@ -47,43 +43,21 @@ import {
   FilterBar,
   FilterSearch,
   FilterSelect,
-  FormSelect,
-  Grid,
   PageContainer,
   PageHeader,
   PageActions,
   PageActionsGroup,
   Section,
   Stack,
-  StatCard,
   type DataTableColumn,
 } from "@/components/design-system"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { getErrorMessage } from "@/lib/data-access"
-import {
-  formatDocumentMask,
-  formatPhoneBrMask,
-  LEAD_DOCUMENT_TYPES,
-  normalizeDocument,
-  type LeadDocumentType,
-} from "@/lib/documents/document"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import type {
-  CreateLeadInput,
   Lead,
-  LeadDuplicate,
   LeadListFilters,
   LeadStatus,
 } from "@/lib/data-access/modules/leads"
@@ -93,20 +67,21 @@ import {
   useConvertLead,
   useCreateLead,
   useDeleteLead,
-  useLeadDuplicates,
   useLeads,
   useUpdateLead,
 } from "@/lib/data-access/modules/leads"
-import {
-  buildLeadDialogFormState,
-  EMPTY_LEAD_DIALOG_FORM,
-  shouldShowPageLeadSaveError,
-  type LeadDialogFormState,
-} from "@/lib/data-access/modules/leads/lead-dialog-form"
+import { shouldShowPageLeadSaveError } from "@/lib/data-access/modules/leads/lead-dialog-form"
 import { resetLeadSaveMutations } from "@/lib/data-access/modules/leads/lead-dialog-mutations"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
+import { useLeadCaptureMetrics } from "@/lib/leads/use-lead-capture-metrics"
+import {
+  defaultInterestsForLeadIntent,
+  leadIntentFromUnitType,
+  parseLeadCreateIntent,
+  type LeadCreateIntent,
+} from "@/lib/leads/lead-intent"
 import {
   INTEREST_CATEGORIES,
   INTEREST_CATEGORY_LABELS,
@@ -175,65 +150,6 @@ function BusinessUnitFilter({
   )
 }
 
-function LeadDialogBusinessFields({
-  form,
-  update,
-}: {
-  form: LeadDialogFormState
-  update: <K extends keyof LeadDialogFormState>(
-    key: K,
-    value: LeadDialogFormState[K],
-  ) => void
-}) {
-  const { data: units = [] } = useBusinessUnits()
-
-  return (
-    <>
-      <label className="space-y-2 sm:col-span-2">
-        <span className="text-sm font-medium">Unidade de negócio</span>
-        <FormSelect
-          value={form.businessUnitId}
-          onChange={(event) => update("businessUnitId", event.target.value)}
-          options={[
-            { value: "", label: "Selecionar unidade" },
-            ...units.map((unit) => ({ value: unit.id, label: unit.name })),
-          ]}
-        />
-      </label>
-      <div className="space-y-2 sm:col-span-2">
-        <span className="text-sm font-medium">Interesses</span>
-        <div className="flex flex-wrap gap-2">
-          {INTEREST_CATEGORIES.map((category) => {
-            const active = form.interestCategories.includes(category)
-            return (
-              <button
-                key={category}
-                type="button"
-                className={cn(
-                  "rounded-full border px-3 py-1 text-xs",
-                  active
-                    ? "border-primary/40 bg-primary/15 text-primary"
-                    : "border-white/[0.08] text-muted-foreground",
-                )}
-                onClick={() =>
-                  update(
-                    "interestCategories",
-                    active
-                      ? form.interestCategories.filter((item) => item !== category)
-                      : [...form.interestCategories, category],
-                  )
-                }
-              >
-                {INTEREST_CATEGORY_LABELS[category]}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </>
-  )
-}
-
 export function LeadsPage() {
   const router = useRouter()
   const pathname = usePathname()
@@ -274,6 +190,8 @@ export function LeadsPage() {
   // dentro do LeadSheetV2 (que é leitura-primeiro), forçamos o fallback para o
   // LeadDialog legado. Isso evita criar formulário inline (fora do escopo) e
   // garante paridade funcional com o fluxo atual.
+  const [createIntent, setCreateIntent] =
+    useState<LeadCreateIntent>("insurance")
   const [forceLegacyForm, setForceLegacyForm] = useState(false)
   const canManageLeads = useCanManage("leads:view")
   const canManageQuestionnaires = useCanManage("questionnaires:view")
@@ -299,6 +217,7 @@ export function LeadsPage() {
   )
 
   const leadsQuery = useLeads(filters)
+  const captureMetrics = useLeadCaptureMetrics()
   const createLead = useCreateLead()
   const updateLead = useUpdateLead(filters)
   const deleteLead = useDeleteLead(filters)
@@ -338,11 +257,14 @@ export function LeadsPage() {
   }, [createLead, updateLead])
 
   const openLeadDialog = useCallback(
-    (lead: Lead | null = null) => {
+    (lead: Lead | null = null, intent?: LeadCreateIntent) => {
       resetLeadSaveMutationsState("openLeadDialog")
       if (!lead) {
         createSubmitLockRef.current = false
         createIdempotencyKeyRef.current = null
+        setCreateIntent(intent ?? "insurance")
+      } else {
+        setCreateIntent(leadIntentFromUnitType(lead.businessUnit?.type))
       }
       setEditingLead(lead)
       setDialogOpen(true)
@@ -440,8 +362,9 @@ export function LeadsPage() {
   )
 
   useEffect(() => {
-    if (searchParams.get("create") === "lead" && canManageLeads) {
-      openLeadDialog(null)
+    const intent = parseLeadCreateIntent(searchParams.get("create"))
+    if (intent && canManageLeads) {
+      openLeadDialog(null, intent)
       const params = new URLSearchParams(searchParams.toString())
       params.delete("create")
       const qs = params.toString()
@@ -580,6 +503,16 @@ export function LeadsPage() {
         ),
       },
       {
+        key: "unit",
+        header: "Unidade",
+        hideOnMobile: true,
+        render: (row) => (
+          <span className="text-xs text-muted-foreground">
+            {row.businessUnit?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
         key: "questionnaire",
         header: "Questionário",
         render: (row) => (
@@ -626,7 +559,7 @@ export function LeadsPage() {
                 <Badge variant="secondary">{meta?.total ?? leads.length}</Badge>
               </span>
             }
-            description="Cadastro único multiempresa — Corretora Ávila e Ávila Imóveis."
+            description="Um cadastro, dois botões. Lead Seguro vai para a Corretora Ávila; Lead Imobiliário, para a Ávila Imóveis."
             actions={
               <PageActions>
                 <PageActionsGroup
@@ -640,13 +573,27 @@ export function LeadsPage() {
                     </Button>
                   </PermissionGate>
                   {canManageLeads ? (
-                    <Button
-                      size="sm"
-                      className="h-9"
-                      onClick={() => openLeadDialog(null)}
-                    >
-                      Novo lead
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9 gap-1.5"
+                        disabled={!captureMetrics.insuranceBusinessUnitId}
+                        onClick={() => openLeadDialog(null, "insurance")}
+                      >
+                        <Shield className="size-3.5" />
+                        Lead Seguro
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-9 gap-1.5"
+                        disabled={!captureMetrics.realEstateBusinessUnitId}
+                        onClick={() => openLeadDialog(null, "real-estate")}
+                      >
+                        <Building2 className="size-3.5" />
+                        Lead Imobiliário
+                      </Button>
+                    </>
                   ) : null}
                 </PageActionsGroup>
               </PageActions>
@@ -657,23 +604,10 @@ export function LeadsPage() {
             id="BUG010.1 Lead cards"
             onRender={bug010LeadCreateProfiler("cards")}
           >
-            <Grid columns="3">
-              <LeadMetric
-                icon={UserPlus}
-                label="Leads"
-                value={meta?.total ?? leads.length}
-              />
-              <LeadMetric
-                icon={ArrowRightLeft}
-                label="Convertidos"
-                value={meta?.counts?.converted ?? 0}
-              />
-              <LeadMetric
-                icon={Filter}
-                label="Qualificados"
-                value={meta?.counts?.qualified ?? 0}
-              />
-            </Grid>
+            <LeadCaptureMetricsGrid
+              metrics={captureMetrics.metrics}
+              loading={captureMetrics.isLoading}
+            />
           </Profiler>
 
           <Section>
@@ -765,12 +699,30 @@ export function LeadsPage() {
               onRetry={() => leadsQuery.refetch()}
               emptyIcon={UserPlus}
               emptyTitle="Nenhum registro encontrado"
-              emptyDescription="Clique em Novo para começar."
+              emptyDescription="Clique em Lead Seguro ou Lead Imobiliário para começar — a unidade é definida pelo botão."
               emptyAction={
                 <PermissionGate permission="leads:manage">
-                  <Button size="sm" onClick={() => openLeadDialog(null)}>
-                    Novo lead
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={!captureMetrics.insuranceBusinessUnitId}
+                      onClick={() => openLeadDialog(null, "insurance")}
+                    >
+                      <Shield className="size-3.5" />
+                      Lead Seguro
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={!captureMetrics.realEstateBusinessUnitId}
+                      onClick={() => openLeadDialog(null, "real-estate")}
+                    >
+                      <Building2 className="size-3.5" />
+                      Lead Imobiliário
+                    </Button>
+                  </div>
                 </PermissionGate>
               }
               onRowClick={
@@ -871,6 +823,17 @@ export function LeadsPage() {
       */}
           <LeadDialog
             lead={editingLead}
+            intent={createIntent}
+            lockedBusinessUnitId={
+              editingLead?.businessUnitId ||
+              (createIntent === "real-estate"
+                ? captureMetrics.realEstateBusinessUnitId
+                : captureMetrics.insuranceBusinessUnitId) ||
+              undefined
+            }
+            defaultInterestCategories={defaultInterestsForLeadIntent(
+              createIntent,
+            )}
             open={
               canManageLeads &&
               dialogOpen &&
@@ -1092,399 +1055,5 @@ export function LeadsPage() {
         </Stack>
       </ContentContainer>
     </PageContainer>
-  )
-}
-
-function LeadMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: ComponentType<{ className?: string }>
-  label: string
-  value: number
-}) {
-  return <StatCard icon={Icon} label={label} value={value} tone="primary" />
-}
-
-type LeadForm = LeadDialogFormState
-
-function formatLeadDate(value: string | null | undefined) {
-  if (!value) return "—"
-  return new Date(value).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
-}
-
-function buildDuplicateMeta(duplicate: LeadDuplicate) {
-  return (
-    <ul className="space-y-0.5">
-      <li>
-        <span className="opacity-70">Status:</span>{" "}
-        {statusLabels[duplicate.status]}
-      </li>
-      <li>
-        <span className="opacity-70">Responsável:</span>{" "}
-        {duplicate.assignedTo || "Sem responsável"}
-      </li>
-      <li>
-        <span className="opacity-70">Último contato:</span>{" "}
-        {formatLeadDate(duplicate.lastContactAt)}
-      </li>
-      <li>
-        <span className="opacity-70">Criado em:</span>{" "}
-        {formatLeadDate(duplicate.createdAt)}
-      </li>
-    </ul>
-  )
-}
-
-function optionalFormValue(value: string) {
-  return value.trim() || undefined
-}
-
-function LeadDialog({
-  lead,
-  open,
-  pending,
-  error,
-  onOpenChange,
-  onSubmit,
-  onOpenExistingLead,
-  onSubmitLockedChange,
-}: {
-  lead: Lead | null
-  open: boolean
-  pending: boolean
-  error: unknown
-  onOpenChange: (open: boolean) => void
-  onSubmit: (input: CreateLeadInput) => void | Promise<void>
-  onOpenExistingLead: (leadId: string) => void
-  onSubmitLockedChange: (locked: boolean) => void
-}) {
-  const { session } = useSession()
-  const [duplicateDismissed, setDuplicateDismissed] = useState(false)
-  const [form, setForm] = useState<LeadForm>(EMPTY_LEAD_DIALOG_FORM)
-  const [submitLocked, setSubmitLocked] = useState(false)
-
-  const duplicatesQuery = useLeadDuplicates({
-    document: form.document,
-    excludeId: lead?.id,
-    enabled: open && !duplicateDismissed,
-    debounceMs: 500,
-  })
-
-  const duplicates = duplicatesQuery.data ?? []
-  const primaryDuplicate = duplicates[0]
-
-  useEffect(() => {
-    onSubmitLockedChange(submitLocked)
-  }, [onSubmitLockedChange, submitLocked])
-
-  useEffect(() => {
-    if (!open) {
-      setDuplicateDismissed(false)
-      setForm(EMPTY_LEAD_DIALOG_FORM)
-      console.log("[DRAWER] 7-before-loading-false")
-      bug010DrawerLog("before setSubmitLocked(false)")
-      setSubmitLocked(false)
-      bug010DrawerSetState({ submitLocked: false })
-      bug010DrawerLog("after setSubmitLocked(false)")
-      console.log("[DRAWER] 8-after-loading-false")
-      return
-    }
-
-    setDuplicateDismissed(false)
-    console.log("[DRAWER] 7-before-loading-false")
-    bug010DrawerLog("before setSubmitLocked(false)")
-    setSubmitLocked(false)
-    bug010DrawerSetState({ submitLocked: false })
-    bug010DrawerLog("after setSubmitLocked(false)")
-    console.log("[DRAWER] 8-after-loading-false")
-    setForm(buildLeadDialogFormState(lead, session?.name))
-  }, [lead, open, session?.name])
-
-  useEffect(() => {
-    if (error) {
-      console.log("[DRAWER] 7-before-loading-false")
-      bug010DrawerLog("before setSubmitLocked(false)")
-      setSubmitLocked(false)
-      bug010DrawerSetState({ submitLocked: false })
-      bug010DrawerLog("after setSubmitLocked(false)")
-      console.log("[DRAWER] 8-after-loading-false")
-    }
-  }, [error])
-
-  useEffect(() => {
-    setDuplicateDismissed(false)
-  }, [form.document, form.documentType])
-
-  function update<K extends keyof LeadForm>(key: K, value: LeadForm[K]) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (pending || submitLocked) return
-    if (!form.name.trim()) return
-    bug010DrawerResetFlow()
-    bug010DrawerSetState({ dialogOpen: open, submitLocked })
-    bug010DrawerLog("submit()")
-    console.log("[DRAWER] 1-submit")
-    setSubmitLocked(true)
-    bug010DrawerSetState({ submitLocked: true })
-
-    const normalized = normalizeDocument(
-      form.document.trim() ? form.documentType : undefined,
-      form.document,
-    )
-
-    try {
-      await onSubmit({
-        name: form.name.trim(),
-        email: optionalFormValue(form.email),
-        phone: optionalFormValue(form.phone),
-        company: optionalFormValue(form.company),
-        source: optionalFormValue(form.source),
-        ...(normalized
-          ? {
-              documentType: normalized.documentType,
-              document: normalized.document,
-            }
-          : {}),
-        notes: optionalFormValue(form.notes),
-        assignedTo: optionalFormValue(form.assignedTo),
-        businessUnitId: form.businessUnitId || undefined,
-        interestCategories: form.interestCategories,
-        ...(form.followUpDays
-          ? {
-              followUpDays: Number(form.followUpDays),
-              followUpType: "WHATSAPP" as const,
-            }
-          : {}),
-      })
-    } finally {
-      bug010DrawerLog("before setSubmitLocked(false)")
-      setSubmitLocked(false)
-      bug010DrawerSetState({ submitLocked: false })
-      bug010DrawerLog("after setSubmitLocked(false)")
-    }
-  }
-
-  const submitPending = pending || submitLocked
-
-  useEffect(() => {
-    console.log("[DRAWER] isSubmitting =", submitPending)
-  }, [submitPending])
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {open ? (
-        <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>{lead ? "Editar lead" : "Novo lead"}</DialogTitle>
-            <DialogDescription>
-              {lead
-                ? "Atualize os dados de contato e contexto comercial do lead."
-                : "Cadastre a oportunidade de entrada. O status inicial será Novo — o fluxo comercial avança conforme as interações."}
-            </DialogDescription>
-            {lead ? (
-              <p className="text-xs text-muted-foreground">
-                {formatLastInteraction(
-                  lead.lastInteractionAt ?? lead.lastContactAt,
-                )}
-              </p>
-            ) : null}
-          </DialogHeader>
-
-          {lead ? (
-            <ActivityQuickActions
-              leadId={lead.id}
-              dealId={lead.dealId}
-              compact
-            />
-          ) : null}
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Nome</span>
-              <Input
-                required
-                value={form.name}
-                onChange={(event) => update("name", event.target.value)}
-                placeholder="Ex.: Marina Costa"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">E-mail</span>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(event) => update("email", event.target.value)}
-                placeholder="lead@email.com"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Telefone</span>
-              <Input
-                value={form.phone}
-                onChange={(event) =>
-                  update("phone", formatPhoneBrMask(event.target.value))
-                }
-                placeholder="(11) 99999-9999"
-                inputMode="tel"
-                autoComplete="tel"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Tipo de documento</span>
-              <FormSelect
-                value={form.documentType}
-                onChange={(event) =>
-                  update("documentType", event.target.value as LeadDocumentType)
-                }
-                options={LEAD_DOCUMENT_TYPES.map((item) => ({
-                  value: item,
-                  label: item.toUpperCase(),
-                }))}
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">
-                {form.documentType === "cpf" ? "CPF" : "CNPJ"}
-              </span>
-              <Input
-                value={form.document}
-                onChange={(event) =>
-                  update(
-                    "document",
-                    formatDocumentMask(form.documentType, event.target.value),
-                  )
-                }
-                placeholder={
-                  form.documentType === "cpf"
-                    ? "000.000.000-00"
-                    : "00.000.000/0000-00"
-                }
-                inputMode="numeric"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Empresa</span>
-              <Input
-                value={form.company}
-                onChange={(event) => update("company", event.target.value)}
-                placeholder="Ex.: Transportes Sul"
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Origem</span>
-              <Input
-                value={form.source}
-                onChange={(event) => update("source", event.target.value)}
-                placeholder="whatsapp, site, indicação..."
-              />
-            </label>
-            <label className="space-y-2">
-              <span className="text-sm font-medium">Responsável</span>
-              <Input
-                value={form.assignedTo}
-                onChange={(event) => update("assignedTo", event.target.value)}
-                placeholder="Ex.: Ana Costa"
-              />
-            </label>
-            <LeadDialogBusinessFields form={form} update={update} />
-        {!lead ? (
-          <label className="space-y-2 sm:col-span-2">
-            <span className="text-sm font-medium">Próximo contato</span>
-            <FormSelect
-              value={form.followUpDays}
-              onChange={(event) => update("followUpDays", event.target.value)}
-              options={[
-                { value: "", label: "Não agendar agora" },
-                { value: "1", label: "Amanhã" },
-                { value: "3", label: "Em 3 dias" },
-                { value: "7", label: "Em 7 dias" },
-                { value: "15", label: "Em 15 dias" },
-              ]}
-            />
-          </label>
-        ) : null}
-            <label className="space-y-2 sm:col-span-2">
-              <span className="text-sm font-medium">Notas</span>
-              <Input
-                value={form.notes}
-                onChange={(event) => update("notes", event.target.value)}
-                placeholder="Contexto da oportunidade"
-              />
-            </label>
-          </div>
-
-          {primaryDuplicate && !duplicateDismissed ? (
-            <CommercialWarningBanner
-              title={`Já existe lead com este ${form.documentType === "cpf" ? "CPF" : "CNPJ"}`}
-              description={
-                <span>
-                  <strong>{primaryDuplicate.name}</strong>
-                  {duplicates.length > 1
-                    ? ` e mais ${duplicates.length - 1} registro(s) com o mesmo documento.`
-                    : " possui o mesmo documento."}
-                </span>
-              }
-              meta={buildDuplicateMeta(primaryDuplicate)}
-              primaryAction={{
-                label: "Abrir lead existente",
-                onClick: () => onOpenExistingLead(primaryDuplicate.id),
-              }}
-              secondaryAction={{
-                label: "Continuar mesmo assim",
-                variant: "outline",
-                onClick: () => setDuplicateDismissed(true),
-              }}
-            />
-          ) : null}
-
-          {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {getErrorMessage(error, "Erro ao salvar lead")}
-            </p>
-          ) : null}
-
-          {lead ? (
-            <>
-              <Separator className="bg-white/[0.06]" />
-              <ActivityTimeline leadId={lead.id} dealId={lead.dealId} />
-            </>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitPending}
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={submitPending}>
-              {submitPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : lead ? (
-                "Salvar alterações"
-              ) : (
-                "Salvar lead"
-              )}
-            </Button>
-          </DialogFooter>
-          </form>
-        </DialogContent>
-      ) : null}
-    </Dialog>
   )
 }

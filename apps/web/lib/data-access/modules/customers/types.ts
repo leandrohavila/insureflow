@@ -48,6 +48,7 @@ export type CustomerListFilters = {
   status?: CustomerStatus | "all"
   lifecycleStage?: CustomerLifecycleStage | "all"
   renewalStatus?: CustomerRenewalStatus | "all"
+  businessUnitId?: string
   page?: number
   limit?: number
 }

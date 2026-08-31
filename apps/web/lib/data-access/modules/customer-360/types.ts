@@ -146,6 +146,7 @@ export type Customer360Customer = {
 
 export type Customer360Payload = {
   customer: Customer360Customer
+  /** Domínios futuros: seguros, imóveis, leads e oportunidades no mesmo 360. */
   timeline: Customer360TimelineEvent[]
   leads: Customer360Lead[]
   deals: Customer360Deal[]

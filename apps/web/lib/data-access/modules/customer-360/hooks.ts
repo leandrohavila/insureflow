@@ -18,6 +18,7 @@ export function useCustomer360(id: string | null) {
       : queryKeys.customer360.details(),
     queryFn: () => fetchCustomer360(id as string),
     enabled: Boolean(id),
+    staleTime: 5 * 60_000,
   })
 }
 

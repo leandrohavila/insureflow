@@ -36,6 +36,7 @@ import {
   useGenerateCustomer360,
 } from "@/lib/data-access/modules/customer-360"
 import { formatCurrency } from "@/lib/data-access/modules/crm"
+import { summarizeCustomer360Domains } from "@/lib/crm/customer-360-domains"
 import { cn } from "@/lib/utils"
 
 const TABS = [
@@ -81,6 +82,10 @@ export function Customer360Workspace({ customerId }: { customerId: string }) {
     if (list.length) return list
     return data.customer.businessUnit ? [data.customer.businessUnit] : []
   }, [data])
+  const domains = useMemo(
+    () => (data ? summarizeCustomer360Domains(data) : []),
+    [data],
+  )
 
   if (query.isLoading) {
     return <LoadingState label="Carregando Customer 360…" />
@@ -113,7 +118,7 @@ export function Customer360Workspace({ customerId }: { customerId: string }) {
       <PageHeader
         compact
         title={customer.name}
-        description="Visão 360° da relação comercial — cadastro, jornada e oportunidades."
+        description="Um cliente, dois negócios. Seguros e imóveis no mesmo Customer 360."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/crm/clientes">
@@ -136,6 +141,26 @@ export function Customer360Workspace({ customerId }: { customerId: string }) {
           </div>
         }
       />
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        {domains.map((domain) => (
+          <article
+            key={domain.id}
+            className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">{domain.label}</p>
+              <Badge variant={domain.active ? "secondary" : "outline"}>
+                {domain.active ? "Ativo" : "Sem vínculo"}
+              </Badge>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {domain.leads} leads · {domain.opportunities} oportunidades ·{" "}
+              {domain.assets} {domain.id === "INSURANCE" ? "apólices/negócios" : "imóveis/negócios"}
+            </p>
+          </article>
+        ))}
+      </section>
 
       <section className="grid gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 md:grid-cols-2 xl:grid-cols-4">
         <InfoBlock

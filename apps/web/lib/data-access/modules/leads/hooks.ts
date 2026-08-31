@@ -1,6 +1,11 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import {
   patchListItem,
@@ -48,6 +53,7 @@ export function useLeads(
     queryKey: queryKeys.leads.list(filters),
     queryFn: () => fetchLeads(filters),
     enabled: options?.enabled ?? true,
+    placeholderData: keepPreviousData,
   })
 }
 

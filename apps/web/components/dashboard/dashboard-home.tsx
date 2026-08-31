@@ -21,6 +21,7 @@ import { DashboardPipelineHero } from "@/components/dashboard/dashboard-pipeline
 import { DashboardPriorities } from "@/components/dashboard/dashboard-priorities"
 import { DashboardQuotesProposals } from "@/components/dashboard/dashboard-quotes-proposals"
 import { DashboardSummary } from "@/components/dashboard/dashboard-summary"
+import { GrupoAvilaExecutiveKpiGrid } from "@/components/dashboard/grupo-avila-kpi-grid"
 import {
   dashboardAnalyticsGridClassName,
   dashboardExecutiveGridClassName,
@@ -36,16 +37,18 @@ import {
   dsTypography,
 } from "@/lib/design-system"
 import { useDashboardKpis } from "@/lib/data-access/modules/dashboard/hooks"
+import { useLeadCaptureMetrics } from "@/lib/leads/use-lead-capture-metrics"
 import { bug010LeadCreateProfiler } from "@/lib/performance/bug010-lead-create"
 import { cn } from "@/lib/utils"
 
 export function DashboardHome() {
   const { session } = useSession()
+  const canLeads = hasPermission(session, "leads:view")
   const { kpis } = useDashboardKpis(session)
+  const captureMetrics = useLeadCaptureMetrics({ enabled: canLeads })
   const canManageLeads = useCanManage("leads:view")
   const canManageCrm = useCanManage("crm:view")
   const canManageQuotes = useCanManage("quotes:view")
-  const canLeads = hasPermission(session, "leads:view")
   const canClients = hasPermission(session, "clients:view")
   const canCrm = hasPermission(session, "crm:view")
   const canQuotes = hasPermission(session, "quotes:view")
@@ -87,14 +90,22 @@ export function DashboardHome() {
                   </span>
                   <PageActionsGroup>
                     {canManageLeads ? (
-                      <Link
-                        href="/leads"
-                        className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" }),
-                        )}
-                      >
-                        + Novo Lead
-                      </Link>
+                      <>
+                        <Link
+                          href="/leads?create=insurance"
+                          className={cn(
+                            buttonVariants({ variant: "outline", size: "sm" }),
+                          )}
+                        >
+                          + Lead Seguro
+                        </Link>
+                        <Link
+                          href="/leads?create=real-estate"
+                          className={cn(buttonVariants({ size: "sm" }))}
+                        >
+                          + Lead Imobiliário
+                        </Link>
+                      </>
                     ) : null}
                     {canManageCrm ? (
                       <Link
@@ -111,6 +122,15 @@ export function DashboardHome() {
                 {formatDashboardDate()}
               </p>
             </header>
+
+            {canLeads ? (
+              <Section className={dashboardSectionGapClassName}>
+                <GrupoAvilaExecutiveKpiGrid
+                  metrics={captureMetrics.metrics}
+                  loading={captureMetrics.isLoading}
+                />
+              </Section>
+            ) : null}
 
             <Section className={dashboardSectionGapClassName}>
               <DashboardSummary kpis={kpis} />

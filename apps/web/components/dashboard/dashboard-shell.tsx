@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion"
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { AppTopbar } from "@/components/dashboard/app-topbar"
+import { BusinessUnitPreloader } from "@/components/dashboard/business-unit-preloader"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import type { SessionPayload } from "@repo/auth"
@@ -23,6 +24,7 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
 
   return (
     <SessionProvider initialSession={session}>
+      <BusinessUnitPreloader />
       <SidebarProvider defaultOpen>
         <AppSidebar session={session} />
         <SidebarInset className={`insure-main-surface ${DASHBOARD_INSET_FRAME}`}>
