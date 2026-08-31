@@ -4,10 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
+
 import type { CreatePublicPropertyLeadDto } from './dto/property-lead.dto';
 import { PublicCatalogContextService } from './public-catalog-context.service';
 import { PropertiesRepository } from './repositories/properties.repository';
 import { PropertyLeadsRepository } from './repositories/property-leads.repository';
+import { sanitizePropertyLeadMetadata } from './property-leads.util';
 
 @Injectable()
 export class PropertyLeadsService {
@@ -21,31 +24,46 @@ export class PropertyLeadsService {
     if (!dto.email?.trim() && !dto.phone?.trim()) {
       throw new BadRequestException('Informe e-mail ou telefone');
     }
-    if (!dto.propertyId?.trim() && !dto.propertySlug?.trim()) {
-      throw new BadRequestException('Informe propertyId ou propertySlug');
-    }
 
     const ctx = await this.context.resolve(dto);
-    const property = dto.propertyId
-      ? await this.properties.findById(ctx.tenantId, dto.propertyId)
-      : await this.properties.findBySlug(ctx.tenantId, dto.propertySlug!, true);
+    const propertyId = dto.propertyId?.trim() || undefined;
+    const propertySlug = dto.propertySlug?.trim() || undefined;
+    const hasProperty = Boolean(propertyId || propertySlug);
 
-    if (!property || !property.published) {
-      throw new NotFoundException('Imóvel não encontrado');
-    }
-    if (ctx.businessUnitId && property.businessUnitId !== ctx.businessUnitId) {
-      throw new NotFoundException('Imóvel não encontrado');
+    let resolvedPropertyId: string | null = null;
+    let businessUnitId: string;
+
+    if (hasProperty) {
+      const property = propertyId
+        ? await this.properties.findById(ctx.tenantId, propertyId)
+        : await this.properties.findBySlug(ctx.tenantId, propertySlug!, true);
+
+      if (!property || !property.published) {
+        throw new NotFoundException('Imóvel não encontrado');
+      }
+      if (ctx.businessUnitId && property.businessUnitId !== ctx.businessUnitId) {
+        throw new NotFoundException('Imóvel não encontrado');
+      }
+
+      resolvedPropertyId = property.id;
+      businessUnitId = property.businessUnitId;
+    } else {
+      if (!ctx.businessUnitId) {
+        throw new BadRequestException('Informe a unidade de negócio');
+      }
+      businessUnitId = ctx.businessUnitId;
     }
 
     return this.leads.create({
       tenantId: ctx.tenantId,
-      businessUnitId: property.businessUnitId,
-      propertyId: property.id,
+      businessUnitId,
+      propertyId: resolvedPropertyId,
       name: dto.name.trim(),
       email: dto.email?.trim() || null,
       phone: dto.phone?.trim() || null,
       message: dto.message?.trim() || null,
-      source: 'public_portal',
+      source: dto.source?.trim() || 'public_portal',
+      metadata: sanitizePropertyLeadMetadata(dto.metadata) ?? Prisma.DbNull,
     });
   }
 }

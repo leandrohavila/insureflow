@@ -16,12 +16,14 @@ import {
   MAX_IMAGE_BYTES,
   MAX_UPLOAD_FILES,
   savePropertyImage,
+  toAbsolutePropertyMediaUrl,
   type MemoryUpload,
 } from './property-storage';
 import { PropertiesRepository } from './repositories/properties.repository';
 import { PropertyImagesRepository } from './repositories/property-images.repository';
 import { PropertyLeadsRepository } from './repositories/property-leads.repository';
 import { serializeProperty, slugifyTitle } from './properties.util';
+import { serializePropertyLead } from './property-leads.util';
 
 function parseFeaturedUntil(value?: string | null) {
   if (value == null || value === '') return null;
@@ -254,7 +256,10 @@ export class PropertiesService {
       sortOrder: input.sortOrder ?? 0,
       isCover: input.isCover ?? false,
     });
-    return image;
+    return {
+      ...image,
+      url: toAbsolutePropertyMediaUrl(image.url),
+    };
   }
 
   async uploadImages(user: JwtAccessPayload, id: string, files: MemoryUpload[]) {
@@ -295,14 +300,20 @@ export class PropertiesService {
         }),
       );
     }
-    return created;
+    return created.map((image) => ({
+      ...image,
+      url: toAbsolutePropertyMediaUrl(image.url),
+    }));
   }
 
   async setCoverImage(user: JwtAccessPayload, id: string, imageId: string) {
     await this.findOne(user, id);
     const image = await this.images.setCover(user.tenantId, id, imageId);
     if (!image) throw new NotFoundException('Imagem não encontrada');
-    return image;
+    return {
+      ...image,
+      url: toAbsolutePropertyMediaUrl(image.url),
+    };
   }
 
   async reorderImages(user: JwtAccessPayload, id: string, imageIds: string[]) {
@@ -330,6 +341,23 @@ export class PropertiesService {
 
   async listLeads(user: JwtAccessPayload, id: string) {
     await this.findOne(user, id);
-    return this.propertyLeads.findByProperty(user.tenantId, id);
+    const rows = await this.propertyLeads.findByProperty(user.tenantId, id);
+    return rows.map((row) => serializePropertyLead(row));
+  }
+
+  async listInbox(user: JwtAccessPayload, businessUnitId?: string) {
+    const scopedIds = await this.buAccess.resolveIds(
+      this.actor(user),
+      businessUnitId,
+    );
+    if (Array.isArray(scopedIds) && scopedIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.propertyLeads.findInbox(
+      user.tenantId,
+      scopedIds ?? undefined,
+    );
+    return rows.map((row) => serializePropertyLead(row));
   }
 }

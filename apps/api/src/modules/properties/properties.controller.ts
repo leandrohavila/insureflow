@@ -25,6 +25,7 @@ import {
   PropertyImageInputDto,
   UpdatePropertyDto,
 } from './dto/property.dto';
+import { ListPropertyLeadsQueryDto } from './dto/property-lead.dto';
 import {
   ReplacePropertyFeaturesDto,
   ReorderPropertyImagesDto,
@@ -56,6 +57,18 @@ export class PropertiesController {
     @Query() query: ListPropertiesQueryDto,
   ) {
     return this.properties.findAll(user, query);
+  }
+
+  @Get('leads')
+  @RequirePermissions('properties:view')
+  @ApiOperation({
+    summary: 'Inbox de leads do portal (inclui atendimento geral, sem imóvel)',
+  })
+  listInbox(
+    @CurrentUser() user: JwtAccessPayload,
+    @Query() query: ListPropertyLeadsQueryDto,
+  ) {
+    return this.properties.listInbox(user, query.businessUnitId);
   }
 
   @Get(':id/leads')

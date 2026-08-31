@@ -28,6 +28,17 @@ export type MemoryUpload = {
   buffer: Buffer;
 };
 
+/** Base pública da API (CRM/Portal/img src). Preferir API_PUBLIC_URL. */
+export function apiPublicBaseUrl() {
+  const fromEnv =
+    process.env.API_PUBLIC_URL?.trim() ||
+    process.env.API_BASE_URL?.trim() ||
+    process.env.API_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  const port = process.env.PORT?.trim() || '4000';
+  return `http://localhost:${port}`;
+}
+
 export function uploadsRoot() {
   return (
     process.env.PROPERTY_UPLOADS_DIR?.trim() ||
@@ -43,17 +54,51 @@ export function isAllowedImageMime(mime: string) {
   return MIME_TO_EXT.has(mime);
 }
 
-export function publicImageUrl(propertyId: string, filename: string) {
+/** Path estável gravado no banco (independente do host). */
+export function propertyImagePath(propertyId: string, filename: string) {
   return `/api/v1/files/properties/${propertyId}/${filename}`;
 }
 
+/** URL absoluta para resposta HTTP / <img src>. */
+export function publicImageUrl(propertyId: string, filename: string) {
+  return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+}
+
+/**
+ * Absolutiza URLs relativas de mídia da API.
+ * URLs http(s) externas permanecem intactas.
+ */
+export function toAbsolutePropertyMediaUrl(url: string) {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const pathPart = url.startsWith('/') ? url : `/${url}`;
+  return `${apiPublicBaseUrl()}${pathPart}`;
+}
+
+function localPropertyPathPrefix(propertyId: string) {
+  return `/api/v1/files/properties/${propertyId}/`;
+}
+
 export function isLocalPropertyUrl(url: string, propertyId: string) {
-  return url.startsWith(`/api/v1/files/properties/${propertyId}/`);
+  if (!url) return false;
+  const marker = localPropertyPathPrefix(propertyId);
+  try {
+    if (/^https?:\/\//i.test(url)) {
+      return new URL(url).pathname.startsWith(marker);
+    }
+  } catch {
+    return false;
+  }
+  return url.startsWith(marker) || url.includes(marker);
 }
 
 export function filenameFromLocalUrl(url: string, propertyId: string) {
   if (!isLocalPropertyUrl(url, propertyId)) return null;
-  return url.slice(`/api/v1/files/properties/${propertyId}/`.length);
+  const marker = localPropertyPathPrefix(propertyId);
+  const idx = url.indexOf(marker);
+  if (idx < 0) return null;
+  const rest = url.slice(idx + marker.length).split(/[?#]/)[0] ?? '';
+  return safeFilename(rest);
 }
 
 export function safeFilename(name: string) {
@@ -81,7 +126,8 @@ export async function savePropertyImage(file: MemoryUpload, propertyId: string) 
   const dir = propertyUploadDir(propertyId);
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, filename), file.buffer);
-  return { filename, url: publicImageUrl(propertyId, filename) };
+  // Persiste path relativo; serialização HTTP expõe URL absoluta.
+  return { filename, url: propertyImagePath(propertyId, filename) };
 }
 
 export async function deleteLocalPropertyFile(propertyId: string, url: string) {

@@ -1504,25 +1504,29 @@ model PropertyImage {
   @@map("property_images")
 }
 
-/// Interesse do portal público — não é o Lead do CRM
+/// Interesse do portal público — não é o Lead do CRM.
+/// propertyId opcional: lead genérico (home/listagem) permanece na BU.
+/// metadata: atribuição (utm_*, gclid, fbclid, ttclid, landingPage, referrer, device, placement).
 model PropertyLead {
-  id             String       @id @default(cuid())
+  id             String        @id @default(cuid())
   tenantId       String
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  businessUnitId String       @map("business_unit_id")
-  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
-  propertyId     String       @map("property_id")
-  property       Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessUnitId String        @map("business_unit_id")
+  businessUnit   BusinessUnit  @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
+  propertyId     String?       @map("property_id")
+  property       Property?     @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   name           String
   email          String?
   phone          String?
   message        String?
-  source         String       @default("public_portal")
-  createdAt      DateTime     @default(now()) @map("created_at")
+  source         String        @default("public_portal")
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at")
 
   @@index([tenantId, propertyId])
   @@index([tenantId, createdAt])
   @@index([tenantId, businessUnitId])
+  @@index([tenantId, source])
   @@map("property_leads")
 }
 

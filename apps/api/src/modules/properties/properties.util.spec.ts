@@ -44,7 +44,8 @@ describe('properties.util serialization', () => {
     expect(serializeFeatureValue(features[1])?.value).toBe('norte');
   });
 
-  it('serializeProperty inclui capa e características', () => {
+  it('serializeProperty inclui capa e características com URL absoluta', () => {
+    process.env.API_PUBLIC_URL = 'http://localhost:4000';
     const result = serializeProperty({
       price: { toNumber: () => 425000 },
       areaM2: { toNumber: () => 72 },
@@ -54,14 +55,41 @@ describe('properties.util serialization', () => {
     });
     expect(result.coverImage).toEqual({
       id: 'i1',
-      url: '/cover.jpg',
+      url: 'http://localhost:4000/cover.jpg',
       alt: 'capa',
     });
+    expect(result.images?.[0]?.url).toBe('http://localhost:4000/second.jpg');
     expect(result.features).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: 'piscina', value: true }),
         expect.objectContaining({ key: 'face', value: 'norte' }),
       ]),
+    );
+  });
+
+  it('serializeProperty absolutiza path de arquivo local e preserva CDN', () => {
+    process.env.API_PUBLIC_URL = 'https://api.prod.example';
+    const result = serializeProperty({
+      price: 1,
+      images: [
+        {
+          id: 'local',
+          url: '/api/v1/files/properties/p1/a.jpg',
+          isCover: true,
+        },
+        {
+          id: 'cdn',
+          url: 'https://cdn.example/b.jpg',
+          isCover: false,
+        },
+      ],
+    });
+    expect(result.images?.[0]?.url).toBe(
+      'https://api.prod.example/api/v1/files/properties/p1/a.jpg',
+    );
+    expect(result.images?.[1]?.url).toBe('https://cdn.example/b.jpg');
+    expect(result.coverImage?.url).toBe(
+      'https://api.prod.example/api/v1/files/properties/p1/a.jpg',
     );
   });
 

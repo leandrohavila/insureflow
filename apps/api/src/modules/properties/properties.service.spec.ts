@@ -51,14 +51,18 @@ describe('PropertiesService publication', () => {
         findFirst: jest.fn().mockResolvedValue({ id: 'bu1', type: 'REAL_ESTATE' }),
       },
     };
+    const propertyLeads = {
+      findByProperty: jest.fn().mockResolvedValue([]),
+      findInbox: jest.fn().mockResolvedValue([]),
+    };
     const service = new PropertiesService(
       repo as never,
       {} as never,
-      {} as never,
+      propertyLeads as never,
       buAccess as never,
       prisma as never,
     );
-    return { service, repo, buAccess, prisma };
+    return { service, repo, buAccess, prisma, propertyLeads };
   }
 
   it('publish define published e publishedAt', async () => {
@@ -142,5 +146,52 @@ describe('PropertiesService publication', () => {
         price: 100,
       }),
     ).rejects.toThrow('Imóvel deve pertencer a uma unidade imobiliária');
+  });
+
+  it('listInbox retorna vazio quando o escopo de BU não tem unidades', async () => {
+    const { service, buAccess, propertyLeads } = createService();
+    buAccess.resolveIds.mockResolvedValue([]);
+    const result = await service.listInbox(user as never);
+    expect(result).toEqual([]);
+    expect(propertyLeads.findInbox).not.toHaveBeenCalled();
+  });
+
+  it('listInbox serializa lead genérico com propertyTitle null', async () => {
+    const { service, propertyLeads } = createService();
+    propertyLeads.findInbox.mockResolvedValue([
+      {
+        id: 'pl-home',
+        tenantId: 't1',
+        businessUnitId: 'bu1',
+        propertyId: null,
+        name: 'Maria',
+        email: null,
+        phone: '34999999999',
+        message: null,
+        source: 'public_portal_home',
+        metadata: { utm_source: 'google' },
+        createdAt: new Date('2026-08-26T12:00:00.000Z'),
+        property: null,
+      },
+    ]);
+
+    const result = await service.listInbox(user as never, 'bu1');
+    expect(propertyLeads.findInbox).toHaveBeenCalledWith('t1', undefined);
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'pl-home',
+        propertyId: null,
+        propertyTitle: null,
+        property: null,
+        source: 'public_portal_home',
+      }),
+    ]);
+  });
+
+  it('listLeads consulta só o imóvel informado', async () => {
+    const { service, propertyLeads } = createService();
+    await service.listLeads(user as never, 'p1');
+    expect(propertyLeads.findByProperty).toHaveBeenCalledWith('t1', 'p1');
+    expect(propertyLeads.findInbox).not.toHaveBeenCalled();
   });
 });

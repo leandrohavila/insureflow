@@ -1,3 +1,5 @@
+import { toAbsolutePropertyMediaUrl } from './property-storage';
+
 export const PROPERTY_DETAIL_INCLUDE = {
   images: { orderBy: { sortOrder: 'asc' as const } },
   owners: {
@@ -93,6 +95,14 @@ export function pickCoverImage(images: ImageRow[] | undefined) {
   };
 }
 
+function withAbsoluteImageUrls(images: ImageRow[] | undefined) {
+  if (!images?.length) return images;
+  return images.map((image) => ({
+    ...image,
+    url: toAbsolutePropertyMediaUrl(image.url),
+  }));
+}
+
 export function serializeFeatureValue(row: FeatureRow) {
   const definition = row.definition;
   if (!definition) return null;
@@ -119,11 +129,13 @@ export function serializeProperty<
     owners?: OwnerRow[];
   },
 >(row: T) {
+  const images = withAbsoluteImageUrls(row.images);
   return {
     ...row,
     price: decimalToNumber(row.price) ?? 0,
     areaM2: decimalToNumber(row.areaM2 ?? null),
-    coverImage: pickCoverImage(row.images),
+    ...(images ? { images } : {}),
+    coverImage: pickCoverImage(images ?? row.images),
     features: (row.features ?? [])
       .map((item) => serializeFeatureValue(item))
       .filter((item): item is NonNullable<typeof item> => item != null),
