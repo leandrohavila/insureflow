@@ -5,16 +5,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/lib/data-access/query-keys"
 
 import {
-  addBusinessUnitMember,
   createBusinessUnit,
   deleteBusinessUnit,
-  ensureGrupoAvilaBusinessUnits,
   fetchBusinessUnitContext,
-  fetchBusinessUnitMembers,
-  fetchBusinessUnitMemberships,
   fetchBusinessUnits,
-  removeBusinessUnitMember,
-  setPrimaryBusinessUnit,
   updateBusinessUnit,
   updateBusinessUnitContext,
 } from "./api"
@@ -42,15 +36,6 @@ function invalidateOperationalQueries(
     queryClient.invalidateQueries({ queryKey: queryKeys.activities.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.quotes.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.crossSell.all }),
-  ])
-}
-
-function invalidateMembershipQueries(
-  queryClient: ReturnType<typeof useQueryClient>,
-) {
-  return Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.businessUnits.all }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.governance.users() }),
   ])
 }
 
@@ -111,74 +96,5 @@ export function useDeleteBusinessUnit() {
     mutationFn: (id: string) => deleteBusinessUnit(id),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.businessUnits.all }),
-  })
-}
-
-export function useBusinessUnitMemberships(enabled = true) {
-  return useQuery({
-    queryKey: queryKeys.businessUnits.memberships(),
-    queryFn: fetchBusinessUnitMemberships,
-    enabled,
-  })
-}
-
-export function useBusinessUnitMembers(businessUnitId: string | null) {
-  return useQuery({
-    queryKey: queryKeys.businessUnits.members(businessUnitId ?? ""),
-    queryFn: () => fetchBusinessUnitMembers(businessUnitId!),
-    enabled: Boolean(businessUnitId),
-  })
-}
-
-export function useEnsureGrupoAvilaBusinessUnits() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ensureGrupoAvilaBusinessUnits,
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.businessUnits.all }),
-  })
-}
-
-export function useAddBusinessUnitMember() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      businessUnitId,
-      userId,
-      setAsPrimary,
-    }: {
-      businessUnitId: string
-      userId: string
-      setAsPrimary?: boolean
-    }) => addBusinessUnitMember(businessUnitId, { userId, setAsPrimary }),
-    onSettled: () => invalidateMembershipQueries(queryClient),
-  })
-}
-
-export function useRemoveBusinessUnitMember() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      businessUnitId,
-      userId,
-    }: {
-      businessUnitId: string
-      userId: string
-    }) => removeBusinessUnitMember(businessUnitId, userId),
-    onSettled: () => invalidateMembershipQueries(queryClient),
-  })
-}
-
-export function useSetPrimaryBusinessUnit() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      userId,
-      businessUnitId,
-    }: {
-      userId: string
-      businessUnitId: string | null
-    }) => setPrimaryBusinessUnit(userId, businessUnitId),
-    onSettled: () => invalidateMembershipQueries(queryClient),
   })
 }
