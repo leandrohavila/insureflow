@@ -1,7 +1,7 @@
 # Validação final — CrmCaptureActions
 
 **Data:** 2026-08-31  
-**Commit:** (preenchido após `git commit`)  
+**Commit:** `a381d91` — `fix(ux): share CrmCaptureActions on Dashboard, Leads and Pipeline`  
 **Deploy:** **não realizado**
 
 ---
