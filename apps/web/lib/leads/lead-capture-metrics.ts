@@ -36,14 +36,21 @@ export function computeLeadCaptureMetrics(input: {
   insuranceCounts?: Partial<LeadCaptureCounts> | null
   realEstateCounts?: Partial<LeadCaptureCounts> | null
 }): LeadCaptureMetrics {
-  const converted = input.counts?.converted ?? 0
+  const total = input.insurance + input.realEstate || input.total
+  const convertedFromUnits =
+    (input.insuranceCounts?.converted ?? 0) +
+    (input.realEstateCounts?.converted ?? 0)
+  const converted =
+    convertedFromUnits > 0
+      ? convertedFromUnits
+      : (input.counts?.converted ?? 0)
   const pipelineInsurance = pipelineFromCounts(input.insuranceCounts)
   const pipelineRealEstate = pipelineFromCounts(input.realEstateCounts)
   const pipeline =
-    pipelineFromCounts(input.counts) || pipelineInsurance + pipelineRealEstate
+    pipelineInsurance + pipelineRealEstate || pipelineFromCounts(input.counts)
 
   return {
-    total: input.total,
+    total,
     insurance: input.insurance,
     realEstate: input.realEstate,
     converted,
@@ -52,8 +59,7 @@ export function computeLeadCaptureMetrics(input: {
     pipelineRealEstate,
     customersInsurance: input.customersInsurance ?? 0,
     customersRealEstate: input.customersRealEstate ?? 0,
-    conversionRate:
-      input.total > 0 ? Math.round((converted / input.total) * 100) : null,
+    conversionRate: total > 0 ? Math.round((converted / total) * 100) : null,
   }
 }
 

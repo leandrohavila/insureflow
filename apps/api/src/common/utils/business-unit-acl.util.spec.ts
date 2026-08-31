@@ -71,6 +71,25 @@ describe('business-unit-acl', () => {
     ).toEqual([]);
   });
 
+  it('filtro explícito de outra unidade não é anulado pela empresa ativa', () => {
+    expect(
+      resolveScopedBusinessUnitIds({
+        canViewAll: true,
+        membershipIds: ['bu-1', 'bu-2'],
+        currentBusinessUnitId: 'bu-1',
+        requestedBusinessUnitId: 'bu-2',
+      }),
+    ).toEqual(['bu-2']);
+    expect(
+      resolveScopedBusinessUnitIds({
+        canViewAll: false,
+        membershipIds: ['bu-1', 'bu-2'],
+        currentBusinessUnitId: 'bu-1',
+        requestedBusinessUnitId: 'bu-2',
+      }),
+    ).toEqual(['bu-2']);
+  });
+
   it('monta filtro de lead/cliente por origem ou vínculo', () => {
     expect(leadOrCustomerBusinessUnitWhere(null)).toBeUndefined();
     expect(leadOrCustomerBusinessUnitWhere([])).toEqual({ id: { in: [] } });

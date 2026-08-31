@@ -34,6 +34,11 @@ export function canManageBusinessUnits(
  * IDs visíveis no contexto atual.
  * `null` = sem restrição de unidade (admin em "Todas").
  * `[]` = nenhum dado visível.
+ *
+ * `requestedBusinessUnitId` (query/filtro da tela) vale sobre a empresa
+ * ativa do header, desde que o ator possa ver aquela unidade. Assim
+ * KPIs executivos e visões filtradas (ex.: Leads Imobiliários) não
+ * ficam vazios quando o seletor está em outra empresa.
  */
 export function resolveScopedBusinessUnitIds(params: {
   canViewAll: boolean;
@@ -41,27 +46,27 @@ export function resolveScopedBusinessUnitIds(params: {
   currentBusinessUnitId?: string | null;
   requestedBusinessUnitId?: string | null;
 }): string[] | null {
-  let allowed: string[] | null = params.canViewAll
-    ? null
-    : [...new Set(params.membershipIds)];
+  const membership = [...new Set(params.membershipIds)];
+  const allowed: string[] | null = params.canViewAll ? null : membership;
 
   if (allowed && allowed.length === 0) {
+    return [];
+  }
+
+  const requested = params.requestedBusinessUnitId?.trim() || null;
+  if (requested) {
+    if (allowed === null || allowed.includes(requested)) {
+      return [requested];
+    }
     return [];
   }
 
   const current = params.currentBusinessUnitId?.trim() || null;
   if (current) {
     if (allowed === null || allowed.includes(current)) {
-      allowed = [current];
-    } else {
-      return [];
+      return [current];
     }
-  }
-
-  const requested = params.requestedBusinessUnitId?.trim() || null;
-  if (requested) {
-    if (allowed === null) return [requested];
-    return allowed.includes(requested) ? [requested] : [];
+    return [];
   }
 
   return allowed;
