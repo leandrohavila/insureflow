@@ -108,6 +108,9 @@ export const queryKeys = {
   businessUnits: {
     ...entityKeys("businessUnits"),
     context: () => ["businessUnits", "context"] as const,
+    memberships: () => ["businessUnits", "memberships"] as const,
+    members: (businessUnitId: string) =>
+      ["businessUnits", "members", businessUnitId] as const,
   },
   leadLossReasons: entityKeys("leadLossReasons"),
   leadFollowUps: entityKeys("leadFollowUps"),
@@ -150,6 +153,7 @@ export const queryKeys = {
     roles: () => ["governance", "roles"] as const,
     users: () => ["governance", "users"] as const,
     user: (id: string) => ["governance", "users", id] as const,
+    assignableRoles: () => ["governance", "assignable-roles"] as const,
     auditLogs: (filters: Record<string, unknown> = {}) =>
       ["governance", "audit-logs", filters] as const,
   },

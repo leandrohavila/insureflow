@@ -8,7 +8,7 @@ export default async function GovernanceUsersPage() {
   return (
     <GovernanceShell
       title="Usuários"
-      description="Diretório de usuários do tenant — somente leitura (Fase 2A)."
+      description="Cadastro, perfis, empresas e senhas — operação completa sem scripts."
     >
       <GovernanceUsersWorkspace session={session} />
     </GovernanceShell>

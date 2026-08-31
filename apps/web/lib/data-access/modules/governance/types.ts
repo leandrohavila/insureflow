@@ -34,6 +34,18 @@ export type GovernanceUserRole = {
   }
 }
 
+export type GovernanceUserBusinessUnit = {
+  businessUnitId: string
+  createdAt: string
+  businessUnit: {
+    id: string
+    name: string
+    slug: string
+    type: string
+    isActive: boolean
+  }
+}
+
 export type GovernanceUser = {
   id: string
   email: string
@@ -43,7 +55,36 @@ export type GovernanceUser = {
   isActive: boolean
   lastLoginAt?: string | null
   createdAt: string
+  updatedAt?: string
+  currentBusinessUnitId?: string | null
   userRoles: GovernanceUserRole[]
+  businessUnits?: GovernanceUserBusinessUnit[]
+}
+
+export type AssignableRole = {
+  id: string
+  name: string
+  slug: string
+  description?: string | null
+  isSystem: boolean
+  defaultDataScope: string
+}
+
+export type CreateUserInput = {
+  email: string
+  password: string
+  name: string
+  title?: string
+  roleIds: string[]
+  businessUnitIds: string[]
+  primaryBusinessUnitId?: string
+}
+
+export type UpdateUserInput = {
+  email?: string
+  name?: string
+  title?: string
+  initials?: string
 }
 
 export type AuditLogRecord = {

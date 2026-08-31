@@ -145,12 +145,34 @@ export type GovernanceRoleProfile = {
 /** Matriz de referência para UI (Fase 2A). Runtime continua usando DB no login. */
 export const GOVERNANCE_ROLE_PROFILES: GovernanceRoleProfile[] = [
   {
+    slug: "super_admin",
+    name: "Super Admin",
+    description: "Acesso total à plataforma e tenant",
+    dataScope: "tenant",
+    businessUnitScope: "ambas",
+    permissions: GOVERNANCE_PERMISSION_CATALOG.map((p) => p.key),
+  },
+  {
     slug: "admin",
     name: "Administrador",
     description: "Acesso total ao tenant e a todas as empresas do Grupo Ávila",
     dataScope: "tenant",
     businessUnitScope: "ambas",
-    permissions: GOVERNANCE_PERMISSION_CATALOG.map((p) => p.key),
+    permissions: GOVERNANCE_PERMISSION_CATALOG.filter((p) => p.key !== "tenants:manage").map(
+      (p) => p.key,
+    ),
+  },
+  {
+    slug: "corretor",
+    name: "Corretor",
+    description: "Carteira comercial — Corretora Ávila (seguros)",
+    dataScope: "own",
+    businessUnitScope: "corretora-avila",
+    permissions: [
+      "dashboard:view", "crm:view", "crm:manage", "clients:view", "leads:view", "leads:manage",
+      "leads:share", "questionnaires:view", "questionnaires:manage", "quotes:view", "quotes:manage",
+      "settings:view",
+    ],
   },
   {
     slug: "gerencia",
@@ -183,13 +205,25 @@ export const GOVERNANCE_ROLE_PROFILES: GovernanceRoleProfile[] = [
     description: "Operação imobiliária — Ávila Imóveis, sem acesso a seguros",
     dataScope: "own",
     businessUnitScope: "avila-imoveis",
-    planned: true,
     permissions: [
       "dashboard:view",
       "properties:view",
       "properties:manage",
       "leads:view",
       "leads:manage",
+      "settings:view",
+    ],
+  },
+  {
+    slug: "operador",
+    name: "Operador",
+    description: "Pós-venda, apólices e operação — Corretora Ávila",
+    dataScope: "team",
+    businessUnitScope: "corretora-avila",
+    permissions: [
+      "dashboard:view", "clients:view", "clients:manage", "leads:view",
+      "policies:view", "policies:manage", "claims:view", "claims:manage",
+      "questionnaires:view", "settings:view",
     ],
   },
   {
