@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { FormSelect, StatCard } from "@/components/design-system"
+import { EmptyState, FormSelect, StatCard } from "@/components/design-system"
 import {
   CROSS_SELL_STATUS_LABELS,
   CROSS_SELL_STATUSES,
@@ -69,34 +69,51 @@ export function CrossSellWorkspace() {
       </Button>
 
       <div className="space-y-2">
-        {data.map((item) => (
-          <div
-            key={item.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/[0.06] px-4 py-3"
-          >
-            <div>
-              <p className="font-medium">{item.customer?.name ?? item.customerId}</p>
-              <p className="text-xs text-muted-foreground">
-                {categoryLabel(item.originCategory)} →{" "}
-                {categoryLabel(item.suggestedCategory)}
-              </p>
+        {data.length === 0 ? (
+          <EmptyState
+            title="Nenhum registro encontrado"
+            description="Clique em Novo para começar."
+            action={
+              <Button
+                type="button"
+                size="sm"
+                disabled={generate.isPending}
+                onClick={() => generate.mutate()}
+              >
+                Gerar sugestões da base
+              </Button>
+            }
+          />
+        ) : (
+          data.map((item) => (
+            <div
+              key={item.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--if-radius-lg)] border border-white/[0.06] px-4 py-3"
+            >
+              <div>
+                <p className="font-medium">{item.customer?.name ?? item.customerId}</p>
+                <p className="text-xs text-muted-foreground">
+                  {categoryLabel(item.originCategory)} →{" "}
+                  {categoryLabel(item.suggestedCategory)}
+                </p>
+              </div>
+              <FormSelect
+                className="w-40"
+                value={item.status}
+                onChange={(event) =>
+                  update.mutate({
+                    id: item.id,
+                    input: { status: event.target.value as CrossSellStatus },
+                  })
+                }
+                options={CROSS_SELL_STATUSES.map((status) => ({
+                  value: status,
+                  label: CROSS_SELL_STATUS_LABELS[status],
+                }))}
+              />
             </div>
-            <FormSelect
-              className="w-40"
-              value={item.status}
-              onChange={(event) =>
-                update.mutate({
-                  id: item.id,
-                  input: { status: event.target.value as CrossSellStatus },
-                })
-              }
-              options={CROSS_SELL_STATUSES.map((status) => ({
-                value: status,
-                label: CROSS_SELL_STATUS_LABELS[status],
-              }))}
-            />
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   )

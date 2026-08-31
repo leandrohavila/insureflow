@@ -290,8 +290,8 @@ export function QuestionnaireSubmissionsPage() {
         errorTitle="Não foi possível carregar as respostas."
         onRetry={() => submissionsQuery.refetch()}
         emptyIcon={ClipboardList}
-        emptyTitle="Nenhuma resposta encontrada."
-        emptyDescription="Ajuste os filtros ou preencha questionários a partir dos leads."
+        emptyTitle="Nenhum registro encontrado"
+        emptyDescription="Clique em Novo para começar."
         onRowClick={(row) => setSelectedSubmissionId(row.id)}
         pagination={{
           meta: {

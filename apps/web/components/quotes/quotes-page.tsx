@@ -235,8 +235,8 @@ export function QuotesPage() {
             errorTitle="Erro ao carregar comparativos"
             onRetry={() => void comparisonsQuery.refetch()}
             onRowClick={(row) => setSelectedComparisonId(row.id)}
-            emptyTitle="Nenhum comparativo encontrado"
-            emptyDescription="Crie um comparativo a partir de um negócio ou lead para iniciar a cotação."
+            emptyTitle="Nenhum registro encontrado"
+            emptyDescription="Clique em Novo para começar."
             pagination={
               meta
                 ? {

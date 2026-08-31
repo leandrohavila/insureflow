@@ -834,6 +834,10 @@ export function QuestionnaireTemplatesPage() {
               }}
               onRetry={() => templatesQuery.refetch()}
               canManage={canManage}
+              onCreate={() => {
+                setEditingTemplate(null)
+                setWizardOpen(true)
+              }}
             />
             </div>
           </div>
@@ -1047,6 +1051,10 @@ export function QuestionnaireTemplatesPage() {
                 }}
                 onRetry={() => templatesQuery.refetch()}
                 canManage={canManage}
+                onCreate={() => {
+                  setEditingTemplate(null)
+                  setWizardOpen(true)
+                }}
               />
             </div>
           </SheetContent>

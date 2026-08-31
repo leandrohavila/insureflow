@@ -40,10 +40,14 @@ import type {
   UpdateLeadInput,
 } from "./types"
 
-export function useLeads(filters: LeadListFilters = {}) {
+export function useLeads(
+  filters: LeadListFilters = {},
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.leads.list(filters),
     queryFn: () => fetchLeads(filters),
+    enabled: options?.enabled ?? true,
   })
 }
 

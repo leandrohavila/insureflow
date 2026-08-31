@@ -30,6 +30,7 @@ type QuestionnaireTemplateListProps = {
   onDelete: (template: QuestionnaireTemplate) => void
   onRetry: () => void
   canManage: boolean
+  onCreate?: () => void
 }
 
 function TemplateCard({
@@ -158,6 +159,7 @@ export function QuestionnaireTemplateList({
   onDelete,
   onRetry,
   canManage,
+  onCreate,
 }: QuestionnaireTemplateListProps) {
   return (
     <aside
@@ -183,15 +185,25 @@ export function QuestionnaireTemplateList({
             </Button>
           </div>
         ) : templates.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-white/[0.12] bg-white/[0.03] p-6 text-center">
+          <div className="rounded-[var(--if-radius-2xl)] border border-dashed border-white/[0.12] bg-white/[0.03] p-6 text-center">
             <ClipboardList
               className="mx-auto size-7 text-muted-foreground"
               aria-hidden
             />
-            <p className="mt-2 text-sm font-medium">Nenhum template</p>
+            <p className="mt-2 text-sm font-medium">Nenhum registro encontrado</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Crie um template para começar.
+              Clique em Novo para começar.
             </p>
+            {canManage && onCreate ? (
+              <Button
+                type="button"
+                size="sm"
+                className="mt-3"
+                onClick={onCreate}
+              >
+                Novo template
+              </Button>
+            ) : null}
           </div>
         ) : (
           templates.map((template) => (

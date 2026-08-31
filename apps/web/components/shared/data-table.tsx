@@ -20,7 +20,7 @@ import { getErrorMessage } from "@/lib/data-access"
 import { bug010LeadCreateProfiler } from "@/lib/performance/bug010-lead-create"
 import { cn } from "@/lib/utils"
 
-import { EmptyState, ErrorState, LoadingState } from "./list-states"
+import { EmptyState, ErrorState, TableSkeleton } from "./list-states"
 import {
   PaginationControls,
   type PaginationControlsProps,
@@ -103,7 +103,7 @@ export function DataTable<T>({
   error,
   errorTitle,
   emptyTitle = "Nenhum registro encontrado.",
-  emptyDescription,
+  emptyDescription = "Clique em Novo para começar.",
   emptyIcon,
   emptyAction,
   onRetry,
@@ -118,7 +118,7 @@ export function DataTable<T>({
   const { session } = useSession()
 
   if (loading) {
-    return <LoadingState label={loadingLabel} />
+    return <TableSkeleton label={loadingLabel} />
   }
 
   if (error) {

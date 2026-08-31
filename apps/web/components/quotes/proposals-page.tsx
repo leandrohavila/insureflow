@@ -204,8 +204,8 @@ export function ProposalsPage() {
               },
               onPageChange: setPage,
             }}
-            emptyTitle="Nenhuma proposta encontrada"
-            emptyDescription="Crie propostas a partir de um comparativo de cotações."
+            emptyTitle="Nenhum registro encontrado"
+            emptyDescription="Clique em Novo para começar."
           />
 
           <div className="rounded-xl border border-border/70 bg-[var(--crm-surface-raised)] p-4">

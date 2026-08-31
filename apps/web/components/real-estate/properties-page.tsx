@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Edit3, Globe, Globe2, Plus } from "lucide-react"
+import { Building2, Edit3, Globe, Globe2, Plus } from "lucide-react"
 
 import {
   ContentContainer,
@@ -122,7 +122,12 @@ export function PropertiesPage() {
     <PageContainer className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-[var(--if-space-2)] md:py-[var(--if-space-3)]">
       <ContentContainer variant={dsContentLayoutVariant.leads}>
         <PageHeader
-          title="Imóveis"
+          title={
+            <span className="inline-flex items-center gap-2">
+              Imóveis
+              <Badge variant="secondary">{rows.length}</Badge>
+            </span>
+          }
           description="Gerencie o catálogo imobiliário da unidade selecionada."
           actions={
             canManage ? (
@@ -150,8 +155,20 @@ export function PropertiesPage() {
           loading={isLoading}
           error={error}
           onRetry={() => refetch()}
-          emptyTitle="Nenhum imóvel cadastrado"
-          emptyDescription="Cadastre o primeiro imóvel para publicar no portal."
+          emptyIcon={Building2}
+          emptyTitle="Nenhum registro encontrado"
+          emptyDescription="Clique em Novo para começar."
+          emptyAction={
+            canManage ? (
+              <Link
+                href="/real-estate/properties/new"
+                className={cn(buttonVariants({ size: "sm" }))}
+              >
+                <Plus className="mr-1.5 size-4" />
+                Novo imóvel
+              </Link>
+            ) : null
+          }
         />
       </ContentContainer>
     </PageContainer>

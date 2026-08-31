@@ -620,8 +620,13 @@ export function LeadsPage() {
         <Stack gap="xl">
           <PageHeader
             eyebrow="Captação comercial"
-            title="Leads"
-            description="Entrada real de oportunidades da corretora, com qualificação e conversão direta para negócios no CRM."
+            title={
+              <span className="inline-flex items-center gap-2">
+                Leads
+                <Badge variant="secondary">{meta?.total ?? leads.length}</Badge>
+              </span>
+            }
+            description="Cadastro único multiempresa — Corretora Ávila e Ávila Imóveis."
             actions={
               <PageActions>
                 <PageActionsGroup
@@ -759,8 +764,8 @@ export function LeadsPage() {
               errorTitle="Não foi possível carregar leads."
               onRetry={() => leadsQuery.refetch()}
               emptyIcon={UserPlus}
-              emptyTitle="Nenhum lead encontrado."
-              emptyDescription="Ajuste os filtros ou cadastre o primeiro lead."
+              emptyTitle="Nenhum registro encontrado"
+              emptyDescription="Clique em Novo para começar."
               emptyAction={
                 <PermissionGate permission="leads:manage">
                   <Button size="sm" onClick={() => openLeadDialog(null)}>

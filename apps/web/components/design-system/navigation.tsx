@@ -8,7 +8,7 @@ import { formSelectClassName } from "./forms"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-export type PageHeaderProps = ComponentProps<"header"> & {
+export type PageHeaderProps = Omit<ComponentProps<"header">, "title"> & {
   eyebrow?: ReactNode
   title: ReactNode
   description?: ReactNode

@@ -1,11 +1,14 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 
+import { LeadsService } from '../leads/leads.service';
 import type { CreatePublicPropertyLeadDto } from './dto/property-lead.dto';
 import { PublicCatalogContextService } from './public-catalog-context.service';
 import { PropertiesRepository } from './repositories/properties.repository';
@@ -14,10 +17,13 @@ import { sanitizePropertyLeadMetadata } from './property-leads.util';
 
 @Injectable()
 export class PropertyLeadsService {
+  private readonly logger = new Logger(PropertyLeadsService.name);
+
   constructor(
     private readonly context: PublicCatalogContextService,
     private readonly properties: PropertiesRepository,
     private readonly leads: PropertyLeadsRepository,
+    @Optional() private readonly crmLeads?: LeadsService,
   ) {}
 
   async createPublic(dto: CreatePublicPropertyLeadDto) {
@@ -54,7 +60,7 @@ export class PropertyLeadsService {
       businessUnitId = ctx.businessUnitId;
     }
 
-    return this.leads.create({
+    const propertyLead = await this.leads.create({
       tenantId: ctx.tenantId,
       businessUnitId,
       propertyId: resolvedPropertyId,
@@ -65,5 +71,27 @@ export class PropertyLeadsService {
       source: dto.source?.trim() || 'public_portal',
       metadata: sanitizePropertyLeadMetadata(dto.metadata) ?? Prisma.DbNull,
     });
+
+    if (this.crmLeads) {
+      try {
+        await this.crmLeads.createLead(ctx.tenantId, {
+          name: dto.name.trim(),
+          email: dto.email?.trim() || undefined,
+          phone: dto.phone?.trim() || undefined,
+          source: dto.source?.trim() || 'public_portal',
+          notes: dto.message?.trim() || undefined,
+          businessUnitId,
+          interestCategories: ['PROPERTY_BUY'],
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Portal lead ${propertyLead.id} não espelhado no CRM: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
+    return propertyLead;
   }
 }

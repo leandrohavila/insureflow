@@ -22,7 +22,7 @@ export function BusinessUnitSwitcher() {
 
   if (context.isLoading && !data) {
     return (
-      <div className="hidden h-9 w-44 animate-pulse rounded-md bg-white/[0.04] sm:block" />
+      <div className="h-9 w-full max-w-[220px] animate-pulse rounded-[var(--if-radius-md)] bg-white/[0.04]" />
     )
   }
 
@@ -31,14 +31,11 @@ export function BusinessUnitSwitcher() {
   }
 
   return (
-    <label className="flex min-w-0 items-center gap-2">
+    <label className="flex w-full min-w-0 max-w-[220px] items-center gap-2">
       <Building2 className="size-3.5 shrink-0 text-[#DEAE5D]" />
-      <span className="hidden text-[11px] font-medium uppercase tracking-wide text-muted-foreground lg:inline">
-        Empresa
-      </span>
       <FormSelect
         aria-label="Empresa ativa"
-        className="h-9 w-36 border-[#C09048]/20 bg-white/[0.03] text-[13px] focus-visible:border-[#C09048]/40 focus-visible:ring-[#C09048]/20 sm:w-48"
+        className="h-9 w-full min-w-0 border-[#C09048]/20 bg-white/[0.03] text-[13px] focus-visible:border-[#C09048]/40 focus-visible:ring-[#C09048]/20"
         disabled={update.isPending || (units.length === 0 && !showAll)}
         value={current || ALL_VALUE}
         onChange={(event) => {

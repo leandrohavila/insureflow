@@ -23,14 +23,13 @@ import {
 } from "@/components/design-system"
 import { buttonVariants } from "@/components/ui/button"
 import { useCanManage } from "@/components/auth/session-provider"
+import { useRealEstateDashboardStats } from "@/lib/data-access/modules/properties"
+import { useLeads } from "@/lib/data-access/modules/leads"
+import type { Lead } from "@/lib/data-access/modules/leads"
+import { leadOwnerDisplayName } from "@/lib/leads/lead-owner"
 import {
-  usePropertyLeadsInbox,
-  useRealEstateDashboardStats,
-} from "@/lib/data-access/modules/properties"
-import type { PropertyLeadListItem } from "@/lib/data-access/modules/properties"
-import {
-  formatPropertyDate,
-} from "@/lib/real-estate/labels"
+  REAL_ESTATE_LEAD_STATUS_LABELS,
+} from "@/lib/real-estate/lead-status"
 import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-business-unit"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { cn } from "@/lib/utils"
@@ -39,12 +38,19 @@ export function RealEstateDashboard() {
   const businessUnitId = useRealEstateBusinessUnitId()
   const canManage = useCanManage("properties:view")
   const statsQuery = useRealEstateDashboardStats(businessUnitId)
-  const leadsQuery = usePropertyLeadsInbox()
+  const leadsQuery = useLeads(
+    {
+      businessUnitId: businessUnitId ?? undefined,
+      page: 1,
+      limit: 8,
+    },
+    { enabled: Boolean(businessUnitId) },
+  )
 
   const stats = statsQuery.data
-  const recentLeads = (leadsQuery.data ?? []).slice(0, 8)
+  const recentLeads = leadsQuery.data?.data ?? []
 
-  const columns: DataTableColumn<PropertyLeadListItem>[] = [
+  const columns: DataTableColumn<Lead>[] = [
     {
       key: "name",
       header: "Nome",
@@ -57,20 +63,21 @@ export function RealEstateDashboard() {
       render: (row) => row.phone ?? "—",
     },
     {
-      key: "email",
-      header: "E-mail",
+      key: "source",
+      header: "Origem",
       hideOnMobile: true,
-      render: (row) => row.email ?? "—",
+      render: (row) => row.source ?? "—",
     },
     {
-      key: "property",
-      header: "Imóvel",
-      render: (row) => row.propertyTitle,
+      key: "owner",
+      header: "Responsável",
+      hideOnMobile: true,
+      render: (row) => leadOwnerDisplayName(row) || "—",
     },
     {
-      key: "createdAt",
-      header: "Data",
-      render: (row) => formatPropertyDate(row.createdAt),
+      key: "status",
+      header: "Status",
+      render: (row) => REAL_ESTATE_LEAD_STATUS_LABELS[row.status],
     },
   ]
 
@@ -115,10 +122,10 @@ export function RealEstateDashboard() {
               />
               <StatCard
                 label="Leads recebidos"
-                value={stats?.leadsReceived ?? "—"}
+                value={leadsQuery.data?.meta.total ?? stats?.leadsReceived ?? "—"}
                 icon={UserPlus}
                 tone="primary"
-                loading={statsQuery.isLoading}
+                loading={statsQuery.isLoading || leadsQuery.isLoading}
               />
               <StatCard
                 label="Visitas agendadas"
@@ -141,8 +148,18 @@ export function RealEstateDashboard() {
               loading={leadsQuery.isLoading}
               error={leadsQuery.error}
               onRetry={() => leadsQuery.refetch()}
-              emptyTitle="Nenhum lead imobiliário"
-              emptyDescription="Quando houver interesse em imóveis publicados, os leads aparecerão aqui."
+              emptyTitle="Nenhum registro encontrado"
+              emptyDescription="Clique em Novo para começar."
+              emptyAction={
+                canManage ? (
+                  <Link
+                    href="/real-estate/leads"
+                    className={cn(buttonVariants({ size: "sm" }))}
+                  >
+                    Novo Lead Imobiliário
+                  </Link>
+                ) : null
+              }
             />
           </Section>
         </Stack>

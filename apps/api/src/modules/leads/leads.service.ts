@@ -131,8 +131,8 @@ export class LeadsService {
       traceId,
       limit,
     });
-    const [total, leads, converted, qualified] = await this.prisma.$transaction(
-      [
+    const [total, leads, newCount, contacted, converted, qualified] =
+      await this.prisma.$transaction([
         this.prisma.lead.count({ where }),
         this.prisma.lead.findMany({
           where,
@@ -142,13 +142,18 @@ export class LeadsService {
           take: limit,
         }),
         this.prisma.lead.count({
+          where: { ...whereWithoutStatus, status: 'new' },
+        }),
+        this.prisma.lead.count({
+          where: { ...whereWithoutStatus, status: 'contacted' },
+        }),
+        this.prisma.lead.count({
           where: { ...whereWithoutStatus, status: 'converted' },
         }),
         this.prisma.lead.count({
           where: { ...whereWithoutStatus, status: 'qualified' },
         }),
-      ],
-    );
+      ]);
     console.info('[BUG010.2][prisma] transaction leads list end', {
       traceId,
       prismaTransactionMs: Number(
@@ -225,6 +230,8 @@ export class LeadsService {
       total,
       totalPages: Math.max(1, Math.ceil(total / limit)),
       counts: {
+        new: newCount,
+        contacted,
         converted,
         qualified,
       },

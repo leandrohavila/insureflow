@@ -118,6 +118,7 @@ describe('PropertyLeadsService.createPublic', () => {
     findById?: jest.Mock;
     findBySlug?: jest.Mock;
     businessUnitId?: string;
+    crmLeads?: { createLead: jest.Mock };
   }) {
     const leads = {
       create: jest.fn().mockResolvedValue({ id: 'pl1' }),
@@ -134,12 +135,16 @@ describe('PropertyLeadsService.createPublic', () => {
         businessUnitId: overrides?.businessUnitId,
       }),
     };
+    const crmLeads = overrides?.crmLeads ?? {
+      createLead: jest.fn().mockResolvedValue({ id: 'lead1' }),
+    };
     const service = new PropertyLeadsService(
       context as never,
       properties as never,
       leads as never,
+      crmLeads as never,
     );
-    return { service, leads, properties, context };
+    return { service, leads, properties, context, crmLeads };
   }
 
   it('rejeita imóvel não publicado', async () => {
@@ -182,6 +187,46 @@ describe('PropertyLeadsService.createPublic', () => {
         metadata: Prisma.DbNull,
       }),
     );
+  });
+
+  it('espelha o interesse do portal no Lead único do CRM', async () => {
+    const { service, crmLeads } = createLeadService();
+
+    await service.createPublic({
+      tenantSlug: 'insureflow',
+      propertySlug: 'apto-centro',
+      name: 'Maria',
+      phone: '65999999999',
+    });
+
+    expect(crmLeads.createLead).toHaveBeenCalledWith(
+      't1',
+      expect.objectContaining({
+        name: 'Maria',
+        phone: '65999999999',
+        source: 'public_portal',
+        businessUnitId: 'bu1',
+        interestCategories: ['PROPERTY_BUY'],
+      }),
+    );
+  });
+
+  it('não falha o portal se o espelhamento no CRM Lead falhar', async () => {
+    const { service, leads } = createLeadService({
+      crmLeads: {
+        createLead: jest.fn().mockRejectedValue(new Error('crm down')),
+      },
+    });
+
+    await expect(
+      service.createPublic({
+        tenantSlug: 'insureflow',
+        propertySlug: 'apto-centro',
+        name: 'Maria',
+        phone: '65999999999',
+      }),
+    ).resolves.toEqual({ id: 'pl1' });
+    expect(leads.create).toHaveBeenCalled();
   });
 
   it('persiste source informado e metadata UTM (não hardcode public_portal)', async () => {

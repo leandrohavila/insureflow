@@ -3,6 +3,7 @@
 import { AlertCircle, Inbox, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 type StateIcon = React.ComponentType<{ className?: string }>
@@ -27,7 +28,7 @@ function StatePanel({
   return (
     <div
       className={cn(
-        "glass-panel flex flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center",
+        "glass-panel flex flex-col items-center justify-center gap-3 rounded-[var(--if-radius-2xl)] p-8 text-center",
         minHeightClassName,
         className,
       )}
@@ -58,7 +59,7 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "glass-panel flex min-h-[320px] items-center justify-center rounded-2xl",
+        "glass-panel flex min-h-[320px] items-center justify-center rounded-[var(--if-radius-2xl)]",
         className,
       )}
     >
@@ -66,6 +67,45 @@ export function LoadingState({
         <Loader2 className="size-4 animate-spin" />
         {label}
       </div>
+    </div>
+  )
+}
+
+export type TableSkeletonProps = {
+  rows?: number
+  label?: React.ReactNode
+  className?: string
+}
+
+export function TableSkeleton({
+  rows = 6,
+  label = "Carregando…",
+  className,
+}: TableSkeletonProps) {
+  return (
+    <div
+      className={cn(
+        "glass-panel space-y-3 rounded-[var(--if-radius-2xl)] p-5",
+        className,
+      )}
+      role="status"
+      aria-live="polite"
+      aria-label={typeof label === "string" ? label : "Carregando registros"}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-4 w-24" />
+      </div>
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="grid grid-cols-12 gap-3">
+          <Skeleton className="col-span-3 h-9" />
+          <Skeleton className="col-span-2 h-9" />
+          <Skeleton className="col-span-2 h-9" />
+          <Skeleton className="col-span-2 h-9" />
+          <Skeleton className="col-span-2 h-9" />
+          <Skeleton className="col-span-1 h-9" />
+        </div>
+      ))}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 "use client"
 
+import { Users } from "lucide-react"
+
 import {
   ContentContainer,
   DataTable,
@@ -7,6 +9,7 @@ import {
   PageHeader,
   type DataTableColumn,
 } from "@/components/design-system"
+import { Badge } from "@/components/ui/badge"
 import { usePersons } from "@/lib/data-access/modules/properties"
 import type { Person } from "@/lib/data-access/modules/properties"
 import { formatPropertyDate } from "@/lib/real-estate/labels"
@@ -57,7 +60,12 @@ export function OwnersPage() {
     <PageContainer className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-[var(--if-space-2)] md:py-[var(--if-space-3)]">
       <ContentContainer variant={dsContentLayoutVariant.leads}>
         <PageHeader
-          title="Proprietários"
+          title={
+            <span className="inline-flex items-center gap-2">
+              Proprietários
+              <Badge variant="secondary">{rows.length}</Badge>
+            </span>
+          }
           description="Pessoas vinculadas ao domínio imobiliário (Person)."
         />
 
@@ -68,8 +76,9 @@ export function OwnersPage() {
           loading={personsQuery.isLoading}
           error={personsQuery.error}
           onRetry={() => personsQuery.refetch()}
-          emptyTitle="Nenhum proprietário cadastrado"
-          emptyDescription="Proprietários cadastrados via API aparecerão nesta listagem."
+          emptyIcon={Users}
+          emptyTitle="Nenhum registro encontrado"
+          emptyDescription="Clique em Novo para começar."
         />
       </ContentContainer>
     </PageContainer>

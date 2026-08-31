@@ -83,8 +83,10 @@ export type LeadListMeta = {
   total: number
   totalPages: number
   counts?: {
-    converted: number
+    new: number
+    contacted: number
     qualified: number
+    converted: number
   }
 }
 

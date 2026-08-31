@@ -16,7 +16,7 @@ export type ActionToastProps = {
   onDismiss: () => void
   autoHideMs?: number
   className?: string
-  tone?: "neutral" | "success"
+  tone?: "neutral" | "success" | "danger"
 }
 
 export function ActionToast({
@@ -49,6 +49,7 @@ export function ActionToast({
           className={cn(
             "crm-action-toast fixed right-4 bottom-4 z-[100] flex max-w-sm items-start gap-3 rounded-xl border p-4 backdrop-blur-xl sm:right-6 sm:bottom-6",
             tone === "success" && "crm-action-toast--success",
+            tone === "danger" && "crm-action-toast--danger",
             className,
           )}
         >

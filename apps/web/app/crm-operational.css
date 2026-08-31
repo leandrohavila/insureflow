@@ -1299,6 +1299,11 @@
   border-color: color-mix(in oklch, var(--crm-tone-success) 35%, transparent);
 }
 
+.crm-action-toast--danger {
+  border-color: color-mix(in oklch, var(--destructive) 45%, transparent);
+  background: color-mix(in oklch, var(--destructive) 12%, transparent);
+}
+
 /* ── Loading & skeleton ─────────────────────────────────────────────────── */
 .crm-section-loading--reserved {
   min-height: 2.5rem;

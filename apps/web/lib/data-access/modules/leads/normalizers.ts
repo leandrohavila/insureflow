@@ -91,6 +91,8 @@ export function normalizeLeadList(
       ...(meta.counts
         ? {
             counts: {
+              new: meta.counts.new ?? 0,
+              contacted: meta.counts.contacted ?? 0,
               converted: meta.counts.converted ?? 0,
               qualified: meta.counts.qualified ?? 0,
             },

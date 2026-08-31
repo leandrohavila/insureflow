@@ -285,8 +285,8 @@ export function CustomersPage() {
         errorTitle="Não foi possível carregar clientes."
         onRetry={() => customersQuery.refetch()}
         emptyIcon={User}
-        emptyTitle="Nenhum cliente encontrado."
-        emptyDescription="Ajuste os filtros ou cadastre o primeiro cliente da carteira."
+        emptyTitle="Nenhum registro encontrado"
+        emptyDescription="Clique em Novo para começar."
         emptyAction={
           <PermissionGate permission="clients:manage">
             <Button size="sm" onClick={() => setDialogOpen(true)}>

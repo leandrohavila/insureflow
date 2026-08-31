@@ -23,8 +23,6 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { useDashboardBreadcrumbs } from "@/components/dashboard/use-dashboard-breadcrumbs"
 import { dashboardTopbarClassName } from "@/lib/layout/operational-shell"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -35,7 +33,6 @@ type AppTopbarProps = {
 
 export function AppTopbar({ session }: AppTopbarProps) {
   const router = useRouter()
-  const breadcrumbs = useDashboardBreadcrumbs()
   const reduce = useReducedMotion()
 
   async function handleLogout() {
@@ -49,71 +46,33 @@ export function AppTopbar({ session }: AppTopbarProps) {
       initial={reduce ? false : { opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: easeOut }}
-      className={dashboardTopbarClassName()}
+      className={dashboardTopbarClassName(
+        "gap-3 overflow-hidden md:gap-4",
+      )}
     >
       <SidebarTrigger
-        className="-ml-0.5 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
+        className="-ml-0.5 shrink-0 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
         aria-label="Alternar menu"
       />
 
-      <Separator
-        orientation="vertical"
-        className="hidden h-7 bg-gradient-to-b from-transparent via-white/10 to-transparent md:block"
-      />
-
-      <nav className="hidden min-w-0 flex-1 items-center gap-2 text-[13px] text-muted-foreground md:flex">
-        {breadcrumbs.map((crumb, i) => (
-          <motion.span
-            key={`${crumb.label}-${i}`}
-            initial={reduce ? false : { opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.05 * i, duration: 0.35, ease: easeOut }}
-            className="flex items-center gap-2"
-          >
-            {i > 0 && (
-              <span className="text-muted-foreground/30" aria-hidden>
-                /
-              </span>
-            )}
-            {crumb.href && i < breadcrumbs.length - 1 ? (
-              <Link
-                href={crumb.href}
-                className="truncate transition-colors duration-200 hover:text-foreground"
-              >
-                {crumb.label}
-              </Link>
-            ) : (
-              <span
-                className={cn(
-                  i === breadcrumbs.length - 1
-                    ? "truncate font-medium tracking-[-0.02em] text-foreground"
-                    : "truncate"
-                )}
-              >
-                {crumb.label}
-              </span>
-            )}
-          </motion.span>
-        ))}
-      </nav>
-
-      <motion.div
-        className="relative ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 transition-transform duration-200 focus-within:scale-[1.005] md:max-w-xl md:flex-none lg:max-w-2xl"
-      >
+      <div className="hidden w-[220px] shrink-0 sm:block">
         <BusinessUnitSwitcher />
-        <WorkspaceSearchTrigger className="relative w-full" />
-      </motion.div>
+      </div>
+
+      <div className="min-w-0 flex-1 max-w-[600px]">
+        <WorkspaceSearchTrigger className="relative w-full min-w-0" />
+      </div>
 
       <motion.div
         initial={reduce ? false : { opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.15, duration: 0.35, ease: easeOut }}
-        className="flex items-center gap-1"
+        className="ml-auto flex shrink-0 items-center gap-1"
       >
         <Button
           variant="ghost"
           size="sm"
-          className="hidden gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
+          className="hidden shrink-0 gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
         >
           <Sparkles className="size-3.5 text-[#DEAE5D]" strokeWidth={1.5} />
           IA
@@ -123,7 +82,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
           <Button
             variant="ghost"
             size="icon-sm"
-            className="relative text-muted-foreground hover:text-foreground"
+            className="relative shrink-0 text-muted-foreground hover:text-foreground"
             aria-label="Notificações"
           >
             <Bell className="size-4" strokeWidth={1.5} />
@@ -142,9 +101,10 @@ export function AppTopbar({ session }: AppTopbarProps) {
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "hidden h-10 shrink-0 items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 pr-3 text-[13px] font-medium outline-none",
+              "inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 text-[13px] font-medium outline-none",
               "transition-all duration-200 hover:border-[#C09048]/30 hover:bg-white/[0.06]",
-              "focus-visible:border-[#C09048]/40 focus-visible:ring-[3px] focus-visible:ring-[#C09048]/20 md:inline-flex",
+              "focus-visible:border-[#C09048]/40 focus-visible:ring-[3px] focus-visible:ring-[#C09048]/20",
+              "md:pr-3",
             )}
           >
             <Avatar className="size-8 border border-white/10 shadow-md">
@@ -152,8 +112,10 @@ export function AppTopbar({ session }: AppTopbarProps) {
                 {session.initials}
               </AvatarFallback>
             </Avatar>
-            <span className="max-w-[100px] truncate tracking-[-0.02em]">{session.name}</span>
-            <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+            <span className="hidden max-w-[100px] truncate tracking-[-0.02em] md:inline">
+              {session.name}
+            </span>
+            <ChevronDown className="hidden size-3.5 text-muted-foreground md:block" strokeWidth={1.5} />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"

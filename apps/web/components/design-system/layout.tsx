@@ -108,7 +108,7 @@ export function Inline({
   )
 }
 
-export type GridColumns = "auto" | "2" | "3" | "4" | "5"
+export type GridColumns = "auto" | "2" | "3" | "4" | "5" | "6" | "12"
 
 export type GridProps = ComponentProps<"div"> & {
   columns?: GridColumns
@@ -121,6 +121,8 @@ const gridColumns = {
   3: "grid-cols-1 sm:grid-cols-3",
   4: "grid-cols-2 lg:grid-cols-4",
   5: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
+  6: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
+  12: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-12",
 } as const
 
 export function Grid({ columns = "auto", className, ...props }: GridProps) {

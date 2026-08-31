@@ -250,8 +250,8 @@ export function CommunicationDashboardWorkspace() {
         getRowId={(row) => row.id}
         loading={logs.isLoading}
         error={logs.error}
-        emptyTitle="Nenhuma comunicação registrada"
-        emptyDescription="Reativação, renovação e cross-sell passam por esta camada."
+        emptyTitle="Nenhum registro encontrado"
+        emptyDescription="Clique em Novo para começar."
         onRetry={() => void logs.refetch()}
         pagination={
           meta
