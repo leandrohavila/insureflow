@@ -582,7 +582,7 @@ export function LeadsPage() {
                         onClick={() => openLeadDialog(null, "insurance")}
                       >
                         <Shield className="size-3.5" />
-                        Lead Seguro
+                        + Lead Seguro
                       </Button>
                       <Button
                         size="sm"
@@ -591,7 +591,7 @@ export function LeadsPage() {
                         onClick={() => openLeadDialog(null, "real-estate")}
                       >
                         <Building2 className="size-3.5" />
-                        Lead Imobiliário
+                        + Lead Imobiliário
                       </Button>
                     </>
                   ) : null}
@@ -711,7 +711,7 @@ export function LeadsPage() {
                       onClick={() => openLeadDialog(null, "insurance")}
                     >
                       <Shield className="size-3.5" />
-                      Lead Seguro
+                      + Lead Seguro
                     </Button>
                     <Button
                       size="sm"
@@ -720,7 +720,7 @@ export function LeadsPage() {
                       onClick={() => openLeadDialog(null, "real-estate")}
                     >
                       <Building2 className="size-3.5" />
-                      Lead Imobiliário
+                      + Lead Imobiliário
                     </Button>
                   </div>
                 </PermissionGate>
