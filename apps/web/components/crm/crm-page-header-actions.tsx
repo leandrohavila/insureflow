@@ -23,7 +23,7 @@ export function CrmPageHeaderActions({
   primary,
 }: CrmPageHeaderActionsProps) {
   return (
-    <PageActions>
+    <PageActions className="sm:flex-wrap">
       <PageActionsGroup aria-label="Preferências da tela">
         <CrmDensityToggle variant="header" />
       </PageActionsGroup>
@@ -31,7 +31,11 @@ export function CrmPageHeaderActions({
         <PageActionsGroup aria-label="Navegação">{navigation}</PageActionsGroup>
       ) : null}
       {primary ? (
-        <PageActionsGroup variant="primary" aria-label="Ações principais">
+        <PageActionsGroup
+          variant="primary"
+          aria-label="Ações principais"
+          className="flex-wrap"
+        >
           {primary}
         </PageActionsGroup>
       ) : null}

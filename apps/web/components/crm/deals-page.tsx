@@ -13,6 +13,7 @@ import {
 
 import { CrmMetrics } from "@/components/crm/crm-metrics"
 import { CrmPageHeaderActions } from "@/components/crm/crm-page-header-actions"
+import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
@@ -296,24 +297,20 @@ export function DealsPage() {
                   </Link>
                 }
                 primary={
-                  <PermissionGate permission="crm:manage">
-                    <Button variant="outline" size="sm" className="h-9 gap-2">
-                      <Upload className="size-3.5" strokeWidth={1.5} />
-                      Importar
-                    </Button>
-                    {canManageCrm ? (
-                      <Button
-                        size="sm"
-                        className="h-9"
-                        onClick={() => {
-                          setEditingDeal(null)
-                          setCreateOpen(true)
-                        }}
-                      >
-                        Novo negócio
+                  <>
+                    <PermissionGate permission="crm:manage">
+                      <Button variant="outline" size="sm" className="h-8 gap-2">
+                        <Upload className="size-3.5" strokeWidth={1.5} />
+                        Importar
                       </Button>
-                    ) : null}
-                  </PermissionGate>
+                    </PermissionGate>
+                    <CrmCaptureActions
+                      onCreateDeal={() => {
+                        setEditingDeal(null)
+                        setCreateOpen(true)
+                      }}
+                    />
+                  </>
                 }
               />
             }

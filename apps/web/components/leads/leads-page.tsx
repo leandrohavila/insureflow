@@ -12,13 +12,11 @@ import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowRightLeft,
-  Building2,
   ClipboardList,
   Edit3,
   ExternalLink,
   Mail,
   Phone,
-  Shield,
   Trash2,
   Upload,
   UserPlus,
@@ -30,6 +28,8 @@ import {
   useShowMineLeadsFilter,
 } from "@/components/auth/session-provider"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
+import { LeadCreateEmptyActions } from "@/components/leads/lead-create-menu"
+import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
 import { LeadCaptureMetricsGrid } from "@/components/leads/lead-capture-metrics"
 import { LeadDialog } from "@/components/leads/lead-dialog"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
@@ -43,12 +43,15 @@ import {
   FilterBar,
   FilterSearch,
   FilterSelect,
+  OperationalPageLayout,
+  OperationalWorkspace,
+  OperationalWorkspaceMain,
+  OperationalWorkspaceMetrics,
+  OperationalWorkspaceToolbar,
   PageContainer,
   PageHeader,
   PageActions,
   PageActionsGroup,
-  Section,
-  Stack,
   type DataTableColumn,
 } from "@/components/design-system"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -72,6 +75,12 @@ import {
 } from "@/lib/data-access/modules/leads"
 import { shouldShowPageLeadSaveError } from "@/lib/data-access/modules/leads/lead-dialog-form"
 import { resetLeadSaveMutations } from "@/lib/data-access/modules/leads/lead-dialog-mutations"
+import { ApiClientError } from "@/lib/data-access/errors"
+import {
+  errorStack,
+  isTimeoutError,
+  logLeadsListDiagnostic,
+} from "@/lib/data-access/leads-list-diagnostics"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
@@ -102,7 +111,7 @@ import {
 } from "@/lib/performance/bug010-drawer-flow"
 import { cn } from "@/lib/utils"
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 25
 const SEARCH_DEBOUNCE_MS = 400
 
 function createLeadIdempotencyKey() {
@@ -192,6 +201,10 @@ export function LeadsPage() {
   // garante paridade funcional com o fluxo atual.
   const [createIntent, setCreateIntent] =
     useState<LeadCreateIntent>("insurance")
+  const defaultInterestCategories = useMemo(
+    () => defaultInterestsForLeadIntent(createIntent),
+    [createIntent],
+  )
   const [forceLegacyForm, setForceLegacyForm] = useState(false)
   const canManageLeads = useCanManage("leads:view")
   const canManageQuestionnaires = useCanManage("questionnaires:view")
@@ -218,6 +231,40 @@ export function LeadsPage() {
 
   const leadsQuery = useLeads(filters)
   const captureMetrics = useLeadCaptureMetrics()
+
+  useEffect(() => {
+    if (!leadsQuery.isError) return
+    const error = leadsQuery.error
+    logLeadsListDiagnostic("dataTable", "leadsQuery.isError", {
+      status: error instanceof ApiClientError ? error.status : null,
+      timeout: isTimeoutError(error),
+      tokenExpired:
+        error instanceof ApiClientError &&
+        (error.status === 401 || error.payload?.error === "Não autenticado"),
+      message: getErrorMessage(error, "Erro ao carregar registros"),
+      stack: errorStack(error),
+      body: error instanceof ApiClientError ? error.payload : null,
+      isLoading: leadsQuery.isLoading,
+      isFetching: leadsQuery.isFetching,
+      isPlaceholderData: leadsQuery.isPlaceholderData,
+      isStale: leadsQuery.isStale,
+      dataUpdatedAt: leadsQuery.dataUpdatedAt,
+      failureCount: leadsQuery.failureCount,
+      hasCachedRows: Boolean(leadsQuery.data?.data?.length),
+      cachedRowCount: leadsQuery.data?.data.length ?? 0,
+      dataTableReplacesGrid: true,
+    })
+  }, [
+    leadsQuery.data?.data.length,
+    leadsQuery.dataUpdatedAt,
+    leadsQuery.error,
+    leadsQuery.failureCount,
+    leadsQuery.isError,
+    leadsQuery.isFetching,
+    leadsQuery.isLoading,
+    leadsQuery.isPlaceholderData,
+    leadsQuery.isStale,
+  ])
   const createLead = useCreateLead()
   const updateLead = useUpdateLead(filters)
   const deleteLead = useDeleteLead(filters)
@@ -361,15 +408,19 @@ export function LeadsPage() {
     [syncLeadUrlParams],
   )
 
+  const createQueryHandledRef = useRef<string | null>(null)
+
   useEffect(() => {
-    const intent = parseLeadCreateIntent(searchParams.get("create"))
-    if (intent && canManageLeads) {
-      openLeadDialog(null, intent)
-      const params = new URLSearchParams(searchParams.toString())
-      params.delete("create")
-      const qs = params.toString()
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
-    }
+    const raw = searchParams.get("create")
+    const intent = parseLeadCreateIntent(raw)
+    if (!intent || !canManageLeads) return
+    if (createQueryHandledRef.current === raw) return
+    createQueryHandledRef.current = raw
+    openLeadDialog(null, intent)
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("create")
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }, [canManageLeads, openLeadDialog, pathname, router, searchParams])
 
   useEffect(() => {
@@ -437,15 +488,17 @@ export function LeadsPage() {
         key: "name",
         header: "Lead",
         render: (row) => (
-          <div className="flex items-center gap-3">
-            <Avatar className="size-9 border border-white/10">
-              <AvatarFallback className="bg-primary/20 text-[11px] font-semibold text-primary">
+          <div className="flex items-center gap-2">
+            <Avatar className="size-7 border border-white/10">
+              <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
                 {row.initials}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <p className="font-medium tracking-[-0.02em]">{row.name}</p>
-              <p className="text-xs text-muted-foreground">
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-medium tracking-[-0.02em]">
+                {row.name}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
                 {row.company || "Sem empresa"}
               </p>
             </div>
@@ -457,7 +510,7 @@ export function LeadsPage() {
         header: "Contato",
         hideOnMobile: true,
         render: (row) => (
-          <div className="space-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-col gap-0 text-[11px] leading-tight text-muted-foreground">
             {row.email ? (
               <span className="flex items-center gap-1.5">
                 <Mail className="size-3 opacity-60" />
@@ -548,69 +601,63 @@ export function LeadsPage() {
   )
 
   return (
-    <PageContainer>
+    <PageContainer fillHeight>
       <ContentContainer variant={dsContentLayoutVariant.leads}>
-        <Stack gap="xl">
+        <OperationalPageLayout density="dense">
           <PageHeader
-            eyebrow="Captação comercial"
+            compact
+            className="shrink-0"
             title={
               <span className="inline-flex items-center gap-2">
                 Leads
-                <Badge variant="secondary">{meta?.total ?? leads.length}</Badge>
+                <Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
+                  {meta?.total ?? leads.length}
+                </Badge>
               </span>
             }
-            description="Um cadastro, dois botões. Lead Seguro vai para a Corretora Ávila; Lead Imobiliário, para a Ávila Imóveis."
             actions={
-              <PageActions>
+              <PageActions className="sm:flex-wrap">
                 <PageActionsGroup
                   variant="primary"
                   aria-label="Ações principais"
+                  className="flex-wrap"
                 >
                   <PermissionGate permission="leads:manage">
-                    <Button variant="outline" size="sm" className="h-9 gap-2">
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5">
                       <Upload className="size-3.5" strokeWidth={1.5} />
                       Importar
                     </Button>
                   </PermissionGate>
-                  {canManageLeads ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-9 gap-1.5"
-                        disabled={!captureMetrics.insuranceBusinessUnitId}
-                        onClick={() => openLeadDialog(null, "insurance")}
-                      >
-                        <Shield className="size-3.5" />
-                        + Lead Seguro
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="h-9 gap-1.5"
-                        disabled={!captureMetrics.realEstateBusinessUnitId}
-                        onClick={() => openLeadDialog(null, "real-estate")}
-                      >
-                        <Building2 className="size-3.5" />
-                        + Lead Imobiliário
-                      </Button>
-                    </>
-                  ) : null}
+                  <CrmCaptureActions
+                    onCreateLead={(intent) => openLeadDialog(null, intent)}
+                    insuranceEnabled={
+                      captureMetrics.isLoading ||
+                      Boolean(captureMetrics.insuranceBusinessUnitId)
+                    }
+                    realEstateEnabled={
+                      captureMetrics.isLoading ||
+                      Boolean(captureMetrics.realEstateBusinessUnitId)
+                    }
+                  />
                 </PageActionsGroup>
               </PageActions>
             }
           />
 
-          <Profiler
-            id="BUG010.1 Lead cards"
-            onRender={bug010LeadCreateProfiler("cards")}
-          >
-            <LeadCaptureMetricsGrid
-              metrics={captureMetrics.metrics}
-              loading={captureMetrics.isLoading}
-            />
-          </Profiler>
+          <OperationalWorkspaceMetrics>
+            <Profiler
+              id="BUG010.1 Lead cards"
+              onRender={bug010LeadCreateProfiler("cards")}
+            >
+              <LeadCaptureMetricsGrid
+                metrics={captureMetrics.metrics}
+                loading={captureMetrics.isLoading}
+              />
+            </Profiler>
+          </OperationalWorkspaceMetrics>
 
-          <Section>
+          <OperationalWorkspace>
+            <OperationalWorkspaceToolbar dense>
             <FilterBar
               activeCount={activeFilterCount}
               clearLabel="Limpar filtros"
@@ -683,10 +730,13 @@ export function LeadsPage() {
                 </label>
               ) : null}
             </FilterBar>
-          </Section>
+            </OperationalWorkspaceToolbar>
 
-          <Section>
+            <OperationalWorkspaceMain>
             <DataTable
+              fill
+              stickyHeader
+              density="compact"
               className="w-full"
               data={leads}
               columns={columns}
@@ -699,30 +749,20 @@ export function LeadsPage() {
               onRetry={() => leadsQuery.refetch()}
               emptyIcon={UserPlus}
               emptyTitle="Nenhum registro encontrado"
-              emptyDescription="Clique em Lead Seguro ou Lead Imobiliário para começar — a unidade é definida pelo botão."
+              emptyDescription="Crie um Lead Seguro ou Lead Imobiliário para começar — a unidade é definida pelo tipo."
               emptyAction={
                 <PermissionGate permission="leads:manage">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      disabled={!captureMetrics.insuranceBusinessUnitId}
-                      onClick={() => openLeadDialog(null, "insurance")}
-                    >
-                      <Shield className="size-3.5" />
-                      + Lead Seguro
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="gap-1.5"
-                      disabled={!captureMetrics.realEstateBusinessUnitId}
-                      onClick={() => openLeadDialog(null, "real-estate")}
-                    >
-                      <Building2 className="size-3.5" />
-                      + Lead Imobiliário
-                    </Button>
-                  </div>
+                  <LeadCreateEmptyActions
+                    onCreate={(intent) => openLeadDialog(null, intent)}
+                    insuranceEnabled={
+                      captureMetrics.isLoading ||
+                      Boolean(captureMetrics.insuranceBusinessUnitId)
+                    }
+                    realEstateEnabled={
+                      captureMetrics.isLoading ||
+                      Boolean(captureMetrics.realEstateBusinessUnitId)
+                    }
+                  />
                 </PermissionGate>
               }
               onRowClick={
@@ -794,13 +834,12 @@ export function LeadsPage() {
                 },
                 onPageChange: setPage,
               }}
-              title="Todos os leads"
-              subtitle={`${meta?.total ?? leads.length} registros na captação`}
             />
-          </Section>
+            </OperationalWorkspaceMain>
+          </OperationalWorkspace>
 
           {pageLeadError ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="shrink-0 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {getErrorMessage(pageLeadError, "Erro ao processar lead")}
             </p>
           ) : null}
@@ -831,9 +870,7 @@ export function LeadsPage() {
                 : captureMetrics.insuranceBusinessUnitId) ||
               undefined
             }
-            defaultInterestCategories={defaultInterestsForLeadIntent(
-              createIntent,
-            )}
+            defaultInterestCategories={defaultInterestCategories}
             open={
               canManageLeads &&
               dialogOpen &&
@@ -1052,7 +1089,7 @@ export function LeadsPage() {
             autoHideMs={4000}
             tone="success"
           />
-        </Stack>
+        </OperationalPageLayout>
       </ContentContainer>
     </PageContainer>
   )

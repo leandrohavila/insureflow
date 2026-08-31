@@ -1,8 +1,8 @@
 "use client"
 
 import { Profiler } from "react"
-import Link from "next/link"
 import { hasPermission } from "@repo/auth"
+import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
 
 import {
   ContentContainer,
@@ -30,7 +30,6 @@ import {
   getDashboardGreeting,
 } from "@/components/dashboard/dashboard-utils"
 import { useSession, useCanManage } from "@/components/auth/session-provider"
-import { buttonVariants } from "@/components/ui/button"
 import {
   dsContentLayoutVariant,
   dsLayout,
@@ -46,7 +45,6 @@ export function DashboardHome() {
   const canLeads = hasPermission(session, "leads:view")
   const { kpis } = useDashboardKpis(session)
   const captureMetrics = useLeadCaptureMetrics({ enabled: canLeads })
-  const canManageLeads = useCanManage("leads:view")
   const canManageCrm = useCanManage("crm:view")
   const canManageQuotes = useCanManage("quotes:view")
   const canClients = hasPermission(session, "clients:view")
@@ -84,37 +82,21 @@ export function DashboardHome() {
                     Dashboard
                   </h1>
                 </div>
-                <PageActions>
+                <PageActions className="sm:flex-wrap">
                   <span className="hidden text-sm text-muted-foreground lg:inline">
                     {formatDashboardDate()}
                   </span>
-                  <PageActionsGroup>
-                    {canManageLeads ? (
-                      <>
-                        <Link
-                          href="/leads?create=insurance"
-                          className={cn(
-                            buttonVariants({ variant: "outline", size: "sm" }),
-                          )}
-                        >
-                          + Lead Seguro
-                        </Link>
-                        <Link
-                          href="/leads?create=real-estate"
-                          className={cn(buttonVariants({ size: "sm" }))}
-                        >
-                          + Lead Imobiliário
-                        </Link>
-                      </>
-                    ) : null}
-                    {canManageCrm ? (
-                      <Link
-                        href="/crm"
-                        className={cn(buttonVariants({ size: "sm" }))}
-                      >
-                        + Novo Negócio
-                      </Link>
-                    ) : null}
+                  <PageActionsGroup className="flex-wrap">
+                    <CrmCaptureActions
+                      insuranceEnabled={
+                        captureMetrics.isLoading ||
+                        Boolean(captureMetrics.insuranceBusinessUnitId)
+                      }
+                      realEstateEnabled={
+                        captureMetrics.isLoading ||
+                        Boolean(captureMetrics.realEstateBusinessUnitId)
+                      }
+                    />
                   </PageActionsGroup>
                 </PageActions>
               </div>
