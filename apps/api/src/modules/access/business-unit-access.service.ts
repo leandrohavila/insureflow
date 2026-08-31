@@ -52,6 +52,20 @@ export class BusinessUnitAccessService {
     });
   }
 
+  /**
+   * Acesso a um registro pontual: membership / view-all.
+   * O seletor do header filtra listas, não esconde o lead aberto pela visão
+   * Imobiliário (ou o contrário).
+   */
+  async resolveRecordIds(actor: BusinessUnitActor) {
+    const membershipIds = await this.membershipIds(actor.userId, actor.tenantId);
+    return resolveScopedBusinessUnitIds({
+      canViewAll: canViewAllBusinessUnits(actor),
+      membershipIds,
+      currentBusinessUnitId: null,
+    });
+  }
+
   async leadWhere(
     actor: BusinessUnitActor,
     requestedBusinessUnitId?: string | null,
@@ -194,7 +208,11 @@ export class BusinessUnitAccessService {
     tenantId: string,
     id: string,
   ) {
-    const extra = actor ? await this.leadWhere(actor) : undefined;
+    const extra = actor
+      ? (leadOrCustomerBusinessUnitWhere(
+          await this.resolveRecordIds(actor),
+        ) as Prisma.LeadWhereInput | undefined)
+      : undefined;
     await this.assertExists(
       this.prisma.lead.findFirst({
         where: andWhere({ id, tenantId }, extra),
@@ -209,7 +227,11 @@ export class BusinessUnitAccessService {
     tenantId: string,
     id: string,
   ) {
-    const extra = actor ? await this.customerWhere(actor) : undefined;
+    const extra = actor
+      ? (leadOrCustomerBusinessUnitWhere(
+          await this.resolveRecordIds(actor),
+        ) as Prisma.CustomerWhereInput | undefined)
+      : undefined;
     await this.assertExists(
       this.prisma.customer.findFirst({
         where: andWhere({ id, tenantId }, extra),

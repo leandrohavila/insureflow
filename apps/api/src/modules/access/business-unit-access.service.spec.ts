@@ -79,19 +79,12 @@ describe('BusinessUnitAccessService detail ACL', () => {
     );
   });
 
-  it('contexto Business Unit específica (admin): restringe à unidade ativa', async () => {
-    const { service, leadFindFirst } = createService({ id: 'lead-ok' });
-    await service.assertLeadVisible(adminCorretora, tenantId, 'lead-ok');
+  it('admin com empresa no header ainda abre lead de outra unidade (view-all)', async () => {
+    const { service, leadFindFirst } = createService({ id: 'lead-imoveis' });
+    await service.assertLeadVisible(adminCorretora, tenantId, 'lead-imoveis');
     expect(leadFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          AND: [
-            { id: 'lead-ok', tenantId },
-            expect.objectContaining({
-              OR: expect.any(Array),
-            }),
-          ],
-        }),
+        where: { id: 'lead-imoveis', tenantId },
       }),
     );
   });
