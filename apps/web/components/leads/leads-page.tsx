@@ -75,12 +75,6 @@ import {
 } from "@/lib/data-access/modules/leads"
 import { shouldShowPageLeadSaveError } from "@/lib/data-access/modules/leads/lead-dialog-form"
 import { resetLeadSaveMutations } from "@/lib/data-access/modules/leads/lead-dialog-mutations"
-import { ApiClientError } from "@/lib/data-access/errors"
-import {
-  errorStack,
-  isTimeoutError,
-  logLeadsListDiagnostic,
-} from "@/lib/data-access/leads-list-diagnostics"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
@@ -231,40 +225,6 @@ export function LeadsPage() {
 
   const leadsQuery = useLeads(filters)
   const captureMetrics = useLeadCaptureMetrics()
-
-  useEffect(() => {
-    if (!leadsQuery.isError) return
-    const error = leadsQuery.error
-    logLeadsListDiagnostic("dataTable", "leadsQuery.isError", {
-      status: error instanceof ApiClientError ? error.status : null,
-      timeout: isTimeoutError(error),
-      tokenExpired:
-        error instanceof ApiClientError &&
-        (error.status === 401 || error.payload?.error === "Não autenticado"),
-      message: getErrorMessage(error, "Erro ao carregar registros"),
-      stack: errorStack(error),
-      body: error instanceof ApiClientError ? error.payload : null,
-      isLoading: leadsQuery.isLoading,
-      isFetching: leadsQuery.isFetching,
-      isPlaceholderData: leadsQuery.isPlaceholderData,
-      isStale: leadsQuery.isStale,
-      dataUpdatedAt: leadsQuery.dataUpdatedAt,
-      failureCount: leadsQuery.failureCount,
-      hasCachedRows: Boolean(leadsQuery.data?.data?.length),
-      cachedRowCount: leadsQuery.data?.data.length ?? 0,
-      dataTableReplacesGrid: true,
-    })
-  }, [
-    leadsQuery.data?.data.length,
-    leadsQuery.dataUpdatedAt,
-    leadsQuery.error,
-    leadsQuery.failureCount,
-    leadsQuery.isError,
-    leadsQuery.isFetching,
-    leadsQuery.isLoading,
-    leadsQuery.isPlaceholderData,
-    leadsQuery.isStale,
-  ])
   const createLead = useCreateLead()
   const updateLead = useUpdateLead(filters)
   const deleteLead = useDeleteLead(filters)
@@ -734,7 +694,6 @@ export function LeadsPage() {
 
             <OperationalWorkspaceMain>
             <DataTable
-              fill
               stickyHeader
               density="compact"
               className="w-full"
