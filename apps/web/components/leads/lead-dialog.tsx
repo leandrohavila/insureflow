@@ -3,7 +3,6 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Loader2 } from "lucide-react"
 
-import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { ActivityTimeline } from "@/components/activities/activity-timeline"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
 import { useSession } from "@/components/auth/session-provider"
@@ -39,6 +38,12 @@ import {
   EMPTY_LEAD_DIALOG_FORM,
   type LeadDialogFormState,
 } from "@/lib/data-access/modules/leads/lead-dialog-form"
+import {
+  leadFormToAgendaFields,
+  NEXT_CONTACT_ACTIVITY_OPTIONS,
+  NEXT_CONTACT_PRESET_CUSTOM,
+  suggestRenewalReminderFields,
+} from "@/lib/data-access/modules/leads/lead-next-contact-form"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
   INTEREST_CATEGORY_LABELS,
@@ -243,7 +248,16 @@ export function LeadDialog({
     key: K,
     value: LeadDialogFormState[K],
   ) {
-    setForm((current) => ({ ...current, [key]: value }))
+    setForm((current) => {
+      const next = { ...current, [key]: value }
+      if (key === "policyExpiresAt") {
+        return {
+          ...next,
+          ...suggestRenewalReminderFields(String(value)),
+        }
+      }
+      return next
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -286,12 +300,7 @@ export function LeadDialog({
         policyExpiresAt: optionalFormValue(form.policyExpiresAt),
         businessUnitId,
         interestCategories: form.interestCategories,
-        ...(form.followUpDays
-          ? {
-              followUpDays: Number(form.followUpDays),
-              followUpType: "WHATSAPP" as const,
-            }
-          : {}),
+        ...leadFormToAgendaFields(form),
       })
     } finally {
       bug010DrawerLog("before setSubmitLocked(false)")
@@ -313,7 +322,7 @@ export function LeadDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
-        <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-white/[0.08] bg-background/95 sm:max-w-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
             <DialogHeader>
               <DialogTitle>
@@ -338,19 +347,6 @@ export function LeadDialog({
                 </p>
               ) : null}
             </DialogHeader>
-
-            {lead ? (
-              <div className="space-y-2">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Próximas ações
-                </p>
-                <ActivityQuickActions
-                  leadId={lead.id}
-                  dealId={lead.dealId}
-                  compact
-                />
-              </div>
-            ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-2 sm:col-span-2">
@@ -490,22 +486,113 @@ export function LeadDialog({
                 update={update}
                 intent={intent}
               />
-              {!lead ? (
-                <label className="space-y-2 sm:col-span-2">
+              {form.policyExpiresAt ? (
+                <div className="space-y-3 sm:col-span-2 rounded-lg border border-white/10 p-3">
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Renovações automáticas
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Sugestão D-60, D-30 e D-15. Edite a data se o contato comercial for em outro dia.
+                  </p>
+                  {(
+                    [
+                      ["D-60", "renewalReminderD60Date", "renewalReminderD60Time"],
+                      ["D-30", "renewalReminderD30Date", "renewalReminderD30Time"],
+                      ["D-15", "renewalReminderD15Date", "renewalReminderD15Time"],
+                    ] as const
+                  ).map(([label, dateKey, timeKey]) => (
+                    <div key={label} className="grid gap-3 sm:grid-cols-[4rem_1fr_8rem] sm:items-end">
+                      <p className="text-sm font-medium">{label}</p>
+                      <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">Data</span>
+                        <Input
+                          type="date"
+                          value={form[dateKey]}
+                          onChange={(event) => update(dateKey, event.target.value)}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">Hora</span>
+                        <Input
+                          type="time"
+                          value={form[timeKey]}
+                          onChange={(event) => update(timeKey, event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <div className="space-y-3 sm:col-span-2 rounded-lg border border-white/10 p-3">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Próxima ação
+                </p>
+                <label className="space-y-2">
                   <span className="text-sm font-medium">Próximo contato</span>
                   <FormSelect
                     value={form.followUpDays}
-                    onChange={(event) => update("followUpDays", event.target.value)}
+                    onChange={(event) =>
+                      update("followUpDays", event.target.value)
+                    }
                     options={[
                       { value: "", label: "Não agendar agora" },
                       { value: "1", label: "Amanhã" },
                       { value: "3", label: "Em 3 dias" },
                       { value: "7", label: "Em 7 dias" },
                       { value: "15", label: "Em 15 dias" },
+                      { value: NEXT_CONTACT_PRESET_CUSTOM, label: "Data personalizada" },
                     ]}
                   />
                 </label>
-              ) : null}
+                {form.followUpDays === NEXT_CONTACT_PRESET_CUSTOM ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="space-y-2">
+                      <span className="text-sm font-medium">Data</span>
+                      <Input
+                        required
+                        type="date"
+                        value={form.nextContactDate}
+                        onChange={(event) =>
+                          update("nextContactDate", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-sm font-medium">Hora</span>
+                      <Input
+                        type="time"
+                        value={form.nextContactTime}
+                        onChange={(event) =>
+                          update("nextContactTime", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="space-y-2">
+                      <span className="text-sm font-medium">Tipo de atividade</span>
+                      <FormSelect
+                        value={form.nextContactType}
+                        onChange={(event) =>
+                          update("nextContactType", event.target.value)
+                        }
+                        options={NEXT_CONTACT_ACTIVITY_OPTIONS.map((item) => ({
+                          value: item.value,
+                          label: item.label,
+                        }))}
+                      />
+                    </label>
+                    <label className="space-y-2 sm:col-span-2">
+                      <span className="text-sm font-medium">Observação</span>
+                      <Input
+                        value={form.nextContactNotes}
+                        onChange={(event) =>
+                          update("nextContactNotes", event.target.value)
+                        }
+                        placeholder="Ex.: Conquistar apólice da concorrência"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
               <label className="space-y-2 sm:col-span-2">
                 <span className="text-sm font-medium">Notas</span>
                 <Input

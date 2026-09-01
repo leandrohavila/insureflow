@@ -6,6 +6,7 @@ export const COMMERCIAL_AGENDA_WINDOWS = [
   'overdue',
   'next7',
   'next30',
+  'future',
 ] as const;
 export type CommercialAgendaWindow = (typeof COMMERCIAL_AGENDA_WINDOWS)[number];
 

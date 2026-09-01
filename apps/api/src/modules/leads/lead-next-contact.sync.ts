@@ -1,18 +1,19 @@
 import type { PrismaClient } from '@prisma/client';
 
 import {
-  buildLeadRenewalAgendaDrafts,
-  LEAD_RENEWAL_EVENT_PREFIX,
-} from './lead-renewal-agenda.util';
+  buildLeadNextContactDraft,
+  LEAD_NEXT_CONTACT_EVENT_KIND,
+} from './lead-next-contact.util';
 
-export async function syncLeadRenewalActivities(
+export async function syncLeadNextContactActivity(
   prisma: Pick<PrismaClient, 'activity'>,
   input: {
     tenantId: string;
     leadId: string;
     performedById: string;
-    expiresAt: Date | null | undefined;
-    scheduledAtByDays?: Partial<Record<60 | 30 | 15, Date>>;
+    at: Date | null | undefined;
+    type?: string | null;
+    notes?: string | null;
   },
 ) {
   await prisma.activity.deleteMany({
@@ -20,19 +21,18 @@ export async function syncLeadRenewalActivities(
       tenantId: input.tenantId,
       leadId: input.leadId,
       status: 'pending',
-      operationalEventKind: { startsWith: LEAD_RENEWAL_EVENT_PREFIX },
+      operationalEventKind: LEAD_NEXT_CONTACT_EVENT_KIND,
     },
   });
 
-  if (!input.expiresAt) return 0;
-  const drafts = buildLeadRenewalAgendaDrafts({
-    expiresAt: input.expiresAt,
-    scheduledAtByDays: input.scheduledAtByDays,
+  if (!input.at || Number.isNaN(input.at.getTime())) return 0;
+  const draft = buildLeadNextContactDraft({
+    at: input.at,
+    type: input.type,
+    notes: input.notes,
   });
-  if (!drafts.length) return 0;
-
-  await prisma.activity.createMany({
-    data: drafts.map((draft) => ({
+  await prisma.activity.create({
+    data: {
       tenantId: input.tenantId,
       leadId: input.leadId,
       performedById: input.performedById,
@@ -43,7 +43,7 @@ export async function syncLeadRenewalActivities(
       occurredAt: draft.occurredAt,
       nextFollowUpAt: draft.nextFollowUpAt,
       operationalEventKind: draft.operationalEventKind,
-    })),
+    },
   });
-  return drafts.length;
+  return 1;
 }

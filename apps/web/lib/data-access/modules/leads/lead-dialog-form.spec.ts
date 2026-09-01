@@ -54,6 +54,23 @@ describe("buildLeadDialogFormState", () => {
     expect(form.assignedTo).toBe("Ana Costa")
   })
 
+  it("sugere D-60/D-30/D-15 ao hidratar vencimento de apólice", () => {
+    const form = buildLeadDialogFormState(
+      {
+        ...sampleLead,
+        opportunityType: "renewal",
+        currentInsurer: "Porto Seguro",
+        policyExpiresAt: "2027-04-15T00:00:00.000Z",
+      },
+      "Operador",
+    )
+    expect(form.policyExpiresAt).toBe("2027-04-15")
+    expect(form.renewalReminderD60Date).toBe("2027-02-14")
+    expect(form.renewalReminderD30Date).toBe("2027-03-16")
+    expect(form.renewalReminderD15Date).toBe("2027-03-31")
+    expect(form.nextContactType).toBe("whatsapp")
+  })
+
   it("locks business unit and default interests on create", () => {
     const form = buildLeadDialogFormState(null, "Operador", {
       lockedBusinessUnitId: "re-1",

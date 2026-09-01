@@ -118,6 +118,22 @@ describe('CreateLeadDto', () => {
     expect(result.followUpType).toBe('WHATSAPP');
   });
 
+  it('accepts custom next contact and editable renewal reminders', async () => {
+    const result = await validate({
+      ...basePayload,
+      nextContactAt: '2027-03-15T14:00:00.000Z',
+      nextContactType: 'call',
+      nextContactNotes: 'Conquistar apólice',
+      policyExpiresAt: '2027-04-15',
+      renewalReminderD60: '2027-02-14T12:00:00.000Z',
+      renewalReminderD30: '2027-03-16T12:00:00.000Z',
+      renewalReminderD15: '2027-03-31T12:00:00.000Z',
+    });
+    expect(result.nextContactAt).toBe('2027-03-15T14:00:00.000Z');
+    expect(result.nextContactType).toBe('call');
+    expect(result.renewalReminderD60).toBe('2027-02-14T12:00:00.000Z');
+  });
+
   it('rejects payload with invalid status', async () => {
     await expect(
       validate({ ...basePayload, status: 'all' }),

@@ -39,6 +39,8 @@ import { ActivityEngineService } from '../activities/activity-engine.service';
 import { BusinessUnitsService } from '../business-units/business-units.service';
 import { LeadFollowUpsService } from '../lead-follow-ups/lead-follow-ups.service';
 import { syncLeadRenewalActivities } from './lead-renewal-agenda.sync';
+import { renewalReminderDatesFromDto } from './lead-renewal-agenda.util';
+import { syncLeadNextContactActivity } from './lead-next-contact.sync';
 import { LeadLossReasonsService } from '../lead-loss-reasons/lead-loss-reasons.service';
 import {
   resolveLeadLastInteractionAt,
@@ -567,7 +569,7 @@ export class LeadsService {
             ? new Date(dto.policyExpiresAt)
             : null,
         },
-      ) as Prisma.LeadUncheckedCreateInput,
+      ),
       include: leadOwnerInclude,
     });
     console.info('[BUG010][prisma] INSERT lead end', {
@@ -575,7 +577,17 @@ export class LeadsService {
       insertMs: Number((performance.now() - insertStartedAt).toFixed(2)),
     });
     logLeadSerialize('createLead', { id: lead.id });
-    if (dto.followUpDays && actor?.userId) {
+    const performerId = lead.ownerUserId ?? actor?.userId;
+    if (dto.nextContactAt && performerId) {
+      await syncLeadNextContactActivity(this.prisma, {
+        tenantId,
+        leadId: lead.id,
+        performedById: performerId,
+        at: new Date(dto.nextContactAt),
+        type: dto.nextContactType,
+        notes: dto.nextContactNotes,
+      });
+    } else if (dto.followUpDays && actor?.userId) {
       await this.followUps.scheduleOnLeadCreate({
         tenantId,
         leadId: lead.id,
@@ -586,13 +598,13 @@ export class LeadsService {
           : 'WHATSAPP',
       });
     }
-    const performerId = lead.ownerUserId ?? actor?.userId;
     if (performerId) {
       await syncLeadRenewalActivities(this.prisma, {
         tenantId,
         leadId: lead.id,
         performedById: performerId,
         expiresAt: (lead as { policyExpiresAt?: Date | null }).policyExpiresAt,
+        scheduledAtByDays: renewalReminderDatesFromDto(dto),
       });
     }
     return serializeLeadRecord({
@@ -781,7 +793,10 @@ export class LeadsService {
 
     if (
       dto.policyExpiresAt !== undefined ||
-      dto.opportunityType === 'renewal'
+      dto.opportunityType === 'renewal' ||
+      dto.renewalReminderD60 !== undefined ||
+      dto.renewalReminderD30 !== undefined ||
+      dto.renewalReminderD15 !== undefined
     ) {
       const performerId = lead.ownerUserId ?? actor?.userId;
       if (performerId) {
@@ -789,7 +804,23 @@ export class LeadsService {
           tenantId,
           leadId: lead.id,
           performedById: performerId,
-          expiresAt: (lead as { policyExpiresAt?: Date | null }).policyExpiresAt,
+          expiresAt: (lead as { policyExpiresAt?: Date | null })
+            .policyExpiresAt,
+          scheduledAtByDays: renewalReminderDatesFromDto(dto),
+        });
+      }
+    }
+
+    if (dto.nextContactAt !== undefined) {
+      const performerId = lead.ownerUserId ?? actor?.userId;
+      if (performerId) {
+        await syncLeadNextContactActivity(this.prisma, {
+          tenantId,
+          leadId: lead.id,
+          performedById: performerId,
+          at: dto.nextContactAt ? new Date(dto.nextContactAt) : null,
+          type: dto.nextContactType,
+          notes: dto.nextContactNotes,
         });
       }
     }
@@ -1240,7 +1271,10 @@ export class LeadsService {
       existingOriginId: existing?.originId,
       existingUnitIds: existing?.unitIds,
     });
-    const unitIds = await this.businessUnits.assertIds(tenantId, resolved.unitIds);
+    const unitIds = await this.businessUnits.assertIds(
+      tenantId,
+      resolved.unitIds,
+    );
     const originId =
       resolved.originId && unitIds.includes(resolved.originId)
         ? resolved.originId

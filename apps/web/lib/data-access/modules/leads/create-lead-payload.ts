@@ -21,6 +21,12 @@ export type CreateLeadPayload = {
   currentInsurer?: string
   currentPolicyNumber?: string
   policyExpiresAt?: string
+  nextContactAt?: string
+  nextContactType?: string
+  nextContactNotes?: string
+  renewalReminderD60?: string
+  renewalReminderD30?: string
+  renewalReminderD15?: string
 }
 
 function optionalValue(value: string | undefined) {
@@ -75,6 +81,18 @@ export function buildCreateLeadPayload(
   if (currentPolicyNumber) payload.currentPolicyNumber = currentPolicyNumber
   const policyExpiresAt = optionalValue(input.policyExpiresAt)
   if (policyExpiresAt) payload.policyExpiresAt = policyExpiresAt
+  const nextContactAt = optionalValue(input.nextContactAt)
+  if (nextContactAt) payload.nextContactAt = nextContactAt
+  const nextContactType = optionalValue(input.nextContactType)
+  if (nextContactType) payload.nextContactType = nextContactType
+  const nextContactNotes = optionalValue(input.nextContactNotes)
+  if (nextContactNotes) payload.nextContactNotes = nextContactNotes
+  const renewalReminderD60 = optionalValue(input.renewalReminderD60)
+  if (renewalReminderD60) payload.renewalReminderD60 = renewalReminderD60
+  const renewalReminderD30 = optionalValue(input.renewalReminderD30)
+  if (renewalReminderD30) payload.renewalReminderD30 = renewalReminderD30
+  const renewalReminderD15 = optionalValue(input.renewalReminderD15)
+  if (renewalReminderD15) payload.renewalReminderD15 = renewalReminderD15
 
   return payload
 }

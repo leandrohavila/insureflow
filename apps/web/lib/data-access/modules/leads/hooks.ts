@@ -152,6 +152,9 @@ export function useCreateLead() {
       )
       console.log("[DRAWER] 9-before-invalidate")
       bug010DrawerLog("before invalidateQueries")
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.commercialAgenda.all,
+      })
       void queryClient
         .invalidateQueries({ queryKey: queryKeys.leads.all })
         .then(() => {
@@ -227,6 +230,9 @@ export function useUpdateLead(filters: LeadListFilters = {}) {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.commercialAgenda.all,
+      })
     },
   })
 }

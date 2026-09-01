@@ -75,12 +75,16 @@ describe('LeadsService.createLead', () => {
       return Promise.resolve(null);
     });
 
+    const activityDeleteMany = jest.fn().mockResolvedValue({ count: 0 });
+    const activityCreateMany = jest.fn().mockResolvedValue({ count: 0 });
+    const activityCreate = jest.fn().mockResolvedValue({ id: 'act-next-1' });
     const prisma = {
       lead: { create: leadCreate },
       user: { findFirst: userFindFirst },
       activity: {
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        createMany: jest.fn().mockResolvedValue({ count: 0 }),
+        deleteMany: activityDeleteMany,
+        createMany: activityCreateMany,
+        create: activityCreate,
       },
     } as unknown as PrismaService;
 
@@ -111,6 +115,9 @@ describe('LeadsService.createLead', () => {
         lossReasons as never,
       ),
       leadCreate,
+      activityCreate,
+      activityCreateMany,
+      followUps,
     };
   }
 
@@ -153,6 +160,61 @@ describe('LeadsService.createLead', () => {
         }),
       }),
     );
+  });
+
+  it('creates a custom next-contact activity for the owner', async () => {
+    const { service, activityCreate, activityCreateMany, followUps } =
+      createService({
+        assignedUser: {
+          id: 'user-leandro',
+          name: 'Leandro',
+          email: 'leandro@insureflow.com',
+        },
+      });
+    const at = '2027-03-15T13:00:00.000Z';
+
+    await service.createLead(
+      tenantId,
+      {
+        name: 'Bruna Lopes Coelho',
+        assignedTo: 'Leandro',
+        opportunityType: 'renewal',
+        currentInsurer: 'Porto Seguro',
+        policyExpiresAt: '2027-04-15',
+        nextContactAt: at,
+        nextContactType: 'whatsapp',
+        nextContactNotes: 'Conquistar apólice',
+      },
+      actor,
+    );
+
+    const { scheduleOnLeadCreate } = followUps;
+    expect(scheduleOnLeadCreate).not.toHaveBeenCalled();
+    const createCalls = activityCreate.mock.calls as unknown as Array<
+      [
+        {
+          data: {
+            type: string;
+            leadId: string;
+            performedById: string;
+            occurredAt: Date;
+            nextFollowUpAt: Date;
+            operationalEventKind: string;
+          };
+        },
+      ]
+    >;
+    expect(createCalls[0]?.[0]?.data).toEqual(
+      expect.objectContaining({
+        type: 'whatsapp',
+        leadId: 'lead-new-1',
+        performedById: 'user-leandro',
+        occurredAt: new Date(at),
+        nextFollowUpAt: new Date(at),
+        operationalEventKind: 'lead_next_contact',
+      }),
+    );
+    expect(activityCreateMany).toHaveBeenCalled();
   });
 
   it('stores normalized document digits from contract payload', async () => {

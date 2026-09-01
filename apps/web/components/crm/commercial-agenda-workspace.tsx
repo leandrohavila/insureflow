@@ -25,6 +25,7 @@ const WINDOWS: { id: CommercialAgendaWindow; label: string }[] = [
   { id: "overdue", label: "Atrasados" },
   { id: "next7", label: "Próximos 7 dias" },
   { id: "next30", label: "Próximos 30 dias" },
+  { id: "future", label: "Futuro" },
 ]
 
 const TYPES: { id: CommercialAgendaType | ""; label: string }[] = [

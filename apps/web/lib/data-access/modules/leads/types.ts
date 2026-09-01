@@ -121,6 +121,12 @@ export type CreateLeadInput = {
   currentInsurer?: string
   currentPolicyNumber?: string
   policyExpiresAt?: string
+  nextContactAt?: string
+  nextContactType?: string
+  nextContactNotes?: string
+  renewalReminderD60?: string
+  renewalReminderD30?: string
+  renewalReminderD15?: string
 }
 
 export type CreateLeadRequestInput = CreateLeadInput & {

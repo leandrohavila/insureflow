@@ -28,5 +28,20 @@ describe('inAgendaWindow', () => {
     expect(inAgendaWindow(new Date('2026-09-10T10:00:00'), 'next7', now)).toBe(
       false,
     );
+    expect(inAgendaWindow(new Date('2027-03-15T14:00:00'), 'next7', now)).toBe(
+      false,
+    );
+  });
+
+  it('classifica próximos 30 dias e futuro', () => {
+    expect(inAgendaWindow(new Date('2026-09-20T10:00:00'), 'next30', now)).toBe(
+      true,
+    );
+    expect(inAgendaWindow(new Date('2027-03-15T14:00:00'), 'next30', now)).toBe(
+      false,
+    );
+    expect(inAgendaWindow(new Date('2027-03-15T14:00:00'), 'future', now)).toBe(
+      true,
+    );
   });
 });

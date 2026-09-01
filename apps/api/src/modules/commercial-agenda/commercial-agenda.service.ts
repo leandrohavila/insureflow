@@ -163,7 +163,7 @@ export class CommercialAgendaService {
     const from = new Date(now);
     from.setDate(from.getDate() - 90);
     const to = new Date(now);
-    to.setDate(to.getDate() + 30);
+    to.setDate(to.getDate() + 800);
 
     let activityWhere = {
       tenantId,
@@ -197,7 +197,7 @@ export class CommercialAgendaService {
         deal: { select: { id: true, title: true } },
         performedBy: { select: { id: true, name: true } },
       },
-      take: 500,
+      take: 800,
     });
     for (const activity of activities) {
       const at = activity.nextFollowUpAt ?? activity.occurredAt;
@@ -235,7 +235,7 @@ export class CommercialAgendaService {
         lead: { select: { id: true, name: true } },
         assignedUser: { select: { id: true, name: true } },
       },
-      take: 500,
+      take: 800,
     });
     for (const follow of followUps) {
       const mapped =
@@ -281,7 +281,7 @@ export class CommercialAgendaService {
         customer: { select: { id: true, name: true } },
         assignedUser: { select: { id: true, name: true } },
       },
-      take: 500,
+      take: 800,
     });
     for (const renewal of renewals) {
       items.push({
@@ -359,7 +359,7 @@ export class CommercialAgendaService {
           select: { stages: { select: { slug: true, maxDays: true } } },
         },
       },
-      take: 500,
+      take: 800,
     });
     for (const deal of deals) {
       const unitType = deal.businessUnit?.type ?? 'INSURANCE';

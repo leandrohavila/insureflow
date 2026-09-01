@@ -6,6 +6,7 @@ import {
 } from "../../../documents/document"
 import type { InterestCategory } from "@/lib/business-units/constants"
 import type { Lead } from "./types"
+import { suggestRenewalReminderFields } from "./lead-next-contact-form"
 
 export type LeadDialogFormState = {
   name: string
@@ -24,6 +25,16 @@ export type LeadDialogFormState = {
   businessUnitId: string
   interestCategories: InterestCategory[]
   followUpDays: string
+  nextContactDate: string
+  nextContactTime: string
+  nextContactType: string
+  nextContactNotes: string
+  renewalReminderD60Date: string
+  renewalReminderD60Time: string
+  renewalReminderD30Date: string
+  renewalReminderD30Time: string
+  renewalReminderD15Date: string
+  renewalReminderD15Time: string
 }
 
 export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
@@ -43,6 +54,16 @@ export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
   businessUnitId: "",
   interestCategories: [],
   followUpDays: "",
+  nextContactDate: "",
+  nextContactTime: "09:00",
+  nextContactType: "whatsapp",
+  nextContactNotes: "",
+  renewalReminderD60Date: "",
+  renewalReminderD60Time: "09:00",
+  renewalReminderD30Date: "",
+  renewalReminderD30Time: "09:00",
+  renewalReminderD15Date: "",
+  renewalReminderD15Time: "09:00",
 }
 
 function formatStoredDocument(
@@ -98,6 +119,13 @@ export function buildLeadDialogFormState(
       options?.lockedBusinessUnitId || lead.businessUnitId || "",
     interestCategories: lead.interestCategories ?? [],
     followUpDays: "",
+    nextContactDate: "",
+    nextContactTime: "09:00",
+    nextContactType: "whatsapp",
+    nextContactNotes: "",
+    ...suggestRenewalReminderFields(
+      lead.policyExpiresAt ? lead.policyExpiresAt.slice(0, 10) : "",
+    ),
   }
 }
 

@@ -1,6 +1,11 @@
 import { apiClient } from "@/lib/data-access/api-client"
 
-export type CommercialAgendaWindow = "today" | "overdue" | "next7" | "next30"
+export type CommercialAgendaWindow =
+  | "today"
+  | "overdue"
+  | "next7"
+  | "next30"
+  | "future"
 export type CommercialAgendaType =
   | "FOLLOW_UP"
   | "RENEWAL"

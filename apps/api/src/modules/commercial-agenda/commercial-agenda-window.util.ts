@@ -1,4 +1,9 @@
-export type CommercialAgendaWindow = 'today' | 'overdue' | 'next7' | 'next30';
+export type CommercialAgendaWindow =
+  | 'today'
+  | 'overdue'
+  | 'next7'
+  | 'next30'
+  | 'future';
 
 export function startOfLocalDay(date: Date) {
   const next = new Date(date);
@@ -30,6 +35,11 @@ export function inAgendaWindow(
     const until = new Date(startToday);
     until.setDate(until.getDate() + 30);
     return at >= startToday && at <= until;
+  }
+  if (window === 'future') {
+    const until = new Date(startToday);
+    until.setDate(until.getDate() + 30);
+    return at > until;
   }
   return true;
 }

@@ -22,6 +22,7 @@ import { LIST_QUERY_MAX_LIMIT } from '../../../common/dto/pagination.constants';
 import { optionalEmptyValue } from '../../../common/dto/optional-value.util';
 import { LEAD_DOCUMENT_TYPES } from '../../../common/utils/document.util';
 import { CRM_DEAL_STAGES, type CrmDealStage } from '../../crm/dto/deal.dto';
+import { NEXT_CONTACT_ACTIVITY_TYPES } from '../lead-next-contact.util';
 
 export const LEAD_STATUSES = [
   'new',
@@ -292,11 +293,50 @@ export class CreateLeadDto {
   @MaxLength(80)
   currentPolicyNumber?: string;
 
-  @ApiPropertyOptional({ example: '2026-12-31' })
+  @ApiPropertyOptional({ example: '2027-04-15' })
   @Transform(optionalEmptyValue)
   @IsOptional()
   @IsDateString()
   policyExpiresAt?: string;
+
+  @ApiPropertyOptional({
+    description: 'Data/hora personalizada do próximo contato comercial.',
+  })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsDateString()
+  nextContactAt?: string;
+
+  @ApiPropertyOptional({ enum: NEXT_CONTACT_ACTIVITY_TYPES })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsIn(NEXT_CONTACT_ACTIVITY_TYPES)
+  nextContactType?: (typeof NEXT_CONTACT_ACTIVITY_TYPES)[number];
+
+  @ApiPropertyOptional()
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  nextContactNotes?: string;
+
+  @ApiPropertyOptional({ description: 'Data editável da renovação D-60.' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsDateString()
+  renewalReminderD60?: string;
+
+  @ApiPropertyOptional({ description: 'Data editável da renovação D-30.' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsDateString()
+  renewalReminderD30?: string;
+
+  @ApiPropertyOptional({ description: 'Data editável da renovação D-15.' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsDateString()
+  renewalReminderD15?: string;
 }
 
 export class UpdateLeadDto extends PartialType(CreateLeadDto) {}

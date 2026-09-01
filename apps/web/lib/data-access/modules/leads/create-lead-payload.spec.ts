@@ -81,4 +81,22 @@ describe("buildCreateLeadPayload", () => {
       policyExpiresAt: "2026-12-31",
     })
   })
+
+  it("includes custom next contact datetime", () => {
+    expect(
+      buildCreateLeadPayload({
+        name: "Bruna Lopes Coelho",
+        nextContactAt: "2027-03-15T13:00:00.000Z",
+        nextContactType: "whatsapp",
+        nextContactNotes: "Conquistar apólice",
+        renewalReminderD60: "2027-02-14T12:00:00.000Z",
+      }),
+    ).toEqual({
+      name: "Bruna Lopes Coelho",
+      nextContactAt: "2027-03-15T13:00:00.000Z",
+      nextContactType: "whatsapp",
+      nextContactNotes: "Conquistar apólice",
+      renewalReminderD60: "2027-02-14T12:00:00.000Z",
+    })
+  })
 })
