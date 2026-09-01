@@ -50,6 +50,10 @@ export type Lead = {
   nextReactivationAt?: string | null
   lastReactivatedAt?: string | null
   dealId?: string | null
+  opportunityType?: string | null
+  currentInsurer?: string | null
+  currentPolicyNumber?: string | null
+  policyExpiresAt?: string | null
   createdAt: string
   updatedAt: string
   initials: string
@@ -113,6 +117,10 @@ export type CreateLeadInput = {
   lossReasonId?: string
   followUpDays?: number
   followUpType?: "CALL" | "WHATSAPP" | "EMAIL" | "MEETING"
+  opportunityType?: string
+  currentInsurer?: string
+  currentPolicyNumber?: string
+  policyExpiresAt?: string
 }
 
 export type CreateLeadRequestInput = CreateLeadInput & {

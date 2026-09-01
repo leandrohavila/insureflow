@@ -131,6 +131,14 @@ export function serializeLeadRecord(
     nextReactivationAt: lead.nextReactivationAt?.toISOString() ?? null,
     lastReactivatedAt: lead.lastReactivatedAt?.toISOString() ?? null,
     dealId: lead.dealId,
+    opportunityType: (lead as { opportunityType?: string | null }).opportunityType ?? null,
+    currentInsurer: (lead as { currentInsurer?: string | null }).currentInsurer ?? null,
+    currentPolicyNumber:
+      (lead as { currentPolicyNumber?: string | null }).currentPolicyNumber ??
+      null,
+    policyExpiresAt:
+      (lead as { policyExpiresAt?: Date | null }).policyExpiresAt?.toISOString() ??
+      null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

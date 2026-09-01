@@ -52,6 +52,7 @@ export function serializeActivity(activity: ActivityRecord) {
     outcome: activity.outcome,
     operationalEventKind: activity.operationalEventKind ?? null,
     occurredAt: toIso(activity.occurredAt) ?? new Date(0).toISOString(),
+    completedAt: toIso(activity.completedAt),
     nextFollowUpAt: toIso(activity.nextFollowUpAt),
     leadId: activity.leadId ?? null,
     dealId: activity.dealId ?? null,

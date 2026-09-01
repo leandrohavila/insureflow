@@ -18,6 +18,8 @@ export const COMMERCIAL_AGENDA_TYPES = [
   'WHATSAPP',
   'EMAIL',
   'MEETING',
+  'VISIT',
+  'TASK',
 ] as const;
 export type CommercialAgendaType = (typeof COMMERCIAL_AGENDA_TYPES)[number];
 

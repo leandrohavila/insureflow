@@ -266,6 +266,9 @@ export function LeadSheetV2({
             marginTop: "0.125rem",
           }}
         >
+          <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+            Próximas ações
+          </p>
           <ActivityQuickActions
             leadId={lead.id}
             dealId={lead.dealId}

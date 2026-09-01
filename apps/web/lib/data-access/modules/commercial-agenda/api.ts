@@ -10,6 +10,8 @@ export type CommercialAgendaType =
   | "WHATSAPP"
   | "EMAIL"
   | "MEETING"
+  | "VISIT"
+  | "TASK"
 
 export type CommercialAgendaItem = {
   id: string
@@ -25,6 +27,8 @@ export type CommercialAgendaItem = {
   leadName: string | null
   dealId: string | null
   ownerName: string | null
+  ownerUserId: string | null
+  priority: "high" | "medium" | "low"
 }
 
 export type CommercialAgendaMetrics = {
@@ -33,6 +37,8 @@ export type CommercialAgendaMetrics = {
   renewalsUpcoming: number
   reactivationsPending: number
   slaOverdue: number
+  followUpsPending?: number
+  leadsToday?: number
 }
 
 export async function fetchCommercialAgenda(filters: {

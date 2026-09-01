@@ -8,6 +8,8 @@ export const activityTypeLabels: Record<ActivityType, string> = {
   visit: "Visita",
   note: "Observação",
   follow_up: "Follow-up",
+  renewal: "Renovação",
+  task: "Tarefa",
 }
 
 export const activityTypeSubjects: Record<ActivityType, string> = {
@@ -18,4 +20,6 @@ export const activityTypeSubjects: Record<ActivityType, string> = {
   visit: "Visita realizada",
   note: "Observação",
   follow_up: "Follow-up agendado",
+  renewal: "Renovação agendada",
+  task: "Tarefa comercial",
 }

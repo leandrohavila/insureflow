@@ -3,9 +3,10 @@
 import { useState } from "react"
 import {
   CalendarClock,
+  MapPin,
   MessageSquare,
   Phone,
-  StickyNote,
+  RefreshCw,
 } from "lucide-react"
 
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
@@ -34,16 +35,18 @@ type QuickAction = {
 
 const compactQuickLabels: Partial<Record<QuickAction["type"], string>> = {
   call: "Ligação",
-  note: "Nota",
   whatsapp: "WhatsApp",
   follow_up: "Follow-up",
+  renewal: "Renovação",
+  visit: "Visita",
 }
 
 const quickActions: QuickAction[] = [
-  { type: "call", label: "Registrar ligação", icon: Phone },
-  { type: "note", label: "Adicionar observação", icon: StickyNote },
-  { type: "whatsapp", label: "Registrar WhatsApp", icon: MessageSquare },
-  { type: "follow_up", label: "Agendar follow-up", icon: CalendarClock },
+  { type: "call", label: "+ Nova Ligação", icon: Phone },
+  { type: "whatsapp", label: "+ Novo WhatsApp", icon: MessageSquare },
+  { type: "follow_up", label: "+ Novo Follow-up", icon: CalendarClock },
+  { type: "renewal", label: "+ Nova Renovação", icon: RefreshCw },
+  { type: "visit", label: "+ Nova Visita", icon: MapPin },
 ]
 
 export function ActivityQuickActions({

@@ -10,7 +10,7 @@ import {
   mainNav,
   realEstateNav,
   resolveOperationalNav,
-} from "./navigation"
+} from "./navigation.ts"
 
 describe("menu de produção", () => {
   it("Corretora não inclui Apólices, Sinistros, WhatsApp nem CRM hub", () => {
@@ -21,6 +21,7 @@ describe("menu de produção", () => {
       "/crm/negocios",
       "/clientes",
       "/crm/dashboard-360",
+      "/crm/agenda",
       "/questionarios/templates",
       "/cotacoes",
       "/propostas",
@@ -62,6 +63,7 @@ describe("menu de produção", () => {
     const hrefs = flattenNavGroups(adminNavGroups).map((item) => item.href)
     assert.ok(hrefs.includes("/leads"))
     assert.ok(hrefs.includes("/crm/negocios"))
+    assert.ok(hrefs.includes("/crm/agenda"))
     assert.ok(hrefs.includes("/real-estate/properties"))
     assert.ok(hrefs.includes("/real-estate/portal"))
     assert.ok(hrefs.includes("/configuracoes/governanca/usuarios"))

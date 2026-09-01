@@ -22,6 +22,7 @@ import { DashboardPriorities } from "@/components/dashboard/dashboard-priorities
 import { DashboardQuotesProposals } from "@/components/dashboard/dashboard-quotes-proposals"
 import { DashboardSummary } from "@/components/dashboard/dashboard-summary"
 import { GrupoAvilaExecutiveKpiGrid } from "@/components/dashboard/grupo-avila-kpi-grid"
+import { DashboardCommercialOpsKpis } from "@/components/dashboard/dashboard-commercial-ops-kpis"
 import {
   dashboardAnalyticsGridClassName,
   dashboardExecutiveGridClassName,
@@ -111,6 +112,12 @@ export function DashboardHome() {
                   metrics={captureMetrics.metrics}
                   loading={captureMetrics.isLoading}
                 />
+              </Section>
+            ) : null}
+
+            {canCrm ? (
+              <Section className={dashboardSectionGapClassName}>
+                <DashboardCommercialOpsKpis />
               </Section>
             ) : null}
 

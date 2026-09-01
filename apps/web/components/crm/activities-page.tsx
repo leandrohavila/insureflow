@@ -5,11 +5,13 @@ import { motion, useReducedMotion } from "framer-motion"
 import {
   CalendarClock,
   Filter,
+  ListTodo,
   Loader2,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
+  RefreshCw,
   StickyNote,
   Users,
 } from "lucide-react"
@@ -39,6 +41,8 @@ const activityIcons: Record<ActivityType, typeof Phone> = {
   visit: MapPin,
   note: StickyNote,
   follow_up: CalendarClock,
+  renewal: RefreshCw,
+  task: ListTodo,
 }
 
 const activityColor: Record<ActivityType, string> = {
@@ -49,6 +53,8 @@ const activityColor: Record<ActivityType, string> = {
   visit: "bg-amber-500/15 text-amber-200 ring-amber-500/25",
   note: "bg-white/[0.06] text-muted-foreground ring-white/10",
   follow_up: "bg-amber-500/15 text-amber-200 ring-amber-500/25",
+  renewal: "bg-amber-500/15 text-amber-200 ring-amber-500/25",
+  task: "bg-white/[0.06] text-muted-foreground ring-white/10",
 }
 
 function formatTimelineDate(iso: string) {

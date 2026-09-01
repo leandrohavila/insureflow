@@ -6,6 +6,8 @@ export const ACTIVITY_TYPES = [
   "visit",
   "note",
   "follow_up",
+  "renewal",
+  "task",
 ] as const
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number]
@@ -28,6 +30,7 @@ export type Activity = {
   description: string | null
   outcome: string | null
   occurredAt: string
+  completedAt?: string | null
   nextFollowUpAt: string | null
   leadId: string | null
   dealId: string | null

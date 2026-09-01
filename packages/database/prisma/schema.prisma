@@ -657,6 +657,10 @@ model Lead {
   lastReactivatedAt   DateTime? @map("last_reactivated_at")
   dealId        String?   @unique
   deal          Deal?     @relation("LeadConvertedDeal", fields: [dealId], references: [id], onDelete: SetNull)
+  opportunityType      String?   @map("opportunity_type")
+  currentInsurer       String?   @map("current_insurer")
+  currentPolicyNumber  String?   @map("current_policy_number")
+  policyExpiresAt      DateTime? @map("policy_expires_at")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -680,6 +684,7 @@ model Lead {
   @@index([tenantId, businessUnitId])
   @@index([tenantId, status, nextReactivationAt])
   @@index([tenantId, lossReasonId])
+  @@index([tenantId, policyExpiresAt])
   @@map("leads")
 }
 
@@ -697,6 +702,7 @@ model Activity {
   /// Evento operacional pós-venda (deal_won, policy_issued, renewal, claim, …)
   operationalEventKind String?
   occurredAt           DateTime
+  completedAt          DateTime?
   nextFollowUpAt       DateTime?
   leadId               String?
   lead                 Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
@@ -720,6 +726,7 @@ model Activity {
   @@index([tenantId, dealId])
   @@index([tenantId, customerId])
   @@index([tenantId, policyId])
+  @@index([tenantId, completedAt])
   @@map("activities")
 }
 

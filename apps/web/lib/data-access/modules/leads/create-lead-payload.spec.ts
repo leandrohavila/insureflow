@@ -63,4 +63,22 @@ describe("buildCreateLeadPayload", () => {
       followUpType: "WHATSAPP",
     })
   })
+
+  it("includes renewal opportunity fields when provided", () => {
+    expect(
+      buildCreateLeadPayload({
+        name: "Lead Renovação",
+        opportunityType: "renewal",
+        currentInsurer: "Porto Seguro",
+        currentPolicyNumber: "AP-123",
+        policyExpiresAt: "2026-12-31",
+      }),
+    ).toEqual({
+      name: "Lead Renovação",
+      opportunityType: "renewal",
+      currentInsurer: "Porto Seguro",
+      currentPolicyNumber: "AP-123",
+      policyExpiresAt: "2026-12-31",
+    })
+  })
 })

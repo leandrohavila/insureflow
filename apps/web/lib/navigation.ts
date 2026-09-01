@@ -99,6 +99,15 @@ const customer360Item: NavItem = {
   permission: "crm:view",
 }
 
+const agendaComercialItem: NavItem = {
+  title: "Agenda Comercial",
+  href: "/crm/agenda",
+  icon: CalendarDays,
+  segment: "crm",
+  activePrefix: "/crm/agenda",
+  permission: "crm:view",
+}
+
 const questionariosItem: NavItem = {
   title: "Questionários",
   href: "/questionarios/templates",
@@ -222,6 +231,7 @@ export const mainNav: NavItem[] = [
   pipelineItem,
   clientesItem,
   customer360Item,
+  agendaComercialItem,
   questionariosItem,
   cotacoesItem,
   propostasItem,
@@ -249,7 +259,7 @@ export const adminNavGroups: NavGroup[] = [
   {
     id: "crm",
     label: "CRM",
-    items: [leadsItem, pipelineItem, clientesItem, customer360Item],
+    items: [leadsItem, pipelineItem, clientesItem, customer360Item, agendaComercialItem],
   },
   {
     id: "seguros",

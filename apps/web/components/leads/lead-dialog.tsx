@@ -280,6 +280,10 @@ export function LeadDialog({
           : {}),
         notes: optionalFormValue(form.notes),
         assignedTo: optionalFormValue(form.assignedTo),
+        opportunityType: optionalFormValue(form.opportunityType),
+        currentInsurer: optionalFormValue(form.currentInsurer),
+        currentPolicyNumber: optionalFormValue(form.currentPolicyNumber),
+        policyExpiresAt: optionalFormValue(form.policyExpiresAt),
         businessUnitId,
         interestCategories: form.interestCategories,
         ...(form.followUpDays
@@ -336,11 +340,16 @@ export function LeadDialog({
             </DialogHeader>
 
             {lead ? (
-              <ActivityQuickActions
-                leadId={lead.id}
-                dealId={lead.dealId}
-                compact
-              />
+              <div className="space-y-2">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Próximas ações
+                </p>
+                <ActivityQuickActions
+                  leadId={lead.id}
+                  dealId={lead.dealId}
+                  compact
+                />
+              </div>
             ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -429,6 +438,51 @@ export function LeadDialog({
                   value={form.assignedTo}
                   onChange={(event) => update("assignedTo", event.target.value)}
                   placeholder="Ex.: Ana Costa"
+                  required
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium">Tipo oportunidade</span>
+                <FormSelect
+                  value={form.opportunityType}
+                  onChange={(event) =>
+                    update("opportunityType", event.target.value)
+                  }
+                  options={[
+                    { value: "", label: "Selecionar" },
+                    { value: "new_business", label: "Novo Negócio" },
+                    { value: "renewal", label: "Renovação" },
+                    { value: "cross_sell", label: "Cross Sell" },
+                    { value: "indication", label: "Indicação" },
+                  ]}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium">Seguradora atual</span>
+                <Input
+                  value={form.currentInsurer}
+                  onChange={(event) =>
+                    update("currentInsurer", event.target.value)
+                  }
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium">Número apólice</span>
+                <Input
+                  value={form.currentPolicyNumber}
+                  onChange={(event) =>
+                    update("currentPolicyNumber", event.target.value)
+                  }
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium">Vencimento apólice</span>
+                <Input
+                  type="date"
+                  value={form.policyExpiresAt}
+                  onChange={(event) =>
+                    update("policyExpiresAt", event.target.value)
+                  }
                 />
               </label>
               <LeadDialogBusinessFields

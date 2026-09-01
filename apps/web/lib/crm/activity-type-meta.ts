@@ -18,6 +18,8 @@ export const activityTypeEmojis: Record<ActivityType, string> = {
   visit: "🚗",
   note: "📝",
   follow_up: "⏰",
+  renewal: "🔁",
+  task: "✅",
 }
 
 export const activityTypeOptions = ACTIVITY_TYPES.map((type) => ({
@@ -68,6 +70,16 @@ export const activityFormPlaceholders: Record<
     subject: "Ex.: Retorno agendado",
     description: "O que precisa ser feito no próximo contato",
     outcome: "Ex.: Confirmar interesse na proposta",
+  },
+  renewal: {
+    subject: "Ex.: Renovação da apólice",
+    description: "Vencimento, seguradora atual e o que precisa ser tratado",
+    outcome: "Ex.: Cliente pediu cotação de renovação",
+  },
+  task: {
+    subject: "Ex.: Enviar documentos",
+    description: "Tarefa comercial pendente e responsável",
+    outcome: "Ex.: Documentação enviada",
   },
 }
 

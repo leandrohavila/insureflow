@@ -19,6 +19,11 @@ import {
   syncLeadLastContactFromActivities,
 } from './activity-write.util';
 import { activityInclude, serializeActivity } from './activity-serialize.util';
+import {
+  assertActivityHasOwner,
+  resolveActivityCompletionPatch,
+  resolveActivityReschedulePatch,
+} from './activity-complete.util';
 import type {
   CreateActivityDto,
   ListActivitiesQueryDto,
@@ -83,28 +88,39 @@ export class ActivitiesService {
     if (dto.type === undefined || dto.type === null) {
       throw new BadRequestException('type is required');
     }
+    try {
+      assertActivityHasOwner(performedById);
+    } catch {
+      throw new BadRequestException('Atividade precisa de responsável');
+    }
 
     await assertActivityRelations(this.prisma, tenantId, dto);
     await assertActivityPerformer(this.prisma, tenantId, performedById);
 
     const activity = await this.prisma.activity.create({
-      data: {
-        tenantId,
-        type: dto.type,
-        status: dto.status ?? 'pending',
-        subject: dto.subject.trim(),
-        description: dto.description?.trim() || null,
-        outcome: dto.outcome?.trim() || null,
-        occurredAt: new Date(dto.occurredAt),
-        nextFollowUpAt: dto.nextFollowUpAt
-          ? new Date(dto.nextFollowUpAt)
-          : null,
-        leadId: dto.leadId ?? null,
-        dealId: dto.dealId ?? null,
-        customerId: dto.customerId ?? null,
-        policyId: dto.policyId ?? null,
-        performedById,
-      },
+      data: Object.assign(
+        {
+          tenantId,
+          type: dto.type,
+          status: dto.status ?? 'pending',
+          subject: dto.subject.trim(),
+          description: dto.description?.trim() || null,
+          outcome: dto.outcome?.trim() || null,
+          occurredAt: new Date(dto.occurredAt),
+          nextFollowUpAt: dto.nextFollowUpAt
+            ? new Date(dto.nextFollowUpAt)
+            : null,
+          leadId: dto.leadId ?? null,
+          dealId: dto.dealId ?? null,
+          customerId: dto.customerId ?? null,
+          policyId: dto.policyId ?? null,
+          performedById,
+        },
+        {
+          completedAt:
+            (dto.status ?? 'pending') === 'completed' ? new Date() : null,
+        },
+      ) as Prisma.ActivityUncheckedCreateInput,
       include: activityInclude,
     });
 
@@ -147,11 +163,23 @@ export class ActivitiesService {
       await assertActivityRelations(this.prisma, tenantId, mergedForAssert);
     }
 
+    const reschedulePatch =
+      dto.nextFollowUpAt &&
+      dto.status === undefined &&
+      existing.status === 'pending'
+        ? resolveActivityReschedulePatch(new Date(dto.nextFollowUpAt))
+        : null;
+
     const activity = await this.prisma.activity.update({
       where: { id },
       data: {
         ...(dto.type !== undefined ? { type: dto.type } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
+        ...(dto.status !== undefined
+          ? resolveActivityCompletionPatch({
+              previousStatus: existing.status,
+              nextStatus: dto.status,
+            })
+          : {}),
         ...(dto.subject !== undefined ? { subject: dto.subject.trim() } : {}),
         ...(dto.description !== undefined
           ? { description: dto.description?.trim() || null }
@@ -159,21 +187,23 @@ export class ActivitiesService {
         ...(dto.outcome !== undefined
           ? { outcome: dto.outcome?.trim() || null }
           : {}),
-        ...(dto.occurredAt !== undefined
-          ? { occurredAt: new Date(dto.occurredAt) }
-          : {}),
-        ...(dto.nextFollowUpAt !== undefined
-          ? {
-              nextFollowUpAt: dto.nextFollowUpAt
-                ? new Date(dto.nextFollowUpAt)
-                : null,
-            }
-          : {}),
+        ...(reschedulePatch ?? {
+          ...(dto.occurredAt !== undefined
+            ? { occurredAt: new Date(dto.occurredAt) }
+            : {}),
+          ...(dto.nextFollowUpAt !== undefined
+            ? {
+                nextFollowUpAt: dto.nextFollowUpAt
+                  ? new Date(dto.nextFollowUpAt)
+                  : null,
+              }
+            : {}),
+        }),
         ...(dto.leadId !== undefined ? { leadId: dto.leadId } : {}),
         ...(dto.dealId !== undefined ? { dealId: dto.dealId } : {}),
         ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
         ...(dto.policyId !== undefined ? { policyId: dto.policyId } : {}),
-      },
+      } as Prisma.ActivityUncheckedUpdateInput,
       include: activityInclude,
     });
 

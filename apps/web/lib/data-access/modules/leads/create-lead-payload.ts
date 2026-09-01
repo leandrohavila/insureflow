@@ -17,6 +17,10 @@ export type CreateLeadPayload = {
   interestCategories?: InterestCategory[]
   followUpDays?: number
   followUpType?: "CALL" | "WHATSAPP" | "EMAIL" | "MEETING"
+  opportunityType?: string
+  currentInsurer?: string
+  currentPolicyNumber?: string
+  policyExpiresAt?: string
 }
 
 function optionalValue(value: string | undefined) {
@@ -62,6 +66,15 @@ export function buildCreateLeadPayload(
   }
   if (input.followUpDays) payload.followUpDays = input.followUpDays
   if (input.followUpType) payload.followUpType = input.followUpType
+
+  const opportunityType = optionalValue(input.opportunityType)
+  if (opportunityType) payload.opportunityType = opportunityType
+  const currentInsurer = optionalValue(input.currentInsurer)
+  if (currentInsurer) payload.currentInsurer = currentInsurer
+  const currentPolicyNumber = optionalValue(input.currentPolicyNumber)
+  if (currentPolicyNumber) payload.currentPolicyNumber = currentPolicyNumber
+  const policyExpiresAt = optionalValue(input.policyExpiresAt)
+  if (policyExpiresAt) payload.policyExpiresAt = policyExpiresAt
 
   return payload
 }

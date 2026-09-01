@@ -38,6 +38,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
 import { BusinessUnitsService } from '../business-units/business-units.service';
 import { LeadFollowUpsService } from '../lead-follow-ups/lead-follow-ups.service';
+import { syncLeadRenewalActivities } from './lead-renewal-agenda.sync';
 import { LeadLossReasonsService } from '../lead-loss-reasons/lead-loss-reasons.service';
 import {
   resolveLeadLastInteractionAt,
@@ -499,6 +500,17 @@ export class LeadsService {
       );
     }
 
+    if (!ownerUserId && actor?.userId) {
+      ownerUserId = actor.userId;
+      assignedTo =
+        assignedTo ??
+        (await resolveAssignedToLabelForUserId(
+          this.prisma,
+          tenantId,
+          actor.userId,
+        ));
+    }
+
     const documentFields = this.resolveDocumentFields(
       dto.documentType,
       dto.document,
@@ -514,38 +526,48 @@ export class LeadsService {
     const insertStartedAt = performance.now();
     console.info('[BUG010][prisma] INSERT lead start', { traceId });
     const lead = await this.prisma.lead.create({
-      data: {
-        tenantId,
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        company: dto.company,
-        source: dto.source,
-        status: dto.status ?? 'new',
-        notes: dto.notes,
-        assignedTo,
-        ownerUserId,
-        ownerTeamId,
-        lastContactAt: now,
-        lastInteractionAt: now,
-        businessUnitId: units.originId,
-        interestCategories: dto.interestCategories ?? [],
-        lostReason: dto.lostReason,
-        reactivationEnabled: dto.reactivationEnabled ?? true,
-        reactivationDays: dto.reactivationDays,
-        ...(dto.lossReasonId ? { lossReasonId: dto.lossReasonId } : {}),
-        ...(units.unitIds.length
-          ? {
-              businessUnits: {
-                create: units.unitIds.map((businessUnitId) => ({
-                  businessUnitId,
-                  isOrigin: businessUnitId === units.originId,
-                })),
-              },
-            }
-          : {}),
-        ...documentFields,
-      },
+      data: Object.assign(
+        {
+          tenantId,
+          name: dto.name,
+          email: dto.email,
+          phone: dto.phone,
+          company: dto.company,
+          source: dto.source,
+          status: dto.status ?? 'new',
+          notes: dto.notes,
+          assignedTo,
+          ownerUserId,
+          ownerTeamId,
+          lastContactAt: now,
+          lastInteractionAt: now,
+          businessUnitId: units.originId,
+          interestCategories: dto.interestCategories ?? [],
+          lostReason: dto.lostReason,
+          reactivationEnabled: dto.reactivationEnabled ?? true,
+          reactivationDays: dto.reactivationDays,
+          ...(dto.lossReasonId ? { lossReasonId: dto.lossReasonId } : {}),
+          ...(units.unitIds.length
+            ? {
+                businessUnits: {
+                  create: units.unitIds.map((businessUnitId) => ({
+                    businessUnitId,
+                    isOrigin: businessUnitId === units.originId,
+                  })),
+                },
+              }
+            : {}),
+          ...documentFields,
+        },
+        {
+          opportunityType: dto.opportunityType ?? null,
+          currentInsurer: dto.currentInsurer ?? null,
+          currentPolicyNumber: dto.currentPolicyNumber ?? null,
+          policyExpiresAt: dto.policyExpiresAt
+            ? new Date(dto.policyExpiresAt)
+            : null,
+        },
+      ) as Prisma.LeadUncheckedCreateInput,
       include: leadOwnerInclude,
     });
     console.info('[BUG010][prisma] INSERT lead end', {
@@ -562,6 +584,15 @@ export class LeadsService {
         type: this.followUps.isFollowUpType(dto.followUpType)
           ? dto.followUpType
           : 'WHATSAPP',
+      });
+    }
+    const performerId = lead.ownerUserId ?? actor?.userId;
+    if (performerId) {
+      await syncLeadRenewalActivities(this.prisma, {
+        tenantId,
+        leadId: lead.id,
+        performedById: performerId,
+        expiresAt: (lead as { policyExpiresAt?: Date | null }).policyExpiresAt,
       });
     }
     return serializeLeadRecord({
@@ -618,7 +649,15 @@ export class LeadsService {
           existing?.ownerUserId ??
           null;
       } else {
-        ownerUserIdPatch = null;
+        ownerUserIdPatch = existing?.ownerUserId ?? actor?.userId ?? null;
+        if (ownerUserIdPatch) {
+          assignedToPatch =
+            (await resolveAssignedToLabelForUserId(
+              this.prisma,
+              tenantId,
+              ownerUserIdPatch,
+            )) ?? assignedToPatch;
+        }
       }
     }
 
@@ -677,6 +716,24 @@ export class LeadsService {
       lastContactAt: now,
       lastInteractionAt: now,
     };
+    Object.assign(data, {
+      ...(dto.opportunityType !== undefined
+        ? { opportunityType: dto.opportunityType ?? null }
+        : {}),
+      ...(dto.currentInsurer !== undefined
+        ? { currentInsurer: dto.currentInsurer ?? null }
+        : {}),
+      ...(dto.currentPolicyNumber !== undefined
+        ? { currentPolicyNumber: dto.currentPolicyNumber ?? null }
+        : {}),
+      ...(dto.policyExpiresAt !== undefined
+        ? {
+            policyExpiresAt: dto.policyExpiresAt
+              ? new Date(dto.policyExpiresAt)
+              : null,
+          }
+        : {}),
+    });
 
     let lead = await this.prisma.lead.update({
       where: { id },
@@ -720,6 +777,21 @@ export class LeadsService {
           lostReason: lead.lostReason,
         },
       });
+    }
+
+    if (
+      dto.policyExpiresAt !== undefined ||
+      dto.opportunityType === 'renewal'
+    ) {
+      const performerId = lead.ownerUserId ?? actor?.userId;
+      if (performerId) {
+        await syncLeadRenewalActivities(this.prisma, {
+          tenantId,
+          leadId: lead.id,
+          performedById: performerId,
+          expiresAt: (lead as { policyExpiresAt?: Date | null }).policyExpiresAt,
+        });
+      }
     }
 
     return serializeLeadRecord({

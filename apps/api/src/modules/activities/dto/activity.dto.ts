@@ -20,6 +20,8 @@ export const ACTIVITY_TYPES = [
   'visit',
   'note',
   'follow_up',
+  'renewal',
+  'task',
 ] as const;
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];

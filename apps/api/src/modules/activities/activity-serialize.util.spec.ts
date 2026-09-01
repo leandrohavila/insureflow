@@ -12,6 +12,7 @@ describe('serializeActivity', () => {
       outcome: null,
       operationalEventKind: 'policy_issued',
       occurredAt: new Date('2026-05-23T12:00:00.000Z'),
+      completedAt: null,
       nextFollowUpAt: null,
       leadId: null,
       dealId: 'deal-1',

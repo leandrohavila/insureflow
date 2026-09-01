@@ -10,6 +10,14 @@ import {
   defaultStagesForUnitType,
 } from '../../common/utils/deal-pipeline.util';
 import { startOfUtcDay } from '../../common/utils/lead-reactivation.util';
+import {
+  inAgendaWindow,
+  startOfLocalDay,
+} from './commercial-agenda-window.util';
+import {
+  agendaPriority,
+  type AgendaPriority,
+} from './commercial-agenda-priority.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import type {
@@ -32,6 +40,7 @@ export type AgendaItem = {
   dealId: string | null;
   ownerName: string | null;
   ownerUserId: string | null;
+  priority: AgendaPriority;
 };
 
 const TYPE_LABELS: Record<CommercialAgendaType, string> = {
@@ -43,45 +52,20 @@ const TYPE_LABELS: Record<CommercialAgendaType, string> = {
   WHATSAPP: 'WhatsApp',
   EMAIL: 'Email',
   MEETING: 'Reunião',
+  VISIT: 'Visita',
+  TASK: 'Tarefa',
 };
-
-function startOfLocalDay(date: Date) {
-  const next = new Date(date);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function endOfLocalDay(date: Date) {
-  const next = new Date(date);
-  next.setHours(23, 59, 59, 999);
-  return next;
-}
 
 function activityType(type: string): CommercialAgendaType {
   if (type === 'call') return 'CALL';
   if (type === 'whatsapp') return 'WHATSAPP';
   if (type === 'email') return 'EMAIL';
   if (type === 'meeting') return 'MEETING';
+  if (type === 'visit') return 'VISIT';
+  if (type === 'task') return 'TASK';
+  if (type === 'renewal') return 'RENEWAL';
   if (type === 'follow_up') return 'FOLLOW_UP';
   return 'FOLLOW_UP';
-}
-
-function inWindow(at: Date, window: ListCommercialAgendaQueryDto['window'], now: Date) {
-  const startToday = startOfLocalDay(now);
-  const endToday = endOfLocalDay(now);
-  if (window === 'today') return at >= startToday && at <= endToday;
-  if (window === 'overdue') return at < startToday;
-  if (window === 'next7') {
-    const until = new Date(startToday);
-    until.setDate(until.getDate() + 7);
-    return at >= startToday && at <= until;
-  }
-  if (window === 'next30') {
-    const until = new Date(startToday);
-    until.setDate(until.getDate() + 30);
-    return at >= startToday && at <= until;
-  }
-  return true;
 }
 
 @Injectable()
@@ -97,19 +81,27 @@ export class CommercialAgendaService {
     actor?: BusinessUnitActor,
   ) {
     const now = new Date();
-    const items = await this.collect(tenantId, actor, now);
+    const collected = await this.collect(tenantId, actor, now);
+    const items: AgendaItem[] = collected.map((item) => ({
+      ...item,
+      priority: agendaPriority(new Date(item.at), now),
+    }));
     const filtered = items.filter((item) => {
       if (query.assignedUserId && item.ownerUserId !== query.assignedUserId) {
         return false;
       }
       if (query.type && item.type !== query.type) return false;
-      if (query.window && !inWindow(new Date(item.at), query.window, now)) {
+      if (
+        query.window &&
+        !inAgendaWindow(new Date(item.at), query.window, now)
+      ) {
         return false;
       }
       return true;
     });
     filtered.sort((a, b) => a.at.localeCompare(b.at));
-    const metrics = this.metrics(items, now);
+    const extra = await this.extraMetrics(tenantId, actor, now);
+    const metrics = { ...this.metrics(items, now), ...extra };
     return {
       data: filtered.slice(0, query.limit ?? 100),
       metrics,
@@ -118,29 +110,56 @@ export class CommercialAgendaService {
 
   private metrics(items: AgendaItem[], now: Date) {
     return {
-      today: items.filter((item) => inWindow(new Date(item.at), 'today', now))
-        .length,
+      today: items.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'today', now),
+      ).length,
       overdue: items.filter((item) =>
-        inWindow(new Date(item.at), 'overdue', now),
+        inAgendaWindow(new Date(item.at), 'overdue', now),
       ).length,
       renewalsUpcoming: items.filter(
         (item) =>
           item.type === 'RENEWAL' &&
-          inWindow(new Date(item.at), 'next30', now),
+          inAgendaWindow(new Date(item.at), 'next30', now),
       ).length,
       reactivationsPending: items.filter(
         (item) => item.type === 'REACTIVATION' && item.status !== 'completed',
       ).length,
       slaOverdue: items.filter((item) => item.type === 'SLA').length,
+      followUpsPending: items.filter(
+        (item) =>
+          item.status.toLowerCase() === 'pending' &&
+          (item.type === 'FOLLOW_UP' ||
+            item.type === 'CALL' ||
+            item.type === 'WHATSAPP'),
+      ).length,
     };
+  }
+
+  private async extraMetrics(
+    tenantId: string,
+    actor: BusinessUnitActor | undefined,
+    now: Date,
+  ) {
+    let leadWhere: Record<string, unknown> = {
+      tenantId,
+      createdAt: { gte: startOfLocalDay(now) },
+    };
+    if (actor && this.buAccess) {
+      const extra = await this.buAccess.leadWhere(actor);
+      if (extra) leadWhere = andWhere(leadWhere, extra);
+    }
+    const leadsToday = await this.prisma.lead.count({
+      where: leadWhere as never,
+    });
+    return { leadsToday };
   }
 
   private async collect(
     tenantId: string,
     actor: BusinessUnitActor | undefined,
     now: Date,
-  ): Promise<AgendaItem[]> {
-    const items: AgendaItem[] = [];
+  ): Promise<Omit<AgendaItem, 'priority'>[]> {
+    const items: Omit<AgendaItem, 'priority'>[] = [];
     const from = new Date(now);
     from.setDate(from.getDate() - 90);
     const to = new Date(now);
@@ -166,7 +185,7 @@ export class CommercialAgendaService {
       if (relationOr.length) {
         activityWhere = andWhere(activityWhere, {
           OR: relationOr,
-        }) as typeof activityWhere;
+        });
       }
     }
 
@@ -208,7 +227,7 @@ export class CommercialAgendaService {
     };
     if (actor && this.buAccess) {
       const extra = await this.buAccess.followUpWhere(actor);
-      if (extra) followWhere = andWhere(followWhere, extra) as typeof followWhere;
+      if (extra) followWhere = andWhere(followWhere, extra);
     }
     const followUps = await this.prisma.leadFollowUp.findMany({
       where: followWhere,
@@ -254,7 +273,7 @@ export class CommercialAgendaService {
     };
     if (actor && this.buAccess) {
       const extra = await this.buAccess.renewalWhere(actor);
-      if (extra) renewalWhere = andWhere(renewalWhere, extra) as typeof renewalWhere;
+      if (extra) renewalWhere = andWhere(renewalWhere, extra);
     }
     const renewals = await this.prisma.policyRenewal.findMany({
       where: renewalWhere,
@@ -322,7 +341,7 @@ export class CommercialAgendaService {
     let dealScope = { tenantId, status: 'open' };
     if (actor && this.buAccess) {
       const extra = await this.buAccess.dealWhere(actor);
-      if (extra) dealScope = andWhere(dealScope, extra) as typeof dealScope;
+      if (extra) dealScope = andWhere(dealScope, extra);
     }
     const deals = await this.prisma.deal.findMany({
       where: dealScope,
@@ -336,7 +355,9 @@ export class CommercialAgendaService {
         customer: { select: { id: true, name: true } },
         ownerUser: { select: { name: true } },
         businessUnit: { select: { type: true } },
-        pipeline: { select: { stages: { select: { slug: true, maxDays: true } } } },
+        pipeline: {
+          select: { stages: { select: { slug: true, maxDays: true } } },
+        },
       },
       take: 500,
     });

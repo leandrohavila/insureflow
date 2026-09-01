@@ -5,8 +5,10 @@ import {
   MapPin,
   MessageSquare,
   Phone,
+  RefreshCw,
   StickyNote,
   Users,
+  ListTodo,
 } from "lucide-react"
 
 import type { StatusPillTone } from "@/components/crm/primitives"
@@ -44,6 +46,8 @@ export const activityTypeIcons: Record<ActivityType, IconComponent> = {
   visit: MapPin,
   note: StickyNote,
   follow_up: CalendarClock,
+  renewal: RefreshCw,
+  task: ListTodo,
 }
 
 /**
@@ -67,6 +71,8 @@ export const activityTypeTones: Record<ActivityType, StatusPillTone> = {
   visit: "warn",
   note: "neutral",
   follow_up: "brand",
+  renewal: "warn",
+  task: "neutral",
 }
 
 /**
@@ -82,4 +88,6 @@ export const activityTypeAccentVar: Record<ActivityType, string> = {
   visit: "var(--crm-tone-warn)",
   note: "var(--crm-tone-neutral)",
   follow_up: "var(--crm-tone-brand)",
+  renewal: "var(--crm-tone-warn)",
+  task: "var(--crm-tone-neutral)",
 }

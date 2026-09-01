@@ -17,6 +17,10 @@ export type LeadDialogFormState = {
   document: string
   notes: string
   assignedTo: string
+  opportunityType: string
+  currentInsurer: string
+  currentPolicyNumber: string
+  policyExpiresAt: string
   businessUnitId: string
   interestCategories: InterestCategory[]
   followUpDays: string
@@ -32,6 +36,10 @@ export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
   document: "",
   notes: "",
   assignedTo: "",
+  opportunityType: "",
+  currentInsurer: "",
+  currentPolicyNumber: "",
+  policyExpiresAt: "",
   businessUnitId: "",
   interestCategories: [],
   followUpDays: "",
@@ -80,6 +88,12 @@ export function buildLeadDialogFormState(
     document: formatStoredDocument(lead.documentType, lead.document),
     notes: lead.notes ?? "",
     assignedTo: lead.assignedTo ?? sessionName ?? "",
+    opportunityType: lead.opportunityType ?? "",
+    currentInsurer: lead.currentInsurer ?? "",
+    currentPolicyNumber: lead.currentPolicyNumber ?? "",
+    policyExpiresAt: lead.policyExpiresAt
+      ? lead.policyExpiresAt.slice(0, 10)
+      : "",
     businessUnitId:
       options?.lockedBusinessUnitId || lead.businessUnitId || "",
     interestCategories: lead.interestCategories ?? [],

@@ -4,6 +4,7 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsIn,
   IsInt,
@@ -31,6 +32,15 @@ export const LEAD_STATUSES = [
 ] as const;
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export const LEAD_OPPORTUNITY_TYPES = [
+  'new_business',
+  'renewal',
+  'cross_sell',
+  'indication',
+] as const;
+
+export type LeadOpportunityType = (typeof LEAD_OPPORTUNITY_TYPES)[number];
 
 export class ListLeadsQueryDto {
   @ApiPropertyOptional({
@@ -261,6 +271,32 @@ export class CreateLeadDto {
   @Min(1)
   @Max(365)
   reactivationDays?: number;
+
+  @ApiPropertyOptional({ enum: LEAD_OPPORTUNITY_TYPES })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsIn(LEAD_OPPORTUNITY_TYPES)
+  opportunityType?: LeadOpportunityType;
+
+  @ApiPropertyOptional({ example: 'Porto Seguro' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  currentInsurer?: string;
+
+  @ApiPropertyOptional({ example: '123456789' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  currentPolicyNumber?: string;
+
+  @ApiPropertyOptional({ example: '2026-12-31' })
+  @Transform(optionalEmptyValue)
+  @IsOptional()
+  @IsDateString()
+  policyExpiresAt?: string;
 }
 
 export class UpdateLeadDto extends PartialType(CreateLeadDto) {}

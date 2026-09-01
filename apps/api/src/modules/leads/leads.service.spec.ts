@@ -78,6 +78,10 @@ describe('LeadsService.createLead', () => {
     const prisma = {
       lead: { create: leadCreate },
       user: { findFirst: userFindFirst },
+      activity: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     } as unknown as PrismaService;
 
     const ownership = {
