@@ -43,6 +43,8 @@ type ActivityFormDialogProps = {
   error?: unknown
   activity?: Activity | null
   onSubmit: (input: CreateActivityInput) => void
+  /** Render inline (inside Lead dialog) instead of a stacked modal. */
+  embedded?: boolean
 }
 
 type FormState = {
@@ -126,6 +128,7 @@ export function ActivityFormDialog({
   error,
   activity,
   onSubmit,
+  embedded = false,
 }: ActivityFormDialogProps) {
   const [form, setForm] = useState<FormState>(() => createEmptyForm(null))
   /** Só true após clique num chip ou quando `initialType` veio de ação explícita (quick action). */
@@ -204,16 +207,7 @@ export function ActivityFormDialog({
     })
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="crm-workspace z-[60] flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0 sm:max-w-lg"
-        style={{
-          backgroundColor: "var(--crm-surface-base)",
-          borderColor: "var(--crm-stroke-default)",
-        }}
-        {...isolateNestedSurfaceEvents}
-      >
+  const formBody = (
         <form
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col"
@@ -453,6 +447,28 @@ export function ActivityFormDialog({
             </Button>
           </DialogFooter>
         </form>
+  )
+
+  if (embedded) {
+    if (!open) return null
+    return (
+      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+        {formBody}
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="crm-workspace z-[60] flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0 sm:max-w-lg"
+        style={{
+          backgroundColor: "var(--crm-surface-base)",
+          borderColor: "var(--crm-stroke-default)",
+        }}
+        {...isolateNestedSurfaceEvents}
+      >
+        {formBody}
       </DialogContent>
     </Dialog>
   )

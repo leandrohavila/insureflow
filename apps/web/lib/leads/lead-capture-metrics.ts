@@ -16,6 +16,8 @@ export type LeadCaptureMetrics = {
   customersInsurance: number
   customersRealEstate: number
   conversionRate: number | null
+  noContact: number
+  followUps: number
 }
 
 export function pipelineFromCounts(
@@ -48,6 +50,9 @@ export function computeLeadCaptureMetrics(input: {
   const pipelineRealEstate = pipelineFromCounts(input.realEstateCounts)
   const pipeline =
     pipelineInsurance + pipelineRealEstate || pipelineFromCounts(input.counts)
+  const noContact =
+    (input.insuranceCounts?.new ?? 0) + (input.realEstateCounts?.new ?? 0) ||
+    (input.counts?.new ?? 0)
 
   return {
     total,
@@ -60,6 +65,8 @@ export function computeLeadCaptureMetrics(input: {
     customersInsurance: input.customersInsurance ?? 0,
     customersRealEstate: input.customersRealEstate ?? 0,
     conversionRate: total > 0 ? Math.round((converted / total) * 100) : null,
+    noContact,
+    followUps: 0,
   }
 }
 

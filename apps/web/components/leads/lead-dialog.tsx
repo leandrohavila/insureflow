@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { Loader2 } from "lucide-react"
 
+import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { ActivityTimeline } from "@/components/activities/activity-timeline"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
 import { useSession } from "@/components/auth/session-provider"
@@ -17,7 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { getErrorMessage } from "@/lib/data-access"
 import {
   formatDocumentMask,
@@ -149,6 +149,32 @@ function LeadDialogBusinessFields({
         })}
       </div>
     </div>
+  )
+}
+
+function LeadDialogSection({
+  step,
+  title,
+  children,
+  columns = true,
+}: {
+  step: number
+  title: string
+  children: React.ReactNode
+  columns?: boolean
+}) {
+  return (
+    <section className="space-y-3 sm:col-span-2">
+      <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="inline-flex size-5 items-center justify-center rounded-full border border-white/15 text-[10px] tabular-nums text-foreground">
+          {step}
+        </span>
+        {title}
+      </h3>
+      <div className={columns ? "grid gap-4 sm:grid-cols-2" : "space-y-3"}>
+        {children}
+      </div>
+    </section>
   )
 }
 
@@ -348,7 +374,8 @@ export function LeadDialog({
               ) : null}
             </DialogHeader>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-6">
+              <LeadDialogSection step={1} title="Dados">
               <label className="space-y-2 sm:col-span-2">
                 <span className="text-sm font-medium">Nome</span>
                 <Input
@@ -428,6 +455,9 @@ export function LeadDialog({
                   placeholder="whatsapp, site, indicação..."
                 />
               </label>
+              </LeadDialogSection>
+
+              <LeadDialogSection step={2} title="Qualificação">
               <label className="space-y-2">
                 <span className="text-sm font-medium">Responsável</span>
                 <Input
@@ -437,6 +467,14 @@ export function LeadDialog({
                   required
                 />
               </label>
+              <LeadDialogBusinessFields
+                form={form}
+                update={update}
+                intent={intent}
+              />
+              </LeadDialogSection>
+
+              <LeadDialogSection step={3} title="Oportunidade">
               <label className="space-y-2">
                 <span className="text-sm font-medium">Tipo oportunidade</span>
                 <FormSelect
@@ -481,11 +519,7 @@ export function LeadDialog({
                   }
                 />
               </label>
-              <LeadDialogBusinessFields
-                form={form}
-                update={update}
-                intent={intent}
-              />
+
               {form.policyExpiresAt ? (
                 <div className="space-y-3 sm:col-span-2 rounded-lg border border-white/10 p-3">
                   <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -523,10 +557,10 @@ export function LeadDialog({
                   ))}
                 </div>
               ) : null}
-              <div className="space-y-3 sm:col-span-2 rounded-lg border border-white/10 p-3">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Próxima ação
-                </p>
+              </LeadDialogSection>
+
+              <LeadDialogSection step={4} title="Próxima ação" columns={false}>
+              <div className="space-y-3 rounded-lg border border-white/10 p-3">
                 <label className="space-y-2">
                   <span className="text-sm font-medium">Próximo contato</span>
                   <FormSelect
@@ -601,6 +635,7 @@ export function LeadDialog({
                   placeholder="Contexto da oportunidade"
                 />
               </label>
+              </LeadDialogSection>
             </div>
 
             {primaryDuplicate && !duplicateDismissed ? (
@@ -634,10 +669,19 @@ export function LeadDialog({
             ) : null}
 
             {lead ? (
-              <>
-                <Separator className="bg-white/[0.06]" />
-                <ActivityTimeline leadId={lead.id} dealId={lead.dealId} />
-              </>
+              <LeadDialogSection step={5} title="Histórico" columns={false}>
+                <ActivityQuickActions
+                  leadId={lead.id}
+                  dealId={lead.dealId}
+                  compact
+                  embedded
+                />
+                <ActivityTimeline
+                  leadId={lead.id}
+                  dealId={lead.dealId}
+                  embedded
+                />
+              </LeadDialogSection>
             ) : null}
 
             <DialogFooter>

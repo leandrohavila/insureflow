@@ -28,12 +28,10 @@ import {
   useShowMineLeadsFilter,
 } from "@/components/auth/session-provider"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
-import { LeadCreateEmptyActions } from "@/components/leads/lead-create-menu"
-import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
+import { LeadCreateEmptyActions, LeadCreateMenu } from "@/components/leads/lead-create-menu"
 import { LeadCaptureMetricsGrid } from "@/components/leads/lead-capture-metrics"
 import { LeadDialog } from "@/components/leads/lead-dialog"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
-import { LeadQuestionnaireBadge } from "@/components/questionnaires/lead-questionnaire-badge"
 import { QuestionnaireSubmissionDetailSheet } from "@/components/questionnaires/questionnaire-submission-detail-sheet"
 import { QuestionnaireSubmissionDialog } from "@/components/questionnaires/questionnaire-submission-dialog"
 import { ActionToast } from "@/components/shared"
@@ -93,6 +91,11 @@ import {
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { isLeadConverted, leadOwnerDisplayName } from "@/lib/leads/lead-owner"
+import {
+  deriveLeadPriority,
+  LEAD_PRIORITY_LABEL,
+  leadHasNoContact,
+} from "@/lib/leads/lead-operational-signals"
 import {
   bug010LeadCreateLog,
   bug010LeadCreateProfiler,
@@ -447,28 +450,47 @@ export function LeadsPage() {
       {
         key: "name",
         header: "Lead",
-        render: (row) => (
-          <div className="flex items-center gap-2">
-            <Avatar className="size-7 border border-white/10">
-              <AvatarFallback className="bg-primary/15 text-[10px] font-semibold text-primary">
-                {row.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-medium tracking-[-0.02em]">
-                {row.name}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {row.company || "Sem empresa"}
-              </p>
+        render: (row) => {
+          const priority = deriveLeadPriority(row)
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar className="size-7 border border-white/10">
+                <AvatarFallback className="bg-white/[0.06] text-[10px] font-semibold text-foreground">
+                  {row.initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 leading-tight">
+                <p className="truncate text-sm font-medium tracking-[-0.02em]">
+                  {row.name}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                  <span
+                    className={cn(
+                      "rounded-full border px-1.5 py-px text-[10px] font-medium",
+                      priority === "high" &&
+                        "border-rose-400/30 bg-rose-500/10 text-rose-200",
+                      priority === "medium" &&
+                        "border-amber-400/30 bg-amber-500/10 text-amber-200",
+                      priority === "low" &&
+                        "border-white/10 text-muted-foreground",
+                    )}
+                  >
+                    {LEAD_PRIORITY_LABEL[priority]}
+                  </span>
+                  {leadHasNoContact(row) ? (
+                    <span className="rounded-full border border-sky-400/25 bg-sky-500/10 px-1.5 py-px text-[10px] text-sky-200">
+                      Sem contato
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-          </div>
-        ),
+          )
+        },
       },
       {
         key: "contact",
         header: "Contato",
-        hideOnMobile: true,
         render: (row) => (
           <div className="flex flex-col gap-0 text-[11px] leading-tight text-muted-foreground">
             {row.email ? (
@@ -492,12 +514,9 @@ export function LeadsPage() {
         header: "Origem",
         hideOnMobile: true,
         render: (row) => (
-          <Badge
-            variant="outline"
-            className="rounded-full border-white/10 text-[10px]"
-          >
+          <span className="text-xs text-muted-foreground">
             {row.source || "Não informada"}
-          </Badge>
+          </span>
         ),
       },
       {
@@ -516,33 +535,24 @@ export function LeadsPage() {
         ),
       },
       {
-        key: "unit",
-        header: "Unidade",
-        hideOnMobile: true,
-        render: (row) => (
-          <span className="text-xs text-muted-foreground">
-            {row.businessUnit?.name ?? "—"}
-          </span>
-        ),
-      },
-      {
-        key: "questionnaire",
-        header: "Questionário",
-        render: (row) => (
-          <LeadQuestionnaireBadge
-            leadId={row.id}
-            onViewSubmission={setSelectedSubmissionId}
-            onFill={() => setQuestionnaireLead(row)}
-          />
-        ),
-      },
-      {
         key: "owner",
         header: "Responsável",
         hideOnMobile: true,
         render: (row) => (
           <span className="text-xs text-muted-foreground">
             {leadOwnerDisplayName(row) || "Sem responsável"}
+          </span>
+        ),
+      },
+      {
+        key: "nextContact",
+        header: "Próximo contato",
+        hideOnMobile: true,
+        render: (row) => (
+          <span className="text-xs text-muted-foreground">
+            {leadHasNoContact(row)
+              ? "Pendente"
+              : formatLastInteraction(row.lastContactAt)}
           </span>
         ),
       },
@@ -557,7 +567,7 @@ export function LeadsPage() {
         ),
       },
     ],
-    [setSelectedSubmissionId],
+    [],
   )
 
   return (
@@ -575,30 +585,32 @@ export function LeadsPage() {
                 </Badge>
               </span>
             }
+            description="Fila comercial única — priorize contato, follow-up e conversão."
             actions={
-              <PageActions className="sm:flex-wrap">
+              <PageActions>
                 <PageActionsGroup
                   variant="primary"
                   aria-label="Ações principais"
-                  className="flex-wrap"
                 >
+                  <PermissionGate permission="leads:manage">
+                    <LeadCreateMenu
+                      onCreate={(intent) => openLeadDialog(null, intent)}
+                      insuranceEnabled={
+                        captureMetrics.isLoading ||
+                        Boolean(captureMetrics.insuranceBusinessUnitId)
+                      }
+                      realEstateEnabled={
+                        captureMetrics.isLoading ||
+                        Boolean(captureMetrics.realEstateBusinessUnitId)
+                      }
+                    />
+                  </PermissionGate>
                   <PermissionGate permission="leads:manage">
                     <Button variant="outline" size="sm" className="h-8 gap-1.5">
                       <Upload className="size-3.5" strokeWidth={1.5} />
                       Importar
                     </Button>
                   </PermissionGate>
-                  <CrmCaptureActions
-                    onCreateLead={(intent) => openLeadDialog(null, intent)}
-                    insuranceEnabled={
-                      captureMetrics.isLoading ||
-                      Boolean(captureMetrics.insuranceBusinessUnitId)
-                    }
-                    realEstateEnabled={
-                      captureMetrics.isLoading ||
-                      Boolean(captureMetrics.realEstateBusinessUnitId)
-                    }
-                  />
                 </PageActionsGroup>
               </PageActions>
             }
@@ -686,7 +698,7 @@ export function LeadsPage() {
                     checked={mineOnly}
                     onChange={(event) => setMineOnly(event.target.checked)}
                   />
-                  Meus leads
+                  Responsável
                 </label>
               ) : null}
             </FilterBar>
@@ -708,7 +720,7 @@ export function LeadsPage() {
               onRetry={() => leadsQuery.refetch()}
               emptyIcon={UserPlus}
               emptyTitle="Nenhum registro encontrado"
-              emptyDescription="Crie um Lead Seguro ou Lead Imobiliário para começar — a unidade é definida pelo tipo."
+              emptyDescription="Crie um novo lead para começar — a unidade é definida pelo tipo (seguro ou imobiliário)."
               emptyAction={
                 <PermissionGate permission="leads:manage">
                   <LeadCreateEmptyActions

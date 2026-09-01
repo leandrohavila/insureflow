@@ -32,13 +32,14 @@ export function DashboardCommercialOpsKpis() {
     capture.isLoading || agendaQuery.isLoading || executive.isLoading
 
   return (
-    <div className="space-y-[var(--if-space-4)]">
+    <div className="space-y-[var(--if-space-2)]">
       <Grid columns="4">
         <StatCard
           icon={UserPlus}
           label="Leads hoje"
           value={metrics?.leadsToday ?? 0}
           description="Entrada comercial do dia"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -46,6 +47,7 @@ export function DashboardCommercialOpsKpis() {
           label="Follow-ups pendentes"
           value={metrics?.followUpsPending ?? 0}
           tone="info"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -53,6 +55,7 @@ export function DashboardCommercialOpsKpis() {
           label="Renovações próximas"
           value={metrics?.renewalsUpcoming ?? 0}
           tone="warning"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -60,6 +63,7 @@ export function DashboardCommercialOpsKpis() {
           label="Atividades atrasadas"
           value={metrics?.overdue ?? 0}
           tone="danger"
+          density="compact"
           loading={loading}
         />
       </Grid>
@@ -74,6 +78,7 @@ export function DashboardCommercialOpsKpis() {
               : "Sem conversões"
           }
           tone="success"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -81,6 +86,7 @@ export function DashboardCommercialOpsKpis() {
           label="Receita Seguros"
           value={formatCurrency(executive.data?.revenueInsurance ?? 0)}
           tone="info"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -88,6 +94,7 @@ export function DashboardCommercialOpsKpis() {
           label="Receita Imobiliária"
           value={formatCurrency(executive.data?.revenueRealEstate ?? 0)}
           tone="warning"
+          density="compact"
           loading={loading}
         />
       </Grid>

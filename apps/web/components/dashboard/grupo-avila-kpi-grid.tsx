@@ -24,13 +24,14 @@ export function GrupoAvilaExecutiveKpiGrid({
   loading = false,
 }: GrupoAvilaExecutiveKpiGridProps) {
   return (
-    <div className="space-y-[var(--if-space-4)]">
+    <div className="space-y-[var(--if-space-2)]">
       <Grid columns="4">
         <StatCard
           icon={Users}
           label="Leads Totais"
           value={metrics.total}
           tone="primary"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -38,6 +39,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           label="Leads Seguros"
           value={metrics.insurance}
           tone="info"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -45,6 +47,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           label="Leads Imobiliários"
           value={metrics.realEstate}
           tone="warning"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -57,6 +60,7 @@ export function GrupoAvilaExecutiveKpiGrid({
               : "Sem conversões"
           }
           tone="success"
+          density="compact"
           loading={loading}
         />
       </Grid>
@@ -66,6 +70,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           label="Clientes Seguros"
           value={metrics.customersInsurance}
           tone="info"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -73,6 +78,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           label="Clientes Imobiliários"
           value={metrics.customersRealEstate}
           tone="warning"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -81,6 +87,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           value={metrics.pipelineInsurance}
           description="Novos, em contato e qualificados"
           tone="primary"
+          density="compact"
           loading={loading}
         />
         <StatCard
@@ -89,6 +96,7 @@ export function GrupoAvilaExecutiveKpiGrid({
           value={metrics.pipelineRealEstate}
           description="Novos, em atendimento e visita"
           tone="primary"
+          density="compact"
           loading={loading}
         />
       </Grid>

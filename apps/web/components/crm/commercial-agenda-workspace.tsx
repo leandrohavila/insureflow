@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
@@ -25,8 +26,21 @@ const WINDOWS: { id: CommercialAgendaWindow; label: string }[] = [
   { id: "overdue", label: "Atrasados" },
   { id: "next7", label: "Próximos 7 dias" },
   { id: "next30", label: "Próximos 30 dias" },
-  { id: "future", label: "Futuro" },
+  { id: "future", label: "Futuras" },
 ]
+
+function initialAgendaWindow(raw: string | null): CommercialAgendaWindow {
+  if (
+    raw === "today" ||
+    raw === "overdue" ||
+    raw === "next7" ||
+    raw === "next30" ||
+    raw === "future"
+  ) {
+    return raw
+  }
+  return "today"
+}
 
 const TYPES: { id: CommercialAgendaType | ""; label: string }[] = [
   { id: "", label: "Todos" },
@@ -69,7 +83,7 @@ function statusLabel(status: string) {
 function priorityLabel(priority: CommercialAgendaItem["priority"] | undefined) {
   if (priority === "high") return "Alta"
   if (priority === "medium") return "Média"
-  return "Normal"
+  return "Baixa"
 }
 
 function toDatetimeLocal(iso: string) {
@@ -103,10 +117,16 @@ function parseAgendaItemId(
 
 export function CommercialAgendaWorkspace() {
   const queryClient = useQueryClient()
-  const [window, setWindow] = useState<CommercialAgendaWindow>("today")
+  const searchParams = useSearchParams()
+  const [window, setWindow] = useState<CommercialAgendaWindow>(() =>
+    initialAgendaWindow(searchParams.get("window")),
+  )
   const [type, setType] = useState<CommercialAgendaType | "">("")
   const [rescheduleId, setRescheduleId] = useState<string | null>(null)
   const [rescheduleAt, setRescheduleAt] = useState("")
+  const [resultId, setResultId] = useState<string | null>(null)
+  const [resultText, setResultText] = useState("")
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
   const query = useQuery({
     queryKey: queryKeys.commercialAgenda.list({ window, type }),
     queryFn: () => fetchCommercialAgenda({ window, type }),
@@ -114,15 +134,24 @@ export function CommercialAgendaWorkspace() {
   const items = query.data?.data ?? []
   const metrics = query.data?.metrics
 
-  async function complete(item: CommercialAgendaItem) {
+  async function complete(item: CommercialAgendaItem, outcome?: string) {
     const parsed = parseAgendaItemId(item.id)
     if (!parsed) return
 
     if (parsed.source === "activity") {
-      await updateActivity(parsed.id, { status: "completed" })
+      await updateActivity(parsed.id, {
+        status: "completed",
+        ...(outcome ? { outcome } : {}),
+      })
     } else {
-      await updateLeadFollowUp(parsed.id, { status: "COMPLETED" })
+      await updateLeadFollowUp(parsed.id, {
+        status: "COMPLETED",
+        ...(outcome ? { notes: outcome } : {}),
+      })
     }
+    setResultId(null)
+    setResultText("")
+    setActionMessage("Atividade concluída.")
     await queryClient.invalidateQueries({
       queryKey: queryKeys.commercialAgenda.all,
     })
@@ -138,6 +167,7 @@ export function CommercialAgendaWorkspace() {
       await updateLeadFollowUp(parsed.id, { scheduledAt: next })
     }
     setRescheduleId(null)
+    setActionMessage("Reagendado.")
     await queryClient.invalidateQueries({
       queryKey: queryKeys.commercialAgenda.all,
     })
@@ -151,13 +181,19 @@ export function CommercialAgendaWorkspace() {
         description="Ligações, WhatsApp, follow-ups, visitas, reuniões e renovações em um só lugar."
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-5">
-        <Kpi label="Atividades hoje" value={metrics?.today} />
-        <Kpi label="Atrasados" value={metrics?.overdue} />
-        <Kpi label="Renovações próximas" value={metrics?.renewalsUpcoming} />
-        <Kpi label="Follow-ups pendentes" value={metrics?.followUpsPending} />
-        <Kpi label="Leads hoje" value={metrics?.leadsToday} />
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <Kpi label="Atividades hoje" value={metrics?.today} loading={query.isLoading} />
+        <Kpi label="Atrasadas" value={metrics?.overdue} loading={query.isLoading} />
+        <Kpi label="Follow-ups" value={metrics?.followUpsPending} loading={query.isLoading} />
+        <Kpi label="Renovações" value={metrics?.renewalsUpcoming} loading={query.isLoading} />
+        <Kpi label="Leads novos" value={metrics?.leadsToday} loading={query.isLoading} />
       </div>
+
+      {actionMessage ? (
+        <p className="mb-3 rounded-md border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200" role="status">
+          {actionMessage}
+        </p>
+      ) : null}
 
       <div className="mb-3 flex flex-wrap gap-2">
         {WINDOWS.map((item) => (
@@ -184,10 +220,11 @@ export function CommercialAgendaWorkspace() {
         <table className="min-w-full text-sm">
           <thead className="bg-white/[0.03] text-left text-xs uppercase text-muted-foreground">
             <tr>
+              <th className="px-3 py-2">Data/Hora</th>
               <th className="px-3 py-2">Cliente/Lead</th>
               <th className="px-3 py-2">Tipo</th>
+              <th className="px-3 py-2">Motivo</th>
               <th className="px-3 py-2">Responsável</th>
-              <th className="px-3 py-2">Data/Hora</th>
               <th className="px-3 py-2">Prioridade</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2">Ações</th>
@@ -196,14 +233,17 @@ export function CommercialAgendaWorkspace() {
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-muted-foreground">
-                  Carregando agenda…
+                <td colSpan={8} className="px-3 py-6 text-muted-foreground">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="size-3 animate-pulse rounded-full bg-white/20" />
+                    Carregando agenda…
+                  </span>
                 </td>
               </tr>
             ) : null}
             {!query.isLoading && items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-muted-foreground">
+                <td colSpan={8} className="px-3 py-6 text-muted-foreground">
                   Nenhuma atividade nesta visão.
                 </td>
               </tr>
@@ -217,10 +257,11 @@ export function CommercialAgendaWorkspace() {
                     "bg-destructive/10 text-destructive",
                 )}
               >
+                <td className="px-3 py-2 tabular-nums">{formatDateTime(item.at)}</td>
                 <td className="px-3 py-2">{partyName(item)}</td>
                 <td className="px-3 py-2">{item.typeLabel}</td>
+                <td className="px-3 py-2 text-muted-foreground">{item.origin || "—"}</td>
                 <td className="px-3 py-2">{item.ownerName ?? "—"}</td>
-                <td className="px-3 py-2">{formatDateTime(item.at)}</td>
                 <td className="px-3 py-2">{priorityLabel(item.priority)}</td>
                 <td className="px-3 py-2">{statusLabel(item.status)}</td>
                 <td className="px-3 py-2">
@@ -272,6 +313,45 @@ export function CommercialAgendaWorkspace() {
                               Reagendar
                             </Button>
                           )}
+                          {resultId === item.id ? (
+                            <>
+                              <input
+                                className="h-8 min-w-[10rem] rounded-md border border-white/10 bg-transparent px-2 text-xs"
+                                placeholder="Resultado do contato"
+                                value={resultText}
+                                onChange={(event) =>
+                                  setResultText(event.target.value)
+                                }
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  complete(item, resultText.trim() || undefined)
+                                }
+                              >
+                                Salvar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setResultId(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setResultId(item.id)
+                                setResultText("")
+                              }}
+                            >
+                              Registrar resultado
+                            </Button>
+                          )}
                         </>
                       ) : null}
                     </PermissionGate>
@@ -302,13 +382,23 @@ export function CommercialAgendaWorkspace() {
   )
 }
 
-function Kpi({ label, value }: { label: string; value?: number }) {
+function Kpi({
+  label,
+  value,
+  loading,
+}: {
+  label: string
+  value?: number
+  loading?: boolean
+}) {
   return (
-    <div className="rounded-xl border border-white/[0.06] px-4 py-3">
+    <div className="rounded-md border border-white/[0.06] px-3 py-2">
       <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-lg font-semibold">{value ?? "—"}</p>
+      <p className="mt-0.5 text-base font-semibold tabular-nums">
+        {loading ? "—" : (value ?? 0)}
+      </p>
     </div>
   )
 }

@@ -33,7 +33,7 @@ export function LeadCreateMenu({
         disabled={!canCreate}
         aria-label="Novo lead"
         className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
+          buttonVariants({ size: "sm" }),
           "h-8 gap-1.5",
         )}
       >

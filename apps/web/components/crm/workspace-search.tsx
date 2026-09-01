@@ -209,10 +209,10 @@ export function WorkspaceSearchTrigger({ className }: WorkspaceSearchTriggerProp
           onFocus={() => setOpen(true)}
           onClick={() => setOpen(true)}
           placeholder="Buscar em todo o workspace…"
-          className="h-10 cursor-pointer rounded-full border-white/[0.08] bg-white/[0.04] pl-10 pr-4 text-[13px] shadow-inner shadow-black/20 transition-all duration-300 placeholder:text-muted-foreground/50 focus-visible:border-[#C09048]/35 focus-visible:bg-white/[0.06] focus-visible:ring-[3px] focus-visible:ring-[#C09048]/15 md:h-10"
+          className="h-9 w-full min-w-0 cursor-pointer rounded-md border-white/[0.08] bg-white/[0.03] pl-10 pr-12 text-[13px] shadow-none transition-colors placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:bg-white/[0.05] focus-visible:ring-[3px] focus-visible:ring-ring/25"
           aria-label="Busca operacional do workspace"
         />
-        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60 md:inline">
+        <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/10 bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60 xl:inline">
           ⌘K
         </kbd>
       </div>

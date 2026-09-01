@@ -10,7 +10,6 @@ import {
   Shield,
   AlertTriangle,
   MessageCircle,
-  Workflow,
   Settings,
   Building2,
   UserCircle,
@@ -19,6 +18,9 @@ import {
   Radar,
   UserCog,
   KeyRound,
+  RefreshCw,
+  CalendarCheck,
+  RotateCcw,
 } from "lucide-react"
 
 import {
@@ -132,12 +134,47 @@ const propostasItem: NavItem = {
   permission: "quotes:view",
 }
 
-const automacaoItem: NavItem = {
-  title: "Automação",
-  href: "/automacao",
-  icon: Workflow,
+const apolicesItem: NavItem = {
+  title: "Apólices",
+  href: "/apolices",
+  icon: Shield,
+  segment: "apolices",
+  permission: "policies:view",
+}
+
+const renovacoesItem: NavItem = {
+  title: "Renovações",
+  href: "/crm/renovacoes",
+  icon: RefreshCw,
+  segment: "crm",
+  activePrefix: "/crm/renovacoes",
+  permission: "crm:view",
+}
+
+const followUpsItem: NavItem = {
+  title: "Follow-ups",
+  href: "/crm/follow-ups",
+  icon: CalendarCheck,
+  segment: "crm",
+  activePrefix: "/crm/follow-ups",
+  permission: "crm:view",
+}
+
+const reativacaoItem: NavItem = {
+  title: "Reativação",
+  href: "/automacao/reativacao",
+  icon: RotateCcw,
   segment: "automacao",
+  activePrefix: "/automacao/reativacao",
   permission: "automation:view",
+}
+
+const whatsappItem: NavItem = {
+  title: "WhatsApp",
+  href: "/whatsapp",
+  icon: MessageCircle,
+  segment: "whatsapp",
+  permission: "whatsapp:view",
 }
 
 const configuracoesItem: NavItem = {
@@ -184,6 +221,68 @@ const portalItem: NavItem = {
   permission: "properties:view",
 }
 
+const crmNavItems: NavItem[] = [
+  leadsItem,
+  pipelineItem,
+  agendaComercialItem,
+  clientesItem,
+  customer360Item,
+]
+
+const segurosNavItems: NavItem[] = [
+  questionariosItem,
+  cotacoesItem,
+  propostasItem,
+  apolicesItem,
+  renovacoesItem,
+]
+
+const automacaoNavItems: NavItem[] = [
+  followUpsItem,
+  reativacaoItem,
+  whatsappItem,
+]
+
+const imobiliarioNavItems: NavItem[] = [
+  imoveisItem,
+  proprietariosItem,
+  leadsImobiliariosItem,
+  portalItem,
+]
+
+const governancaNavItems: NavItem[] = [
+  {
+    title: "Usuários",
+    href: "/configuracoes/governanca/usuarios",
+    icon: UserCog,
+    segment: "configuracoes",
+    activePrefix: "/configuracoes/governanca/usuarios",
+    permission: "settings:view",
+  },
+  {
+    title: "Perfis",
+    href: "/configuracoes/governanca/perfis",
+    icon: Shield,
+    segment: "configuracoes",
+    activePrefix: "/configuracoes/governanca/perfis",
+    permission: "settings:view",
+  },
+  {
+    title: "ACL",
+    href: "/configuracoes/governanca/matriz",
+    icon: KeyRound,
+    segment: "configuracoes",
+    activePrefix: "/configuracoes/governanca/matriz",
+    permission: "settings:view",
+  },
+  {
+    ...configuracoesItem,
+    exact: true,
+    href: "/configuracoes",
+    activePrefix: "/configuracoes/governanca",
+  },
+]
+
 /** Itens ocultos do menu de produção — rotas e ACL permanecem. */
 export const hiddenNavItems: NavItem[] = [
   {
@@ -194,25 +293,11 @@ export const hiddenNavItems: NavItem[] = [
     permission: "crm:view",
   },
   {
-    title: "Apólices",
-    href: "/apolices",
-    icon: Shield,
-    segment: "apolices",
-    permission: "policies:view",
-  },
-  {
     title: "Sinistros",
     href: "/sinistros",
     icon: AlertTriangle,
     segment: "sinistros",
     permission: "claims:view",
-  },
-  {
-    title: "WhatsApp",
-    href: "/whatsapp",
-    icon: MessageCircle,
-    segment: "whatsapp",
-    permission: "whatsapp:view",
   },
   {
     title: "Visitas",
@@ -222,90 +307,105 @@ export const hiddenNavItems: NavItem[] = [
     activePrefix: "/real-estate/visits",
     permission: "properties:view",
   },
+  {
+    title: "Automação",
+    href: "/automacao",
+    icon: RotateCcw,
+    segment: "automacao",
+    exact: true,
+    permission: "automation:view",
+  },
 ]
 
 /** Menu operacional — Corretora Ávila (INSURANCE / Todas). */
 export const mainNav: NavItem[] = [
   dashboardItem,
-  leadsItem,
-  pipelineItem,
-  clientesItem,
-  customer360Item,
-  agendaComercialItem,
-  questionariosItem,
-  cotacoesItem,
-  propostasItem,
-  automacaoItem,
+  ...crmNavItems,
+  ...segurosNavItems,
+  ...automacaoNavItems,
   configuracoesItem,
 ]
 
 /** Menu operacional — Ávila Imóveis (REAL_ESTATE). */
 export const realEstateNav: NavItem[] = [
   dashboardItem,
-  imoveisItem,
-  proprietariosItem,
-  leadsImobiliariosItem,
-  portalItem,
+  ...imobiliarioNavItems,
   configuracoesItem,
 ]
 
+const dashboardGroup: NavGroup = {
+  id: "dashboard",
+  label: "",
+  items: [dashboardItem],
+}
+
 /** Menu consolidado — admin / super_admin (seguros + imóveis juntos). */
 export const adminNavGroups: NavGroup[] = [
-  {
-    id: "dashboard",
-    label: "",
-    items: [dashboardItem],
-  },
+  dashboardGroup,
   {
     id: "crm",
     label: "CRM",
-    items: [leadsItem, pipelineItem, clientesItem, customer360Item, agendaComercialItem],
+    items: crmNavItems,
   },
   {
     id: "seguros",
     label: "Seguros",
-    items: [questionariosItem, cotacoesItem, propostasItem, automacaoItem],
+    items: segurosNavItems,
   },
   {
     id: "imobiliario",
     label: "Imobiliário",
-    items: [imoveisItem, proprietariosItem, leadsImobiliariosItem, portalItem],
+    items: imobiliarioNavItems,
+  },
+  {
+    id: "automacao",
+    label: "Automação",
+    items: automacaoNavItems,
   },
   {
     id: "governanca",
     label: "Governança",
-    items: [
-      {
-        title: "Usuários",
-        href: "/configuracoes/governanca/usuarios",
-        icon: UserCog,
-        segment: "configuracoes",
-        activePrefix: "/configuracoes/governanca/usuarios",
-        permission: "settings:view",
-      },
-      {
-        title: "Perfis",
-        href: "/configuracoes/governanca/perfis",
-        icon: Shield,
-        segment: "configuracoes",
-        activePrefix: "/configuracoes/governanca/perfis",
-        permission: "settings:view",
-      },
-      {
-        title: "ACL",
-        href: "/configuracoes/governanca/matriz",
-        icon: KeyRound,
-        segment: "configuracoes",
-        activePrefix: "/configuracoes/governanca/matriz",
-        permission: "settings:view",
-      },
-      {
-        ...configuracoesItem,
-        exact: true,
-        href: "/configuracoes",
-        activePrefix: "/configuracoes/governanca",
-      },
-    ],
+    items: governancaNavItems,
+  },
+]
+
+/** Menu agrupado — operador Corretora (ACL). */
+export const insuranceNavGroups: NavGroup[] = [
+  dashboardGroup,
+  {
+    id: "crm",
+    label: "CRM",
+    items: crmNavItems,
+  },
+  {
+    id: "seguros",
+    label: "Seguros",
+    items: segurosNavItems,
+  },
+  {
+    id: "automacao",
+    label: "Automação",
+    items: automacaoNavItems,
+  },
+  {
+    id: "governanca",
+    label: "Governança",
+    items: [configuracoesItem],
+  },
+]
+
+/** Menu agrupado — operador Ávila Imóveis (ACL). */
+export const realEstateNavGroups: NavGroup[] = [
+  dashboardGroup,
+  {
+    id: "imobiliario",
+    label: "Imobiliário",
+    items: imobiliarioNavItems,
+  },
+  {
+    id: "governanca",
+    label: "Governança",
+    items: [configuracoesItem],
   },
 ]
 
@@ -332,6 +432,8 @@ segmentToTitle.crm = "CRM"
 segmentToPermission.crm = "crm:view"
 segmentToTitle.configuracoes = "Configurações"
 segmentToPermission.configuracoes = "settings:view"
+segmentToTitle.automacao = "Automação"
+segmentToPermission.automacao = "automation:view"
 
 export function getNavTitle(segment: string): string | undefined {
   return segmentToTitle[segment]
@@ -376,10 +478,6 @@ export function resolveOperationalNav(
   if (isAdminMaster(session.roles?.length ? session.roles : session.role)) {
     return adminNavGroups
   }
-  const items = realEstate ? realEstateNav : mainNav
-  return asSingleNavGroup(
-    "navegacao",
-    "Navegação",
-    filterNavBySession(items, session),
-  )
+  const groups = realEstate ? realEstateNavGroups : insuranceNavGroups
+  return filterNavGroupsBySession(groups, session)
 }

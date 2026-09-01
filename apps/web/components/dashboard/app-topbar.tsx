@@ -3,14 +3,14 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
-import { Bell, ChevronDown, LogOut, Sparkles } from "lucide-react"
+import { ChevronDown, LogOut } from "lucide-react"
 
 import type { SessionPayload } from "@repo/auth"
 import { RoleBadge } from "@/components/auth/role-badge"
 import { WorkspaceSearchTrigger } from "@/components/crm/workspace-search"
+import { AppNotifications } from "@/components/dashboard/app-notifications"
 import { BusinessUnitSwitcher } from "@/components/dashboard/business-unit-switcher"
 
-import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { dashboardTopbarClassName } from "@/lib/layout/operational-shell"
 import { easeOut } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -53,67 +52,35 @@ export function AppTopbar({ session }: AppTopbarProps) {
         aria-label="Alternar menu"
       />
 
-      <div className="min-w-[140px] max-w-[240px] w-[160px] shrink-0 sm:w-[200px] lg:w-[220px]">
+      <div className="w-[min(180px,28vw)] min-w-[7.5rem] shrink-0 sm:w-[160px] lg:w-[180px]">
         <BusinessUnitSwitcher />
       </div>
 
-      <div className="order-last min-w-[180px] max-w-[640px] flex-1 basis-full lg:order-none lg:basis-0">
-        <WorkspaceSearchTrigger className="relative w-full min-w-0" />
+      <div className="min-w-0 flex-1">
+        <WorkspaceSearchTrigger className="relative w-full min-w-0 max-w-[520px]" />
       </div>
 
-      <motion.div
-        initial={reduce ? false : { opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.15, duration: 0.35, ease: easeOut }}
-        className="ml-auto flex shrink-0 items-center gap-1"
-      >
-        <motion.div whileTap={reduce ? undefined : { scale: 0.92 }}>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="relative shrink-0 text-muted-foreground hover:text-foreground"
-            aria-label="Notificações"
-          >
-            <Bell className="size-4" strokeWidth={1.5} />
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 22, delay: 0.3 }}
-            >
-              <Badge className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center border-2 border-background bg-[#C09048] px-0.5 text-[10px] font-bold leading-none text-[#000C24] shadow-md">
-                3
-              </Badge>
-            </motion.span>
-          </Button>
-        </motion.div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="hidden shrink-0 gap-1.5 text-[13px] text-muted-foreground hover:text-foreground lg:inline-flex"
-        >
-          <Sparkles className="size-3.5 text-[#DEAE5D]" strokeWidth={1.5} />
-          IA
-        </Button>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <AppNotifications />
 
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "inline-flex h-10 shrink-0 items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2 text-[13px] font-medium outline-none",
-              "transition-all duration-200 hover:border-[#C09048]/30 hover:bg-white/[0.06]",
-              "focus-visible:border-[#C09048]/40 focus-visible:ring-[3px] focus-visible:ring-[#C09048]/20",
-              "md:pr-3",
+              "inline-flex h-9 shrink-0 items-center gap-2 rounded-md border border-white/[0.08] bg-transparent px-1.5 text-[13px] font-medium outline-none",
+              "transition-colors duration-150 hover:border-white/[0.14] hover:bg-white/[0.04]",
+              "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30",
+              "md:pr-2.5",
             )}
           >
-            <Avatar className="size-8 border border-white/10 shadow-md">
-              <AvatarFallback className="bg-[#10294B] text-[11px] font-semibold text-[#DEAE5D]">
+            <Avatar className="size-7 border border-white/10">
+              <AvatarFallback className="bg-white/[0.06] text-[10px] font-semibold text-foreground">
                 {session.initials}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden max-w-[100px] truncate tracking-[-0.02em] md:inline">
+            <span className="hidden max-w-[88px] truncate tracking-[-0.02em] lg:inline">
               {session.name}
             </span>
-            <ChevronDown className="hidden size-3.5 text-muted-foreground md:block" strokeWidth={1.5} />
+            <ChevronDown className="hidden size-3.5 text-muted-foreground lg:block" strokeWidth={1.5} />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
@@ -142,7 +109,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </motion.div>
+      </div>
     </motion.header>
   )
 }

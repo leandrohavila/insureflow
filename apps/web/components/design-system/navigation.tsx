@@ -47,8 +47,14 @@ export function PageHeader({
       <div className={dsLayout.pageHeader.titleRow.className}>
         <div className={cn(dsLayout.pageHeader.content.className, compact && "space-y-0")}>
           <h1 className={cn(dsTypography.role.pageTitle, compact && "text-xl")}>{title}</h1>
-          {!compact && description ? (
-            <p className={cn(dsTypography.role.muted, "max-w-[var(--if-layout-reading-prose-max)]")}>
+          {description ? (
+            <p
+              className={cn(
+                dsTypography.role.muted,
+                "max-w-[var(--if-layout-reading-prose-max)]",
+                compact && "text-xs leading-snug",
+              )}
+            >
               {description}
             </p>
           ) : null}

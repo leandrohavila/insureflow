@@ -12,30 +12,35 @@ import {
 import {
   hasAnyCrmCaptureAction,
   resolveCrmCaptureVisibility,
+  type CrmCaptureModule,
 } from "@/lib/crm/crm-capture-visibility"
 import type { LeadCreateIntent } from "@/lib/leads/lead-intent"
 import { cn } from "@/lib/utils"
 
 type CrmCaptureActionsProps = {
+  module?: CrmCaptureModule
   insuranceEnabled?: boolean
   realEstateEnabled?: boolean
-  /** When set (tela Leads), abre o dialog no lugar em vez de navegar. */
+  realEstateLabel?: string
+  /** When set (tela Leads / Imobiliário), abre o dialog no lugar em vez de navegar. */
   onCreateLead?: (intent: LeadCreateIntent) => void
   /** When set (tela Pipeline), abre o dialog de negócio no lugar. */
   onCreateDeal?: () => void
   className?: string
 }
 
+const primaryClass = cn(buttonVariants({ size: "sm" }), "h-8")
+const secondaryClass = cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")
+
 /**
- * CTAs de captura do CRM — mesma ordem e mesmos destinos em
- * Dashboard, Leads e Pipeline:
- * 1. + Lead Seguro
- * 2. + Lead Imobiliário
- * 3. + Novo Negócio
+ * CTAs de captura — Dashboard, Pipeline e Leads Imobiliários.
+ * Navy = ação primária; outline = secundária. Gold não é peso funcional.
  */
 export function CrmCaptureActions({
+  module = "crm",
   insuranceEnabled = true,
   realEstateEnabled = true,
+  realEstateLabel = "+ Lead Imobiliário",
   onCreateLead,
   onCreateDeal,
   className,
@@ -45,15 +50,10 @@ export function CrmCaptureActions({
   const visibility = resolveCrmCaptureVisibility({
     canManageLeads,
     canManageCrm,
+    module,
   })
 
   if (!hasAnyCrmCaptureAction(visibility)) return null
-
-  const outlineClass = cn(
-    buttonVariants({ variant: "outline", size: "sm" }),
-    "h-8",
-  )
-  const primaryClass = cn(buttonVariants({ size: "sm" }), "h-8")
 
   return (
     <div
@@ -66,7 +66,7 @@ export function CrmCaptureActions({
       {visibility.showLeadInsurance ? (
         <CaptureAction
           href={hrefForLeadCreateIntent("insurance")}
-          className={outlineClass}
+          className={primaryClass}
           disabled={!insuranceEnabled}
           onActivate={
             onCreateLead ? () => onCreateLead("insurance") : undefined
@@ -78,19 +78,19 @@ export function CrmCaptureActions({
       {visibility.showLeadRealEstate ? (
         <CaptureAction
           href={hrefForLeadCreateIntent("real-estate")}
-          className={primaryClass}
+          className={secondaryClass}
           disabled={!realEstateEnabled}
           onActivate={
             onCreateLead ? () => onCreateLead("real-estate") : undefined
           }
         >
-          + Lead Imobiliário
+          {realEstateLabel}
         </CaptureAction>
       ) : null}
       {visibility.showDeal ? (
         <CaptureAction
           href={CRM_CREATE_DEAL_HREF}
-          className={primaryClass}
+          className={secondaryClass}
           onActivate={onCreateDeal}
         >
           + Novo Negócio

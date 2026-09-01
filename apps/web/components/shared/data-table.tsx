@@ -74,6 +74,8 @@ export type DataTableProps<T> = DataTableStateProps & {
   /** Cabeçalho fixo quando a tabela está dentro de um container rolável. */
   stickyHeader?: boolean
   density?: "default" | "compact"
+  /** Preenche a altura do container e rola o corpo da tabela. */
+  fill?: boolean
 }
 
 function isRowActionVisible<T>(action: DataTableRowAction<T>, row: T) {
@@ -112,6 +114,7 @@ export function DataTable<T>({
   cardDelay = 0.1,
   stickyHeader = false,
   density = "default",
+  fill = false,
 }: DataTableProps<T>) {
   const compact = density === "compact"
   const reduce = useReducedMotion()
@@ -154,17 +157,31 @@ export function DataTable<T>({
       id="BUG010.1 DataTable"
       onRender={bug010LeadCreateProfiler("tabela")}
     >
-      <div className={cn("w-full min-w-0 space-y-4", className)}>
+      <div
+        className={cn(
+          "w-full min-w-0",
+          fill
+            ? "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+            : "space-y-4",
+          className,
+        )}
+      >
         <GlassCard
           delay={cardDelay}
           hover={false}
           className={cn(
             "w-full min-w-0 overflow-hidden p-0",
             compact && "crm-data-table",
+            fill && "flex min-h-0 flex-1 flex-col",
           )}
         >
           {(title || subtitle) && (
-            <div className="border-b border-white/[0.06] px-5 py-4 md:px-6">
+            <div
+              className={cn(
+                "shrink-0 border-b border-white/[0.06] px-4",
+                compact ? "py-2" : "px-5 py-4 md:px-6",
+              )}
+            >
               {title ? (
                 <p className="text-sm font-semibold tracking-[-0.02em]">
                   {title}
@@ -175,7 +192,12 @@ export function DataTable<T>({
               ) : null}
             </div>
           )}
-          <Table className={tableClassName}>
+          <div
+            className={cn(fill && "min-h-0 flex-1 overflow-auto")}
+          >
+          <Table
+            className={tableClassName}
+          >
             <TableHeader>
               <TableRow
                 className={cn(
@@ -198,7 +220,7 @@ export function DataTable<T>({
                     key={column.key}
                     className={cn(
                       compact
-                        ? "h-9 text-xs font-semibold tracking-wide text-foreground/70 uppercase"
+                        ? "h-8 text-[11px] font-semibold tracking-wide text-foreground/70 uppercase"
                         : "h-11 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase",
                       column.hideOnMobile && "hidden md:table-cell",
                       column.headerClassName,
@@ -213,7 +235,7 @@ export function DataTable<T>({
                     className={cn(
                       "pr-5 text-right font-semibold uppercase md:pr-6",
                       compact
-                        ? "h-9 text-xs tracking-wide text-foreground/70"
+                        ? "h-8 text-[11px] tracking-wide text-foreground/70"
                         : "h-11 text-[10px] tracking-[0.12em] text-muted-foreground",
                     )}
                   >
@@ -236,10 +258,10 @@ export function DataTable<T>({
                       "border-white/[0.05] transition-colors",
                       onRowClick && "cursor-pointer hover:bg-primary/[0.06]",
                       index % 2 === 1 && "bg-white/[0.015]",
-                      !reduce && "animate-in fade-in duration-500",
+                      !reduce && !compact && "animate-in fade-in duration-500",
                     )}
                     style={
-                      reduce
+                      reduce || compact
                         ? undefined
                         : { animationDelay: `${60 + index * 40}ms` }
                     }
@@ -260,20 +282,20 @@ export function DataTable<T>({
                       <TableCell
                         key={column.key}
                         className={cn(
-                          compact ? "py-2.5" : "py-3.5",
-                          column.hideOnMobile && "hidden md:table-cell",
-                          column.className,
-                        )}
-                      >
-                        {column.render(row, index)}
-                      </TableCell>
-                    ))}
-                    {hasActions ? (
-                      <TableCell
-                        className={cn(
-                          "pr-5 text-right md:pr-6",
-                          compact ? "py-2.5" : "py-3.5",
-                        )}
+                      compact ? "py-1.5" : "py-3.5",
+                      column.hideOnMobile && "hidden md:table-cell",
+                      column.className,
+                    )}
+                  >
+                    {column.render(row, index)}
+                  </TableCell>
+                ))}
+                {hasActions ? (
+                  <TableCell
+                    className={cn(
+                      "pr-5 text-right md:pr-6",
+                      compact ? "py-1.5" : "py-3.5",
+                    )}
                         onClick={(event) => event.stopPropagation()}
                       >
                         <div className="flex justify-end gap-1">
@@ -287,7 +309,7 @@ export function DataTable<T>({
                                   variant="ghost"
                                   size="sm"
                                   className={cn(
-                                    "size-8 p-0",
+                                    compact ? "size-7 p-0" : "size-8 p-0",
                                     action.variant === "destructive" &&
                                       "text-destructive hover:text-destructive",
                                   )}
@@ -314,9 +336,15 @@ export function DataTable<T>({
               })}
             </TableBody>
           </Table>
+          </div>
         </GlassCard>
 
-        {pagination ? <PaginationControls {...pagination} /> : null}
+        {pagination ? (
+          <PaginationControls
+            {...pagination}
+            className={cn(fill && "shrink-0 py-0")}
+          />
+        ) : null}
       </div>
     </Profiler>
   )

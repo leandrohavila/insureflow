@@ -46,7 +46,7 @@ export const dsLayout = {
     },
     titleRow: {
       className:
-        "flex min-w-0 flex-col gap-[var(--if-space-3)] sm:flex-row sm:items-center sm:justify-between",
+        "flex min-w-0 flex-col gap-[var(--if-space-2)] sm:flex-row sm:items-start sm:justify-between",
     },
     content: {
       className: "min-w-0 flex-1 space-y-[var(--if-space-1-5)]",
@@ -69,7 +69,7 @@ export const dsLayout = {
   },
   filterBar: {
     className:
-      "flex min-w-0 w-full flex-wrap items-center gap-[var(--if-layout-control-gap)]",
+      "flex min-w-0 w-full flex-nowrap items-center gap-[var(--if-layout-control-gap)] overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
   },
   toolbar: {
     className:

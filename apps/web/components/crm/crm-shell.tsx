@@ -1,9 +1,7 @@
 "use client"
 
-import { CrmModuleTabs } from "@/components/crm/crm-module-tabs"
 import { CrmWorkspacePreferencesProvider } from "@/lib/hooks/use-crm-workspace-preferences"
 import {
-  CRM_CHROME,
   CRM_CONTENT_RAIL,
   CRM_WORKSPACE,
 } from "@/lib/layout/operational-shell"
@@ -17,19 +15,13 @@ type CrmShellProps = {
 }
 
 /**
- * Chrome do CRM no slot principal do dashboard (sem sticky empilhado).
- * Topbar fica fixa no flex do DashboardShell; tabs são shrink-0 abaixo dela.
+ * Chrome do CRM no slot principal. Tabs duplicadas da sidebar foram
+ * removidas — a navegação operacional vive no menu.
  */
 export function CrmShell({ children }: CrmShellProps) {
   return (
     <CrmWorkspacePreferencesProvider>
       <CrmWorkspaceDensityShell className={CRM_WORKSPACE}>
-        <header className={CRM_CHROME}>
-          <div className="mx-auto flex w-full min-w-0 max-w-[1600px] items-center px-4 py-2 md:px-6">
-            <CrmModuleTabs />
-          </div>
-        </header>
-
         <RelationshipIndexProvider>
           <div className={cn(CRM_CONTENT_RAIL, "crm-content-rail")}>{children}</div>
         </RelationshipIndexProvider>

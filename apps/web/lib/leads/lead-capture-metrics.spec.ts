@@ -29,6 +29,8 @@ describe("computeLeadCaptureMetrics", () => {
       customersInsurance: 4,
       customersRealEstate: 2,
       conversionRate: 20,
+      noContact: 4,
+      followUps: 0,
     })
   })
 

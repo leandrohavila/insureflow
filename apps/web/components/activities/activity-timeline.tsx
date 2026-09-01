@@ -33,6 +33,8 @@ type ActivityTimelineProps = {
   /** Quando true, não renderiza empty state (delegado ao TimelineLane). */
   suppressEmptyState?: boolean
   filterType?: ActivityType | null
+  /** Form de atividade inline — evita modal sobre o dialog do lead. */
+  embedded?: boolean
 }
 
 export function ActivityTimeline({
@@ -42,6 +44,7 @@ export function ActivityTimeline({
   showHeading = true,
   suppressEmptyState = false,
   filterType = null,
+  embedded = false,
 }: ActivityTimelineProps) {
   const ctx = { leadId, dealId }
   const timelineQuery = useActivityTimeline(ctx)
@@ -199,6 +202,7 @@ export function ActivityTimeline({
       </ol>
 
       <ActivityFormDialog
+        embedded={embedded}
         open={editingActivity !== null}
         onOpenChange={(open) => {
           if (!open) setEditingActivity(null)
@@ -218,6 +222,7 @@ export function ActivityTimeline({
       />
 
       <ActivityFormDialog
+        embedded={embedded}
         open={rescheduleContext !== null}
         onOpenChange={(open) => {
           if (!open) {

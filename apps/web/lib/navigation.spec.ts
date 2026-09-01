@@ -13,28 +13,27 @@ import {
 } from "./navigation.ts"
 
 describe("menu de produção", () => {
-  it("Corretora não inclui Apólices, Sinistros, WhatsApp nem CRM hub", () => {
+  it("Corretora agrupa CRM, Seguros e Automação sem hub CRM nem Sinistros", () => {
     const hrefs = mainNav.map((item) => item.href)
     assert.deepEqual(hrefs, [
       "/",
       "/leads",
       "/crm/negocios",
+      "/crm/agenda",
       "/clientes",
       "/crm/dashboard-360",
-      "/crm/agenda",
       "/questionarios/templates",
       "/cotacoes",
       "/propostas",
-      "/automacao",
+      "/apolices",
+      "/crm/renovacoes",
+      "/crm/follow-ups",
+      "/automacao/reativacao",
+      "/whatsapp",
       "/configuracoes",
     ])
-    assert.equal(
-      hrefs.includes("/apolices") ||
-        hrefs.includes("/sinistros") ||
-        hrefs.includes("/whatsapp") ||
-        hrefs.includes("/crm"),
-      false,
-    )
+    assert.equal(hrefs.includes("/sinistros"), false)
+    assert.equal(hrefs.includes("/crm"), false)
   })
 
   it("Ávila Imóveis não inclui Visitas", () => {
@@ -52,26 +51,48 @@ describe("menu de produção", () => {
 
   it("itens ocultos permanecem no catálogo para ACL/rotas", () => {
     const hrefs = hiddenNavItems.map((item) => item.href)
-    assert.ok(hrefs.includes("/apolices"))
     assert.ok(hrefs.includes("/sinistros"))
-    assert.ok(hrefs.includes("/whatsapp"))
     assert.ok(hrefs.includes("/real-estate/visits"))
     assert.ok(hrefs.includes("/crm"))
+    assert.ok(hrefs.includes("/automacao"))
+    assert.equal(hrefs.includes("/apolices"), false)
+    assert.equal(hrefs.includes("/whatsapp"), false)
   })
 
-  it("admin consolida seguros e imóveis", () => {
+  it("admin consolida seguros, imóveis e automação", () => {
     const hrefs = flattenNavGroups(adminNavGroups).map((item) => item.href)
     assert.ok(hrefs.includes("/leads"))
     assert.ok(hrefs.includes("/crm/negocios"))
     assert.ok(hrefs.includes("/crm/agenda"))
+    assert.ok(hrefs.includes("/apolices"))
+    assert.ok(hrefs.includes("/crm/renovacoes"))
+    assert.ok(hrefs.includes("/crm/follow-ups"))
+    assert.ok(hrefs.includes("/automacao/reativacao"))
+    assert.ok(hrefs.includes("/whatsapp"))
     assert.ok(hrefs.includes("/real-estate/properties"))
     assert.ok(hrefs.includes("/real-estate/portal"))
     assert.ok(hrefs.includes("/configuracoes/governanca/usuarios"))
     assert.ok(hrefs.includes("/configuracoes/governanca/matriz"))
     assert.equal(hrefs.includes("/real-estate/visits"), false)
-    assert.equal(hrefs.includes("/apolices"), false)
     const labels = adminNavGroups.map((g) => g.label)
-    assert.deepEqual(labels, ["", "CRM", "Seguros", "Imobiliário", "Governança"])
+    assert.deepEqual(labels, [
+      "",
+      "CRM",
+      "Seguros",
+      "Imobiliário",
+      "Automação",
+      "Governança",
+    ])
+    const crmTitles = adminNavGroups
+      .find((group) => group.id === "crm")
+      ?.items.map((item) => item.title)
+    assert.deepEqual(crmTitles, [
+      "Leads",
+      "Pipeline",
+      "Agenda Comercial",
+      "Clientes",
+      "Customer 360",
+    ])
   })
 
   it("órfãs internas não entram no menu", () => {
@@ -118,7 +139,7 @@ describe("menu de produção", () => {
     const groups = resolveOperationalNav(session, true)
     assert.deepEqual(
       groups.map((g) => g.label),
-      ["", "CRM", "Seguros", "Imobiliário", "Governança"],
+      ["", "CRM", "Seguros", "Imobiliário", "Automação", "Governança"],
     )
     const hrefs = flattenNavGroups(groups).map((item) => item.href)
     assert.ok(hrefs.includes("/leads"))

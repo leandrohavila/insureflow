@@ -25,6 +25,7 @@ type ActivityQuickActionsProps = {
   dealId?: string | null
   className?: string
   compact?: boolean
+  embedded?: boolean
 }
 
 type QuickAction = {
@@ -54,6 +55,7 @@ export function ActivityQuickActions({
   dealId,
   className,
   compact,
+  embedded = false,
 }: ActivityQuickActionsProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [presetType, setPresetType] = useState<ActivityType | null>(null)
@@ -81,35 +83,38 @@ export function ActivityQuickActions({
 
   return (
     <PermissionGate permission="crm:manage">
-      <div className={cn("flex flex-wrap gap-2", className)}>
-        {quickActions.map((action) => {
-          const Icon = action.icon
-          return (
-            <Button
-              key={action.type}
-              type="button"
-              size={compact ? "sm" : "default"}
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => openQuickAction(action.type)}
-            >
-              <Icon className="size-3.5" />
-              {compact ? compactQuickLabels[action.type] : action.label}
-            </Button>
-          )
-        })}
-      </div>
+      <div className={cn("space-y-2", className)}>
+        <div className="flex flex-wrap gap-2">
+          {quickActions.map((action) => {
+            const Icon = action.icon
+            return (
+              <Button
+                key={action.type}
+                type="button"
+                size={compact ? "sm" : "default"}
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => openQuickAction(action.type)}
+              >
+                <Icon className="size-3.5" />
+                {compact ? compactQuickLabels[action.type] : action.label}
+              </Button>
+            )
+          })}
+        </div>
 
-      <ActivityFormDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogOpenChange}
-        initialType={dialogOpen ? (presetType ?? undefined) : undefined}
-        leadId={leadId}
-        dealId={dealId}
-        pending={createActivity.isPending}
-        error={createActivity.error}
-        onSubmit={handleSubmit}
-      />
+        <ActivityFormDialog
+          embedded={embedded}
+          open={dialogOpen}
+          onOpenChange={handleDialogOpenChange}
+          initialType={dialogOpen ? (presetType ?? undefined) : undefined}
+          leadId={leadId}
+          dealId={dealId}
+          pending={createActivity.isPending}
+          error={createActivity.error}
+          onSubmit={handleSubmit}
+        />
+      </div>
     </PermissionGate>
   )
 }

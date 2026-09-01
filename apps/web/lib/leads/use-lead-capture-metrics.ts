@@ -1,14 +1,17 @@
 "use client"
 
 import { useMemo } from "react"
+import { useQuery } from "@tanstack/react-query"
 
 import {
   resolveInsuranceBusinessUnitId,
   resolveRealEstateBusinessUnitId,
 } from "@/lib/business-units/nav-context"
+import { fetchCommercialAgenda } from "@/lib/data-access/modules/commercial-agenda/api"
 import { useBusinessUnitContext } from "@/lib/data-access/modules/business-units"
 import { useCustomers } from "@/lib/data-access/modules/customers"
 import { useLeads } from "@/lib/data-access/modules/leads"
+import { queryKeys } from "@/lib/data-access/query-keys"
 
 import {
   computeLeadCaptureMetrics,
@@ -50,10 +53,16 @@ export function useLeadCaptureMetrics(options?: { enabled?: boolean }): {
     { ...COUNT_FILTER, businessUnitId: realEstateBusinessUnitId ?? undefined },
     { enabled: enabled && Boolean(realEstateBusinessUnitId) },
   )
+  const agendaQuery = useQuery({
+    queryKey: queryKeys.commercialAgenda.list({ window: "today" }),
+    queryFn: () => fetchCommercialAgenda({ window: "today" }),
+    enabled,
+    staleTime: 60_000,
+  })
 
   const metrics = useMemo(
-    () =>
-      computeLeadCaptureMetrics({
+    () => ({
+      ...computeLeadCaptureMetrics({
         total: 0,
         insurance: insuranceQuery.data?.meta.total ?? 0,
         realEstate: realEstateQuery.data?.meta.total ?? 0,
@@ -62,7 +71,10 @@ export function useLeadCaptureMetrics(options?: { enabled?: boolean }): {
         insuranceCounts: insuranceQuery.data?.meta.counts,
         realEstateCounts: realEstateQuery.data?.meta.counts,
       }),
+      followUps: agendaQuery.data?.metrics.followUpsPending ?? 0,
+    }),
     [
+      agendaQuery.data?.metrics.followUpsPending,
       insuranceCustomers.data?.meta.total,
       insuranceQuery.data?.meta.counts,
       insuranceQuery.data?.meta.total,
