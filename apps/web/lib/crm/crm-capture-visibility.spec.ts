@@ -50,4 +50,17 @@ describe("resolveCrmCaptureVisibility", () => {
     })
     assert.equal(hasAnyCrmCaptureAction(visibility), false)
   })
+
+  it("hides Lead Seguro on real-estate module while keeping Imobiliário and Negócio", () => {
+    const visibility = resolveCrmCaptureVisibility({
+      canManageLeads: true,
+      canManageCrm: true,
+      module: "real-estate",
+    })
+    assert.deepEqual(visibility, {
+      showLeadInsurance: false,
+      showLeadRealEstate: true,
+      showDeal: true,
+    })
+  })
 })
