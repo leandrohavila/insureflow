@@ -64,14 +64,17 @@ export function LeadDataSection({
                     onChange={(event) =>
                       onStatusChange(event.target.value as LeadStatus)
                     }
-                    options={LEAD_STATUSES.map((item) => ({
-                      value: item,
-                      label: LEAD_STATUS_LABEL[item],
-                    }))}
+                    options={LEAD_STATUSES.filter((item) => item !== "lost").map(
+                      (item) => ({
+                        value: item,
+                        label: LEAD_STATUS_LABEL[item],
+                      }),
+                    )}
                   />
                   <p className="text-[11px] leading-snug text-muted-foreground">
-                    Fluxo padrão: Novo → Contatado → Qualificado → Convertido →
-                    Perdido.
+                    Fluxo padrão: Novo → Contatado → Qualificado → Convertido.
+                    Para marcar como perdido, use o motivo obrigatório na seção
+                    de conversão.
                   </p>
                 </div>
               ) : (

@@ -186,7 +186,16 @@ export function CommercialAgendaWorkspace() {
         <Kpi label="Atrasadas" value={metrics?.overdue} loading={query.isLoading} />
         <Kpi label="Follow-ups" value={metrics?.followUpsPending} loading={query.isLoading} />
         <Kpi label="Renovações" value={metrics?.renewalsUpcoming} loading={query.isLoading} />
-        <Kpi label="Leads novos" value={metrics?.leadsToday} loading={query.isLoading} />
+        <Kpi
+          label="Reativações hoje"
+          value={metrics?.reactivationsToday}
+          loading={query.isLoading}
+        />
+        <Kpi
+          label="Reativações atrasadas"
+          value={metrics?.reactivationsOverdue}
+          loading={query.isLoading}
+        />
       </div>
 
       {actionMessage ? (

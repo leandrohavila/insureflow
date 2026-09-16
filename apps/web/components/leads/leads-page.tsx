@@ -1136,6 +1136,7 @@ export function LeadsPage() {
               statusPending={updateLead.isPending}
               onStatusChange={(status) => {
                 if (!editingLead) return
+                if (status === "lost") return
                 updateLead.mutate({ id: editingLead.id, input: { status } })
               }}
             />

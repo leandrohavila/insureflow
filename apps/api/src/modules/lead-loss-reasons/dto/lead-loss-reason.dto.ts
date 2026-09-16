@@ -47,13 +47,13 @@ export class CreateLeadLossReasonDto {
   @IsBoolean()
   reactivationEnabled?: boolean;
 
-  @ApiPropertyOptional({ example: 30, minimum: 1, maximum: 365 })
-  @IsOptional()
+  /** Dias até a próxima tentativa de reativação (obrigatório se reactivationEnabled). */
+  @ApiProperty({ example: 30, minimum: 1, maximum: 365 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(365)
-  reactivationDays?: number;
+  reactivationDays!: number;
 
   @ApiPropertyOptional({ example: 3, minimum: 1, maximum: 10 })
   @IsOptional()

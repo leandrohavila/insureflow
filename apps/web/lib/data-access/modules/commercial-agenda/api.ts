@@ -41,6 +41,8 @@ export type CommercialAgendaMetrics = {
   overdue: number
   renewalsUpcoming: number
   reactivationsPending: number
+  reactivationsToday?: number
+  reactivationsOverdue?: number
   slaOverdue: number
   followUpsPending?: number
   leadsToday?: number

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -45,6 +46,10 @@ export class LeadLossReasonsService {
     if (dto.businessUnitId) {
       await this.businessUnits.assertIds(tenantId, [dto.businessUnitId]);
     }
+    this.assertReactivationDays(
+      dto.reactivationEnabled ?? true,
+      dto.reactivationDays,
+    );
 
     try {
       return await this.prisma.leadLossReason.create({
@@ -54,7 +59,7 @@ export class LeadLossReasonsService {
           description: dto.description?.trim() || null,
           isActive: dto.isActive ?? true,
           reactivationEnabled: dto.reactivationEnabled ?? true,
-          reactivationDays: dto.reactivationDays ?? 30,
+          reactivationDays: dto.reactivationDays,
           maxAttempts: dto.maxAttempts ?? 3,
           businessUnitId: dto.businessUnitId ?? null,
         },
@@ -65,10 +70,13 @@ export class LeadLossReasonsService {
   }
 
   async update(tenantId: string, id: string, dto: UpdateLeadLossReasonDto) {
-    await this.findOne(tenantId, id);
+    const current = await this.findOne(tenantId, id);
     if (dto.businessUnitId) {
       await this.businessUnits.assertIds(tenantId, [dto.businessUnitId]);
     }
+    const nextEnabled = dto.reactivationEnabled ?? current.reactivationEnabled;
+    const nextDays = dto.reactivationDays ?? current.reactivationDays;
+    this.assertReactivationDays(nextEnabled, nextDays);
 
     try {
       return await this.prisma.leadLossReason.update({
@@ -102,6 +110,15 @@ export class LeadLossReasonsService {
     await this.findOne(tenantId, id);
     await this.prisma.leadLossReason.delete({ where: { id } });
     return { deleted: true, id };
+  }
+
+  private assertReactivationDays(enabled: boolean, days: number | undefined) {
+    if (!enabled) return;
+    if (days == null || days < 1) {
+      throw new BadRequestException(
+        'reactivationDays é obrigatório quando a reativação do motivo está habilitada.',
+      );
+    }
   }
 
   private handleWriteError(error: unknown): never {

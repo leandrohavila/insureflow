@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -25,7 +26,6 @@ import {
   resolveOwnerUserIdFromAssignedTo,
 } from '../../common/utils/owner-assignment.util';
 import { buildLostReactivationPatch } from '../../common/utils/lead-reactivation.util';
-import { applyLossReasonToReactivation } from '../../common/utils/commercial-recovery.util';
 import {
   resolveBusinessUnitIds,
   syncLeadBusinessUnits,
@@ -520,6 +520,29 @@ export class LeadsService {
     const now = new Date();
     const units = await this.resolveRequestedUnits(tenantId, dto);
 
+    if ((dto.status ?? 'new') === 'lost') {
+      if (!dto.lossReasonId?.trim()) {
+        throw new BadRequestException(
+          'Motivo de perda é obrigatório ao criar lead como perdido.',
+        );
+      }
+      const createReason = await this.lossReasons.findOne(
+        tenantId,
+        dto.lossReasonId,
+      );
+      if (!createReason) {
+        throw new BadRequestException('Motivo de perda inválido ou inativo.');
+      }
+      if (
+        createReason.reactivationEnabled &&
+        (!createReason.reactivationDays || createReason.reactivationDays < 1)
+      ) {
+        throw new BadRequestException(
+          'Motivo de perda sem reactivationDays configurado. Ajuste em Configurações > Motivos de perda.',
+        );
+      }
+    }
+
     console.info('[BUG010][prisma] transaction', {
       traceId,
       transactionMs: 0,
@@ -673,22 +696,47 @@ export class LeadsService {
       }
     }
 
-    const settings =
-      dto.status === 'lost' && existing?.status !== 'lost'
-        ? await this.prisma.leadReactivationSetting.findUnique({
-            where: { tenantId },
-          })
-        : null;
+    const transitioningToLost =
+      dto.status === 'lost' && existing?.status !== 'lost';
+    if (transitioningToLost) {
+      if (!dto.lossReasonId?.trim()) {
+        throw new BadRequestException(
+          'Motivo de perda é obrigatório ao marcar o lead como perdido.',
+        );
+      }
+    }
+
+    const settings = transitioningToLost
+      ? await this.prisma.leadReactivationSetting.findUnique({
+          where: { tenantId },
+        })
+      : null;
     const configuredReason = dto.lossReasonId
       ? await this.lossReasons.findOne(tenantId, dto.lossReasonId)
       : null;
+
+    if (transitioningToLost) {
+      if (!configuredReason) {
+        throw new BadRequestException('Motivo de perda inválido ou inativo.');
+      }
+      if (
+        configuredReason.reactivationEnabled &&
+        (!configuredReason.reactivationDays ||
+          configuredReason.reactivationDays < 1)
+      ) {
+        throw new BadRequestException(
+          'Motivo de perda sem reactivationDays configurado. Ajuste em Configurações > Motivos de perda.',
+        );
+      }
+    }
+
+    // Wave 1: agenda comercial usa LeadLossReason.reactivationDays (não canal).
+    // Settings.enabled controla só automação de disparo — não a data prevista.
     const reasonOverride = configuredReason
-      ? applyLossReasonToReactivation({
-          tenantEnabled: settings?.enabled ?? false,
-          tenantIdleDays: settings?.idleDays ?? 30,
-          tenantMaxAttempts: settings?.maxAttempts ?? 3,
-          reason: configuredReason,
-        })
+      ? {
+          enabled: configuredReason.reactivationEnabled,
+          idleDays: configuredReason.reactivationDays,
+        }
       : null;
     const lostPatch = buildLostReactivationPatch({
       previousStatus: existing?.status ?? 'new',
@@ -776,17 +824,27 @@ export class LeadsService {
       [id],
     );
 
-    if (dto.status === 'lost' && existing?.status !== 'lost' && actor?.userId) {
+    if (transitioningToLost && actor?.userId) {
+      const nextAt = lead.nextReactivationAt;
       await this.activityEngine.publish({
         tenantId,
         performedById: actor.userId,
         operationalEventKind: 'lead_lost',
         subject: `Lead perdido — ${lead.name}`,
-        description: lead.lostReason,
+        description: lead.lostReason
+          ? `${lead.lostReason}${
+              nextAt
+                ? ` · reativação prevista ${nextAt.toISOString().slice(0, 10)}`
+                : ''
+            }`
+          : undefined,
         leadId: lead.id,
         metadata: {
           lossReasonId: lead.lossReasonId,
           lostReason: lead.lostReason,
+          reactivationDays: lead.reactivationDays,
+          nextReactivationAt: nextAt?.toISOString() ?? null,
+          reactivationEnabled: lead.reactivationEnabled,
         },
       });
     }

@@ -23,10 +23,12 @@ export function LeadLossReasonsManager() {
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault()
     if (!name.trim()) return
+    const reactivationDays = Number(days)
+    if (!Number.isFinite(reactivationDays) || reactivationDays < 1) return
     await createReason.mutateAsync({
       name: name.trim(),
       description: description.trim() || undefined,
-      reactivationDays: Number(days) || 30,
+      reactivationDays,
     })
     setName("")
     setDescription("")
@@ -57,7 +59,15 @@ export function LeadLossReasonsManager() {
           onChange={(event) => setDays(event.target.value)}
           placeholder="Dias"
         />
-        <Button type="submit" disabled={createReason.isPending || !name.trim()}>
+        <Button
+          type="submit"
+          disabled={
+            createReason.isPending ||
+            !name.trim() ||
+            !Number.isFinite(Number(days)) ||
+            Number(days) < 1
+          }
+        >
           Adicionar
         </Button>
       </form>

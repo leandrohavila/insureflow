@@ -109,6 +109,7 @@ export class CommercialAgendaService {
   }
 
   private metrics(items: AgendaItem[], now: Date) {
+    const reactivations = items.filter((item) => item.type === 'REACTIVATION');
     return {
       today: items.filter((item) =>
         inAgendaWindow(new Date(item.at), 'today', now),
@@ -121,8 +122,14 @@ export class CommercialAgendaService {
           item.type === 'RENEWAL' &&
           inAgendaWindow(new Date(item.at), 'next30', now),
       ).length,
-      reactivationsPending: items.filter(
-        (item) => item.type === 'REACTIVATION' && item.status !== 'completed',
+      reactivationsPending: reactivations.filter(
+        (item) => item.status !== 'completed',
+      ).length,
+      reactivationsToday: reactivations.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'today', now),
+      ).length,
+      reactivationsOverdue: reactivations.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'overdue', now),
       ).length,
       slaOverdue: items.filter((item) => item.type === 'SLA').length,
       followUpsPending: items.filter(
@@ -302,13 +309,20 @@ export class CommercialAgendaService {
       });
     }
 
+    let reactivationWhere: Record<string, unknown> = {
+      tenantId,
+      status: 'lost',
+      reactivationEnabled: true,
+      nextReactivationAt: { gte: from, lte: to },
+    };
+    if (actor && this.buAccess) {
+      const leadExtra = await this.buAccess.leadWhere(actor);
+      if (leadExtra) {
+        reactivationWhere = andWhere(reactivationWhere, leadExtra);
+      }
+    }
     const reactivations = await this.prisma.lead.findMany({
-      where: {
-        tenantId,
-        status: 'lost',
-        reactivationEnabled: true,
-        nextReactivationAt: { gte: from, lte: to },
-      },
+      where: reactivationWhere as never,
       select: {
         id: true,
         name: true,
@@ -320,13 +334,18 @@ export class CommercialAgendaService {
     });
     for (const lead of reactivations) {
       if (!lead.nextReactivationAt) continue;
+      const at = lead.nextReactivationAt;
+      const dayStart = startOfUtcDay(now).getTime();
+      const atDay = startOfUtcDay(at).getTime();
+      const reactivationStatus =
+        atDay < dayStart ? 'overdue' : atDay === dayStart ? 'today' : 'pending';
       items.push({
         id: `reactivation:${lead.id}`,
         source: 'reactivation',
-        at: lead.nextReactivationAt.toISOString(),
+        at: at.toISOString(),
         type: 'REACTIVATION',
         typeLabel: TYPE_LABELS.REACTIVATION,
-        status: 'pending',
+        status: reactivationStatus,
         origin: 'Reativação',
         customerId: null,
         customerName: null,

@@ -51,18 +51,35 @@ export function buildLostReactivationPatch(params: {
     return patch;
   }
 
+  // Precedência: LeadLossReason.reactivationDays (reasonOverride) > settings.idleDays.
+  // Sem reasonOverride, settings do tenant só como fallback legado.
   const idleDays =
-    params.reasonOverride?.idleDays ?? params.settings?.idleDays ?? 30;
+    params.reasonOverride?.idleDays ?? params.settings?.idleDays ?? null;
   const enabled =
-    params.reasonOverride?.enabled ?? params.settings?.enabled ?? false;
+    params.reasonOverride != null
+      ? params.reasonOverride.enabled
+      : (params.settings?.enabled ?? false);
+
+  if (enabled && (idleDays == null || idleDays < 1)) {
+    return {
+      lostAt: params.now,
+      ...(params.lostReason !== undefined ? { lostReason: params.lostReason } : {}),
+      reactivationAttempts: 0,
+      lastReactivatedAt: null,
+      nextReactivationAt: null,
+      reactivationDays: null,
+      reactivationEnabled: false,
+    };
+  }
 
   return {
     lostAt: params.now,
     ...(params.lostReason !== undefined ? { lostReason: params.lostReason } : {}),
     reactivationAttempts: 0,
     lastReactivatedAt: null,
-    nextReactivationAt: enabled ? addUtcDays(params.now, idleDays) : null,
-    reactivationDays: idleDays,
+    nextReactivationAt:
+      enabled && idleDays != null ? addUtcDays(params.now, idleDays) : null,
+    reactivationDays: enabled && idleDays != null ? idleDays : null,
     reactivationEnabled: enabled,
   };
 }

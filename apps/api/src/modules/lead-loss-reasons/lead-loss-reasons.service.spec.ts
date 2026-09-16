@@ -31,18 +31,28 @@ describe('LeadLossReasonsService', () => {
     expect(result.data[0]?.name).toBe('Sem orçamento');
   });
 
-  it('cria motivo com defaults de reativação', async () => {
+  it('cria motivo exigindo reactivationDays do catálogo', async () => {
     const { service, create } = createService();
-    await service.create(tenantId, { name: 'Não respondeu' });
+    await service.create(tenantId, {
+      name: 'Não respondeu',
+      reactivationDays: 45,
+    });
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           name: 'Não respondeu',
           reactivationEnabled: true,
-          reactivationDays: 30,
+          reactivationDays: 45,
           maxAttempts: 3,
         }),
       }),
     );
+  });
+
+  it('rejeita create sem reactivationDays quando reativação ligada', async () => {
+    const { service } = createService();
+    await expect(
+      service.create(tenantId, { name: 'Sem dias' } as never),
+    ).rejects.toThrow(/reactivationDays/);
   });
 });

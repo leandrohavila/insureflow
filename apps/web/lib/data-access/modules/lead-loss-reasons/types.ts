@@ -15,7 +15,7 @@ export type CreateLeadLossReasonInput = {
   description?: string
   isActive?: boolean
   reactivationEnabled?: boolean
-  reactivationDays?: number
+  reactivationDays: number
   maxAttempts?: number
   businessUnitId?: string
 }

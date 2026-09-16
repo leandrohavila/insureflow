@@ -372,6 +372,7 @@ function LeadLostReasonControl({ lead }: { lead: Lead }) {
   const { data: reasons = [] } = useLeadLossReasons(true)
   const updateLead = useUpdateLead()
   const [reasonId, setReasonId] = useState("")
+  const selected = reasons.find((reason) => reason.id === reasonId)
 
   return (
     <div className="space-y-2 rounded-md border border-white/[0.06] p-2">
@@ -379,13 +380,26 @@ function LeadLostReasonControl({ lead }: { lead: Lead }) {
         value={reasonId}
         onChange={(event) => setReasonId(event.target.value)}
         options={[
-          { value: "", label: "Motivo de perda" },
+          { value: "", label: "Motivo de perda (obrigatório)" },
           ...reasons.map((reason) => ({
             value: reason.id,
-            label: reason.name,
+            label: reason.reactivationEnabled
+              ? `${reason.name} · ${reason.reactivationDays}d`
+              : `${reason.name} · sem reativação`,
           })),
         ]}
       />
+      {selected ? (
+        <p className="text-[11px] text-muted-foreground">
+          {selected.reactivationEnabled
+            ? `Reativação prevista em ${selected.reactivationDays} dias (configuração do motivo).`
+            : "Este motivo não agenda reativação."}
+        </p>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          Selecione um motivo para marcar como perdido.
+        </p>
+      )}
       <Button
         type="button"
         variant="outline"

@@ -15,6 +15,7 @@ describe('lead-reactivation.util', () => {
       lostReason: 'Sem orçamento',
       now: new Date('2026-08-01T12:00:00.000Z'),
       settings: { enabled: true, idleDays: 30, maxAttempts: 3 },
+      reasonOverride: { enabled: true, idleDays: 30 },
     });
 
     expect(patch.lostReason).toBe('Sem orçamento');
@@ -24,7 +25,34 @@ describe('lead-reactivation.util', () => {
     expect(patch.reactivationAttempts).toBe(0);
   });
 
-  it('não reagenda se a reativação global estiver desligada', () => {
+  it('usa reactivationDays do motivo mesmo com canal desligado', () => {
+    const patch = buildLostReactivationPatch({
+      previousStatus: 'contacted',
+      nextStatus: 'lost',
+      now,
+      settings: { enabled: false, idleDays: 30, maxAttempts: 3 },
+      reasonOverride: { enabled: true, idleDays: 45 },
+    });
+
+    expect(patch.reactivationEnabled).toBe(true);
+    expect(patch.reactivationDays).toBe(45);
+    expect(patch.nextReactivationAt).toEqual(addUtcDays(now, 45));
+  });
+
+  it('não reagenda se o motivo desliga reativação', () => {
+    const patch = buildLostReactivationPatch({
+      previousStatus: 'contacted',
+      nextStatus: 'lost',
+      now,
+      settings: { enabled: true, idleDays: 30, maxAttempts: 3 },
+      reasonOverride: { enabled: false, idleDays: 90 },
+    });
+
+    expect(patch.nextReactivationAt).toBeNull();
+    expect(patch.reactivationEnabled).toBe(false);
+  });
+
+  it('não reagenda se a reativação global estiver desligada sem motivo', () => {
     const patch = buildLostReactivationPatch({
       previousStatus: 'contacted',
       nextStatus: 'lost',
