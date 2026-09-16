@@ -767,19 +767,17 @@ export function LeadsPage() {
                   })),
                 ]}
               />
-              {showMineFilter ? (
-                <FilterSelect
-                  label="Responsável"
-                  value={mineOnly ? "mine" : "all"}
-                  onChange={(event) =>
-                    setMineOnly(event.target.value === "mine")
-                  }
-                  options={[
-                    { value: "all", label: "Responsável" },
-                    { value: "mine", label: "Meus leads" },
-                  ]}
-                />
-              ) : null}
+              <FilterSelect
+                label="Responsável"
+                value={mineOnly ? "mine" : "all"}
+                onChange={(event) =>
+                  setMineOnly(event.target.value === "mine")
+                }
+                options={[
+                  { value: "all", label: "Responsável" },
+                  { value: "mine", label: "Meus leads" },
+                ]}
+              />
               <FilterSearch
                 label="Origem"
                 grow={false}
