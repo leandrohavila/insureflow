@@ -12,10 +12,13 @@ import { useQueryClient } from "@tanstack/react-query"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   ArrowRightLeft,
+  CalendarClock,
   ClipboardList,
   Edit3,
   ExternalLink,
+  Eye,
   Mail,
+  MessageSquare,
   Phone,
   Trash2,
   Upload,
@@ -32,6 +35,7 @@ import { LeadCreateEmptyActions, LeadCreateMenu } from "@/components/leads/lead-
 import { LeadCaptureMetricsGrid } from "@/components/leads/lead-capture-metrics"
 import { LeadDialog } from "@/components/leads/lead-dialog"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
+import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
 import { QuestionnaireSubmissionDetailSheet } from "@/components/questionnaires/questionnaire-submission-detail-sheet"
 import { QuestionnaireSubmissionDialog } from "@/components/questionnaires/questionnaire-submission-dialog"
 import { ActionToast } from "@/components/shared"
@@ -92,10 +96,19 @@ import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { isLeadConverted, leadOwnerDisplayName } from "@/lib/leads/lead-owner"
 import {
+  deriveLeadOperationalBadges,
   deriveLeadPriority,
+  LEAD_OPERATIONAL_BADGE_LABEL,
   LEAD_PRIORITY_LABEL,
   leadHasNoContact,
+  leadTelHref,
+  leadWhatsAppHref,
 } from "@/lib/leads/lead-operational-signals"
+import {
+  useCreateActivity,
+  type CreateActivityInput,
+} from "@/lib/data-access/modules/activities"
+import { activityTypeSubjects } from "@/lib/crm/activity-labels"
 import {
   bug010LeadCreateLog,
   bug010LeadCreateProfiler,
@@ -168,7 +181,9 @@ export function LeadsPage() {
   const [interestCategory, setInterestCategory] = useState<
     InterestCategory | "all"
   >("all")
+  const [period, setPeriod] = useState<"all" | "7" | "30" | "90">("all")
   const [mineOnly, setMineOnly] = useState(false)
+  const [scheduleLead, setScheduleLead] = useState<Lead | null>(null)
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -232,6 +247,9 @@ export function LeadsPage() {
   const updateLead = useUpdateLead(filters)
   const deleteLead = useDeleteLead(filters)
   const convertLead = useConvertLead(filters)
+  const createActivity = useCreateActivity({
+    leadId: scheduleLead?.id,
+  })
   const createLeadResetRef = useRef(createLead.reset)
   const updateLeadResetRef = useRef(updateLead.reset)
 
@@ -418,6 +436,15 @@ export function LeadsPage() {
   }, [openLeadDialog, searchParams, syncLeadUrlParams])
 
   const leads = leadsQuery.data?.data ?? []
+  const visibleLeads = useMemo(() => {
+    if (period === "all") return leads
+    const days = Number(period)
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+    return leads.filter((row) => {
+      const created = new Date(row.createdAt).getTime()
+      return !Number.isNaN(created) && created >= cutoff
+    })
+  }, [leads, period])
   const meta = leadsQuery.data?.meta
   const activeFilterCount =
     (searchInput.trim() ? 1 : 0) +
@@ -425,6 +452,7 @@ export function LeadsPage() {
     (source.trim() ? 1 : 0) +
     (businessUnitId !== "all" ? 1 : 0) +
     (interestCategory !== "all" ? 1 : 0) +
+    (period !== "all" ? 1 : 0) +
     (mineOnly ? 1 : 0)
 
   useEffect(() => {
@@ -435,7 +463,7 @@ export function LeadsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [businessUnitId, interestCategory, mineOnly, search, source, status])
+  }, [businessUnitId, interestCategory, mineOnly, period, search, source, status])
 
   async function openLeadById(id: string) {
     const lead = await queryClient.fetchQuery({
@@ -450,11 +478,14 @@ export function LeadsPage() {
       {
         key: "name",
         header: "Lead",
+        sticky: "left",
+        className: "min-w-[12rem] max-w-[16rem]",
         render: (row) => {
           const priority = deriveLeadPriority(row)
+          const badges = deriveLeadOperationalBadges(row)
           return (
             <div className="flex items-center gap-2">
-              <Avatar className="size-7 border border-white/10">
+              <Avatar className="size-6 border border-white/10">
                 <AvatarFallback className="bg-white/[0.06] text-[10px] font-semibold text-foreground">
                   {row.initials}
                 </AvatarFallback>
@@ -477,11 +508,24 @@ export function LeadsPage() {
                   >
                     {LEAD_PRIORITY_LABEL[priority]}
                   </span>
-                  {leadHasNoContact(row) ? (
-                    <span className="rounded-full border border-sky-400/25 bg-sky-500/10 px-1.5 py-px text-[10px] text-sky-200">
-                      Sem contato
+                  {badges.map((badge) => (
+                    <span
+                      key={badge}
+                      className={cn(
+                        "rounded-full border px-1.5 py-px text-[10px]",
+                        badge === "no_contact" &&
+                          "border-sky-400/30 bg-sky-500/10 text-sky-200",
+                        badge === "contact_today" &&
+                          "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
+                        badge === "overdue" &&
+                          "border-rose-400/35 bg-rose-500/10 text-rose-200",
+                        badge === "renewal_soon" &&
+                          "border-amber-400/35 bg-amber-500/10 text-amber-100",
+                      )}
+                    >
+                      {LEAD_OPERATIONAL_BADGE_LABEL[badge]}
                     </span>
-                  ) : null}
+                  ))}
                 </div>
               </div>
             </div>
@@ -491,37 +535,29 @@ export function LeadsPage() {
       {
         key: "contact",
         header: "Contato",
+        className: "min-w-[8.5rem]",
         render: (row) => (
           <div className="flex flex-col gap-0 text-[11px] leading-tight text-muted-foreground">
-            {row.email ? (
-              <span className="flex items-center gap-1.5">
-                <Mail className="size-3 opacity-60" />
-                {row.email}
-              </span>
-            ) : null}
             {row.phone ? (
               <span className="flex items-center gap-1.5">
                 <Phone className="size-3 opacity-60" />
                 {row.phone}
               </span>
             ) : null}
-            {!row.email && !row.phone ? "Sem contato" : null}
+            {row.email ? (
+              <span className="flex max-w-[10rem] items-center gap-1.5 truncate">
+                <Mail className="size-3 shrink-0 opacity-60" />
+                <span className="truncate">{row.email}</span>
+              </span>
+            ) : null}
+            {!row.email && !row.phone ? "—" : null}
           </div>
-        ),
-      },
-      {
-        key: "source",
-        header: "Origem",
-        hideOnMobile: true,
-        render: (row) => (
-          <span className="text-xs text-muted-foreground">
-            {row.source || "Não informada"}
-          </span>
         ),
       },
       {
         key: "status",
         header: "Status",
+        className: "w-[6.5rem]",
         render: (row) => (
           <Badge
             variant="outline"
@@ -538,36 +574,103 @@ export function LeadsPage() {
         key: "owner",
         header: "Responsável",
         hideOnMobile: true,
+        className: "min-w-[7rem]",
         render: (row) => (
           <span className="text-xs text-muted-foreground">
-            {leadOwnerDisplayName(row) || "Sem responsável"}
+            {leadOwnerDisplayName(row) || "—"}
           </span>
         ),
       },
       {
-        key: "nextContact",
-        header: "Próximo contato",
+        key: "source",
+        header: "Origem",
         hideOnMobile: true,
+        className: "min-w-[6rem]",
         render: (row) => (
           <span className="text-xs text-muted-foreground">
-            {leadHasNoContact(row)
-              ? "Pendente"
-              : formatLastInteraction(row.lastContactAt)}
+            {row.source || "—"}
           </span>
         ),
       },
       {
         key: "lastInteraction",
-        header: "Última interação",
+        header: "Última",
         hideOnMobile: true,
+        className: "min-w-[7rem]",
         render: (row) => (
           <span className="text-xs text-muted-foreground">
             {formatLastInteraction(row.lastInteractionAt ?? row.lastContactAt)}
           </span>
         ),
       },
+      {
+        key: "quick",
+        header: "Rápidas",
+        className: "w-[9.5rem]",
+        render: (row) => {
+          const tel = leadTelHref(row.phone)
+          const wa = leadWhatsAppHref(row.phone)
+          return (
+            <div
+              className="flex items-center gap-0.5"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0"
+                disabled={!tel}
+                title="Ligar"
+                onClick={() => {
+                  if (tel) window.open(tel, "_self")
+                }}
+              >
+                <Phone className="size-3.5" />
+                <span className="sr-only">Ligar</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0"
+                disabled={!wa}
+                title="WhatsApp"
+                onClick={() => {
+                  if (wa) window.open(wa, "_blank", "noopener,noreferrer")
+                }}
+              >
+                <MessageSquare className="size-3.5" />
+                <span className="sr-only">WhatsApp</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0"
+                title="Agendar"
+                onClick={() => setScheduleLead(row)}
+              >
+                <CalendarClock className="size-3.5" />
+                <span className="sr-only">Agendar</span>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="size-7 p-0"
+                title="Abrir"
+                onClick={() => openLeadDialog(row)}
+              >
+                <Eye className="size-3.5" />
+                <span className="sr-only">Abrir</span>
+              </Button>
+            </div>
+          )
+        },
+      },
     ],
-    [],
+    [openLeadDialog],
   )
 
   return (
@@ -585,7 +688,7 @@ export function LeadsPage() {
                 </Badge>
               </span>
             }
-            description="Fila comercial única — priorize contato, follow-up e conversão."
+            description="Central operacional — priorize contato, follow-up e conversão."
             actions={
               <PageActions>
                 <PageActionsGroup
@@ -632,50 +735,61 @@ export function LeadsPage() {
             <OperationalWorkspaceToolbar dense>
             <FilterBar
               activeCount={activeFilterCount}
-              clearLabel="Limpar filtros"
+              clearLabel="Limpar"
               onClear={() => {
                 setSearchInput("")
                 setStatus("all")
                 setSource("")
                 setBusinessUnitId("all")
                 setInterestCategory("all")
+                setPeriod("all")
                 setMineOnly(false)
               }}
             >
               <FilterSearch
                 label="Buscar leads"
-                placeholder="Buscar por nome, empresa, contato, origem ou responsável…"
+                placeholder="Nome, telefone, origem…"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
+                containerClassName="min-w-[12rem] max-w-[18rem] flex-[1.2]"
               />
               <FilterSelect
-                label="Status do lead"
+                label="Status"
                 value={status}
                 onChange={(event) =>
                   setStatus(event.target.value as LeadStatus | "all")
                 }
                 options={[
-                  { value: "all", label: "Todos os status" },
+                  { value: "all", label: "Status" },
                   ...LEAD_STATUSES.map((item) => ({
                     value: item,
                     label: statusLabels[item],
                   })),
                 ]}
               />
+              {showMineFilter ? (
+                <FilterSelect
+                  label="Responsável"
+                  value={mineOnly ? "mine" : "all"}
+                  onChange={(event) =>
+                    setMineOnly(event.target.value === "mine")
+                  }
+                  options={[
+                    { value: "all", label: "Responsável" },
+                    { value: "mine", label: "Meus leads" },
+                  ]}
+                />
+              ) : null}
               <FilterSearch
                 label="Origem"
                 grow={false}
-                containerClassName="w-36"
+                containerClassName="w-28"
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder="Origem"
               />
-              <BusinessUnitFilter
-                value={businessUnitId}
-                onChange={setBusinessUnitId}
-              />
               <FilterSelect
-                label="Interesse"
+                label="Tipo Seguro"
                 value={interestCategory}
                 onChange={(event) =>
                   setInterestCategory(
@@ -683,36 +797,48 @@ export function LeadsPage() {
                   )
                 }
                 options={[
-                  { value: "all", label: "Todos os interesses" },
+                  { value: "all", label: "Tipo Seguro" },
                   ...INTEREST_CATEGORIES.map((item) => ({
                     value: item,
                     label: INTEREST_CATEGORY_LABELS[item],
                   })),
                 ]}
               />
-              {showMineFilter ? (
-                <label className="flex h-[var(--if-control-height-md)] shrink-0 cursor-pointer items-center gap-[var(--if-space-2)] rounded-[var(--if-radius-md)] border border-input/80 bg-input/25 px-[var(--if-space-3)] text-sm text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    className="size-3.5 accent-primary"
-                    checked={mineOnly}
-                    onChange={(event) => setMineOnly(event.target.checked)}
-                  />
-                  Responsável
-                </label>
-              ) : null}
+              <FilterSelect
+                label="Período"
+                value={period}
+                onChange={(event) =>
+                  setPeriod(event.target.value as "all" | "7" | "30" | "90")
+                }
+                options={[
+                  { value: "all", label: "Período" },
+                  { value: "7", label: "7 dias" },
+                  { value: "30", label: "30 dias" },
+                  { value: "90", label: "90 dias" },
+                ]}
+              />
+              <BusinessUnitFilter
+                value={businessUnitId}
+                onChange={setBusinessUnitId}
+              />
             </FilterBar>
             </OperationalWorkspaceToolbar>
 
             <OperationalWorkspaceMain>
             <DataTable
               stickyHeader
+              fill
               density="compact"
-              className="w-full"
-              data={leads}
+              className="w-full min-h-0"
+              data={visibleLeads}
               columns={columns}
               getRowId={(row) => row.id}
-              selectable
+              getRowClassName={(row) =>
+                leadHasNoContact(row)
+                  ? "bg-sky-500/[0.06] hover:bg-sky-500/[0.1]"
+                  : undefined
+              }
+              selectable={false}
               loading={leadsQuery.isLoading}
               loadingLabel="Carregando leads…"
               error={leadsQuery.isError ? leadsQuery.error : null}
@@ -831,6 +957,26 @@ export function LeadsPage() {
         Isso garante zero alteração no caminho de criação/edição de campos
         e evita stacking entre Sheet (lateral) e Dialog (centro).
       */}
+          <ActivityFormDialog
+            open={Boolean(scheduleLead)}
+            onOpenChange={(open) => {
+              if (!open) setScheduleLead(null)
+            }}
+            initialType="follow_up"
+            leadId={scheduleLead?.id}
+            pending={createActivity.isPending}
+            error={createActivity.error}
+            onSubmit={(input) => {
+              const subject =
+                input.subject.trim() ||
+                activityTypeSubjects[input.type] ||
+                "Atividade"
+              createActivity.mutate(
+                { ...input, subject, leadId: scheduleLead?.id },
+                { onSuccess: () => setScheduleLead(null) },
+              )
+            }}
+          />
           <LeadDialog
             lead={editingLead}
             intent={createIntent}

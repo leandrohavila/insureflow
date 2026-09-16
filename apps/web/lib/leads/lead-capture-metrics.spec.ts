@@ -6,7 +6,7 @@ import {
 } from "./lead-capture-metrics"
 
 describe("computeLeadCaptureMetrics", () => {
-  it("splits totals and derives conversion plus open pipeline", () => {
+  it("splits totals and derives conversion, open pipeline and operational funnel", () => {
     expect(
       computeLeadCaptureMetrics({
         total: 10,
@@ -31,6 +31,11 @@ describe("computeLeadCaptureMetrics", () => {
       conversionRate: 20,
       noContact: 4,
       followUps: 0,
+      novos: 4,
+      emAtendimento: 2,
+      cotacaoEnviada: 1,
+      fechados: 2,
+      perdidos: 1,
     })
   })
 
@@ -46,6 +51,8 @@ describe("computeLeadCaptureMetrics", () => {
       pipeline: 0,
       pipelineInsurance: 0,
       customersInsurance: 0,
+      novos: 0,
+      perdidos: 0,
     })
     expect(formatLeadConversionRate(null)).toBe("—")
     expect(formatLeadConversionRate(20)).toBe("20%")

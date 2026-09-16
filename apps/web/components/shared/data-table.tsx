@@ -32,6 +32,8 @@ export type DataTableColumn<T> = {
   className?: string
   headerClassName?: string
   hideOnMobile?: boolean
+  /** Congela a coluna à esquerda no scroll horizontal. */
+  sticky?: "left"
   render: (row: T, index: number) => React.ReactNode
 }
 
@@ -76,6 +78,7 @@ export type DataTableProps<T> = DataTableStateProps & {
   density?: "default" | "compact"
   /** Preenche a altura do container e rola o corpo da tabela. */
   fill?: boolean
+  getRowClassName?: (row: T, index: number) => string | undefined
 }
 
 function isRowActionVisible<T>(action: DataTableRowAction<T>, row: T) {
@@ -115,6 +118,7 @@ export function DataTable<T>({
   stickyHeader = false,
   density = "default",
   fill = false,
+  getRowClassName,
 }: DataTableProps<T>) {
   const compact = density === "compact"
   const reduce = useReducedMotion()
@@ -225,6 +229,8 @@ export function DataTable<T>({
                       column.hideOnMobile && "hidden md:table-cell",
                       column.headerClassName,
                       column.className,
+                      column.sticky === "left" &&
+                        "sticky left-0 z-20 bg-card/95 backdrop-blur-sm shadow-[1px_0_0_0_rgba(255,255,255,0.06)]",
                     )}
                   >
                     {column.header}
@@ -259,6 +265,7 @@ export function DataTable<T>({
                       onRowClick && "cursor-pointer hover:bg-primary/[0.06]",
                       index % 2 === 1 && "bg-white/[0.015]",
                       !reduce && !compact && "animate-in fade-in duration-500",
+                      getRowClassName?.(row, index),
                     )}
                     style={
                       reduce || compact
@@ -282,14 +289,16 @@ export function DataTable<T>({
                       <TableCell
                         key={column.key}
                         className={cn(
-                      compact ? "py-1.5" : "py-3.5",
-                      column.hideOnMobile && "hidden md:table-cell",
-                      column.className,
-                    )}
-                  >
-                    {column.render(row, index)}
-                  </TableCell>
-                ))}
+                          compact ? "py-1.5" : "py-3.5",
+                          column.hideOnMobile && "hidden md:table-cell",
+                          column.className,
+                          column.sticky === "left" &&
+                            "sticky left-0 z-[1] bg-card/95 backdrop-blur-sm shadow-[1px_0_0_0_rgba(255,255,255,0.06)]",
+                        )}
+                      >
+                        {column.render(row, index)}
+                      </TableCell>
+                    ))}
                 {hasActions ? (
                   <TableCell
                     className={cn(
