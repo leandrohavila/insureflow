@@ -4,30 +4,64 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { buildRedisConnection } from './infrastructure/redis/redis-connection.util';
+import { RedisInfraModule } from './infrastructure/redis/redis.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
+import { AccessModule } from './modules/access/access.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
+import { ActivitiesModule } from './modules/activities/activities.module';
+import { PoliciesModule } from './modules/policies/policies.module';
+import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { SalesPerformanceModule } from './modules/sales-performance/sales-performance.module';
 import { QueueModule } from './modules/queue/queue.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
+import { BusinessUnitsModule } from './modules/business-units/business-units.module';
+import { MessageTemplatesModule } from './modules/message-templates/message-templates.module';
+import { LeadReactivationModule } from './modules/lead-reactivation/lead-reactivation.module';
+import { CrossSellModule } from './modules/cross-sell/cross-sell.module';
+import { LeadLossReasonsModule } from './modules/lead-loss-reasons/lead-loss-reasons.module';
+import { LeadFollowUpsModule } from './modules/lead-follow-ups/lead-follow-ups.module';
+import { PolicyRenewalsModule } from './modules/policy-renewals/policy-renewals.module';
+import { CommercialImportModule } from './modules/commercial-import/commercial-import.module';
+import { CommercialAgendaModule } from './modules/commercial-agenda/commercial-agenda.module';
+import { CommercialReactivationsModule } from './modules/commercial-reactivations/commercial-reactivations.module';
+import { CommercialReactivationCampaignsModule } from './modules/commercial-reactivation-campaigns/commercial-reactivation-campaigns.module';
+import { CommercialAutomationModule } from './modules/commercial-automation/commercial-automation.module';
+import { CommunicationsModule } from './modules/communications/communications.module';
+import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
+import { PropertiesModule } from './modules/properties/properties.module';
+
+function resolveEnvFilePath(): string[] {
+  const appEnv = process.env.APP_ENV ?? 'local';
+  if (appEnv === 'development') {
+    return ['../../.env.development', '../../.env', '.env'];
+  }
+  if (appEnv === 'staging') {
+    return ['../../.env.staging', '../../.env', '.env'];
+  }
+  if (appEnv === 'production') {
+    return ['../../.env.production', '../../.env', '.env'];
+  }
+  return ['.env.local', '../../.env.local', '../../.env', '.env'];
+}
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        '.env.local',
-        '.env',
-        '../../.env.local',
-        '../../.env',
-      ],
+      envFilePath: resolveEnvFilePath(),
     }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -42,36 +76,47 @@ import { UsersModule } from './modules/users/users.module';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => {
-        const redisUrl = cfg.get<string>('REDIS_URL');
-        if (redisUrl) {
-          const u = new URL(redisUrl);
-          return {
-            connection: {
-              host: u.hostname,
-              port: parseInt(u.port || '6379', 10),
-              password: u.password || undefined,
-              username: u.username || undefined,
-            },
-          };
-        }
-        return {
-          connection: {
-            host: cfg.get<string>('REDIS_HOST', '127.0.0.1'),
-            port: cfg.get<number>('REDIS_PORT', 6379),
-          },
-        };
-      },
+      useFactory: (cfg: ConfigService) => ({
+        connection: buildRedisConnection({
+          redisUrl: cfg.get<string>('REDIS_URL'),
+          host: cfg.get<string>('REDIS_HOST'),
+          port: cfg.get<number>('REDIS_PORT'),
+        }).connection,
+      }),
     }),
+    RedisInfraModule,
     PrismaModule,
     QueueModule,
+    AccessModule,
     AuthModule,
     CrmModule,
+    CustomersModule,
+    LeadsModule,
+    ActivitiesModule,
+    PoliciesModule,
+    QuestionnairesModule,
+    QuotesModule,
     UsersModule,
     TenantsModule,
     PermissionsModule,
     AuditLogsModule,
     HealthModule,
+    BusinessUnitsModule,
+    MessageTemplatesModule,
+    LeadReactivationModule,
+    CrossSellModule,
+    LeadLossReasonsModule,
+    LeadFollowUpsModule,
+    PolicyRenewalsModule,
+    CommercialImportModule,
+    CommercialAgendaModule,
+    CommercialReactivationsModule,
+    CommercialReactivationCampaignsModule,
+    CommercialAutomationModule,
+    CommunicationsModule,
+    OpportunitiesModule,
+    PropertiesModule,
+    SalesPerformanceModule,
   ],
   controllers: [AppController],
   providers: [

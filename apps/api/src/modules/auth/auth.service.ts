@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, type JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -6,10 +6,12 @@ import { createHash, randomBytes } from 'crypto';
 
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { OwnershipService } from '../access/ownership.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 
 @Injectable()
 export class AuthService {
+  private readonly log = new Logger(AuthService.name);
   private readonly accessExpiresIn: JwtSignOptions['expiresIn'];
 
   constructor(
@@ -17,6 +19,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly cfg: ConfigService,
     private readonly auditLogs: AuditLogsService,
+    private readonly ownership: OwnershipService,
   ) {
     this.accessExpiresIn = this.cfg.get<string>(
       'JWT_EXPIRES_IN',
@@ -73,14 +76,15 @@ export class AuthService {
       }
     }
 
-    const payload: JwtAccessPayload = {
-      sub: user.id,
+    const payload = await this.buildPayload({
+      userId: user.id,
       email: user.email,
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       roles: roleSlugs,
       permissions: [...permSet],
-    };
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -131,6 +135,10 @@ export class AuthService {
       resource: 'auth',
       severity: 'info',
     });
+
+    this.log.log(
+      `[auth] Login OK tenant=${tenantSlug} userId=${userEntity.id}`,
+    );
 
     return {
       accessToken,
@@ -188,14 +196,15 @@ export class AuthService {
       }
     }
 
-    const payload: JwtAccessPayload = {
-      sub: u.id,
+    const payload = await this.buildPayload({
+      userId: u.id,
       email: u.email,
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       roles: roleSlugs,
       permissions: [...permSet],
-    };
+      currentBusinessUnitId: u.currentBusinessUnitId,
+    });
 
     const accessToken = await this.jwt.signAsync(payload, {
       expiresIn: this.accessExpiresIn,
@@ -212,5 +221,85 @@ export class AuthService {
       where: { tokenHash, userId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  async issueAccessTokenForUser(userId: string): Promise<{
+    accessToken: string;
+    expiresIn: string;
+    user: JwtAccessPayload;
+  }> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, isActive: true },
+      include: {
+        tenant: { select: { id: true, slug: true, status: true } },
+        userRoles: {
+          include: {
+            role: {
+              include: {
+                rolePermissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!user?.tenant || user.tenant.status !== 'active') {
+      throw new UnauthorizedException('Usuário inválido');
+    }
+
+    const roleSlugs = user.userRoles.map((ur) => ur.role.slug);
+    const permSet = new Set<string>();
+    for (const ur of user.userRoles) {
+      for (const rp of ur.role.rolePermissions) {
+        permSet.add(rp.permission.key);
+      }
+    }
+
+    const payload = await this.buildPayload({
+      userId: user.id,
+      email: user.email,
+      tenantId: user.tenant.id,
+      tenantSlug: user.tenant.slug,
+      roles: roleSlugs,
+      permissions: [...permSet],
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
+
+    const accessToken = await this.jwt.signAsync(payload, {
+      expiresIn: this.accessExpiresIn,
+    });
+    return {
+      accessToken,
+      expiresIn: this.cfg.get<string>('JWT_EXPIRES_IN', '15m'),
+      user: payload,
+    };
+  }
+
+  private async buildPayload(params: {
+    userId: string;
+    email: string;
+    tenantId: string;
+    tenantSlug: string;
+    roles: string[];
+    permissions: string[];
+    currentBusinessUnitId?: string | null;
+  }): Promise<JwtAccessPayload> {
+    const accessCtx = await this.ownership.resolveContext(params.tenantId, {
+      userId: params.userId,
+      roles: params.roles,
+      permissions: params.permissions,
+    });
+
+    return {
+      sub: params.userId,
+      email: params.email,
+      tenantId: params.tenantId,
+      tenantSlug: params.tenantSlug,
+      roles: params.roles,
+      permissions: params.permissions,
+      dataScope: accessCtx.dataScope,
+      teamIds: accessCtx.teamIds,
+      currentBusinessUnitId: params.currentBusinessUnitId ?? null,
+    };
   }
 }

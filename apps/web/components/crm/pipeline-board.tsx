@@ -1,113 +1,403 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MouseSensor,
   PointerSensor,
-  closestCorners,
+  TouchSensor,
   useSensor,
   useSensors,
+  type DragCancelEvent,
+  type UniqueIdentifier,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { motion, useReducedMotion } from "framer-motion"
 
-import type { CrmDeal, CrmStageId } from "@/lib/crm-api"
-import { pipelineStages } from "@/lib/crm-api"
-import { crmDeals as mockDeals } from "@/lib/crm-mock"
+import type {
+  CrmDeal,
+  CrmStageId,
+  DealPipelineUpdateInput,
+} from "@/lib/data-access/modules/crm"
+import { pipelineStages } from "@/lib/data-access/modules/crm"
+import {
+  getSortedStageDeals,
+  hasDealPipelinePositionChanged,
+  sortDealsForPipeline,
+} from "@/lib/pipeline-order"
+import { createPipelineCollisionDetection } from "@/lib/pipeline-collision"
+import {
+  logPipelineDnd,
+  logPipelineDragOver,
+} from "@/lib/pipeline-dnd-debug"
+import {
+  getPipelineOverType,
+  pipelineStageOrderKey,
+  resolvePipelineDragOverTarget,
+  shouldUpdateStickyOver,
+} from "@/lib/pipeline-drag-over"
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
+import {
+  dsPipeline,
+} from "@/lib/design-system"
 import { cn } from "@/lib/utils"
 
 type PipelineBoardProps = {
   compact?: boolean
   interactive?: boolean
   onDealSelect?: (deal: CrmDeal) => void
+  onDealEdit?: (deal: CrmDeal) => void
+  onDealDelete?: (deal: CrmDeal) => void
   deals?: CrmDeal[]
-  onDealStageChange?: (deal: CrmDeal, stage: CrmStageId) => void
+  stages?: typeof pipelineStages
+  onDealMove?: (
+    deal: CrmDeal,
+    update: DealPipelineUpdateInput,
+  ) => void | Promise<void>
 }
 
 export function PipelineBoard({
   compact,
   interactive = true,
   onDealSelect,
-  deals: sourceDeals = mockDeals as unknown as CrmDeal[],
-  onDealStageChange,
+  onDealEdit,
+  onDealDelete,
+  deals: sourceDeals = [],
+  stages = pipelineStages,
+  onDealMove,
 }: PipelineBoardProps) {
   const reduce = useReducedMotion()
-  const [deals, setDeals] = useState<CrmDeal[]>(sourceDeals)
+  const [deals, setDeals] = useState<CrmDeal[]>(() =>
+    sortDealsForPipeline(sourceDeals),
+  )
   const [activeDeal, setActiveDeal] = useState<CrmDeal | null>(null)
   const [overStageId, setOverStageId] = useState<CrmStageId | null>(null)
+  const dragSnapshotRef = useRef<CrmDeal[] | null>(null)
+  const dealsRef = useRef(deals)
+  const isDraggingRef = useRef(false)
+  const persistInFlightRef = useRef(false)
+  const lastProcessedOverRef = useRef<string | null>(null)
+  const stickyOverRef = useRef<UniqueIdentifier | null>(null)
+  const lastCollisionIdsRef = useRef<string>("")
+  const overStageIdRef = useRef<CrmStageId | null>(null)
+  const dragOverRafRef = useRef<number | null>(null)
+
+  dealsRef.current = deals
+
+  const activationConstraint = { distance: 8 } as const
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 10 },
+    useSensor(PointerSensor, { activationConstraint }),
+    useSensor(MouseSensor, { activationConstraint }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 150, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   )
 
   const activeId = activeDeal?.id ?? null
 
+  const collisionDetection = useMemo(
+    () =>
+      createPipelineCollisionDetection((snapshot) => {
+        lastCollisionIdsRef.current = snapshot.collisionIds
+      }),
+    [],
+  )
+
   useEffect(() => {
-    setDeals(sourceDeals)
+    if (isDraggingRef.current || persistInFlightRef.current) return
+    setDeals(sortDealsForPipeline(sourceDeals))
+  }, [sourceDeals])
+
+  const revertDragState = useCallback(() => {
+    const snapshot = dragSnapshotRef.current
+    if (snapshot) {
+      setDeals(snapshot)
+    } else {
+      setDeals(sortDealsForPipeline(sourceDeals))
+    }
+    dragSnapshotRef.current = null
+    isDraggingRef.current = false
+    lastProcessedOverRef.current = null
+    stickyOverRef.current = null
+    lastCollisionIdsRef.current = ""
+    overStageIdRef.current = null
+    if (dragOverRafRef.current !== null) {
+      cancelAnimationFrame(dragOverRafRef.current)
+      dragOverRafRef.current = null
+    }
+    setActiveDeal(null)
+    setOverStageId(null)
   }, [sourceDeals])
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const deal = deals.find((d) => d.id === event.active.id)
-    if (deal) setActiveDeal(deal)
-  }, [deals])
-
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over) {
-      setOverStageId(null)
-      return
-    }
-    setDeals((current) => {
-      setOverStageId(resolveDropStage(over.id, current))
-      return reorderDeals(current, active.id, over.id)
+    const snapshot = sortDealsForPipeline(dealsRef.current).map((deal) => ({
+      ...deal,
+    }))
+    dragSnapshotRef.current = snapshot
+    isDraggingRef.current = true
+    lastProcessedOverRef.current = null
+    stickyOverRef.current = null
+    lastCollisionIdsRef.current = ""
+    const deal = snapshot.find((item) => item.id === event.active.id) ?? null
+    setActiveDeal(deal)
+    logPipelineDnd("dragStart", {
+      activeId: String(event.active.id),
+      stageId: deal?.stage,
     })
   }, [])
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      const deal = activeDeal ?? deals.find((d) => d.id === active.id)
-      const nextStage = over ? resolveDropStage(over.id, deals) : null
-      if (over) {
-        setDeals((current) => reorderDeals(current, active.id, over.id))
-      }
-      if (deal && nextStage && nextStage !== deal.stage) {
-        onDealStageChange?.(deal, nextStage)
-      }
-      setActiveDeal(null)
-      setOverStageId(null)
-    },
-    [activeDeal, deals, onDealStageChange]
-  )
-
-  const handleDragCancel = useCallback(() => {
-    setActiveDeal(null)
-    setOverStageId(null)
+  const handleDragMove = useCallback((event: DragMoveEvent) => {
+    logPipelineDnd("dragMove", {
+      activeId: String(event.active.id),
+      delta: event.delta,
+    })
   }, [])
 
-  const boardClass = cn(
-    "flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:thin]",
-    "[&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10",
-    compact && "max-h-[300px]",
-    activeId && "pipeline-board--dragging"
+  const syncOverStageHighlight = useCallback(
+    (overId: UniqueIdentifier, dealsList: CrmDeal[]) => {
+      const stage = resolveDropStage(overId, dealsList)
+      if (stage === overStageIdRef.current) return
+      overStageIdRef.current = stage
+      setOverStageId(stage)
+    },
+    [],
+  )
+
+  const applyDragOver = useCallback(
+    (activeId: UniqueIdentifier, rawOverId: UniqueIdentifier) => {
+      const current = dealsRef.current
+      const effectiveOverId = resolvePipelineDragOverTarget(
+        current,
+        activeId,
+        rawOverId,
+        stickyOverRef.current,
+      )
+
+      if (!effectiveOverId) {
+        return
+      }
+
+      const effectiveKey = String(effectiveOverId)
+
+      logPipelineDragOver({
+        activeId: String(activeId),
+        overId: String(rawOverId),
+        effectiveOverId: effectiveKey,
+        overType: getPipelineOverType(effectiveOverId),
+        rawOverType: getPipelineOverType(rawOverId),
+        collisionIds: lastCollisionIdsRef.current,
+        skippedSameOver: lastProcessedOverRef.current === effectiveKey,
+        stickyOverId: stickyOverRef.current
+          ? String(stickyOverRef.current)
+          : "",
+      })
+
+      if (lastProcessedOverRef.current === effectiveKey) {
+        return
+      }
+      lastProcessedOverRef.current = effectiveKey
+
+      if (shouldUpdateStickyOver(effectiveOverId, current, activeId)) {
+        stickyOverRef.current = effectiveOverId
+      }
+
+      const baseline = dragSnapshotRef.current ?? undefined
+      const next = reorderDeals(
+        current,
+        activeId,
+        effectiveOverId,
+        baseline,
+      )
+
+      const activeDeal = current.find((deal) => deal.id === activeId)
+      const orderUnchanged =
+        activeDeal &&
+        pipelineStageOrderKey(current, activeDeal.stage) ===
+          pipelineStageOrderKey(next, activeDeal.stage)
+
+      if (next === current || orderUnchanged) {
+        syncOverStageHighlight(effectiveOverId, current)
+        return
+      }
+
+      dealsRef.current = next
+      setDeals(next)
+      syncOverStageHighlight(effectiveOverId, next)
+    },
+    [syncOverStageHighlight],
+  )
+
+  const scheduleDragOver = useCallback(
+    (activeId: UniqueIdentifier, rawOverId: UniqueIdentifier) => {
+      if (dragOverRafRef.current !== null) {
+        cancelAnimationFrame(dragOverRafRef.current)
+      }
+      dragOverRafRef.current = requestAnimationFrame(() => {
+        dragOverRafRef.current = null
+        applyDragOver(activeId, rawOverId)
+      })
+    },
+    [applyDragOver],
+  )
+
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { active, over } = event
+      logPipelineDnd("dragOver", {
+        activeId: String(active.id),
+        overId: over ? String(over.id) : null,
+      })
+      if (!over) {
+        lastProcessedOverRef.current = null
+        overStageIdRef.current = null
+        setOverStageId(null)
+        return
+      }
+
+      scheduleDragOver(active.id, over.id)
+    },
+    [scheduleDragOver],
+  )
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event
+      const snapshot = dragSnapshotRef.current
+
+      logPipelineDnd("dragEnd", {
+        activeId: String(active.id),
+        overId: over ? String(over.id) : null,
+        hasSnapshot: Boolean(snapshot),
+      })
+
+      const dropStickyOver = stickyOverRef.current
+
+      if (dragOverRafRef.current !== null) {
+        cancelAnimationFrame(dragOverRafRef.current)
+        dragOverRafRef.current = null
+      }
+
+      const clearDragUiState = () => {
+        setActiveDeal(null)
+        setOverStageId(null)
+        lastProcessedOverRef.current = null
+        stickyOverRef.current = null
+        lastCollisionIdsRef.current = ""
+        overStageIdRef.current = null
+      }
+
+      const finishDragSession = () => {
+        isDraggingRef.current = false
+        dragSnapshotRef.current = null
+      }
+
+      if (!over || !snapshot) {
+        logPipelineDnd("dragEnd:revert", { reason: "no-over-or-snapshot" })
+        clearDragUiState()
+        finishDragSession()
+        setDeals(snapshot ?? sortDealsForPipeline(sourceDeals))
+        return
+      }
+
+      const original = snapshot.find((deal) => deal.id === active.id)
+      if (!original) {
+        clearDragUiState()
+        finishDragSession()
+        setDeals(sortDealsForPipeline(sourceDeals))
+        return
+      }
+
+      const dropOverId =
+        resolvePipelineDragOverTarget(
+          dealsRef.current,
+          active.id,
+          over.id,
+          dropStickyOver,
+        ) ?? over.id
+
+      const finalDeals = reorderDeals(
+        dealsRef.current,
+        active.id,
+        dropOverId,
+        snapshot,
+      )
+      const moved = finalDeals.find((deal) => deal.id === active.id)
+      if (!moved) {
+        clearDragUiState()
+        finishDragSession()
+        setDeals(snapshot)
+        return
+      }
+
+      const positionChanged = hasDealPipelinePositionChanged(original, moved)
+
+      if (positionChanged) {
+        persistInFlightRef.current = true
+      }
+
+      clearDragUiState()
+      isDraggingRef.current = false
+      dealsRef.current = finalDeals
+      setDeals(finalDeals)
+
+      if (!positionChanged) {
+        finishDragSession()
+        return
+      }
+
+      if (!onDealMove) {
+        finishDragSession()
+        persistInFlightRef.current = false
+        return
+      }
+
+      try {
+        await onDealMove(moved, {
+          stage: moved.stage,
+          pipelineOrder: moved.pipelineOrder,
+        })
+      } catch {
+        dealsRef.current = snapshot
+        setDeals(snapshot)
+      } finally {
+        finishDragSession()
+        queueMicrotask(() => {
+          persistInFlightRef.current = false
+        })
+      }
+    },
+    [onDealMove, sourceDeals],
+  )
+
+  const handleDragCancel = useCallback((event: DragCancelEvent) => {
+    logPipelineDnd("dragCancel", { activeId: String(event.active.id) })
+    revertDragState()
+  }, [revertDragState])
+
+  const rootClass = dsPipeline.board.className
+
+  const scrollClass = dsPipeline.scroll.className
+
+  const columnsClass = cn(
+    dsPipeline.columns.className,
+    activeId && "pipeline-board--dragging",
   )
 
   const columns = useMemo(
     () =>
-      pipelineStages.map((stage, i) => (
+      stages.map((stage, i) => (
         <PipelineColumn
           key={stage.id}
           stageId={stage.id}
@@ -115,49 +405,83 @@ export function PipelineBoard({
           accent={stage.accent}
           columnIndex={i}
           compact={compact}
-          deals={deals.filter((d) => d.stage === stage.id)}
+          deals={getSortedStageDeals(deals, stage.id)}
           interactive={interactive}
           isDropTarget={overStageId === stage.id && activeId !== null}
           onDealSelect={onDealSelect}
+          onDealEdit={onDealEdit}
+          onDealDelete={onDealDelete}
         />
       )),
-    [compact, deals, interactive, onDealSelect, overStageId, activeId]
+    [
+      compact,
+      deals,
+      interactive,
+      onDealDelete,
+      onDealEdit,
+      onDealSelect,
+      overStageId,
+      activeId,
+      stages,
+    ],
+  )
+
+  const boardContent = (
+    <div className={rootClass}>
+      <div className={scrollClass}>
+        <motion.div
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className={columnsClass}
+        >
+          {columns}
+        </motion.div>
+      </div>
+    </div>
   )
 
   if (!interactive) {
-    return (
-      <motion.div
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={boardClass}
-      >
-        {columns}
-      </motion.div>
-    )
+    return boardContent
   }
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <motion.div
-        initial={reduce ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className={boardClass}
-        role="region"
-        aria-label="Pipeline Kanban com arrastar e soltar"
-      >
-        {columns}
-      </motion.div>
+      <div className={rootClass}>
+        <div
+          className={scrollClass}
+          role="region"
+          aria-label="Pipeline Kanban com arrastar e soltar"
+        >
+          <motion.div
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className={columnsClass}
+          >
+            {columns}
+          </motion.div>
+        </div>
+      </div>
 
-      <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }}>
+      <DragOverlay
+        style={{ zIndex: 100 }}
+        dropAnimation={{
+          duration: 220,
+          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      >
         {activeDeal ? (
-          <div className="pipeline-drag-overlay w-[272px] rotate-[1.5deg] scale-[1.03]">
+          <div
+            className="pipeline-drag-overlay rotate-[1.25deg] scale-[1.02]"
+            style={{ width: dsPipeline.laneWidthPx }}
+          >
             <DealCard deal={activeDeal} isOverlay />
           </div>
         ) : null}

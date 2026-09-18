@@ -1,92 +1,125 @@
 "use client"
 
-import { motion } from "framer-motion"
-import { Percent, Target, Timer, TrendingUp, Wallet } from "lucide-react"
+import { useState, type ComponentType } from "react"
+import { ChevronDown, Percent, Target, Timer, Wallet } from "lucide-react"
 
-import { crmMetrics } from "@/lib/crm-mock"
-import { formatCurrency, type CrmDeal } from "@/lib/crm-api"
-import { GlassCard } from "@/components/dashboard/glass-card"
-import { Stagger, StaggerItem } from "@/components/motion/primitives"
+import { formatCurrency, type CrmDeal } from "@/lib/data-access/modules/crm"
+import { Grid, StatCard, type StatCardDensity, type StatCardTone } from "@/components/design-system"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 type CrmMetricsProps = {
-  deals?: CrmDeal[]
+  deals: CrmDeal[]
+  /** `compact` — linha única densa; detalhes secundários recolhíveis. */
+  density?: StatCardDensity
 }
 
-export function CrmMetrics({ deals }: CrmMetricsProps) {
-  const openDeals = deals?.filter((deal) => deal.status === "open") ?? []
-  const wonDeals = deals?.filter((deal) => deal.status === "won") ?? []
-  const pipelineValue =
-    deals === undefined
-      ? crmMetrics.pipelineValue
-      : openDeals.reduce((sum, deal) => sum + deal.value, 0)
-  const totalDeals = deals?.length ?? crmMetrics.openDeals
-  const winRate =
-    deals === undefined || deals.length === 0
-      ? crmMetrics.winRate
-      : Math.round((wonDeals.length / deals.length) * 100)
+type MetricItem = {
+  label: string
+  value: string
+  sub: string
+  icon: ComponentType<{ className?: string }>
+  tone: StatCardTone
+}
 
-  const metrics = [
+export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const openDeals = deals.filter((deal) => deal.status === "open")
+  const wonDeals = deals.filter((deal) => deal.status === "won")
+  const pipelineValue = openDeals.reduce((sum, deal) => sum + deal.value, 0)
+  const totalDeals = openDeals.length
+  const winRate =
+    deals.length === 0 ? 0 : Math.round((wonDeals.length / deals.length) * 100)
+  const avgDealValue =
+    openDeals.length === 0 ? 0 : pipelineValue / openDeals.length
+
+  const metrics: MetricItem[] = [
     {
-      label: "Valor do pipeline",
+      label: "Valor pipeline",
       value: formatCurrency(pipelineValue),
-      sub: "Negócios em aberto",
+      sub: "Soma dos negócios em aberto",
       icon: Wallet,
-      accent: "from-primary/25 to-primary/5",
+      tone: "primary",
     },
     {
-      label: "Negócios abertos",
+      label: "Negócios",
       value: String(totalDeals),
-      sub: deals ? "Carregado do banco" : `+${crmMetrics.newThisWeek} esta semana`,
+      sub: `${deals.length} registros no banco · ${openDeals.length} em aberto`,
       icon: Target,
-      accent: "from-violet-500/20 to-violet-600/5",
+      tone: "info",
     },
     {
-      label: "Taxa de conversão",
+      label: "Conversão",
       value: `${winRate}%`,
-      sub: "Pipeline atual",
+      sub: `${wonDeals.length} ganhos no período total`,
       icon: Percent,
-      accent: "from-emerald-500/15 to-emerald-600/5",
+      tone: "success",
     },
     {
-      label: "Ciclo médio",
-      value: `${crmMetrics.avgCycleDays}d`,
-      sub: "Lead → fechamento",
+      label: "Ticket médio",
+      value: formatCurrency(avgDealValue),
+      sub: "Média por negócio em aberto",
       icon: Timer,
-      accent: "from-amber-500/15 to-amber-600/5",
+      tone: "warning",
     },
-  ] as const
+  ]
+
+  if (density === "compact") {
+    return (
+      <div className="flex w-full min-w-0 flex-col gap-[var(--if-layout-operational-metrics-gap)]">
+        <div className="grid grid-cols-2 gap-[var(--if-layout-operational-metrics-gap)] lg:grid-cols-4">
+          {metrics.map((metric) => (
+            <StatCard
+              key={metric.label}
+              density="compact"
+              icon={metric.icon}
+              label={metric.label}
+              value={metric.value}
+              description={metric.sub}
+              tone={metric.tone}
+            />
+          ))}
+        </div>
+        <div className="flex min-w-0 items-center justify-end">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            aria-expanded={detailsOpen}
+            onClick={() => setDetailsOpen((open) => !open)}
+          >
+            Detalhes
+            <ChevronDown
+              className={cn("size-3.5 transition-transform", detailsOpen && "rotate-180")}
+              aria-hidden
+            />
+          </Button>
+        </div>
+        {detailsOpen ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {metrics.map((m) => m.sub).join(" · ")}
+            {deals.some((d) => d.status === "won" || d.status === "archived")
+              ? ` · ${deals.filter((d) => d.status === "won").length} ganhos · ${deals.filter((d) => d.status === "archived").length} arquivados`
+              : ""}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
 
   return (
-    <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {metrics.map((m, i) => (
-        <StaggerItem key={m.label}>
-          <GlassCard delay={i * 0.05} className="p-0">
-            <motion.div className="flex items-start gap-4 p-5 md:p-6">
-              <div
-                className={cn(
-                  "flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ring-1 ring-white/10",
-                  m.accent
-                )}
-              >
-                <m.icon className="size-5 text-primary" strokeWidth={1.5} />
-              </div>
-              <motion.div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                  {m.label}
-                </p>
-                <p className="tabular-metric mt-1 text-2xl font-semibold text-foreground">
-                  {m.value}
-                </p>
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <TrendingUp className="size-3 text-emerald-400/80" strokeWidth={1.5} />
-                  {m.sub}
-                </p>
-              </motion.div>
-            </motion.div>
-          </GlassCard>
-        </StaggerItem>
+    <Grid columns="4">
+      {metrics.map((metric) => (
+        <StatCard
+          key={metric.label}
+          icon={metric.icon}
+          label={metric.label}
+          value={metric.value}
+          description={metric.sub}
+          tone={metric.tone}
+        />
       ))}
-    </Stagger>
+    </Grid>
   )
 }

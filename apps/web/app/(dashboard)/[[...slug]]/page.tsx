@@ -1,6 +1,6 @@
 import { forbidden, notFound } from "next/navigation"
 
-import { DashboardHome } from "@/components/dashboard/dashboard-home"
+import { DashboardEntry } from "@/components/real-estate/dashboard-entry"
 import { SectionPlaceholder } from "@/components/dashboard/section-placeholder"
 import { getNavTitle } from "@/lib/navigation"
 import { getSession } from "@/lib/auth/session"
@@ -20,7 +20,7 @@ export default async function Page({ params }: PageProps) {
   }
 
   if (!first) {
-    return <DashboardHome />
+    return <DashboardEntry />
   }
 
   const title = getNavTitle(first)

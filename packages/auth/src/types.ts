@@ -1,12 +1,23 @@
 export const APP_ROLES = [
   "super_admin",
   "admin",
+  "gerencia",
+  "comercial",
+  "operacional",
+  "financeiro",
+  "parceiro",
+  "leitura",
+  "sales",
   "broker",
   "underwriter",
   "viewer",
 ] as const
 
 export type AppRole = (typeof APP_ROLES)[number]
+
+export const DATA_SCOPES = ["own", "team", "shared", "tenant"] as const
+
+export type DataScope = (typeof DATA_SCOPES)[number]
 
 export const PERMISSIONS = [
   "dashboard:view",
@@ -16,6 +27,7 @@ export const PERMISSIONS = [
   "clients:manage",
   "leads:view",
   "leads:manage",
+  "leads:share",
   "questionnaires:view",
   "questionnaires:manage",
   "quotes:view",
@@ -30,7 +42,12 @@ export const PERMISSIONS = [
   "automation:manage",
   "settings:view",
   "settings:manage",
+  "business-units:view-all",
+  "business-units:manage",
+  "properties:view",
+  "properties:manage",
   "users:manage",
+  "tenants:manage",
   "audit:view",
 ] as const
 
@@ -63,6 +80,12 @@ export type SessionUser = {
 
 export type SessionPayload = SessionUser & {
   permissions: Permission[]
+  /** Todos os slugs de papel da sessão (API). `role` continua sendo o papel primário. */
+  roles?: string[]
+  /** Escopo efetivo de dados (ownership) — preenchido pelo login backend. */
+  dataScope?: DataScope
+  teamIds?: string[]
+  currentBusinessUnitId?: string | null
   iat?: number
   exp?: number
 }

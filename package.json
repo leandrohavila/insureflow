@@ -2,13 +2,38 @@
   "name": "InsureFlow",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "build": "npx turbo run build",
+    "dev": "turbo run dev --parallel --filter=@repo/forms-engine --filter=@repo/forms-library --filter=api --filter=web",
+    "dev:portal": "turbo run dev --filter=portal-imobiliario-publico",
+    "lint": "npx turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types",
+    "check-types": "npx turbo run check-types",
     "postinstall": "node scripts/prisma-generate.cjs",
-    "db:generate": "npm run build -w @repo/database"
+    "db:generate": "npm run build -w @repo/database",
+    "db:seed:dev": "node scripts/seed-dev.cjs",
+    "db:validate": "npm run db:validate -w @repo/database",
+    "db:deploy": "npm run db:deploy -w @repo/database",
+    "db:migrate": "npm run prisma:migrate -w @repo/database",
+    "db:seed": "npm run db:seed -w @repo/database",
+    "ci": "npm run lint && npm run check-types && npm run db:validate && npx turbo run build --filter=web --filter=api",
+    "dev:cloud:migrate": "node scripts/dev-cloud-migrate.cjs",
+    "dev:cloud:smoke": "node scripts/dev-cloud-smoke.cjs",
+    "dev:cloud:homologation": "node scripts/dev-cloud-homologation.cjs",
+    "hml:sprint2:db": "node scripts/hml-sprint2-db.cjs",
+    "hml:sprint2:align-owners": "npm run db:align:dev-lead-ownership -w @repo/database",
+    "hml:sprint2:validate": "node scripts/hml-sprint2-validation.cjs",
+    "hml:deploy:verify": "node scripts/hml-deploy-verify.cjs",
+    "prod:domain:plan": "node scripts/prod-domain-setup.cjs",
+    "prod:domain:smoke": "node scripts/prod-domain-setup.cjs --smoke",
+    "prod:railway:diagnose": "node scripts/railway-prod-diagnose.cjs",
+    "prod:cloud:stabilize": "node scripts/cloud-prod-stabilize.cjs",
+    "prod:dns:watch": "node scripts/dns-propagation-watch.cjs",
+    "prod:seed:admin": "node scripts/seed-prod-admin.cjs",
+    "prod:clean-demo-data": "node scripts/prod-clean-demo-data.cjs --dry-run",
+    "prod:seed:clean": "node scripts/seed-prod-clean.cjs",
+    "dev:local:smoke": "node scripts/local-auth-smoke.cjs",
+    "dev:local:check": "node scripts/check-local-runtime.cjs",
+    "dev:local:validate": "node scripts/check-local-runtime.cjs"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
@@ -28,5 +53,11 @@
     "prisma": "6.19.3",
     "node-emoji": "^2.2.0",
     "typescript": "5.9.3"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.0",
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "lightningcss-linux-x64-musl": "1.32.0"
   }
 }

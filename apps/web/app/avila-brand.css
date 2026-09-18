@@ -1,0 +1,171 @@
+/**
+ * UX-002 — Grupo Ávila tenant branding (apps/web only).
+ * Overrides InsureFlow SaaS blue with navy/gold palette.
+ */
+
+:root {
+  --avila-navy-950: #000c24;
+  --avila-navy-900: #10294b;
+  --avila-navy-800: #0c2448;
+  --avila-gold-600: #c09048;
+  --avila-gold-400: #deae5d;
+  --avila-ivory: #f6f1e8;
+  --avila-paper: #fffcfa;
+
+  /* Light mode (default when .light on html) */
+  --background: var(--avila-ivory);
+  --foreground: var(--avila-navy-900);
+  --card: var(--avila-paper);
+  --card-foreground: var(--avila-navy-900);
+  --popover: var(--avila-paper);
+  --popover-foreground: var(--avila-navy-900);
+
+  --primary: var(--avila-navy-900);
+  --primary-foreground: var(--avila-ivory);
+  --secondary: #e8e2d8;
+  --secondary-foreground: var(--avila-navy-900);
+  --muted: #ebe5dc;
+  --muted-foreground: #5c6578;
+  --accent: #e4ddd2;
+  --accent-foreground: var(--avila-navy-900);
+
+  --ring: var(--avila-gold-600);
+  --border: #d6cfc4;
+  --input: #ebe5dc;
+
+  --sidebar: var(--avila-navy-950);
+  --sidebar-foreground: #e8e2d8;
+  --sidebar-primary: var(--avila-gold-600);
+  --sidebar-primary-foreground: var(--avila-navy-950);
+  --sidebar-accent: var(--avila-navy-900);
+  --sidebar-accent-foreground: #f6f1e8;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: var(--avila-gold-400);
+
+  --insure-glow: rgb(192 144 72 / 0.12);
+
+  --chart-1: var(--avila-navy-900);
+  --chart-2: var(--avila-navy-800);
+  --chart-3: #5c6578;
+  --chart-4: var(--avila-gold-600);
+  --chart-5: var(--avila-gold-400);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: var(--avila-navy-950);
+  --foreground: #f0ebe3;
+  --card: var(--avila-navy-900);
+  --card-foreground: #f6f1e8;
+  --popover: var(--avila-navy-900);
+  --popover-foreground: #f6f1e8;
+
+  --primary: var(--avila-gold-600);
+  --primary-foreground: var(--avila-navy-950);
+  --secondary: var(--avila-navy-900);
+  --secondary-foreground: #e8e2d8;
+  --muted: var(--avila-navy-900);
+  --muted-foreground: #a8a196;
+  --accent: var(--avila-navy-900);
+  --accent-foreground: #f6f1e8;
+
+  --ring: var(--avila-gold-400);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.06);
+
+  --sidebar: var(--avila-navy-950);
+  --sidebar-foreground: #d9d2c5;
+  --sidebar-primary: var(--avila-gold-400);
+  --sidebar-primary-foreground: var(--avila-navy-950);
+  --sidebar-accent: var(--avila-navy-900);
+  --sidebar-accent-foreground: #f6f1e8;
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: var(--avila-gold-400);
+
+  --insure-glow: rgb(222 174 93 / 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: var(--avila-navy-950);
+    --foreground: #f0ebe3;
+    --card: var(--avila-navy-900);
+    --card-foreground: #f6f1e8;
+    --primary: var(--avila-gold-600);
+    --primary-foreground: var(--avila-navy-950);
+    --ring: var(--avila-gold-400);
+    --sidebar: var(--avila-navy-950);
+    --sidebar-primary: var(--avila-gold-400);
+  }
+}
+
+@layer utilities {
+  .avila-sidebar {
+    background: var(--avila-navy-950);
+    border-right: 1px solid rgb(255 255 255 / 0.06);
+    box-shadow: var(--shadow-if-lg);
+  }
+
+  .avila-sidebar-nav-active {
+    box-shadow: inset 2px 0 0 0 var(--avila-gold-600);
+    background: var(--avila-navy-900);
+  }
+
+  .avila-topbar {
+    background: color-mix(in srgb, var(--background) 88%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+    backdrop-filter: blur(16px) saturate(1.1);
+  }
+
+  .dark .avila-topbar {
+    background: color-mix(in srgb, var(--avila-navy-900) 92%, transparent);
+    border-bottom-color: rgb(255 255 255 / 0.08);
+  }
+
+  .avila-auth-panel {
+    background: var(--avila-ivory);
+  }
+
+  .dark .avila-auth-panel {
+    background: var(--avila-navy-950);
+  }
+
+  .avila-logo-plate {
+    background: var(--avila-ivory);
+    border-radius: var(--if-radius-lg);
+    padding: var(--if-space-2) var(--if-space-3);
+  }
+
+  .insure-main-surface {
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        rgb(192 144 72 / 0.06) 0%,
+        transparent 55%
+      ),
+      var(--background);
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(
+      135deg,
+      var(--avila-navy-900) 0%,
+      var(--avila-gold-600) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dark .text-gradient-brand {
+    background: linear-gradient(
+      135deg,
+      var(--avila-ivory) 0%,
+      var(--avila-gold-400) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

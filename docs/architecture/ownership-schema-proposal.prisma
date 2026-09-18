@@ -1,0 +1,179 @@
+// =============================================================================
+// PROPOSTA — Ownership + Teams + LeadShare (Sprint 1)
+// =============================================================================
+// Este arquivo NÃO é o schema ativo. Serve como referência para migrations
+// futuras. O schema oficial permanece em packages/database/prisma/schema.prisma
+// até aprovação e implementação na Sprint 2+.
+// =============================================================================
+
+// --- Enums novos -------------------------------------------------------------
+
+enum DataScope {
+  own
+  team
+  tenant
+  shared
+}
+
+enum LeadSharePermission {
+  read
+  comment // reservado — sprint futura
+}
+
+// --- Alterações em Role ------------------------------------------------------
+
+model Role {
+  // ... campos existentes ...
+  defaultDataScope DataScope @default(own) @map("default_data_scope")
+}
+
+// --- Teams -------------------------------------------------------------------
+
+model Team {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members   TeamMember[]
+  leads     Lead[]
+  deals     Deal[]
+  customers Customer[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("teams")
+}
+
+model TeamMember {
+  teamId   String
+  userId   String
+  isLead   Boolean  @default(false)
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+// --- User (relações adicionais) ----------------------------------------------
+
+model User {
+  // ... campos existentes ...
+
+  primaryTeamId String? @map("primary_team_id")
+  primaryTeam   Team?   @relation("UserPrimaryTeam", fields: [primaryTeamId], references: [id], onDelete: SetNull)
+
+  teamMemberships TeamMember[]
+  ownedLeads      Lead[]       @relation("LeadOwner")
+  ownedDeals      Deal[]       @relation("DealOwner")
+  ownedCustomers  Customer[]   @relation("CustomerOwner")
+  leadsSharedWith LeadShare[]  @relation("LeadSharedWith")
+  leadsSharedBy   LeadShare[]  @relation("LeadSharedBy")
+}
+
+// --- Lead --------------------------------------------------------------------
+
+model Lead {
+  // ... campos existentes (tenantId, name, status, dealId, etc.) ...
+
+  ownerUserId String? @map("owner_user_id")
+  ownerUser   User?   @relation("LeadOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  ownerTeamId String? @map("owner_team_id")
+  ownerTeam   Team?   @relation(fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  /// @deprecated Use ownerUserId — remover após backfill + flag on
+  assignedTo String? @map("assigned_to")
+
+  shares LeadShare[]
+
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, ownerTeamId])
+}
+
+// --- Deal --------------------------------------------------------------------
+
+model Deal {
+  // ... campos existentes ...
+
+  ownerUserId String? @map("owner_user_id")
+  ownerUser   User?   @relation("DealOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  ownerTeamId String? @map("owner_team_id")
+  ownerTeam   Team?   @relation(fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  assignedTo String? @map("assigned_to")
+
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, ownerTeamId])
+}
+
+// --- Customer ----------------------------------------------------------------
+
+model Customer {
+  // ... campos existentes ...
+
+  ownerUserId String? @map("owner_user_id")
+  ownerUser   User?   @relation("CustomerOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  ownerTeamId String? @map("owner_team_id")
+  ownerTeam   Team?   @relation(fields: [ownerTeamId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, ownerUserId])
+  @@index([tenantId, ownerTeamId])
+}
+
+// --- Policy (sem mudança estrutural obrigatória) -----------------------------
+// brokerUserId permanece; alinhar documentação como owner comercial.
+// Opcional futuro:
+// ownerTeamId String? @map("owner_team_id")
+
+// --- LeadShare (parceiros) ---------------------------------------------------
+
+model LeadShare {
+  id               String              @id @default(cuid())
+  tenantId         String
+  leadId           String
+  lead             Lead                @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sharedWithUserId String              @map("shared_with_user_id")
+  sharedWithUser   User                @relation("LeadSharedWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedByUserId   String              @map("shared_by_user_id")
+  sharedByUser     User                @relation("LeadSharedBy", fields: [sharedByUserId], references: [id], onDelete: Restrict)
+  permission       LeadSharePermission @default(read)
+  expiresAt        DateTime?           @map("expires_at")
+  revokedAt        DateTime?           @map("revoked_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+
+  @@unique([leadId, sharedWithUserId])
+  @@index([tenantId, sharedWithUserId])
+  @@index([leadId])
+  @@map("lead_shares")
+}
+
+// --- Activity (sem colunas novas — visibilidade derivada das FKs) ------------
+// ActivitiesService.buildActivityAccessWhere:
+//   OR leadId IN visibleLeads OR dealId IN visibleDeals OR ...
+
+// =============================================================================
+// SQL migration sketch (Migration 1 — additive)
+// =============================================================================
+//
+// CREATE TYPE "DataScope" AS ENUM ('own', 'team', 'tenant', 'shared');
+// CREATE TYPE "LeadSharePermission" AS ENUM ('read', 'comment');
+//
+// CREATE TABLE "teams" (...);
+// CREATE TABLE "team_members" (...);
+// CREATE TABLE "lead_shares" (...);
+//
+// ALTER TABLE "roles" ADD COLUMN "default_data_scope" "DataScope" NOT NULL DEFAULT 'own';
+// ALTER TABLE "leads" ADD COLUMN "owner_user_id" TEXT, ADD COLUMN "owner_team_id" TEXT;
+// ALTER TABLE "deals" ADD COLUMN "owner_user_id" TEXT, ADD COLUMN "owner_team_id" TEXT;
+// ALTER TABLE "customers" ADD COLUMN "owner_user_id" TEXT, ADD COLUMN "owner_team_id" TEXT;
+// -- FKs + indexes (ver migration gerada pelo Prisma)
+//
+// =============================================================================

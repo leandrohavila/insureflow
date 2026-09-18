@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -9,8 +20,16 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
+import {
+  isRuntimeAudit,
+  logDealContract,
+} from '../../common/utils/deal-contract-debug';
 import { CrmService } from './crm.service';
-import { CreateDealDto, UpdateDealDto } from './dto/deal.dto';
+import {
+  CreateDealDto,
+  ListDealsQueryDto,
+  UpdateDealDto,
+} from './dto/deal.dto';
 
 @ApiTags('crm')
 @ApiBearerAuth('access-token')
@@ -18,11 +37,32 @@ import { CreateDealDto, UpdateDealDto } from './dto/deal.dto';
 export class CrmController {
   constructor(private readonly crm: CrmService) {}
 
+  private actorFrom(user: JwtAccessPayload) {
+    return {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    };
+  }
+
   @Get()
   @RequirePermissions('crm:view')
   @ApiOperation({ summary: 'Listar negócios do tenant' })
-  findDeals(@CurrentUser() user: JwtAccessPayload) {
-    return this.crm.findDeals(user.tenantId);
+  findDeals(
+    @CurrentUser() user: JwtAccessPayload,
+    @Query() query: ListDealsQueryDto,
+  ) {
+    return this.crm.findDeals(user.tenantId, query, this.actorFrom(user));
+  }
+
+  @Get(':id')
+  @RequirePermissions('crm:view')
+  @ApiOperation({ summary: 'Detalhe do negócio do tenant' })
+  @ApiParam({ name: 'id', description: 'ID do negócio' })
+  findDeal(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
+    return this.crm.findDeal(user.tenantId, id, this.actorFrom(user));
   }
 
   @Post()
@@ -31,8 +71,22 @@ export class CrmController {
   createDeal(
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateDealDto,
+    @Req() req: Request,
   ) {
-    return this.crm.createDeal(user.tenantId, dto);
+    if (isRuntimeAudit()) {
+      console.warn('[runtime-audit][crm.create] rawBody', req.body);
+
+      console.warn('[runtime-audit][crm.create] dto', dto);
+    }
+    logDealContract('controller.create', {
+      keys: Object.keys(dto),
+      pipelineOrder: dto.pipelineOrder,
+    });
+    return this.crm.createDeal(user.tenantId, dto, {
+      userId: user.sub,
+      roles: user.roles,
+      permissions: user.permissions,
+    });
   }
 
   @Patch(':id')
@@ -43,8 +97,19 @@ export class CrmController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
     @Body() dto: UpdateDealDto,
+    @Req() req: Request,
   ) {
-    return this.crm.updateDeal(user.tenantId, id, dto);
+    if (isRuntimeAudit()) {
+      console.warn('[runtime-audit][crm.update] rawBody', req.body);
+
+      console.warn('[runtime-audit][crm.update] dto', dto);
+    }
+    logDealContract('controller.update', {
+      id,
+      keys: Object.keys(dto),
+      pipelineOrder: dto.pipelineOrder,
+    });
+    return this.crm.updateDeal(user.tenantId, id, dto, user.sub);
   }
 
   @Delete(':id')

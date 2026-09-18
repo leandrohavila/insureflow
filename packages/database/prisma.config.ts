@@ -5,11 +5,25 @@ import { defineConfig } from 'prisma/config';
 
 const pkgRoot = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(pkgRoot, '../..');
+const appEnv = process.env.APP_ENV ?? 'local';
 
-config({ path: path.join(monorepoRoot, '.env') });
-config({ path: path.join(monorepoRoot, 'apps/api/.env'), override: true });
+const envFiles = [
+  path.join(monorepoRoot, '.env'),
+  path.join(monorepoRoot, '.env.local'),
+  path.join(monorepoRoot, `.env.${appEnv}`),
+  path.join(monorepoRoot, 'apps/api/.env'),
+];
 
-/** Fallback para `prisma generate` em CI/Vercel (sem DB real; não usar env() do Prisma). */
+for (const envFile of envFiles) {
+  config({ path: envFile, override: true });
+}
+
+// Migrations usam conexão direct quando disponível (Neon pooling)
+if (process.env.DATABASE_URL_DIRECT) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_DIRECT;
+}
+
+/** Fallback para `prisma generate` em CI/Vercel (sem DB real). */
 const databaseUrl =
   process.env.DATABASE_URL ??
   'postgresql://postgres:postgres@localhost:5432/insureflow?schema=public';

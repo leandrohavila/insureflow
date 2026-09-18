@@ -1,4 +1,12 @@
 # InsureFlow — stack completo (API + PostgreSQL + Redis)
+#
+# Desenvolvimento local (ENV-001): suba apenas infra — NÃO a API em Docker.
+#   docker compose up -d postgres redis
+#   npm run start:dev -w api
+#   npm run dev -w web
+#
+# API em Docker (opcional, profile docker-api — evita conflito na porta 4000):
+#   docker compose --profile docker-api up -d
 services:
   postgres:
     image: postgres:16-alpine
@@ -33,6 +41,8 @@ services:
       retries: 5
 
   api:
+    profiles:
+      - docker-api
     build:
       context: .
       dockerfile: apps/api/Dockerfile

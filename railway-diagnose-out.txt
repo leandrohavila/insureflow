@@ -1,0 +1,19 @@
+﻿=== Railway / API produ├º├úo ÔÇö diagn├│stico ===
+
+DNS: {
+  host: 'api.corretoraavila.com.br',
+  'cname@system': 'ENOTFOUND',
+  'a@system': 'ENOTFOUND',
+  'cname@8.8.8.8': 'ENOTFOUND',
+  'a@8.8.8.8': 'ENOTFOUND',
+  'cname@1.1.1.1': 'ENOTFOUND',
+  'a@1.1.1.1': 'ENOTFOUND'
+}
+
+--- https://api.corretoraavila.com.br ---
+[ERR] /api/v1/health ÔåÆ getaddrinfo ENOTFOUND api.corretoraavila.com.br
+[ERR] /api/v1/health/db ÔåÆ getaddrinfo ENOTFOUND api.corretoraavila.com.br
+
+--- Interpreta├º├úo 503 ---
+503 no edge Railway (sem JSON insureflow-api) = r├®plica n├úo saud├ível: start command, PORT, crash no boot, migrate falhou, ou dom├¡nio no servi├ºo errado.
+200 com { status: "ok", service: "insureflow-api" } = app OK; 503 em /health/db s├│ = DATABASE_URL.

@@ -1,0 +1,416 @@
+import { Injectable, Optional } from '@nestjs/common';
+
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
+import {
+  canonicalDealStage,
+  computeStageSla,
+  defaultStagesForUnitType,
+} from '../../common/utils/deal-pipeline.util';
+import { startOfUtcDay } from '../../common/utils/lead-reactivation.util';
+import {
+  inAgendaWindow,
+  startOfLocalDay,
+} from './commercial-agenda-window.util';
+import {
+  agendaPriority,
+  type AgendaPriority,
+} from './commercial-agenda-priority.util';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { BusinessUnitAccessService } from '../access/business-unit-access.service';
+import type {
+  CommercialAgendaType,
+  ListCommercialAgendaQueryDto,
+} from './commercial-agenda.dto';
+
+export type AgendaItem = {
+  id: string;
+  source: 'activity' | 'follow_up' | 'renewal' | 'reactivation' | 'sla';
+  at: string;
+  type: CommercialAgendaType;
+  typeLabel: string;
+  status: string;
+  origin: string;
+  customerId: string | null;
+  customerName: string | null;
+  leadId: string | null;
+  leadName: string | null;
+  dealId: string | null;
+  ownerName: string | null;
+  ownerUserId: string | null;
+  priority: AgendaPriority;
+};
+
+const TYPE_LABELS: Record<CommercialAgendaType, string> = {
+  FOLLOW_UP: 'Follow-up',
+  RENEWAL: 'Renovação',
+  REACTIVATION: 'Reativação',
+  SLA: 'SLA',
+  CALL: 'Ligação',
+  WHATSAPP: 'WhatsApp',
+  EMAIL: 'Email',
+  MEETING: 'Reunião',
+  VISIT: 'Visita',
+  TASK: 'Tarefa',
+};
+
+function activityType(type: string): CommercialAgendaType {
+  if (type === 'call') return 'CALL';
+  if (type === 'whatsapp') return 'WHATSAPP';
+  if (type === 'email') return 'EMAIL';
+  if (type === 'meeting') return 'MEETING';
+  if (type === 'visit') return 'VISIT';
+  if (type === 'task') return 'TASK';
+  if (type === 'renewal') return 'RENEWAL';
+  if (type === 'follow_up') return 'FOLLOW_UP';
+  return 'FOLLOW_UP';
+}
+
+@Injectable()
+export class CommercialAgendaService {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly buAccess?: BusinessUnitAccessService,
+  ) {}
+
+  async list(
+    tenantId: string,
+    query: ListCommercialAgendaQueryDto,
+    actor?: BusinessUnitActor,
+  ) {
+    const now = new Date();
+    const collected = await this.collect(tenantId, actor, now);
+    const items: AgendaItem[] = collected.map((item) => ({
+      ...item,
+      priority: agendaPriority(new Date(item.at), now),
+    }));
+    const filtered = items.filter((item) => {
+      if (query.assignedUserId && item.ownerUserId !== query.assignedUserId) {
+        return false;
+      }
+      if (query.type && item.type !== query.type) return false;
+      if (
+        query.window &&
+        !inAgendaWindow(new Date(item.at), query.window, now)
+      ) {
+        return false;
+      }
+      return true;
+    });
+    filtered.sort((a, b) => a.at.localeCompare(b.at));
+    const extra = await this.extraMetrics(tenantId, actor, now);
+    const metrics = { ...this.metrics(items, now), ...extra };
+    return {
+      data: filtered.slice(0, query.limit ?? 100),
+      metrics,
+    };
+  }
+
+  private metrics(items: AgendaItem[], now: Date) {
+    const reactivations = items.filter((item) => item.type === 'REACTIVATION');
+    return {
+      today: items.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'today', now),
+      ).length,
+      overdue: items.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'overdue', now),
+      ).length,
+      renewalsUpcoming: items.filter(
+        (item) =>
+          item.type === 'RENEWAL' &&
+          inAgendaWindow(new Date(item.at), 'next30', now),
+      ).length,
+      reactivationsPending: reactivations.filter(
+        (item) => item.status !== 'completed',
+      ).length,
+      reactivationsToday: reactivations.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'today', now),
+      ).length,
+      reactivationsOverdue: reactivations.filter((item) =>
+        inAgendaWindow(new Date(item.at), 'overdue', now),
+      ).length,
+      slaOverdue: items.filter((item) => item.type === 'SLA').length,
+      followUpsPending: items.filter(
+        (item) =>
+          item.status.toLowerCase() === 'pending' &&
+          (item.type === 'FOLLOW_UP' ||
+            item.type === 'CALL' ||
+            item.type === 'WHATSAPP'),
+      ).length,
+    };
+  }
+
+  private async extraMetrics(
+    tenantId: string,
+    actor: BusinessUnitActor | undefined,
+    now: Date,
+  ) {
+    let leadWhere: Record<string, unknown> = {
+      tenantId,
+      createdAt: { gte: startOfLocalDay(now) },
+    };
+    if (actor && this.buAccess) {
+      const extra = await this.buAccess.leadWhere(actor);
+      if (extra) leadWhere = andWhere(leadWhere, extra);
+    }
+    const leadsToday = await this.prisma.lead.count({
+      where: leadWhere as never,
+    });
+    return { leadsToday };
+  }
+
+  private async collect(
+    tenantId: string,
+    actor: BusinessUnitActor | undefined,
+    now: Date,
+  ): Promise<Omit<AgendaItem, 'priority'>[]> {
+    const items: Omit<AgendaItem, 'priority'>[] = [];
+    const from = new Date(now);
+    from.setDate(from.getDate() - 90);
+    const to = new Date(now);
+    to.setDate(to.getDate() + 800);
+
+    let activityWhere = {
+      tenantId,
+      status: { not: 'cancelled' },
+      OR: [
+        { nextFollowUpAt: { gte: from, lte: to } },
+        { occurredAt: { gte: from, lte: to }, status: 'pending' },
+      ],
+    };
+    if (actor && this.buAccess) {
+      const leadExtra = await this.buAccess.leadWhere(actor);
+      const customerExtra = await this.buAccess.customerWhere(actor);
+      const dealExtra = await this.buAccess.dealWhere(actor);
+      const relationOr = [
+        ...(leadExtra ? [{ lead: leadExtra }] : []),
+        ...(customerExtra ? [{ customer: customerExtra }] : []),
+        ...(dealExtra ? [{ deal: dealExtra }] : []),
+      ];
+      if (relationOr.length) {
+        activityWhere = andWhere(activityWhere, {
+          OR: relationOr,
+        });
+      }
+    }
+
+    const activities = await this.prisma.activity.findMany({
+      where: activityWhere,
+      include: {
+        lead: { select: { id: true, name: true } },
+        customer: { select: { id: true, name: true } },
+        deal: { select: { id: true, title: true } },
+        performedBy: { select: { id: true, name: true } },
+      },
+      take: 800,
+    });
+    for (const activity of activities) {
+      const at = activity.nextFollowUpAt ?? activity.occurredAt;
+      const type = activityType(activity.type);
+      items.push({
+        id: `activity:${activity.id}`,
+        source: 'activity',
+        at: at.toISOString(),
+        type,
+        typeLabel: TYPE_LABELS[type],
+        status: activity.status,
+        origin: 'Atividade',
+        customerId: activity.customerId,
+        customerName: activity.customer?.name ?? null,
+        leadId: activity.leadId,
+        leadName: activity.lead?.name ?? null,
+        dealId: activity.dealId,
+        ownerName: activity.performedBy.name,
+        ownerUserId: activity.performedById,
+      });
+    }
+
+    let followWhere = {
+      tenantId,
+      status: 'PENDING' as const,
+      scheduledAt: { gte: from, lte: to },
+    };
+    if (actor && this.buAccess) {
+      const extra = await this.buAccess.followUpWhere(actor);
+      if (extra) followWhere = andWhere(followWhere, extra);
+    }
+    const followUps = await this.prisma.leadFollowUp.findMany({
+      where: followWhere,
+      include: {
+        lead: { select: { id: true, name: true } },
+        assignedUser: { select: { id: true, name: true } },
+      },
+      take: 800,
+    });
+    for (const follow of followUps) {
+      const mapped =
+        follow.type === 'CALL'
+          ? 'CALL'
+          : follow.type === 'WHATSAPP'
+            ? 'WHATSAPP'
+            : follow.type === 'EMAIL'
+              ? 'EMAIL'
+              : follow.type === 'MEETING'
+                ? 'MEETING'
+                : 'FOLLOW_UP';
+      items.push({
+        id: `follow_up:${follow.id}`,
+        source: 'follow_up',
+        at: follow.scheduledAt.toISOString(),
+        type: mapped,
+        typeLabel: TYPE_LABELS[mapped],
+        status: follow.status.toLowerCase(),
+        origin: 'Follow-up',
+        customerId: null,
+        customerName: null,
+        leadId: follow.leadId,
+        leadName: follow.lead.name,
+        dealId: null,
+        ownerName: follow.assignedUser?.name ?? null,
+        ownerUserId: follow.assignedUserId,
+      });
+    }
+
+    let renewalWhere = {
+      tenantId,
+      status: { notIn: ['LOST' as const, 'RENEWED' as const] },
+      endDate: { gte: startOfUtcDay(from), lte: to },
+    };
+    if (actor && this.buAccess) {
+      const extra = await this.buAccess.renewalWhere(actor);
+      if (extra) renewalWhere = andWhere(renewalWhere, extra);
+    }
+    const renewals = await this.prisma.policyRenewal.findMany({
+      where: renewalWhere,
+      include: {
+        customer: { select: { id: true, name: true } },
+        assignedUser: { select: { id: true, name: true } },
+      },
+      take: 800,
+    });
+    for (const renewal of renewals) {
+      items.push({
+        id: `renewal:${renewal.id}`,
+        source: 'renewal',
+        at: renewal.endDate.toISOString(),
+        type: 'RENEWAL',
+        typeLabel: TYPE_LABELS.RENEWAL,
+        status: renewal.status,
+        origin: 'Carteira',
+        customerId: renewal.customerId,
+        customerName: renewal.customer.name,
+        leadId: null,
+        leadName: null,
+        dealId: renewal.dealId,
+        ownerName: renewal.assignedUser?.name ?? null,
+        ownerUserId: renewal.assignedUserId,
+      });
+    }
+
+    let reactivationWhere: Record<string, unknown> = {
+      tenantId,
+      status: 'lost',
+      reactivationEnabled: true,
+      nextReactivationAt: { gte: from, lte: to },
+    };
+    if (actor && this.buAccess) {
+      const leadExtra = await this.buAccess.leadWhere(actor);
+      if (leadExtra) {
+        reactivationWhere = andWhere(reactivationWhere, leadExtra);
+      }
+    }
+    const reactivations = await this.prisma.lead.findMany({
+      where: reactivationWhere as never,
+      select: {
+        id: true,
+        name: true,
+        nextReactivationAt: true,
+        ownerUserId: true,
+        ownerUser: { select: { name: true } },
+      },
+      take: 200,
+    });
+    for (const lead of reactivations) {
+      if (!lead.nextReactivationAt) continue;
+      const at = lead.nextReactivationAt;
+      const dayStart = startOfUtcDay(now).getTime();
+      const atDay = startOfUtcDay(at).getTime();
+      const reactivationStatus =
+        atDay < dayStart ? 'overdue' : atDay === dayStart ? 'today' : 'pending';
+      items.push({
+        id: `reactivation:${lead.id}`,
+        source: 'reactivation',
+        at: at.toISOString(),
+        type: 'REACTIVATION',
+        typeLabel: TYPE_LABELS.REACTIVATION,
+        status: reactivationStatus,
+        origin: 'Reativação',
+        customerId: null,
+        customerName: null,
+        leadId: lead.id,
+        leadName: lead.name,
+        dealId: null,
+        ownerName: lead.ownerUser?.name ?? null,
+        ownerUserId: lead.ownerUserId,
+      });
+    }
+
+    let dealScope = { tenantId, status: 'open' };
+    if (actor && this.buAccess) {
+      const extra = await this.buAccess.dealWhere(actor);
+      if (extra) dealScope = andWhere(dealScope, extra);
+    }
+    const deals = await this.prisma.deal.findMany({
+      where: dealScope,
+      select: {
+        id: true,
+        title: true,
+        stage: true,
+        stageEnteredAt: true,
+        ownerUserId: true,
+        customerId: true,
+        customer: { select: { id: true, name: true } },
+        ownerUser: { select: { name: true } },
+        businessUnit: { select: { type: true } },
+        pipeline: {
+          select: { stages: { select: { slug: true, maxDays: true } } },
+        },
+      },
+      take: 800,
+    });
+    for (const deal of deals) {
+      const unitType = deal.businessUnit?.type ?? 'INSURANCE';
+      const stages = deal.pipeline?.stages?.length
+        ? deal.pipeline.stages
+        : defaultStagesForUnitType(unitType);
+      const slug = canonicalDealStage(deal.stage, unitType);
+      const stageDef = stages.find((stage) => stage.slug === slug);
+      const sla = computeStageSla({
+        enteredAt: deal.stageEnteredAt,
+        maxDays: stageDef?.maxDays,
+        now,
+      });
+      if (sla.status !== 'overdue') continue;
+      items.push({
+        id: `sla:${deal.id}`,
+        source: 'sla',
+        at: sla.dueAt ?? deal.stageEnteredAt.toISOString(),
+        type: 'SLA',
+        typeLabel: TYPE_LABELS.SLA,
+        status: 'overdue',
+        origin: 'SLA',
+        customerId: deal.customerId,
+        customerName: deal.customer?.name ?? null,
+        leadId: null,
+        leadName: null,
+        dealId: deal.id,
+        ownerName: deal.ownerUser?.name ?? null,
+        ownerUserId: deal.ownerUserId,
+      });
+    }
+
+    return items;
+  }
+}

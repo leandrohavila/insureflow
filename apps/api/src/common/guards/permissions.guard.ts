@@ -30,17 +30,23 @@ export class PermissionsGuard implements CanActivate {
     if (required.length === 0) return true;
 
     const req = context
-        .switchToHttp()
-        .getRequest<{ user?: JwtAccessPayload }>();
+      .switchToHttp()
+      .getRequest<{ user?: JwtAccessPayload }>();
     const user = req.user;
     if (!user) {
       throw new ForbiddenException('Token inválido ou ausente');
     }
 
     const granted = new Set(user.permissions);
-    const ok = required.every((p) => granted.has(p));
+    const ok = required.every(
+      (p) =>
+        granted.has(p) ||
+        (p.endsWith(':view') && granted.has(p.replace(':view', ':manage'))),
+    );
     if (!ok) {
-      throw new ForbiddenException('Permissões insuficientes para este recurso');
+      throw new ForbiddenException(
+        'Permissões insuficientes para este recurso',
+      );
     }
     return true;
   }

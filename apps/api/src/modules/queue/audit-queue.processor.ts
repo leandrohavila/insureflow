@@ -37,4 +37,16 @@ export class AuditQueueProcessor extends WorkerHost {
   onFailed(job: Job | undefined, err: Error): void {
     this.log.error(`Audit job ${job?.id} failed: ${err.message}`);
   }
+
+  @OnWorkerEvent('error')
+  onWorkerError(err: Error): void {
+    const msg = err.message ?? String(err);
+    if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|Redis/i.test(msg)) {
+      this.log.error(
+        `[redis] Worker BullMQ sem Redis — verifique REDIS_URL no Railway: ${msg}`,
+      );
+    } else {
+      this.log.error(`[queue] Worker error: ${msg}`);
+    }
+  }
 }

@@ -18,6 +18,7 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   "clients:manage": "Clientes (edição)",
   "leads:view": "Leads (leitura)",
   "leads:manage": "Leads (edição)",
+  "leads:share": "Leads (compartilhamento)",
   "questionnaires:view": "Questionários (leitura)",
   "questionnaires:manage": "Questionários (edição)",
   "quotes:view": "Cotações (leitura)",
@@ -32,7 +33,12 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   "automation:manage": "Automação (edição)",
   "settings:view": "Configurações (leitura)",
   "settings:manage": "Configurações (edição)",
+  "business-units:view-all": "Empresas (ver todas)",
+  "business-units:manage": "Empresas (gerenciar)",
+  "properties:view": "Imóveis (leitura)",
+  "properties:manage": "Imóveis (edição)",
   "users:manage": "Gestão de usuários",
+  "tenants:manage": "Gestão do tenant",
   "audit:view": "Auditoria",
 }
 

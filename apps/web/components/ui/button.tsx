@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -9,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25",
+          "bg-[var(--avila-navy-800)] text-[var(--avila-ivory)] shadow-none hover:bg-[var(--avila-navy-900)] hover:text-[var(--avila-ivory)] dark:bg-[var(--avila-navy-800)] dark:text-[var(--avila-ivory)] dark:hover:bg-[#16345e]",
         outline:
           "border-border/80 bg-background/60 backdrop-blur-sm hover:border-primary/25 hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/25 dark:hover:bg-input/45",
         secondary:
@@ -41,19 +42,45 @@ const buttonVariants = cva(
   }
 )
 
-function Button({
-  className,
-  variant = "default",
-  size = "default",
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+const Button = React.forwardRef<
+  HTMLButtonElement,
+  ButtonPrimitive.Props & VariantProps<typeof buttonVariants>
+>(function Button(
+  { className, variant = "default", size = "default", type, ...props },
+  ref,
+) {
+  const classes = cn(buttonVariants({ variant, size, className }))
+  const resolvedType = type ?? "button"
+
+  // Base UI Button always merges `type: "button"` after consumer props, which
+  // breaks native form submission. Use a plain <button> for submit/reset.
+  if (resolvedType === "submit" || resolvedType === "reset") {
+    const { render: _render, style, ...nativeProps } = props
+    const nativeStyle = typeof style === "function" ? undefined : style
+
+    return (
+      <button
+        ref={ref}
+        type={resolvedType}
+        data-slot="button"
+        className={classes}
+        style={nativeStyle}
+        {...(nativeProps as React.ComponentProps<"button">)}
+      />
+    )
+  }
+
   return (
     <ButtonPrimitive
+      ref={ref}
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      type={resolvedType}
+      className={classes}
       {...props}
     />
   )
-}
+})
+
+Button.displayName = "Button"
 
 export { Button, buttonVariants }

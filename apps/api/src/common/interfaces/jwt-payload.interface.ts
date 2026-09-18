@@ -1,3 +1,4 @@
+import type { DataScope } from '@prisma/client';
 import { Request } from 'express';
 
 export type JwtAccessPayload = {
@@ -7,6 +8,11 @@ export type JwtAccessPayload = {
   tenantSlug: string;
   roles: string[];
   permissions: string[];
+  /** Escopo efetivo de ownership (Sprint 2). */
+  dataScope?: DataScope;
+  teamIds?: string[];
+  /** Empresa ativa. `null` = Todas (dentro do ACL). */
+  currentBusinessUnitId?: string | null;
 };
 
 export type RequestWithUser = Request & { user: JwtAccessPayload };

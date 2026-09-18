@@ -1,0 +1,11 @@
+import { Suspense } from "react"
+
+import { CommercialAgendaWorkspace } from "@/components/crm/commercial-agenda-workspace"
+
+export default function CrmAgendaPage() {
+  return (
+    <Suspense>
+      <CommercialAgendaWorkspace />
+    </Suspense>
+  )
+}

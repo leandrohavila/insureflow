@@ -24,7 +24,11 @@ async function readSession(request: NextRequest): Promise<SessionPayload | null>
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, getSecret())
-    return payload as unknown as SessionPayload
+    const session = payload as unknown as SessionPayload
+    if (!session.roles?.length) {
+      session.roles = session.role ? [session.role] : []
+    }
+    return session
   } catch {
     return null
   }

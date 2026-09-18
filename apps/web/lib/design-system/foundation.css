@@ -1,0 +1,88 @@
+@layer base {
+  :root {
+    --if-layout-page-max: 1600px;
+    --if-layout-operational-max: 1600px;
+    --if-layout-reading-max: 1200px;
+    --if-layout-reading-prose-max: 960px;
+    --if-layout-modal-max: 960px;
+    --if-layout-embedded-max: 100%;
+    --if-layout-page-x: var(--if-space-5);
+    --if-layout-page-y: var(--if-space-6);
+    --if-layout-section-gap: var(--if-space-6);
+    --if-layout-control-gap: var(--if-space-3);
+    --if-layout-page-actions-gap: var(--if-space-6);
+    --if-layout-page-actions-group-gap: var(--if-space-2);
+    --if-layout-page-actions-primary-gap: var(--if-space-3);
+    --if-layout-header-padding-x: var(--if-layout-page-x);
+    --if-layout-header-padding-right: var(--if-layout-page-x);
+    --if-control-height-md: 2.5rem;
+    --if-control-min-width: 9rem;
+    --if-icon-sm: 0.875rem;
+    --if-icon-md: 1rem;
+    --if-icon-lg: 2rem;
+    --if-state-min-height: 16.25rem;
+    --if-skeleton-row-height: 2.5rem;
+    --if-stat-value-height: 2.125rem;
+    --if-stat-value-height-compact: 1.625rem;
+    --if-layout-section-gap-dense: var(--if-space-3);
+    --if-layout-operational-metrics-gap: var(--if-space-2);
+
+    --if-duration-hover: var(--if-duration-fast);
+    --if-duration-modal: var(--if-duration-base);
+    --if-duration-drawer: var(--if-duration-slow);
+    --if-duration-toast: var(--if-duration-base);
+
+    --if-opacity-disabled: 0.5;
+    --if-opacity-muted: 0.68;
+    --if-opacity-subtle: 0.42;
+    --if-opacity-overlay: 0.92;
+    --if-opacity-scrim: 0.68;
+
+    --if-z-base: 0;
+    --if-z-docked: 10;
+    --if-z-sticky: 20;
+    --if-z-dropdown: 40;
+    --if-z-overlay: 50;
+    --if-z-modal: 60;
+    --if-z-toast: 70;
+    --if-z-tooltip: 80;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --if-layout-page-x: var(--if-space-6);
+    }
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --if-layout-page-x: var(--if-space-8);
+      --if-layout-page-y: var(--if-space-8);
+      --if-layout-section-gap: var(--if-space-8);
+      --if-layout-header-padding-x: var(--if-space-8);
+      --if-layout-header-padding-right: var(--if-space-8);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    :root {
+      --if-layout-page-y: var(--if-space-10);
+    }
+  }
+
+  select:not([multiple]) {
+    color-scheme: light dark;
+  }
+
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
+
+  select option:checked,
+  select option:hover,
+  select option:focus {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+}

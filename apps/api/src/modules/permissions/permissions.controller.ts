@@ -20,8 +20,8 @@ export class PermissionsController {
   }
 
   @Get('roles')
-  @RequirePermissions('users:manage')
-  @ApiOperation({ summary: 'Papéis e permissões do tenant' })
+  @RequirePermissions('settings:view')
+  @ApiOperation({ summary: 'Papéis e permissões do tenant (somente leitura)' })
   roles(@CurrentUser() user: JwtAccessPayload) {
     return this.catalog.listRoles(user.tenantId);
   }

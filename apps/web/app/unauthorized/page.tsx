@@ -5,6 +5,8 @@ import { buttonVariants } from "@/components/ui/button"
 import { getSession } from "@/lib/auth/session"
 import { cn } from "@/lib/utils"
 
+export const dynamic = "force-dynamic"
+
 export default async function UnauthorizedPage() {
   const session = await getSession()
 

@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UX-001 — Mockups Grupo Ávila</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --navy-950: #000c24;
+      --navy-900: #0c183c;
+      --navy-800: #0c2448;
+      --navy-700: #1a3a66;
+      --gold-800: #7f5209;
+      --gold-600: #c09048;
+      --gold-400: #deae5d;
+      --ivory: #f6f1e8;
+      --paper: #fffcfa;
+      --ink: #0c183c;
+      --muted: #5c6578;
+      --line: #e4ddd2;
+      --ok: #2f6b4f;
+      --danger: #9b2c2c;
+      --sans: "Source Sans 3", "Segoe UI", sans-serif;
+      --serif: "Playfair Display", Georgia, serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: #efe8dc;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .doc-bar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 12px 24px;
+      background: var(--navy-950); color: var(--ivory);
+      border-bottom: 2px solid var(--gold-600);
+    }
+    .doc-bar strong { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-400); }
+    .doc-bar nav { display: flex; gap: 14px; flex-wrap: wrap; }
+    .doc-bar a { color: #d5cbb8; text-decoration: none; font-size: 13px; }
+    .doc-bar a:hover { color: var(--gold-400); }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 32px 20px 80px; }
+    h1.doc { font-family: var(--serif); font-size: 36px; font-weight: 600; margin: 0 0 8px; }
+    .lede { color: var(--muted); max-width: 720px; margin-bottom: 40px; }
+    h2.sec {
+      font-family: var(--serif); font-size: 26px; font-weight: 600;
+      margin: 56px 0 8px; padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+    h2.sec:first-of-type { border-top: 0; }
+    .note { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
+    .stamp {
+      display: inline-block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+      background: var(--navy-950); color: var(--gold-400);
+      padding: 4px 10px; margin-bottom: 16px;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-5 { grid-template-columns: 1fr; }
+    }
+    .panel { background: var(--paper); border: 1px solid var(--line); padding: 20px; }
+    .swatch { height: 72px; border: 1px solid var(--line); }
+    .swatch + p { margin: 8px 0 0; font-size: 12px; }
+    .swatch + p code { font-size: 11px; color: var(--muted); }
+    .logo-board {
+      background: #fff; border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; padding: 28px;
+    }
+    .logo-board img { width: min(280px, 100%); height: auto; }
+    .logo-navy {
+      background: var(--navy-950); border: 1px solid var(--navy-800);
+      display: flex; align-items: center; justify-content: center; padding: 28px;
+    }
+    .logo-plate {
+      background: var(--ivory); padding: 16px 18px; border-radius: 8px;
+    }
+    .logo-plate img { width: 200px; height: auto; display: block; }
+    .type-sample .big { font-family: var(--serif); font-size: 32px; margin: 0; }
+    .type-sample .ui { font-size: 15px; margin: 8px 0 0; }
+    .type-sample .caps { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-800); margin: 8px 0 0; }
+    .strategy { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .strategy { grid-template-columns: 1fr; } }
+    .strategy article {
+      padding: 16px; min-height: 140px;
+    }
+    .strategy article:first-child { background: var(--navy-950); color: var(--ivory); }
+    .strategy article:not(:first-child) { background: var(--paper); border: 1px solid var(--line); }
+    .strategy h3 { margin: 0 0 8px; font-size: 15px; }
+    .strategy p { margin: 0; font-size: 13px; opacity: .85; }
+    .powered { font-size: 11px; letter-spacing: .06em; color: var(--muted); margin-top: 8px; }
+
+    /* Device frames */
+    .row-devices { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+    .frame-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+    .desktop {
+      width: 100%; max-width: 920px;
+      background: #1a1a1a; border-radius: 10px; padding: 10px 10px 12px;
+      box-shadow: 0 18px 40px rgba(0,12,36,.18);
+    }
+    .desktop .dots { display: flex; gap: 6px; padding: 0 6px 8px; }
+    .desktop .dots i { width: 8px; height: 8px; border-radius: 50%; background: #444; display: block; }
+    .screen { background: var(--ivory); overflow: hidden; height: 560px; position: relative; }
+    .phone {
+      width: 320px; background: #111; border-radius: 28px; padding: 12px 10px 16px;
+      box-shadow: 0 18px 40px rgba(0,12,36,.18);
+    }
+    .phone .notch { width: 90px; height: 18px; background: #000; border-radius: 0 0 12px 12px; margin: 0 auto 8px; }
+    .phone .screen { height: 580px; border-radius: 16px; }
+
+    /* App chrome */
+    .app { display: flex; height: 100%; font-size: 13px; color: var(--ink); }
+    .sb {
+      width: 200px; flex-shrink: 0; background: var(--navy-950); color: #d9d2c5;
+      display: flex; flex-direction: column; padding: 12px 10px;
+    }
+    .sb .lockup { background: var(--ivory); border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+    .sb .lockup img { width: 100%; height: auto; display: block; }
+    .sb .unit { font-size: 13px; font-weight: 600; color: #fff; padding: 6px 6px 0; }
+    .sb .unit-sub { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-600); padding: 0 6px 10px; }
+    .sb nav a {
+      display: block; padding: 7px 10px; border-radius: 4px; color: #c9c2b4;
+      text-decoration: none; font-size: 12.5px; margin-bottom: 2px;
+    }
+    .sb nav a.on { background: var(--navy-800); color: #fff; box-shadow: inset 2px 0 0 var(--gold-600); }
+    .sb .grow { flex: 1; }
+    .sb .pw { font-size: 9px; letter-spacing: .04em; color: rgba(246,241,232,.4); padding: 10px 8px 6px; }
+    .sb .who { display: flex; gap: 8px; align-items: center; padding: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+    .av { width: 28px; height: 28px; border-radius: 50%; background: var(--navy-700); color: var(--gold-400); display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--ivory); }
+    .top {
+      height: 48px; display: flex; align-items: center; gap: 10px;
+      padding: 0 14px; background: var(--paper); border-bottom: 1px solid var(--line);
+    }
+    .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; font-size: 11px; }
+    .seg b, .seg span { padding: 4px 8px; }
+    .seg b { background: var(--navy-900); color: var(--ivory); font-weight: 600; }
+    .seg span { color: var(--muted); }
+    .search {
+      flex: 1; background: var(--ivory); border: 1px solid var(--line); border-radius: 6px;
+      padding: 6px 10px; color: var(--muted); font-size: 12px;
+    }
+    .body { padding: 14px 16px; overflow: auto; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .kpi { background: var(--paper); border: 1px solid var(--line); padding: 10px 12px; }
+    .kpi small { color: var(--muted); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .kpi strong { display: block; font-size: 20px; font-weight: 600; color: var(--navy-900); }
+    .kpi em { font-style: normal; font-size: 11px; color: var(--ok); }
+    .cols { display: grid; grid-template-columns: 1.4fr .8fr; gap: 8px; }
+    .card { background: var(--paper); border: 1px solid var(--line); padding: 12px; }
+    .card h4 { margin: 0 0 10px; font-size: 13px; }
+    .bar { height: 10px; display: flex; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+    .bar span { display: block; }
+    .list { margin: 0; padding: 0; list-style: none; font-size: 12px; }
+    .list li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .btn { background: var(--navy-900); color: var(--ivory); border: 0; border-radius: 5px; padding: 6px 10px; font-size: 12px; font-weight: 600; }
+    .btn-gold { background: var(--gold-600); color: var(--navy-950); }
+
+    /* Dark canvas */
+    .app.dark .main { background: var(--navy-950); color: var(--ivory); }
+    .app.dark .top { background: var(--navy-900); border-bottom-color: rgba(255,255,255,.08); }
+    .app.dark .search { background: var(--navy-800); border-color: transparent; color: #b8b0a2; }
+    .app.dark .kpi, .app.dark .card { background: var(--navy-900); border-color: rgba(255,255,255,.08); }
+    .app.dark .kpi strong { color: var(--ivory); }
+    .app.dark .list li { border-bottom-color: rgba(255,255,255,.08); }
+
+    /* Login */
+    .login { display: grid; grid-template-columns: 42% 1fr; height: 100%; }
+    .login-brand {
+      background: var(--navy-950); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 24px; text-align: center;
+    }
+    .login-brand .plate { background: var(--ivory); padding: 18px; border-radius: 8px; }
+    .login-brand img { width: 180px; height: auto; display: block; }
+    .login-brand p { color: #c9c2b4; font-size: 13px; margin: 16px 0 0; max-width: 220px; }
+    .login-form { background: var(--ivory); display: flex; flex-direction: column; justify-content: center; padding: 36px 40px; }
+    .login-form h3 { font-family: var(--serif); font-size: 26px; margin: 0 0 4px; }
+    .login-form .hint { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+    .login-form label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: block; margin: 10px 0 4px; }
+    .login-form .inp { height: 36px; border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 100%; }
+    .login-form .go { margin-top: 16px; width: 100%; height: 38px; background: var(--navy-900); color: #fff; border: 0; border-radius: 6px; font-weight: 600; }
+    .phone-login .login { display: flex; flex-direction: column; }
+    .phone-login .login-brand { min-height: 180px; }
+    .phone-login .login-brand img { width: 120px; }
+    .phone-login .login-form { padding: 16px; flex: 1; }
+
+    /* Portal */
+    .portal { height: 100%; background: var(--ivory); display: flex; flex-direction: column; }
+    .ph {
+      height: 56px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; background: #fff; border-bottom: 1px solid var(--line);
+    }
+    .ph img { height: 44px; width: auto; }
+    .ph nav { display: flex; gap: 16px; font-size: 13px; color: var(--navy-800); }
+    .hero {
+      height: 210px; position: relative; overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(0,12,36,.72), rgba(12,24,72,.35)),
+        #1a3a66;
+    }
+    .hero .copy { position: relative; z-index: 1; padding: 28px 24px; color: var(--ivory); }
+    .hero h3 { font-family: var(--serif); font-size: 28px; margin: 0 0 6px; font-weight: 600; }
+    .hero p { margin: 0 0 12px; font-size: 13px; opacity: .9; }
+    .hero .searchrow { display: flex; gap: 8px; }
+    .hero input { flex: 1; height: 36px; border: 0; border-radius: 4px; padding: 0 10px; }
+    .plist { padding: 12px 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .pcard { background: #fff; border: 1px solid var(--line); overflow: hidden; }
+    .pcard .phimg { height: 88px; background: #c5bba8; }
+    .pcard .phimg.a { background: linear-gradient(135deg, #8a9aaa, #3d4f63); }
+    .pcard .phimg.b { background: linear-gradient(135deg, #b9a078, #6d5530); }
+    .pcard .phimg.c { background: linear-gradient(135deg, #7d8f7a, #3e5340); }
+    .pcard .meta { padding: 8px 10px 10px; }
+    .pcard .meta b { display: block; font-size: 12px; }
+    .price { color: var(--gold-800); font-weight: 700; font-size: 13px; }
+    .pfoot { margin-top: auto; padding: 8px 16px; font-size: 10px; color: var(--muted); border-top: 1px solid var(--line); background: #fff; display: flex; justify-content: space-between; }
+
+    .phone-portal .ph img { height: 36px; }
+    .phone-portal .ph nav { display: none; }
+    .phone-portal .hero { height: 160px; }
+    .phone-portal .hero h3 { font-size: 20px; }
+    .phone-portal .plist { grid-template-columns: 1fr; }
+    .phone-portal .pcard .phimg { height: 70px; }
+
+    .phone-app .sb { display: none; }
+    .phone-app .top { height: 44px; }
+    .phone-app .kpis { grid-template-columns: 1fr 1fr; }
+    .phone-app .body { padding-bottom: 56px; }
+    .price { color: var(--gold-800); font-weight: 700; }
+    .mn {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
+      background: var(--navy-950); color: #c9c2b4;
+      display: flex; justify-content: space-around; align-items: center;
+      font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .mn span.on { color: var(--gold-400); }
+
+    .kanban { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .col-k { flex: 1; min-width: 120px; background: rgba(12,24,60,.06); border-radius: 6px; padding: 8px; }
+    .app.dark .col-k { background: rgba(255,255,255,.04); }
+    .col-k h5 { margin: 0 0 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .deal { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 8px; margin-bottom: 6px; font-size: 11px; }
+    .app.dark .deal { background: var(--navy-800); border-color: rgba(255,255,255,.08); color: var(--ivory); }
+    .deal b { display: block; margin-bottom: 2px; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 10px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+    .tabs span { padding: 4px 10px; font-size: 11px; border-radius: 4px 4px 0 0; color: var(--muted); }
+    .tabs span.on { background: var(--navy-900); color: var(--ivory); }
+    .c360-h { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .c360-h .av-lg { width: 48px; height: 48px; border-radius: 50%; background: var(--navy-800); color: var(--gold-400); display: grid; place-items: center; font-weight: 600; }
+    .c360-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .fld { height: 32px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+    .app.dark .fld { background: var(--navy-800); border-color: rgba(255,255,255,.1); }
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 10px; text-align: center; }
+    .cal .d { padding: 6px 2px; border-radius: 4px; background: var(--paper); border: 1px solid var(--line); }
+    .cal .d.hot { background: var(--navy-900); color: var(--ivory); border-color: var(--gold-600); }
+    .app.dark .cal .d { background: var(--navy-800); border-color: rgba(255,255,255,.08); }
+    .detail-hero { height: 140px; background: linear-gradient(135deg,#8a9aaa,#3d4f63); position: relative; }
+    .detail-body { padding: 12px 16px; }
+    .detail-body h3 { font-family: var(--serif); font-size: 22px; margin: 0 0 6px; }
+    .chip { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 999px; background: var(--navy-900); color: var(--ivory); margin-right: 4px; }
+    .filters-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--line); }
+    .filters-row .fld { flex: 1; min-width: 100px; height: 34px; }
+    .pub-toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .pub-toggle i { width: 36px; height: 20px; background: var(--ok); border-radius: 999px; position: relative; display: block; }
+    .pub-toggle i::after { content:''; position:absolute; right:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:50%; }
+    table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    table.cmp th { background: var(--navy-950); color: var(--ivory); font-weight: 500; }
+    .warn {
+      background: var(--navy-950); color: var(--ivory); padding: 14px 18px; margin-top: 40px;
+      border-left: 4px solid var(--gold-600);
+    }
+  </style>
+</head>
+<body>
+  <div class="doc-bar">
+    <strong>UX-001A · Proposta</strong>
+    <nav>
+      <a href="#marca">Marca</a>
+      <a href="#paleta">Paleta</a>
+      <a href="#login">Login</a>
+      <a href="#crm-corretora">CRM Corretora</a>
+      <a href="#crm-pipeline">Pipeline</a>
+      <a href="#crm-imoveis">CRM Imóveis</a>
+      <a href="#portal">Portal</a>
+      <a href="#temas">Temas</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <span class="stamp">UX-001A · Não é o produto · HTML estático · READY FOR APPROVAL</span>
+    <h1 class="doc">Identidade visual Grupo Ávila</h1>
+    <p class="lede">
+      Mockups de direção para CRM Corretora, CRM Imobiliário e Portal Imobiliário.
+      A arte abaixo é a <strong>logo oficial</strong> — não um redraw. Nenhum componente do InsureFlow foi alterado.
+    </p>
+
+    <h2 class="sec" id="marca">1. Logo oficial e lockups</h2>
+    <p class="note">Arquivo-fonte: marca Grupo Ávila / Ávila Imóveis. No chrome navy a arte permanece intacta sobre placa marfim (não há reverse oficial).</p>
+    <div class="grid-2">
+      <div>
+        <p class="frame-label">Fundo claro — uso institucional e portal</p>
+        <div class="logo-board"><img src="assets/grupo-avila-logo.png" alt="Logo oficial Grupo Ávila Imóveis" /></div>
+      </div>
+      <div>
+        <p class="frame-label">Fundo navy — sidebar, login, dark mode</p>
+        <div class="logo-navy"><div class="logo-plate"><img src="assets/grupo-avila-logo.png" alt="Logo oficial sobre placa marfim" /></div></div>
+      </div>
+    </div>
+
+    <div class="strategy" style="margin-top:20px">
+      <article>
+        <h3>Grupo Ávila</h3>
+        <p>Holding. Logo completa no login e em peças institucionais. Dona da paleta navy/ouro.</p>
+      </article>
+      <article>
+        <h3>Ávila Corretora</h3>
+        <p>CRM de seguros. Mesmo símbolo + nome da unidade. Navy como primária. Ouro pontual.</p>
+      </article>
+      <article>
+        <h3>Ávila Imóveis</h3>
+        <p>CRM + portal. Logo completa no site. Ouro um passo mais presente em preço e publicação.</p>
+      </article>
+      <article>
+        <h3>InsureFlow</h3>
+        <p>Plataforma. Nunca no header. Crédito “Powered by” 10–11px, opacidade reduzida.</p>
+        <p class="powered">Powered by InsureFlow</p>
+      </article>
+    </div>
+
+    <h2 class="sec" id="paleta">2. Paleta extraída da logo</h2>
+    <p class="note">Amostras reais do PNG oficial. O azul SaaS atual do InsureFlow (hue 252) não entra neste tenant.</p>
+    <div class="grid-5">
+      <div><div class="swatch" style="background:#000c24"></div><p>Navy 950<br><code>#000C24</code></p></div>
+      <div><div class="swatch" style="background:#0c183c"></div><p>Navy 900<br><code>#0C183C</code></p></div>
+      <div><div class="swatch" style="background:#c09048"></div><p>Ouro 600<br><code>#C09048</code></p></div>
+      <div><div class="swatch" style="background:#deae5d"></div><p>Ouro 400<br><code>#DEAE5D</code></p></div>
+      <div><div class="swatch" style="background:#f6f1e8"></div><p>Marfim<br><code>#F6F1E8</code></p></div>
+    </div>
+
+    <h2 class="sec" id="tipo">3. Tipografia</h2>
+    <div class="grid-2">
+      <div class="panel type-sample">
+        <p class="caps">Portal · display</p>
+        <p class="big">Playfair Display</p>
+        <p class="ui">Títulos da vitrine. A serifa da logo não é fonte de UI — não simular “AVILA” em CSS.</p>
+      </div>
+      <div class="panel type-sample">
+        <p class="caps">CRM · interface</p>
+        <p class="big" style="font-family:var(--sans)">Geist / Source Sans 3</p>
+        <p class="ui">Manter Geist no CRM (densidade operacional). Source Sans 3 no portal para texto corrido.</p>
+      </div>
+    </div>
+
+    <h2 class="sec" id="login">4. Login — desktop e mobile</h2>
+    <p class="note">Split navy + marfim. Shield e nome InsureFlow saem do herói. Crédito só no rodapé do formulário.</p>
+    <div class="row-devices">
+      <div>
+        <p class="frame-label">Desktop · 1440</p>
+        <div class="desktop">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen">
+            <div class="login">
+              <div class="login-brand">
+                <div class="plate"><img src="assets/grupo-avila-logo.png" alt="Grupo Ávila" /></div>
+                <p>Acesso ao workspace do Grupo Ávila</p>
+              </div>
+              <div class="login-form">
+                <h3>Entrar</h3>
+                <p class="hint">Corretora e Imóveis no mesmo tenant.</p>
+                <label>E-mail</label><div class="inp"></div>
+                <label>Senha</label><div class="inp"></div>
+                <button class="go" type="button">Entrar</button>
+                <p class="powered" style="margin-top:16px">Powered by InsureFlow</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Mobile · 390</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen phone-login">
+            <div class="login">
+              <div class="login-brand">
+                <div class="plate"><img src="assets/grupo-avila-logo.png" alt="Grupo Ávila" /></div>
+              </div>
+              <div class="login-form">
+                <h3>Entrar</h3>
+                <label>E-mail</label><div class="inp"></div>
+                <label>Senha</label><div class="inp"></div>
+                <button class="go" type="button">Entrar</button>
+                <p class="powered">Powered by InsureFlow</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec" id="crm-corretora">5. CRM Corretora — dashboard</h2>
+    <p class="note">Sidebar navy fixa. Header com switcher de unidade. Densidade operacional preservada. Primária navy; ouro só no item ativo e no crédito.</p>
+    <div class="row-devices">
+      <div>
+        <p class="frame-label">Desktop · light canvas</p>
+        <div class="desktop">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen">
+            <div class="app">
+              <aside class="sb">
+                <div class="lockup"><img src="assets/grupo-avila-logo.png" alt="" /></div>
+                <div class="unit">Ávila Corretora</div>
+                <div class="unit-sub">Corretora · Seguros</div>
+                <nav>
+                  <a class="on" href="#">Dashboard</a>
+                  <a href="#">CRM</a>
+                  <a href="#">Clientes</a>
+                  <a href="#">Leads</a>
+                  <a href="#">Cotações</a>
+                  <a href="#">Apólices</a>
+                  <a href="#">Sinistros</a>
+                  <a href="#">WhatsApp</a>
+                </nav>
+                <div class="grow"></div>
+                <div class="pw">Powered by InsureFlow</div>
+                <div class="who"><div class="av">LA</div><div><div>Leandro</div><div style="opacity:.5;font-size:10px">Admin</div></div></div>
+              </aside>
+              <div class="main">
+                <header class="top">
+                  <div class="seg"><b>Corretora</b><span>Imóveis</span></div>
+                  <div class="search">Buscar apólice, cliente, lead…</div>
+                  <button class="btn" type="button">+ Negócio</button>
+                </header>
+                <div class="body">
+                  <div class="kpis">
+                    <div class="kpi"><small>Carteira</small><strong>248</strong><em>+12 no mês</em></div>
+                    <div class="kpi"><small>Apólices ativas</small><strong>1.042</strong><em>+3,1%</em></div>
+                    <div class="kpi"><small>Sinistros abertos</small><strong>7</strong><em style="color:var(--danger)">2 críticos</em></div>
+                    <div class="kpi"><small>Prêmio no mês</small><strong>R$ 186 mil</strong><em>+8%</em></div>
+                  </div>
+                  <div class="cols">
+                    <div class="card">
+                      <h4>Pipeline comercial</h4>
+                      <div class="bar">
+                        <span style="width:28%;background:#0c183c"></span>
+                        <span style="width:24%;background:#1a3a66"></span>
+                        <span style="width:22%;background:#5c6578"></span>
+                        <span style="width:26%;background:#c09048"></span>
+                      </div>
+                      <ul class="list">
+                        <li>Leads novos <span>34</span></li>
+                        <li>Em cotação <span>18</span></li>
+                        <li>Proposta <span>11</span></li>
+                        <li>Fechado <span>9</span></li>
+                      </ul>
+                    </div>
+                    <div class="card">
+                      <h4>Prioridades do dia</h4>
+                      <ul class="list">
+                        <li>Renovações D+7 <span style="color:var(--gold-800)">14</span></li>
+                        <li>Follow-up atraso <span style="color:var(--danger)">4</span></li>
+                        <li>Aniversários <span>2</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Mobile · CRM</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen phone-app" style="position:relative">
+            <div class="app" style="height:100%">
+              <div class="main">
+                <header class="top">
+                  <div class="lockup" style="background:#fff;padding:2px 6px;border-radius:4px"><img src="assets/grupo-avila-logo.png" alt="" style="height:28px;width:auto" /></div>
+                  <div class="search">Buscar…</div>
+                </header>
+                <div class="body" style="padding-bottom:56px">
+                  <div class="kpis">
+                    <div class="kpi"><small>Carteira</small><strong>248</strong></div>
+                    <div class="kpi"><small>Sinistros</small><strong>7</strong></div>
+                    <div class="kpi"><small>Leads</small><strong>34</strong></div>
+                    <div class="kpi"><small>Prêmio</small><strong>186k</strong></div>
+                  </div>
+                  <div class="card"><h4>Prioridades</h4>
+                    <ul class="list"><li>Renovações <span>14</span></li><li>Atrasos <span>4</span></li></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mn"><span class="on">Home</span><span>CRM</span><span>Leads</span><span>Mais</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec" id="crm-imoveis">6. CRM Imobiliário — dashboard</h2>
+    <p class="note">Mesmo sistema visual. Nav e KPIs da unidade. Ouro aparece em preço e status “Publicado”.</p>
+    <div class="desktop">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="app">
+          <aside class="sb">
+            <div class="lockup"><img src="assets/grupo-avila-logo.png" alt="" /></div>
+            <div class="unit">Ávila Imóveis</div>
+            <div class="unit-sub">Imóveis · Cuiabá</div>
+            <nav>
+              <a class="on" href="#">Dashboard</a>
+              <a href="#">Imóveis</a>
+              <a href="#">Leads do portal</a>
+              <a href="#">Visitas</a>
+              <a href="#">Clientes</a>
+              <a href="#">CRM</a>
+              <a href="#">WhatsApp</a>
+            </nav>
+            <div class="grow"></div>
+            <div class="pw">Powered by InsureFlow</div>
+            <div class="who"><div class="av">LA</div><div><div>Leandro</div><div style="opacity:.5;font-size:10px">Admin</div></div></div>
+          </aside>
+          <div class="main">
+            <header class="top">
+              <div class="seg"><span>Corretora</span><b>Imóveis</b></div>
+              <div class="search">Buscar imóvel, lead, visita…</div>
+              <button class="btn" type="button">+ Imóvel</button>
+            </header>
+            <div class="body">
+              <div class="kpis">
+                <div class="kpi"><small>Estoque</small><strong>86</strong><em>12 publicados</em></div>
+                <div class="kpi"><small>Leads portal</small><strong>23</strong><em>+6 hoje</em></div>
+                <div class="kpi"><small>Visitas</small><strong>9</strong><em>3 esta semana</em></div>
+                <div class="kpi"><small>Ticket médio</small><strong>R$ 640 mil</strong><em style="color:var(--gold-800)">ouro = valor</em></div>
+              </div>
+              <div class="cols">
+                <div class="card">
+                  <h4>Funil imobiliário</h4>
+                  <div class="bar">
+                    <span style="width:30%;background:#0c183c"></span>
+                    <span style="width:26%;background:#1a3a66"></span>
+                    <span style="width:24%;background:#8a7344"></span>
+                    <span style="width:20%;background:#c09048"></span>
+                  </div>
+                  <ul class="list">
+                    <li>Captação <span>22</span></li>
+                    <li>Visita <span>14</span></li>
+                    <li>Proposta <span>8</span></li>
+                    <li>Contrato <span>5</span></li>
+                  </ul>
+                </div>
+                <div class="card">
+                  <h4>Publicados no portal</h4>
+                  <ul class="list">
+                    <li>Apt. Jardim Cuiabá <span class="price">R$ 420 mil</span></li>
+                    <li>Casa CPA III <span class="price">R$ 890 mil</span></li>
+                    <li>Sala Centro <span class="price">R$ 1.200/mês</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec" id="portal">7. Portal Ávila Imóveis</h2>
+    <p class="note">Light-first, fotográfico. Logo oficial no header. CTA ouro. InsureFlow só no rodapé legal, se houver.</p>
+    <div class="row-devices">
+      <div>
+        <p class="frame-label">Desktop · home</p>
+        <div class="desktop">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen">
+            <div class="portal">
+              <header class="ph">
+                <img src="assets/grupo-avila-logo.png" alt="Ávila Imóveis" />
+                <nav><span>Imóveis</span><span>Comprar</span><span>Alugar</span></nav>
+                <button class="btn btn-gold" type="button">Falar com consultor</button>
+              </header>
+              <div class="hero">
+                <div class="copy">
+                  <h3>Conectando pessoas aos melhores imóveis</h3>
+                  <p>Cuiabá e região · venda e locação</p>
+                  <div class="searchrow">
+                    <input placeholder="Bairro, tipo ou código" />
+                    <button class="btn btn-gold" type="button">Buscar</button>
+                  </div>
+                </div>
+              </div>
+              <div class="plist">
+                <div class="pcard"><div class="phimg a"></div><div class="meta"><b>Apartamento · Jardim Cuiabá</b><span class="price">R$ 420.000</span></div></div>
+                <div class="pcard"><div class="phimg b"></div><div class="meta"><b>Casa · CPA III</b><span class="price">R$ 890.000</span></div></div>
+                <div class="pcard"><div class="phimg c"></div><div class="meta"><b>Sala comercial · Centro</b><span class="price">R$ 1.200/mês</span></div></div>
+              </div>
+              <div class="pfoot"><span>Ávila Imóveis · Grupo Ávila</span><span>Powered by InsureFlow</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Mobile · home</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen phone-portal">
+            <div class="portal">
+              <header class="ph">
+                <img src="assets/grupo-avila-logo.png" alt="Ávila Imóveis" />
+                <button class="btn btn-gold" type="button" style="padding:4px 8px;font-size:11px">Contato</button>
+              </header>
+              <div class="hero">
+                <div class="copy">
+                  <h3>Os melhores imóveis</h3>
+                  <p>Cuiabá e região</p>
+                  <div class="searchrow"><input placeholder="Buscar" /><button class="btn btn-gold" type="button">Ir</button></div>
+                </div>
+              </div>
+              <div class="plist">
+                <div class="pcard"><div class="phimg a"></div><div class="meta"><b>Apt. Jardim Cuiabá</b><span class="price">R$ 420.000</span></div></div>
+                <div class="pcard"><div class="phimg b"></div><div class="meta"><b>Casa CPA III</b><span class="price">R$ 890.000</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec" id="crm-pipeline">5b. CRM Corretora — visão CRM, Customer 360 e Pipeline</h2>
+    <p class="note">Referência Premium Finance: dados densos, hierarquia clara, navy dominante com ouro pontual.</p>
+    <div class="grid-2" style="margin-bottom:20px">
+      <div>
+        <p class="frame-label">CRM · Visão geral</p>
+        <div class="desktop"><div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen" style="height:420px">
+            <div class="app">
+              <aside class="sb" style="width:160px"><div class="unit">Ávila Corretora</div>
+                <nav><a href="#">Dashboard</a><a class="on" href="#">CRM</a><a href="#">Clientes</a></nav>
+                <div class="grow"></div><div class="pw">Powered by InsureFlow</div></aside>
+              <div class="main">
+                <header class="top"><div class="seg"><b>Corretora</b><span>Imóveis</span></div><div class="search">Buscar negócio…</div></header>
+                <div class="body">
+                  <div class="tabs"><span class="on">Visão geral</span><span>Negócios</span><span>Contatos</span><span>Agenda</span></div>
+                  <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+                    <div class="kpi"><small>Negócios abertos</small><strong>42</strong></div>
+                    <div class="kpi"><small>Valor pipeline</small><strong>R$ 2,4 mi</strong></div>
+                    <div class="kpi"><small>Win rate</small><strong>28%</strong></div>
+                  </div>
+                  <div class="card"><h4>Próximos fechamentos</h4>
+                    <ul class="list"><li>Frota Lopes Ltda. <span>R$ 180k</span></li><li>Renovação Vida Plena <span>R$ 42k</span></li></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Customer 360</p>
+        <div class="desktop"><div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen" style="height:420px">
+            <div class="app">
+              <aside class="sb" style="width:160px"><div class="unit">Ávila Corretora</div>
+                <nav><a href="#">Dashboard</a><a href="#">CRM</a><a class="on" href="#">Clientes</a></nav></aside>
+              <div class="main">
+                <header class="top"><div class="search">Buscar cliente…</div></header>
+                <div class="body">
+                  <div class="c360-h">
+                    <div class="av-lg">GL</div>
+                    <div><strong style="font-size:16px">Grupo Lopes Ltda.</strong><br><span style="font-size:12px;color:var(--muted)">CNPJ · Corretora · Desde 2019</span></div>
+                  </div>
+                  <div class="tabs"><span class="on">Resumo</span><span>Apólices</span><span>Negócios</span><span>Timeline</span><span>Imóveis</span></div>
+                  <div class="c360-grid">
+                    <div class="kpi"><small>Apólices ativas</small><strong>12</strong></div>
+                    <div class="kpi"><small>Prêmio anual</small><strong>R$ 486k</strong></div>
+                    <div class="kpi"><small>Sinistros</small><strong>1</strong></div>
+                  </div>
+                  <div class="card" style="margin-top:8px"><h4>Timeline recente</h4>
+                    <ul class="list"><li>Renovação enviada <span>Hoje</span></li><li>Visita comercial <span>2d</span></li></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="frame-label">Pipeline · Kanban</p>
+    <div class="desktop"><div class="dots"><i></i><i></i><i></i></div>
+      <div class="screen" style="height:360px">
+        <div class="app">
+          <aside class="sb" style="width:160px"><div class="unit">Ávila Corretora</div>
+            <nav><a class="on" href="#">CRM</a><a href="#">Negócios</a></nav><div class="pw">Powered by InsureFlow</div></aside>
+          <div class="main">
+            <header class="top"><div class="search">Filtrar pipeline…</div><button class="btn" type="button">+ Negócio</button></header>
+            <div class="body">
+              <div class="kanban">
+                <div class="col-k"><h5>Qualificação</h5><div class="deal"><b>Marina Costa</b>Auto · R$ 8k</div><div class="deal"><b>Transportes Sul</b>Frota</div></div>
+                <div class="col-k"><h5>Proposta</h5><div class="deal"><b>Clínica Vida</b>Vida · R$ 42k</div></div>
+                <div class="col-k"><h5>Negociação</h5><div class="deal"><b>Grupo Lopes</b>D&O · R$ 180k</div></div>
+                <div class="col-k"><h5 style="color:var(--gold-800)">Fechado</h5><div class="deal"><b>Carlos Mendes</b>Residencial</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec">6b. CRM Imobiliário — cadastro, proprietários, leads, visitas, portal</h2>
+    <div class="grid-2">
+      <div>
+        <p class="frame-label">Cadastro imóvel</p>
+        <div class="panel" style="min-height:280px">
+          <h4 style="margin:0 0 10px">Novo imóvel</h4>
+          <div class="form-grid">
+            <div><label style="font-size:10px;color:var(--muted)">Tipo</label><div class="fld"></div></div>
+            <div><label style="font-size:10px;color:var(--muted)">Finalidade</label><div class="fld"></div></div>
+            <div><label style="font-size:10px;color:var(--muted)">Bairro</label><div class="fld"></div></div>
+            <div><label style="font-size:10px;color:var(--muted)">Preço</label><div class="fld"></div></div>
+            <div class="full"><label style="font-size:10px;color:var(--muted)">Descrição</label><div class="fld" style="height:64px"></div></div>
+            <div class="full"><div style="height:80px;background:#c5bba8;border-radius:6px;display:grid;place-items:center;font-size:12px;color:var(--muted)">Foto capa</div></div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px"><button class="btn" type="button">Salvar</button><button class="btn btn-gold" type="button">Publicar no portal</button></div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Portal management</p>
+        <div class="panel" style="min-height:280px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <strong>Apt. Jardim Cuiabá</strong>
+            <div class="pub-toggle"><span>Publicado</span><i></i></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px">Preview: imoveis.corretoraavila.com.br/jardim-cuiaba-apt-402</p>
+          <ul class="list">
+            <li>Última sync <span>Hoje 14:32</span></li>
+            <li>Leads gerados <span>6</span></li>
+            <li>Visitas agendadas <span>2</span></li>
+          </ul>
+          <button class="btn" type="button" style="margin-top:12px">Abrir no portal</button>
+        </div>
+      </div>
+    </div>
+    <div class="grid-3" style="margin-top:16px">
+      <div class="panel"><h4 style="margin:0 0 8px">Proprietários</h4>
+        <ul class="list"><li>João Silva <span>3 imóveis</span></li><li>Maria Costa <span>1 imóvel</span></li></ul></div>
+      <div class="panel"><h4 style="margin:0 0 8px">Leads imobiliários</h4>
+        <ul class="list"><li>Pedro · Apt. CPA <span style="color:var(--gold-800)">Portal</span></li><li>Ana · Casa Jardim <span>WhatsApp</span></li></ul></div>
+      <div class="panel"><h4 style="margin:0 0 8px">Agenda de visitas</h4>
+        <div class="cal">
+          <div class="d">S</div><div class="d">T</div><div class="d hot">Q</div><div class="d">Q</div><div class="d hot">S</div><div class="d">S</div><div class="d">D</div>
+        </div>
+        <p style="font-size:11px;margin:8px 0 0;color:var(--muted)">Qua 10h · Casa CPA III</p>
+      </div>
+    </div>
+
+    <h2 class="sec">7b. Portal — busca, listagem e detalhe</h2>
+    <div class="row-devices">
+      <div style="flex:1;min-width:280px">
+        <p class="frame-label">Busca + listagem (desktop)</p>
+        <div class="desktop"><div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen" style="height:480px">
+            <div class="portal">
+              <header class="ph"><img src="assets/grupo-avila-logo.png" alt="" style="height:40px" /><nav><span>Imóveis</span></nav></header>
+              <div class="filters-row">
+                <div class="fld"></div><div class="fld"></div><div class="fld"></div>
+                <button class="btn btn-gold" type="button">Filtrar</button>
+              </div>
+              <div class="plist" style="grid-template-columns:repeat(2,1fr)">
+                <div class="pcard"><div class="phimg a"></div><div class="meta"><b>Apt. Jardim Cuiabá</b><span class="price">R$ 420.000</span></div></div>
+                <div class="pcard"><div class="phimg b"></div><div class="meta"><b>Casa CPA III</b><span class="price">R$ 890.000</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Detalhe (desktop)</p>
+        <div class="desktop" style="max-width:480px"><div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen" style="height:480px">
+            <div class="portal">
+              <header class="ph"><img src="assets/grupo-avila-logo.png" alt="" style="height:36px" /></header>
+              <div class="detail-hero"></div>
+              <div class="detail-body">
+                <span class="chip">Venda</span><span class="chip">Apartamento</span>
+                <h3>Apartamento · Jardim Cuiabá</h3>
+                <p class="price" style="font-size:20px;margin:8px 0">R$ 420.000</p>
+                <p style="font-size:13px;color:var(--muted)">3 quartos · 2 vagas · 98 m²</p>
+                <button class="btn btn-gold" type="button" style="margin-top:12px;width:100%">Tenho interesse</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Detalhe (mobile)</p>
+        <div class="phone"><div class="notch"></div>
+          <div class="screen phone-portal" style="height:520px">
+            <div class="portal">
+              <header class="ph"><img src="assets/grupo-avila-logo.png" alt="" style="height:32px" /></header>
+              <div class="detail-hero" style="height:120px"></div>
+              <div class="detail-body" style="padding:10px 12px">
+                <h3 style="font-size:18px">Apt. Jardim Cuiabá</h3>
+                <p class="price">R$ 420.000</p>
+                <button class="btn btn-gold" type="button" style="width:100%;margin-top:8px">Tenho interesse</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec" id="temas">8. Dark mode · Light mode</h2>
+    <p class="note">Dark: canvas navy, primária ouro. Light: canvas marfim, sidebar navy fixa. Portal permanece light-only na v1.</p>
+    <div class="grid-2">
+      <div>
+        <p class="frame-label">Dark · CRM Corretora</p>
+        <div class="desktop">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <div class="screen">
+            <div class="app dark">
+              <aside class="sb">
+                <div class="lockup"><img src="assets/grupo-avila-logo.png" alt="" /></div>
+                <div class="unit">Ávila Corretora</div>
+                <div class="unit-sub">Corretora · Seguros</div>
+                <nav>
+                  <a class="on" href="#">Dashboard</a>
+                  <a href="#">CRM</a>
+                  <a href="#">Clientes</a>
+                  <a href="#">Apólices</a>
+                </nav>
+                <div class="grow"></div>
+                <div class="pw">Powered by InsureFlow</div>
+              </aside>
+              <div class="main">
+                <header class="top">
+                  <div class="seg"><b>Corretora</b><span>Imóveis</span></div>
+                  <div class="search">Buscar apólice, cliente…</div>
+                  <button class="btn btn-gold" type="button">+ Negócio</button>
+                </header>
+                <div class="body">
+                  <div class="kpis">
+                    <div class="kpi"><small>Carteira</small><strong>248</strong></div>
+                    <div class="kpi"><small>Apólices</small><strong>1.042</strong></div>
+                    <div class="kpi"><small>Sinistros</small><strong>7</strong></div>
+                    <div class="kpi"><small>Prêmio</small><strong>R$ 186 mil</strong></div>
+                  </div>
+                  <div class="card">
+                    <h4>Pipeline</h4>
+                    <div class="bar">
+                      <span style="width:28%;background:#deae5d"></span>
+                      <span style="width:24%;background:#c09048"></span>
+                      <span style="width:22%;background:#5c6578"></span>
+                      <span style="width:26%;background:#1a3a66"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="frame-label">Light · CRM Corretora (§5 acima — canvas marfim)</p>
+        <div class="panel" style="background:var(--ivory);min-height:200px;padding:16px">
+          <p style="margin:0 0 8px;font-size:13px"><strong>Light mode</strong> — sidebar navy permanece; canvas e cards em marfim/paper; botões primários navy-900; ouro só em filete ativo e KPI positivo.</p>
+          <p style="margin:0;font-size:12px;color:var(--muted)">Mockup completo: seção 5 CRM Corretora dashboard (desktop light canvas).</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec">9. Comparativo rápido</h2>
+    <table class="cmp">
+      <thead>
+        <tr><th></th><th>Hoje</th><th>Proposto</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Marca na UI</td><td>InsureFlow + Shield</td><td>Logo oficial Ávila + unidade</td></tr>
+        <tr><td>Primária CRM</td><td>Azul oklch hue 252</td><td>Navy #0C183C · ouro de acento</td></tr>
+        <tr><td>Portal</td><td>Verde #14532D, sem logo</td><td>Navy/ouro, logo completa</td></tr>
+        <tr><td>Sidebar</td><td>Glass do tema</td><td>Navy nos dois temas</td></tr>
+        <tr><td>Login</td><td>Card central produto</td><td>Split holding + form</td></tr>
+        <tr><td>InsureFlow</td><td>Herói da interface</td><td>Powered by no rodapé</td></tr>
+      </tbody>
+    </table>
+
+    <div class="warn">
+      <strong>Status UX-001A:</strong> READY FOR APPROVAL. Zero alteração em apps/web, packages/ui ou portal.
+      Implementação só após aprovação em <code>docs/ux/ux001-branding-grupo-avila.md</code>.
+    </div>
+  </div>
+</body>
+</html>

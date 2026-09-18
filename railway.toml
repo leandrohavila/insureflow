@@ -1,0 +1,25 @@
+# Railway — InsureFlow API (monorepo root)
+# https://docs.railway.com/reference/config-as-code
+#
+# Dashboard (service insureflow):
+#   Root Directory: vazio (/)
+#   Config file: /railway.toml
+#   Branch: develop
+#   Builder: Dockerfile → apps/api/Dockerfile
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/api/Dockerfile"
+watchPatterns = ["apps/api/**", "packages/database/**", "scripts/**", "package.json", "package-lock.json"]
+
+[deploy]
+# Sem startCommand — Railway usa o CMD do Dockerfile (WORKDIR apps/api).
+# Qualquer startCommand na raiz do monorepo quebra o boot → 503 no edge / custom domain.
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[deploy.env]
+NODE_ENV = "production"
+PORT = "4000"
