@@ -190,11 +190,13 @@ export function CommercialAgendaWorkspace() {
           label="Reativações hoje"
           value={metrics?.reactivationsToday}
           loading={query.isLoading}
+          href="/crm/reativacoes?window=today"
         />
         <Kpi
           label="Reativações atrasadas"
           value={metrics?.reactivationsOverdue}
           loading={query.isLoading}
+          href="/crm/reativacoes?window=overdue"
         />
       </div>
 
@@ -366,7 +368,7 @@ export function CommercialAgendaWorkspace() {
                     </PermissionGate>
                     {item.leadId ? (
                       <Link
-                        href={`/leads?leadId=${item.leadId}`}
+                        href={`/leads?lead=${item.leadId}`}
                         className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
                       >
                         Abrir Lead
@@ -395,19 +397,37 @@ function Kpi({
   label,
   value,
   loading,
+  href,
 }: {
   label: string
   value?: number
   loading?: boolean
+  href?: string
 }) {
-  return (
-    <div className="rounded-md border border-white/[0.06] px-3 py-2">
+  const body = (
+    <>
       <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       <p className="mt-0.5 text-base font-semibold tabular-nums">
         {loading ? "—" : (value ?? 0)}
       </p>
-    </div>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="rounded-md border border-white/[0.06] px-3 py-2 transition-colors hover:border-white/20 hover:bg-white/[0.03]"
+        title="Abrir Reativações"
+      >
+        {body}
+      </Link>
+    )
+  }
+
+  return (
+    <div className="rounded-md border border-white/[0.06] px-3 py-2">{body}</div>
   )
 }

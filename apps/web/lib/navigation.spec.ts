@@ -20,6 +20,7 @@ describe("menu de produção", () => {
       "/leads",
       "/crm/negocios",
       "/crm/agenda",
+      "/crm/reativacoes",
       "/clientes",
       "/crm/dashboard-360",
       "/questionarios/templates",
@@ -90,9 +91,11 @@ describe("menu de produção", () => {
       "Leads",
       "Pipeline",
       "Agenda Comercial",
+      "Reativações",
       "Clientes",
       "Customer 360",
     ])
+    assert.ok(hrefs.includes("/crm/reativacoes"))
   })
 
   it("órfãs internas não entram no menu", () => {

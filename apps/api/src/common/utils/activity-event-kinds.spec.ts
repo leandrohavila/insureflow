@@ -28,6 +28,8 @@ describe('activity-event-kinds', () => {
         'sla_warning',
         'sla_overdue',
         'reactivation_retry',
+        'lead_reactivation_postponed',
+        'lead_lost',
       ]),
     );
   });
@@ -35,6 +37,9 @@ describe('activity-event-kinds', () => {
   it('rotula eventos conhecidos', () => {
     expect(activityEventLabel('lead_converted')).toBe('Lead convertido');
     expect(activityEventLabel('lead_reactivated')).toBe('Lead reativado');
+    expect(activityEventLabel('lead_reactivation_postponed')).toBe(
+      'Reativação adiada',
+    );
     expect(activityEventLabel('communication_sent')).toBe('Comunicação enviada');
     expect(activityEventLabel('communication_delivered')).toBe(
       'Comunicação entregue',

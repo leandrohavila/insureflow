@@ -63,7 +63,9 @@ export function buildLostReactivationPatch(params: {
   if (enabled && (idleDays == null || idleDays < 1)) {
     return {
       lostAt: params.now,
-      ...(params.lostReason !== undefined ? { lostReason: params.lostReason } : {}),
+      ...(params.lostReason !== undefined
+        ? { lostReason: params.lostReason }
+        : {}),
       reactivationAttempts: 0,
       lastReactivatedAt: null,
       nextReactivationAt: null,
@@ -74,7 +76,9 @@ export function buildLostReactivationPatch(params: {
 
   return {
     lostAt: params.now,
-    ...(params.lostReason !== undefined ? { lostReason: params.lostReason } : {}),
+    ...(params.lostReason !== undefined
+      ? { lostReason: params.lostReason }
+      : {}),
     reactivationAttempts: 0,
     lastReactivatedAt: null,
     nextReactivationAt:
@@ -102,4 +106,55 @@ export function buildNextAttemptPatch(params: {
     lastInteractionAt: params.now,
     lastContactAt: params.now,
   };
+}
+
+/** Manual reopen: lost → active funnel status; leave lostAt/lossReason for analytics. */
+export function buildManualReactivatePatch(params: {
+  now: Date;
+  toStatus?: string;
+}): {
+  status: string;
+  nextReactivationAt: null;
+  lastReactivatedAt: Date;
+  lastInteractionAt: Date;
+  lastContactAt: Date;
+} {
+  return {
+    status: params.toStatus ?? 'contacted',
+    nextReactivationAt: null,
+    lastReactivatedAt: params.now,
+    lastInteractionAt: params.now,
+    lastContactAt: params.now,
+  };
+}
+
+/** Postpone from now + N days, or an explicit custom date (must be in the future). */
+export function buildPostponeReactivationAt(params: {
+  now: Date;
+  days?: number;
+  at?: Date;
+}): Date {
+  if (params.at) {
+    const next = new Date(params.at.getTime());
+    if (Number.isNaN(next.getTime())) {
+      throw new Error('INVALID_POSTPONE_AT');
+    }
+    if (next.getTime() <= params.now.getTime()) {
+      throw new Error('POSTPONE_AT_MUST_BE_FUTURE');
+    }
+    return next;
+  }
+  const days = params.days ?? 7;
+  if (!Number.isFinite(days) || days < 1) {
+    throw new Error('INVALID_POSTPONE_DAYS');
+  }
+  return addUtcDays(params.now, Math.floor(days));
+}
+
+export function daysOverdue(nextReactivationAt: Date, now: Date): number {
+  const startNext = startOfUtcDay(nextReactivationAt);
+  const startNow = startOfUtcDay(now);
+  const diffMs = startNow.getTime() - startNext.getTime();
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / (24 * 60 * 60 * 1000));
 }

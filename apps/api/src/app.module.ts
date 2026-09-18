@@ -36,6 +36,7 @@ import { LeadFollowUpsModule } from './modules/lead-follow-ups/lead-follow-ups.m
 import { PolicyRenewalsModule } from './modules/policy-renewals/policy-renewals.module';
 import { CommercialImportModule } from './modules/commercial-import/commercial-import.module';
 import { CommercialAgendaModule } from './modules/commercial-agenda/commercial-agenda.module';
+import { CommercialReactivationsModule } from './modules/commercial-reactivations/commercial-reactivations.module';
 import { CommercialAutomationModule } from './modules/commercial-automation/commercial-automation.module';
 import { CommunicationsModule } from './modules/communications/communications.module';
 import { OpportunitiesModule } from './modules/opportunities/opportunities.module';
@@ -108,6 +109,7 @@ function resolveEnvFilePath(): string[] {
     PolicyRenewalsModule,
     CommercialImportModule,
     CommercialAgendaModule,
+    CommercialReactivationsModule,
     CommercialAutomationModule,
     CommunicationsModule,
     OpportunitiesModule,

@@ -110,6 +110,15 @@ const agendaComercialItem: NavItem = {
   permission: "crm:view",
 }
 
+const crmReativacoesItem: NavItem = {
+  title: "Reativações",
+  href: "/crm/reativacoes",
+  icon: RefreshCw,
+  segment: "crm",
+  activePrefix: "/crm/reativacoes",
+  permission: "crm:view",
+}
+
 const questionariosItem: NavItem = {
   title: "Questionários",
   href: "/questionarios/templates",
@@ -225,6 +234,7 @@ const crmNavItems: NavItem[] = [
   leadsItem,
   pipelineItem,
   agendaComercialItem,
+  crmReativacoesItem,
   clientesItem,
   customer360Item,
 ]
