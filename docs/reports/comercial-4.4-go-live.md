@@ -1,10 +1,13 @@
 # Comercial 4.4 — Homologação e Go Live (Waves 1–3)
 
-**Data:** 2026-09-17  
+**Data:** 2026-09-17 (homologação pré-deploy)  
+**GO produção:** 18/09/2026 — `docs/reports/comercial-4.4-production-go.md`  
 **Worktree:** `InsureFlow-wt-sprint44`  
 **Branch:** `feature/sprint-comercial-4.4`  
-**HEAD git:** `446a472` (`feat(comercial): wave1 reactivation foundation`)  
+**HEAD git (à época desta homologação):** `446a472` (`feat(comercial): wave1 reactivation foundation`)  
 **Escopo:** auditoria + testes + builds + smoke — **sem novas features de produto**
+
+> Superado: Waves 2 e 3 publicadas em produção em 18/09/2026 com resultado **GO**.
 
 ---
 

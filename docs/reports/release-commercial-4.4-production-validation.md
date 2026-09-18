@@ -9,16 +9,19 @@
 
 ## Veredito
 
-# GO (com ressalvas)
+# GO
 
-Waves 2 e 3 estão **publicadas** e o fluxo operacional foi validado na API de produção. A WEB expõe `/crm/reativacoes` e `/crm/campaigns/reactivation`. Campanhas exigiram um hotfix de Activity Engine (`0ec9ad4`) após o primeiro smoke.
+**Data do GO:** 18/09/2026. Registro: `docs/reports/comercial-4.4-production-go.md`.
+
+Waves 2 e 3 estão **publicadas** e o fluxo operacional foi validado na API de produção. A WEB expõe `/crm/reativacoes` e `/crm/campaigns/reactivation`. Campanhas exigiram um hotfix de Activity Engine (`0ec9ad4`) após o primeiro smoke. Registros de homologação `Smoke 4.4` foram removidos.
 
 | Item | Resultado |
 |------|-----------|
 | Wave 2 Fila | ✅ Publicada e validada (perder → fila → adiar → reativar → pipeline) |
 | Wave 3 Campanhas | ✅ Publicada e validada após hotfix (criar → add → start → reativar → `lead_reactivated_campaign`) |
 | Migration | ✅ Aplicada (create de campanha 201 em produção) |
-| UI autenticada (print da fila/campanha logada) | ⚠️ Rotas no ar; login demo de produção recusado |
+| Limpeza smoke `Smoke 4.4` | ✅ Concluída |
+| UI autenticada (print da fila/campanha logada) | ⚠️ Rotas no ar; login demo de produção recusado — **não bloqueia o GO** |
 
 ---
 
@@ -182,8 +185,8 @@ O lead de smoke caiu em **next7** (motivo com 1 dia), não em hoje/atrasadas —
 | WEB e API em SHAs diferentes (`0578976` vs `0ec9ad4`) | Baixa | WEB não precisa do hotfix |
 | CLI Vercel reescreveu `vercel.json` local | Média | Revertido; não commitado |
 | `health/runtime.commit = unknown` | Baixa | Upload Railway CLI |
-| Prints UI autenticados | Média | Pendente (demo users inválidos em prod) |
-| Leads/motivos de smoke deixados em produção | Baixa | Prefixados `Smoke 4.4` — limpar se desejado |
+| Prints UI autenticados | Média | Residual (demo users inválidos em prod) — não bloqueia GO |
+| Leads/motivos de smoke deixados em produção | Baixa | **Removidos** — `comercial-4.4-smoke-cleanup.md` |
 | `prisma migrate status` da workstation | Baixa | P1001 no pooler; evidência via boot + 201 |
 
 ---
@@ -197,4 +200,5 @@ O lead de smoke caiu em **next7** (motivo com 1 dia), não em hoje/atrasadas —
 - [x] Migration efetiva (tabelas usáveis)
 - [x] Smoke autenticado do fluxo (API)
 - [x] Timeline / activity / KPIs / ACL
-- [ ] Print autenticado das telas (pendente)
+- [x] Limpeza dos registros `Smoke 4.4`
+- [ ] Print autenticado das telas (residual; não bloqueia GO)

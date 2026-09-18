@@ -1,9 +1,10 @@
 # Release Comercial 4.4 — Waves 2 e 3
 
-**Data:** 2026-09-17  
+**Data:** 2026-09-17 (preparação)  
+**GO produção:** 18/09/2026 — `docs/reports/comercial-4.4-production-go.md`  
 **Worktree:** `InsureFlow-wt-sprint44`  
 **Branch:** `feature/sprint-comercial-4.4`  
-**HEAD git:** `446a472` (`feat(comercial): wave1 reactivation foundation`) — Wave 1 **já em produção**  
+**HEAD git (à época desta preparação):** `446a472` (`feat(comercial): wave1 reactivation foundation`) — Wave 1 **já em produção**  
 **Escopo desta release:** Fila de Reativação (Wave 2) + Campanhas de Reativação (Wave 3)  
 **Fora de escopo:** Portal, Governança, WhatsApp, scheduler, envio automático, Dashboard Executivo, SaaS, novas regras/UX
 
@@ -11,7 +12,15 @@
 
 ## Veredito
 
-# NO GO (produção)
+Este documento é a **preparação** (2026-09-17). Superado pelo GO em produção em **18/09/2026**.
+
+# GO (produção — 18/09/2026)
+
+Ver `docs/reports/comercial-4.4-production-go.md` e `docs/reports/release-commercial-4.4-production-validation.md`.
+
+Preparação original (histórico):
+
+# NO GO (produção) — 2026-09-17
 
 O pacote de código está **pronto para versionar**. Produção permanece bloqueada até commit + `migrate deploy` + deploy API/WEB + smoke E2E em HML.
 
