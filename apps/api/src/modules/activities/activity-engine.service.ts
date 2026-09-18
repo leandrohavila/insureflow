@@ -36,7 +36,15 @@ export class ActivityEngineService implements ActivityEventPublisher {
 
     const client = tx ?? this.prisma;
 
-    await assertActivityRelations(client, input.tenantId, input);
+    const campaignEventsWithoutEntity = new Set([
+      'campaign_created',
+      'campaign_started',
+      'campaign_finished',
+      'campaign_lead_added',
+    ]);
+    if (!campaignEventsWithoutEntity.has(input.operationalEventKind)) {
+      await assertActivityRelations(client, input.tenantId, input);
+    }
     await assertActivityPerformer(client, input.tenantId, input.performedById);
 
     if (input.idempotencyKey) {
