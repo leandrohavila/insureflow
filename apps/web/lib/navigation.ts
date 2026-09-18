@@ -21,6 +21,7 @@ import {
   RefreshCw,
   CalendarCheck,
   RotateCcw,
+  Megaphone,
 } from "lucide-react"
 
 import {
@@ -116,6 +117,15 @@ const crmReativacoesItem: NavItem = {
   icon: RefreshCw,
   segment: "crm",
   activePrefix: "/crm/reativacoes",
+  permission: "crm:view",
+}
+
+const crmCampanhasReativacaoItem: NavItem = {
+  title: "Campanhas de Reativação",
+  href: "/crm/campaigns/reactivation",
+  icon: Megaphone,
+  segment: "crm",
+  activePrefix: "/crm/campaigns/reactivation",
   permission: "crm:view",
 }
 
@@ -235,6 +245,7 @@ const crmNavItems: NavItem[] = [
   pipelineItem,
   agendaComercialItem,
   crmReativacoesItem,
+  crmCampanhasReativacaoItem,
   clientesItem,
   customer360Item,
 ]

@@ -29,6 +29,12 @@ describe('activity-event-kinds', () => {
         'sla_overdue',
         'reactivation_retry',
         'lead_reactivation_postponed',
+        'campaign_created',
+        'campaign_started',
+        'campaign_finished',
+        'campaign_lead_added',
+        'campaign_lead_removed',
+        'lead_reactivated_campaign',
         'lead_lost',
       ]),
     );
@@ -40,6 +46,10 @@ describe('activity-event-kinds', () => {
     expect(activityEventLabel('lead_reactivation_postponed')).toBe(
       'Reativação adiada',
     );
+    expect(activityEventLabel('lead_reactivated_campaign')).toBe(
+      'Lead reativado por campanha',
+    );
+    expect(activityEventLabel('campaign_created')).toBe('Campanha criada');
     expect(activityEventLabel('communication_sent')).toBe('Comunicação enviada');
     expect(activityEventLabel('communication_delivered')).toBe(
       'Comunicação entregue',

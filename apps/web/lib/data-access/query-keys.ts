@@ -118,6 +118,7 @@ export const queryKeys = {
   commercialImport: entityKeys("commercialImport"),
   commercialAgenda: entityKeys("commercialAgenda"),
   commercialReactivations: entityKeys("commercialReactivations"),
+  commercialReactivationCampaigns: entityKeys("commercialReactivationCampaigns"),
   commercialDashboard: entityKeys("commercialDashboard"),
   customer360: entityKeys("customer360"),
   dashboard360: entityKeys("dashboard360"),
