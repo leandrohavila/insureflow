@@ -302,6 +302,7 @@ export function LeadsPage() {
       status: createLead.status,
       isPending: createLead.isPending,
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- BUG-010: snapshot on dialogOpen only
   }, [dialogOpen])
 
   useEffect(() => {
@@ -314,6 +315,7 @@ export function LeadsPage() {
       status: createLead.status,
       isPending: createLead.isPending,
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- BUG-010: snapshot on isPending only
   }, [createLead.isPending])
 
   useEffect(() => {

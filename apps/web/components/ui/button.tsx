@@ -56,6 +56,7 @@ const Button = React.forwardRef<
   // breaks native form submission. Use a plain <button> for submit/reset.
   if (resolvedType === "submit" || resolvedType === "reset") {
     const { render: _render, style, ...nativeProps } = props
+    void _render
     const nativeStyle = typeof style === "function" ? undefined : style
 
     return (
