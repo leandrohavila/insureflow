@@ -33,7 +33,7 @@
       "outputs": ["../../node_modules/.prisma/**"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build", "^lint"]
     },
     "check-types": {
       "dependsOn": ["^build", "^check-types"]
