@@ -104,10 +104,7 @@ import {
   leadTelHref,
   leadWhatsAppHref,
 } from "@/lib/leads/lead-operational-signals"
-import {
-  useCreateActivity,
-  type CreateActivityInput,
-} from "@/lib/data-access/modules/activities"
+import { useCreateActivity } from "@/lib/data-access/modules/activities"
 import { activityTypeSubjects } from "@/lib/crm/activity-labels"
 import {
   bug010LeadCreateLog,
@@ -116,7 +113,6 @@ import {
 } from "@/lib/performance/bug010-lead-create"
 import {
   bug010DrawerLog,
-  bug010DrawerResetFlow,
   bug010DrawerSetState,
 } from "@/lib/performance/bug010-drawer-flow"
 import { cn } from "@/lib/utils"
@@ -306,6 +302,7 @@ export function LeadsPage() {
       status: createLead.status,
       isPending: createLead.isPending,
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- BUG-010: snapshot on dialogOpen only
   }, [dialogOpen])
 
   useEffect(() => {
@@ -318,6 +315,7 @@ export function LeadsPage() {
       status: createLead.status,
       isPending: createLead.isPending,
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- BUG-010: snapshot on isPending only
   }, [createLead.isPending])
 
   useEffect(() => {
@@ -435,7 +433,10 @@ export function LeadsPage() {
     }
   }, [openLeadDialog, searchParams, syncLeadUrlParams])
 
-  const leads = leadsQuery.data?.data ?? []
+  const leads = useMemo(
+    () => leadsQuery.data?.data ?? [],
+    [leadsQuery.data?.data],
+  )
   const visibleLeads = useMemo(() => {
     if (period === "all") return leads
     const days = Number(period)

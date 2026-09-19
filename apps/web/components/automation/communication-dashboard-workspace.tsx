@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 
 import { DashboardKpiTile, DashboardKpiTileGrid } from "@/components/dashboard/dashboard-kpi-tile"
 import { DataTable, FormSelect } from "@/components/design-system"
@@ -130,9 +131,9 @@ export function CommunicationDashboardWorkspace() {
 
       <p className="text-xs text-muted-foreground">
         Provider: {metrics?.provider ?? "—"}. Configure a Evolution em{" "}
-        <a className="underline" href="/configuracoes/comunicacao">
+        <Link className="underline" href="/configuracoes/comunicacao">
           Configurações → Comunicação
-        </a>
+        </Link>
         .
       </p>
 
