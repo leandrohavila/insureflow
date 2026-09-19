@@ -104,10 +104,7 @@ import {
   leadTelHref,
   leadWhatsAppHref,
 } from "@/lib/leads/lead-operational-signals"
-import {
-  useCreateActivity,
-  type CreateActivityInput,
-} from "@/lib/data-access/modules/activities"
+import { useCreateActivity } from "@/lib/data-access/modules/activities"
 import { activityTypeSubjects } from "@/lib/crm/activity-labels"
 import {
   bug010LeadCreateLog,
@@ -116,7 +113,6 @@ import {
 } from "@/lib/performance/bug010-lead-create"
 import {
   bug010DrawerLog,
-  bug010DrawerResetFlow,
   bug010DrawerSetState,
 } from "@/lib/performance/bug010-drawer-flow"
 import { cn } from "@/lib/utils"
@@ -435,7 +431,10 @@ export function LeadsPage() {
     }
   }, [openLeadDialog, searchParams, syncLeadUrlParams])
 
-  const leads = leadsQuery.data?.data ?? []
+  const leads = useMemo(
+    () => leadsQuery.data?.data ?? [],
+    [leadsQuery.data?.data],
+  )
   const visibleLeads = useMemo(() => {
     if (period === "all") return leads
     const days = Number(period)

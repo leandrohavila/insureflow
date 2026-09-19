@@ -60,7 +60,6 @@ export function GovernanceUserFormDialog({
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<"profile" | "access">("profile")
 
-  const roles = rolesQuery.data ?? []
   const units = unitsQuery.data ?? []
 
   useEffect(() => {
@@ -98,12 +97,12 @@ export function GovernanceUserFormDialog({
 
   const roleOptions = useMemo(
     () =>
-      roles.map((r) => ({
+      (rolesQuery.data ?? []).map((r) => ({
         id: r.id,
         label: `${r.name} (${r.slug})`,
         slug: r.slug,
       })),
-    [roles],
+    [rolesQuery.data],
   )
 
   function toggleRole(id: string) {
