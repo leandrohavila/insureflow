@@ -20,10 +20,8 @@ import {
 import type {
   CatalogResult,
   CreatePropertyLeadInput,
-  HighlightsResult,
   PropertyLead,
   PropertyListQuery,
-  PropertyListResult,
   PublicProperty,
 } from "@/types/property";
 

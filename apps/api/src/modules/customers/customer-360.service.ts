@@ -31,16 +31,22 @@ export class Customer360Service {
     @Optional() private readonly buAccess?: BusinessUnitAccessService,
   ) {}
 
-  async get360(tenantId: string, customerId: string, actor?: BusinessUnitActor) {
-    const customer = await this.customers.findCustomer(tenantId, customerId, actor);
+  async get360(
+    tenantId: string,
+    customerId: string,
+    actor?: BusinessUnitActor,
+  ) {
+    const customer = await this.customers.findCustomer(
+      tenantId,
+      customerId,
+      actor,
+    );
 
     const leadWhere = {
       tenantId,
       OR: [
-        ...(customer.document
-          ? [{ document: customer.document as string }]
-          : []),
-        ...(customer.email ? [{ email: customer.email as string }] : []),
+        ...(customer.document ? [{ document: customer.document }] : []),
+        ...(customer.email ? [{ email: customer.email }] : []),
         { deal: { customerId } },
       ],
     };
@@ -126,11 +132,7 @@ export class Customer360Service {
       this.prisma.activity.findMany({
         where: {
           tenantId,
-          OR: [
-            { customerId },
-            { deal: { customerId } },
-            { lead: leadWhere },
-          ],
+          OR: [{ customerId }, { deal: { customerId } }, { lead: leadWhere }],
         },
         orderBy: { occurredAt: 'desc' },
         take: 80,
@@ -376,7 +378,11 @@ export class Customer360Service {
     };
   }
 
-  async generate(tenantId: string, customerId: string, actor?: BusinessUnitActor) {
+  async generate(
+    tenantId: string,
+    customerId: string,
+    actor?: BusinessUnitActor,
+  ) {
     if (this.buAccess) {
       await this.buAccess.assertCustomerVisible(actor, tenantId, customerId);
     }
@@ -597,10 +603,9 @@ function buildPendencies(params: {
   for (const deal of params.deals) {
     if (deal.status !== 'open') continue;
     const unitType = deal.businessUnit?.type ?? 'INSURANCE';
-    const stages =
-      deal.pipeline?.stages?.length
-        ? deal.pipeline.stages
-        : defaultStagesForUnitType(unitType);
+    const stages = deal.pipeline?.stages?.length
+      ? deal.pipeline.stages
+      : defaultStagesForUnitType(unitType);
     const slug = canonicalDealStage(deal.stage, unitType);
     const stageDef = stages.find((stage) => stage.slug === slug);
     const sla = computeStageSla({

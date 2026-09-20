@@ -26,9 +26,11 @@ describe('PropertiesService publication', () => {
     };
     const repo = {
       findById: jest.fn().mockResolvedValue(row),
-      update: jest.fn().mockImplementation((_id, data) =>
-        Promise.resolve({ ...row, ...data, price: 100, images: [] }),
-      ),
+      update: jest
+        .fn()
+        .mockImplementation((_id, data) =>
+          Promise.resolve({ ...row, ...data, price: 100, images: [] }),
+        ),
       isSlugTaken: jest.fn().mockResolvedValue(false),
       create: jest.fn().mockImplementation((data) =>
         Promise.resolve({
@@ -48,7 +50,9 @@ describe('PropertiesService publication', () => {
     };
     const prisma = {
       businessUnit: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'bu1', type: 'REAL_ESTATE' }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'bu1', type: 'REAL_ESTATE' }),
       },
     };
     const propertyLeads = {
@@ -67,7 +71,7 @@ describe('PropertiesService publication', () => {
 
   it('publish define published e publishedAt', async () => {
     const { service, repo } = createService();
-    const result = await service.publish(user as never, 'p1');
+    const result = await service.publish(user, 'p1');
     expect(repo.update).toHaveBeenCalledWith(
       'p1',
       expect.objectContaining({
@@ -81,20 +85,20 @@ describe('PropertiesService publication', () => {
 
   it('unpublish zera published e preserva o registro', async () => {
     const { service, repo } = createService();
-    await service.unpublish(user as never, 'p1');
+    await service.unpublish(user, 'p1');
     expect(repo.update).toHaveBeenCalledWith('p1', { published: false });
   });
 
   it('findAll retorna vazio quando o escopo de BU não tem unidades', async () => {
     const { service, buAccess } = createService();
     buAccess.resolveIds.mockResolvedValue([]);
-    const result = await service.findAll(user as never, { page: 1, limit: 20 });
+    const result = await service.findAll(user, { page: 1, limit: 20 });
     expect(result).toEqual({ data: [], total: 0, page: 1, limit: 20 });
   });
 
   it('create persiste featuredUntil quando informado', async () => {
     const { service, repo } = createService();
-    await service.create(user as never, {
+    await service.create(user, {
       businessUnitId: 'bu1',
       title: 'Apto',
       purpose: 'SALE',
@@ -114,7 +118,7 @@ describe('PropertiesService publication', () => {
 
   it('create não publica o imóvel', async () => {
     const { service, repo } = createService();
-    const result = await service.create(user as never, {
+    const result = await service.create(user, {
       businessUnitId: 'bu1',
       title: 'Apto',
       purpose: 'SALE',
@@ -151,7 +155,7 @@ describe('PropertiesService publication', () => {
   it('listInbox retorna vazio quando o escopo de BU não tem unidades', async () => {
     const { service, buAccess, propertyLeads } = createService();
     buAccess.resolveIds.mockResolvedValue([]);
-    const result = await service.listInbox(user as never);
+    const result = await service.listInbox(user);
     expect(result).toEqual([]);
     expect(propertyLeads.findInbox).not.toHaveBeenCalled();
   });
@@ -175,7 +179,7 @@ describe('PropertiesService publication', () => {
       },
     ]);
 
-    const result = await service.listInbox(user as never, 'bu1');
+    const result = await service.listInbox(user, 'bu1');
     expect(propertyLeads.findInbox).toHaveBeenCalledWith('t1', undefined);
     expect(result).toEqual([
       expect.objectContaining({
@@ -190,7 +194,7 @@ describe('PropertiesService publication', () => {
 
   it('listLeads consulta só o imóvel informado', async () => {
     const { service, propertyLeads } = createService();
-    await service.listLeads(user as never, 'p1');
+    await service.listLeads(user, 'p1');
     expect(propertyLeads.findByProperty).toHaveBeenCalledWith('t1', 'p1');
     expect(propertyLeads.findInbox).not.toHaveBeenCalled();
   });

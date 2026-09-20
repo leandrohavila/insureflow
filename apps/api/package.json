@@ -72,6 +72,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/pdfkit": "^0.17.6",
     "@types/supertest": "^7.0.0",
+    "ansis": "4.2.0",
     "chokidar": "^4.0.3",
     "cli-table3": "^0.6.5",
     "eslint": "^9.18.0",

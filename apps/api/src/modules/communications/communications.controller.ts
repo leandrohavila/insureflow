@@ -139,7 +139,9 @@ export class CommunicationsController {
 
   @Post('inbound')
   @RequirePermissions('automation:manage')
-  @ApiOperation({ summary: 'Registrar resposta recebida (manual ou webhook-ready)' })
+  @ApiOperation({
+    summary: 'Registrar resposta recebida (manual ou webhook-ready)',
+  })
   inbound(
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: RecordCommunicationReplyDto,

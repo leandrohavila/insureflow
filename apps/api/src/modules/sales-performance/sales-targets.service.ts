@@ -116,7 +116,9 @@ export class SalesTargetsService {
     const updated = await this.prisma.salesTarget.update({
       where: { id: current.id },
       data: {
-        ...(dto.targetDeals !== undefined ? { targetDeals: dto.targetDeals } : {}),
+        ...(dto.targetDeals !== undefined
+          ? { targetDeals: dto.targetDeals }
+          : {}),
         ...(dto.targetRevenue !== undefined
           ? { targetRevenue: new Prisma.Decimal(dto.targetRevenue) }
           : {}),

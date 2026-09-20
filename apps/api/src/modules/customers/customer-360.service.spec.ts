@@ -124,9 +124,9 @@ describe('Customer360Service', () => {
     expect(result.finance?.closedDeals).toBe(0);
     expect(result.finance?.commissions).toEqual([]);
     expect(result.opportunities[0].type).toBe('LIFE_INSURANCE');
-    expect(result.timeline[0].occurredAt >= result.timeline.at(-1)!.occurredAt).toBe(
-      true,
-    );
+    expect(
+      result.timeline[0].occurredAt >= result.timeline.at(-1)!.occurredAt,
+    ).toBe(true);
     expect(result.timeline.some((item) => item.kind === 'lead_created')).toBe(
       true,
     );

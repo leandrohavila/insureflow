@@ -39,7 +39,11 @@ describe('OpportunitiesService', () => {
       assertOpportunityVisible: jest.fn().mockResolvedValue(undefined),
     };
 
-    const service = new OpportunitiesService(prisma, undefined, buAccess as never);
+    const service = new OpportunitiesService(
+      prisma,
+      undefined,
+      buAccess as never,
+    );
     return { service, prisma, opportunity, customer, businessUnit, buAccess };
   }
 

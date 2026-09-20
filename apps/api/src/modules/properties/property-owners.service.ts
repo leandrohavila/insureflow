@@ -22,9 +22,9 @@ export class PropertyOwnersService {
     private readonly persons: PersonsRepository,
   ) {}
 
-  private serialize<T extends { sharePercent?: { toNumber?: () => number } | number | null }>(
-    row: T,
-  ) {
+  private serialize<
+    T extends { sharePercent?: { toNumber?: () => number } | number | null },
+  >(row: T) {
     return {
       ...row,
       sharePercent: decimalToNumber(row.sharePercent ?? null),
@@ -37,7 +37,11 @@ export class PropertyOwnersService {
     return rows.map((row) => this.serialize(row));
   }
 
-  async add(user: JwtAccessPayload, propertyId: string, dto: CreatePropertyOwnerDto) {
+  async add(
+    user: JwtAccessPayload,
+    propertyId: string,
+    dto: CreatePropertyOwnerDto,
+  ) {
     await this.properties.findOne(user, propertyId);
     const person = await this.persons.findById(user.tenantId, dto.personId);
     if (!person) throw new NotFoundException('Pessoa não encontrada');
@@ -68,7 +72,11 @@ export class PropertyOwnersService {
     dto: UpdatePropertyOwnerDto,
   ) {
     await this.properties.findOne(user, propertyId);
-    const current = await this.owners.findOwned(user.tenantId, propertyId, ownerId);
+    const current = await this.owners.findOwned(
+      user.tenantId,
+      propertyId,
+      ownerId,
+    );
     if (!current) throw new NotFoundException('Proprietário não encontrado');
 
     if (dto.isPrimary) {
@@ -77,19 +85,31 @@ export class PropertyOwnersService {
 
     const updated = await this.owners.update(ownerId, {
       ...(dto.isPrimary != null ? { isPrimary: dto.isPrimary } : {}),
-      ...(dto.publicVisible != null ? { publicVisible: dto.publicVisible } : {}),
-      ...(dto.sharePercent !== undefined ? { sharePercent: dto.sharePercent } : {}),
+      ...(dto.publicVisible != null
+        ? { publicVisible: dto.publicVisible }
+        : {}),
+      ...(dto.sharePercent !== undefined
+        ? { sharePercent: dto.sharePercent }
+        : {}),
     });
     return this.serialize(updated);
   }
 
-  async setPrimary(user: JwtAccessPayload, propertyId: string, ownerId: string) {
+  async setPrimary(
+    user: JwtAccessPayload,
+    propertyId: string,
+    ownerId: string,
+  ) {
     return this.update(user, propertyId, ownerId, { isPrimary: true });
   }
 
   async remove(user: JwtAccessPayload, propertyId: string, ownerId: string) {
     await this.properties.findOne(user, propertyId);
-    const current = await this.owners.findOwned(user.tenantId, propertyId, ownerId);
+    const current = await this.owners.findOwned(
+      user.tenantId,
+      propertyId,
+      ownerId,
+    );
     if (!current) throw new NotFoundException('Proprietário não encontrado');
     await this.owners.delete(ownerId);
     return { ok: true };

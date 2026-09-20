@@ -7,7 +7,13 @@ import {
 
 describe('properties.util serialization', () => {
   const images = [
-    { id: 'i2', url: '/second.jpg', alt: 'segunda', sortOrder: 1, isCover: false },
+    {
+      id: 'i2',
+      url: '/second.jpg',
+      alt: 'segunda',
+      sortOrder: 1,
+      isCover: false,
+    },
     { id: 'i1', url: '/cover.jpg', alt: 'capa', sortOrder: 0, isCover: true },
   ];
 
@@ -28,9 +34,9 @@ describe('properties.util serialization', () => {
 
   it('pickCoverImage prefere isCover e cai na primeira', () => {
     expect(pickCoverImage(images)?.url).toBe('/cover.jpg');
-    expect(pickCoverImage([{ id: 'a', url: '/a.jpg', isCover: false }])?.url).toBe(
-      '/a.jpg',
-    );
+    expect(
+      pickCoverImage([{ id: 'a', url: '/a.jpg', isCover: false }])?.url,
+    ).toBe('/a.jpg');
     expect(pickCoverImage([])).toBeNull();
   });
 

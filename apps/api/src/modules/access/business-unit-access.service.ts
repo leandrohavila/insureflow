@@ -43,7 +43,10 @@ export class BusinessUnitAccessService {
     actor: BusinessUnitActor,
     requestedBusinessUnitId?: string | null,
   ) {
-    const membershipIds = await this.membershipIds(actor.userId, actor.tenantId);
+    const membershipIds = await this.membershipIds(
+      actor.userId,
+      actor.tenantId,
+    );
     return resolveScopedBusinessUnitIds({
       canViewAll: canViewAllBusinessUnits(actor),
       membershipIds,
@@ -58,7 +61,10 @@ export class BusinessUnitAccessService {
    * Imobiliário (ou o contrário).
    */
   async resolveRecordIds(actor: BusinessUnitActor) {
-    const membershipIds = await this.membershipIds(actor.userId, actor.tenantId);
+    const membershipIds = await this.membershipIds(
+      actor.userId,
+      actor.tenantId,
+    );
     return resolveScopedBusinessUnitIds({
       canViewAll: canViewAllBusinessUnits(actor),
       membershipIds,
@@ -72,7 +78,7 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.LeadWhereInput | undefined> {
     return leadOrCustomerBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.LeadWhereInput | undefined;
+    );
   }
 
   async customerWhere(
@@ -81,7 +87,7 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.CustomerWhereInput | undefined> {
     return leadOrCustomerBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.CustomerWhereInput | undefined;
+    );
   }
 
   async dealWhere(
@@ -90,7 +96,7 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.DealWhereInput | undefined> {
     return directBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.DealWhereInput | undefined;
+    );
   }
 
   async propertyWhere(
@@ -99,7 +105,7 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.PropertyWhereInput | undefined> {
     return directBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.PropertyWhereInput | undefined;
+    );
   }
 
   async followUpWhere(
@@ -108,7 +114,7 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.LeadFollowUpWhereInput | undefined> {
     return directBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.LeadFollowUpWhereInput | undefined;
+    );
   }
 
   async renewalWhere(
@@ -117,15 +123,13 @@ export class BusinessUnitAccessService {
   ): Promise<Prisma.PolicyRenewalWhereInput | undefined> {
     return directBusinessUnitWhere(
       await this.resolveIds(actor, requestedBusinessUnitId),
-    ) as Prisma.PolicyRenewalWhereInput | undefined;
+    );
   }
 
   async quoteComparisonWhere(
     actor: BusinessUnitActor,
   ): Promise<Prisma.QuoteComparisonWhereInput | undefined> {
-    return relatedLeadCustomerDealWhere(
-      await this.resolveIds(actor),
-    ) as Prisma.QuoteComparisonWhereInput | undefined;
+    return relatedLeadCustomerDealWhere(await this.resolveIds(actor));
   }
 
   async proposalWhere(
@@ -144,9 +148,7 @@ export class BusinessUnitAccessService {
   async activityWhere(
     actor: BusinessUnitActor,
   ): Promise<Prisma.ActivityWhereInput | undefined> {
-    return relatedLeadCustomerDealWhere(
-      await this.resolveIds(actor),
-    ) as Prisma.ActivityWhereInput | undefined;
+    return relatedLeadCustomerDealWhere(await this.resolveIds(actor));
   }
 
   async communicationWhere(
@@ -177,9 +179,7 @@ export class BusinessUnitAccessService {
         { businessUnitId: { in: ids } },
         {
           customer:
-            related && !('id' in related)
-              ? (related as Prisma.CustomerWhereInput)
-              : { id: { in: [] } },
+            related && !('id' in related) ? related : { id: { in: [] } },
         },
       ],
     };
@@ -192,7 +192,9 @@ export class BusinessUnitAccessService {
     if (ids === null) return undefined;
     if (ids.length === 0) return { id: { in: [] } };
     return {
-      customer: leadOrCustomerBusinessUnitWhere(ids) as Prisma.CustomerWhereInput,
+      customer: leadOrCustomerBusinessUnitWhere(
+        ids,
+      ) as Prisma.CustomerWhereInput,
     };
   }
 
@@ -209,9 +211,9 @@ export class BusinessUnitAccessService {
     id: string,
   ) {
     const extra = actor
-      ? (leadOrCustomerBusinessUnitWhere(
-          await this.resolveRecordIds(actor),
-        ) as Prisma.LeadWhereInput | undefined)
+      ? (leadOrCustomerBusinessUnitWhere(await this.resolveRecordIds(actor)) as
+          | Prisma.LeadWhereInput
+          | undefined)
       : undefined;
     await this.assertExists(
       this.prisma.lead.findFirst({
@@ -228,9 +230,9 @@ export class BusinessUnitAccessService {
     id: string,
   ) {
     const extra = actor
-      ? (leadOrCustomerBusinessUnitWhere(
-          await this.resolveRecordIds(actor),
-        ) as Prisma.CustomerWhereInput | undefined)
+      ? (leadOrCustomerBusinessUnitWhere(await this.resolveRecordIds(actor)) as
+          | Prisma.CustomerWhereInput
+          | undefined)
       : undefined;
     await this.assertExists(
       this.prisma.customer.findFirst({

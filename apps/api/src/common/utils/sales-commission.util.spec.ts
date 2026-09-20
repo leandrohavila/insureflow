@@ -7,7 +7,11 @@ import {
 describe('sales-commission', () => {
   it('calcula percentual e 1 aluguel (100%)', () => {
     expect(
-      computeCommissionValue({ dealValue: 1000, percentage: 15, productType: 'AUTO' }),
+      computeCommissionValue({
+        dealValue: 1000,
+        percentage: 15,
+        productType: 'AUTO',
+      }),
     ).toBe(150);
     expect(
       computeCommissionValue({
@@ -23,7 +27,10 @@ describe('sales-commission', () => {
       defaultCommissionPercent({ productType: 'VIDA', unitType: 'INSURANCE' }),
     ).toBe(25);
     expect(
-      defaultCommissionPercent({ productType: 'VENDA', unitType: 'REAL_ESTATE' }),
+      defaultCommissionPercent({
+        productType: 'VENDA',
+        unitType: 'REAL_ESTATE',
+      }),
     ).toBe(3);
   });
 

@@ -9,7 +9,6 @@ import {
   Validate,
   ValidatorConstraint,
   type ValidatorConstraintInterface,
-  type ValidationArguments,
 } from 'class-validator';
 
 export const PUBLIC_PROPERTY_LEAD_SOURCES = [
@@ -27,9 +26,7 @@ export type PublicPropertyLeadSource =
 export const PROPERTY_LEAD_METADATA_MAX_BYTES = 8192;
 
 @ValidatorConstraint({ name: 'isPropertyLeadMetadata', async: false })
-export class IsPropertyLeadMetadataConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsPropertyLeadMetadataConstraint implements ValidatorConstraintInterface {
   validate(value: unknown) {
     if (value === undefined || value === null) return true;
     if (typeof value !== 'object' || Array.isArray(value)) return false;
@@ -40,7 +37,7 @@ export class IsPropertyLeadMetadataConstraint
     }
   }
 
-  defaultMessage(_args: ValidationArguments) {
+  defaultMessage() {
     return `metadata deve ser um objeto JSON de até ${PROPERTY_LEAD_METADATA_MAX_BYTES} bytes`;
   }
 }

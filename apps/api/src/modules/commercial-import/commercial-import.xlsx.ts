@@ -1,6 +1,9 @@
 import ExcelJS from 'exceljs';
 
-export async function buildXlsxTemplate(sheetName: string, columns: readonly string[]) {
+export async function buildXlsxTemplate(
+  sheetName: string,
+  columns: readonly string[],
+) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName);
   sheet.addRow([...columns]);
@@ -15,12 +18,13 @@ export async function parseXlsxRows(buffer: Buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as ExcelJS.Buffer);
   const sheet = workbook.worksheets[0];
-  if (!sheet) return { headers: [] as string[], rows: [] as Record<string, string>[] };
+  if (!sheet)
+    return { headers: [] as string[], rows: [] as Record<string, string>[] };
 
   const headerRow = sheet.getRow(1);
   const headers: string[] = [];
   headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-    headers[colNumber - 1] = String(cell.value ?? '').trim();
+    headers[colNumber - 1] = stringifyCell(cell.value);
   });
 
   const rows: Record<string, string>[] = [];
@@ -39,17 +43,35 @@ export async function parseXlsxRows(buffer: Buffer) {
   return { headers, rows };
 }
 
+function stringifyUnknown(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value.trim();
+  if (
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    typeof value === 'bigint'
+  ) {
+    return String(value).trim();
+  }
+  if (typeof value === 'symbol') return value.toString();
+  return '';
+}
+
 function stringifyCell(value: ExcelJS.CellValue): string {
   if (value == null) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === 'object' && 'text' in value) return String(value.text ?? '');
-  if (typeof value === 'object' && 'result' in value) {
-    return stringifyCell(value.result as ExcelJS.CellValue);
+  if (typeof value === 'object' && 'text' in value) {
+    return stringifyUnknown(value.text);
   }
-  return String(value).trim();
+  if (typeof value === 'object' && 'result' in value) {
+    return stringifyCell(value.result);
+  }
+  return stringifyUnknown(value);
 }
 
-export function errorLogCsv(errors: Array<{ row: number; field?: string; message: string }>) {
+export function errorLogCsv(
+  errors: Array<{ row: number; field?: string; message: string }>,
+) {
   const lines = ['linha,campo,erro'];
   for (const error of errors) {
     const field = (error.field ?? '').replaceAll('"', '""');

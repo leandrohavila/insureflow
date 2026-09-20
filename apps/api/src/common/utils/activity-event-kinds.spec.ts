@@ -50,7 +50,9 @@ describe('activity-event-kinds', () => {
       'Lead reativado por campanha',
     );
     expect(activityEventLabel('campaign_created')).toBe('Campanha criada');
-    expect(activityEventLabel('communication_sent')).toBe('Comunicação enviada');
+    expect(activityEventLabel('communication_sent')).toBe(
+      'Comunicação enviada',
+    );
     expect(activityEventLabel('communication_delivered')).toBe(
       'Comunicação entregue',
     );

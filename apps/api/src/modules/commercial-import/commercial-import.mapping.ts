@@ -78,7 +78,10 @@ function cell(row: Record<string, string>, ...keys: string[]) {
 
 function parsePremium(raw: string): number | undefined {
   if (!raw.trim()) return undefined;
-  const normalized = raw.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+  const normalized = raw
+    .replace(/\s/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
   const n = Number(normalized);
   if (Number.isNaN(n) || n < 0) return Number.NaN;
   return n;
@@ -101,7 +104,10 @@ function parseDate(value: string): string | undefined {
 
 export function mapInterestProduct(raw: string): string[] {
   if (!raw.trim()) return [];
-  const parts = raw.split(/[;,|/]/).map((part) => part.trim()).filter(Boolean);
+  const parts = raw
+    .split(/[;,|/]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
   const mapped: string[] = [];
   for (const part of parts) {
     const key = part
@@ -142,10 +148,17 @@ export function composeImportNotes(
 export function parseLeadRow(
   rowNumber: number,
   raw: Record<string, string>,
-): { ok: true; data: ParsedLeadImportRow } | { ok: false; errors: ImportRowError[] } {
+):
+  | { ok: true; data: ParsedLeadImportRow }
+  | { ok: false; errors: ImportRowError[] } {
   const errors: ImportRowError[] = [];
   const name = cell(raw, 'Nome');
-  if (!name) errors.push({ row: rowNumber, field: 'Nome', message: 'Nome é obrigatório' });
+  if (!name)
+    errors.push({
+      row: rowNumber,
+      field: 'Nome',
+      message: 'Nome é obrigatório',
+    });
 
   const documentRaw = cell(raw, 'CPF/CNPJ');
   let document: ParsedLeadImportRow['document'];
@@ -219,7 +232,12 @@ export function parseCustomerRow(
   | { ok: false; errors: ImportRowError[] } {
   const errors: ImportRowError[] = [];
   const name = cell(raw, 'Nome');
-  if (!name) errors.push({ row: rowNumber, field: 'Nome', message: 'Nome é obrigatório' });
+  if (!name)
+    errors.push({
+      row: rowNumber,
+      field: 'Nome',
+      message: 'Nome é obrigatório',
+    });
 
   const documentRaw = cell(raw, 'CPF/CNPJ');
   const parsedDoc = parseDocument(documentRaw);
@@ -253,7 +271,11 @@ export function parseCustomerRow(
   const premiumRaw = cell(raw, 'Prêmio', 'Prêmio Anual');
   const premium = parsePremium(premiumRaw);
   if (premiumRaw && Number.isNaN(premium)) {
-    errors.push({ row: rowNumber, field: 'Prêmio', message: 'Prêmio inválido' });
+    errors.push({
+      row: rowNumber,
+      field: 'Prêmio',
+      message: 'Prêmio inválido',
+    });
   }
 
   if (errors.length || !parsedDoc) return { ok: false, errors };

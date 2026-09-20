@@ -24,7 +24,8 @@ export class CommunicationProviderRegistry {
   ) {
     this.providers = {
       INTERNAL: internal,
-      EVOLUTION: evolution ?? new UnconfiguredCommunicationProvider('EVOLUTION'),
+      EVOLUTION:
+        evolution ?? new UnconfiguredCommunicationProvider('EVOLUTION'),
       META: createMetaProvider(),
       ZAPI: createZapiProvider(),
       TWILIO: createTwilioProvider(),

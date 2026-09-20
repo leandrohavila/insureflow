@@ -12,7 +12,9 @@ describe('deal-pipeline', () => {
   });
 
   it('encaixa estágios imobiliários no board de seguros', () => {
-    expect(boardDealStage('visita', 'REAL_ESTATE', 'INSURANCE')).toBe('contato');
+    expect(boardDealStage('visita', 'REAL_ESTATE', 'INSURANCE')).toBe(
+      'contato',
+    );
     expect(boardDealStage('contrato', 'REAL_ESTATE', 'INSURANCE')).toBe(
       'proposta',
     );

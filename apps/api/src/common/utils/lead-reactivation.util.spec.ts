@@ -136,9 +136,7 @@ describe('lead-reactivation.util', () => {
   });
 
   it('calcula dias em atraso', () => {
-    expect(
-      daysOverdue(new Date('2026-08-20T12:00:00.000Z'), now),
-    ).toBe(11);
+    expect(daysOverdue(new Date('2026-08-20T12:00:00.000Z'), now)).toBe(11);
     expect(daysOverdue(now, now)).toBe(0);
   });
 });

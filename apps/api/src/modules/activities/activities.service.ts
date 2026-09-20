@@ -68,11 +68,7 @@ export class ActivitiesService {
     };
   }
 
-  async findActivity(
-    tenantId: string,
-    id: string,
-    actor?: BusinessUnitActor,
-  ) {
+  async findActivity(tenantId: string, id: string, actor?: BusinessUnitActor) {
     if (this.buAccess) {
       await this.buAccess.assertActivityVisible(actor, tenantId, id);
     }
@@ -120,7 +116,7 @@ export class ActivitiesService {
           completedAt:
             (dto.status ?? 'pending') === 'completed' ? new Date() : null,
         },
-      ) as Prisma.ActivityUncheckedCreateInput,
+      ),
       include: activityInclude,
     });
 
@@ -203,7 +199,7 @@ export class ActivitiesService {
         ...(dto.dealId !== undefined ? { dealId: dto.dealId } : {}),
         ...(dto.customerId !== undefined ? { customerId: dto.customerId } : {}),
         ...(dto.policyId !== undefined ? { policyId: dto.policyId } : {}),
-      } as Prisma.ActivityUncheckedUpdateInput,
+      },
       include: activityInclude,
     });
 

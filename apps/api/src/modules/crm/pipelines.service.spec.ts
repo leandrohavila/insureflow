@@ -16,13 +16,21 @@ describe('PipelinesService', () => {
         isActive: true,
       },
       stages: [
-        { slug: 'cotacao', label: 'Cotação', sortOrder: 2, maxDays: 3, alertTarget: 'OWNER', color: 'primary' },
+        {
+          slug: 'cotacao',
+          label: 'Cotação',
+          sortOrder: 2,
+          maxDays: 3,
+          alertTarget: 'OWNER',
+          color: 'primary',
+        },
       ],
     };
+    const create = jest.fn().mockResolvedValue(created);
     const prisma = {
       businessUnitPipeline: {
         findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue(created),
+        create,
       },
       deal: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
     } as unknown as PrismaService;
@@ -36,13 +44,20 @@ describe('PipelinesService', () => {
       name: 'Corretora',
     });
 
-    expect(prisma.businessUnitPipeline.create).toHaveBeenCalled();
-    const createArg = (prisma.businessUnitPipeline.create as jest.Mock).mock
-      .calls[0][0];
+    expect(create).toHaveBeenCalled();
+    const createArg = create.mock.calls[0][0];
     expect(createArg.data.stages.create).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ slug: 'cotacao', maxDays: 3, alertTarget: 'OWNER' }),
-        expect.objectContaining({ slug: 'proposta', maxDays: 7, alertTarget: 'MANAGER' }),
+        expect.objectContaining({
+          slug: 'cotacao',
+          maxDays: 3,
+          alertTarget: 'OWNER',
+        }),
+        expect.objectContaining({
+          slug: 'proposta',
+          maxDays: 7,
+          alertTarget: 'MANAGER',
+        }),
       ]),
     );
     expect(pipeline.id).toBe('pl-1');

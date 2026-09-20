@@ -26,7 +26,7 @@ export function resolvePrimaryBusinessUnitId(
   ) {
     return primaryBusinessUnitId;
   }
-  return businessUnitIds[0]!;
+  return businessUnitIds[0];
 }
 
 export function assertValidPrimaryForActiveUser(input: {
@@ -42,7 +42,9 @@ export function assertValidPrimaryForActiveUser(input: {
     !input.currentBusinessUnitId ||
     !input.businessUnitIds.includes(input.currentBusinessUnitId)
   ) {
-    throw new BadRequestException(ACTIVE_USER_REQUIRES_PRIMARY_BUSINESS_UNIT_MSG);
+    throw new BadRequestException(
+      ACTIVE_USER_REQUIRES_PRIMARY_BUSINESS_UNIT_MSG,
+    );
   }
 }
 

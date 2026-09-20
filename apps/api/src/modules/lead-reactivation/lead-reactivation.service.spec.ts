@@ -13,10 +13,7 @@ describe('LeadReactivationService.getMetrics', () => {
           .mockResolvedValue([{ leadId: 'a' }, { leadId: 'b' }]),
       },
       lead: {
-        count: jest
-          .fn()
-          .mockResolvedValueOnce(1)
-          .mockResolvedValueOnce(1),
+        count: jest.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
       },
       deal: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { value: 1500 } }),

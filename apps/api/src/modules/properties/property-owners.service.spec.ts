@@ -56,7 +56,7 @@ describe('PropertyOwnersService', () => {
 
   it('define um único principal limpando os demais', async () => {
     const { service, owners } = createService();
-    await service.add(user as never, 'p1', {
+    await service.add(user, 'p1', {
       personId: 'person-1',
       isPrimary: true,
       publicVisible: true,
@@ -74,7 +74,7 @@ describe('PropertyOwnersService', () => {
 
   it('setPrimary também remove o principal anterior', async () => {
     const { service, owners } = createService();
-    await service.setPrimary(user as never, 'p1', 'o1');
+    await service.setPrimary(user, 'p1', 'o1');
     expect(owners.clearPrimary).toHaveBeenCalledWith('p1');
     expect(owners.update).toHaveBeenCalledWith(
       'o1',

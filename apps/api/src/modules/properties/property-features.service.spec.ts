@@ -21,13 +21,22 @@ describe('PropertyFeaturesService.replace', () => {
       findByProperty: jest.fn().mockResolvedValue([
         {
           valueBoolean: true,
-          definition: { key: 'piscina', label: 'Piscina', valueType: 'BOOLEAN' },
+          definition: {
+            key: 'piscina',
+            label: 'Piscina',
+            valueType: 'BOOLEAN',
+          },
         },
       ]),
     };
     const definitions = {
       findMany: jest.fn().mockResolvedValue([
-        { id: 'def-1', valueType: 'BOOLEAN', key: 'piscina', label: 'Piscina' },
+        {
+          id: 'def-1',
+          valueType: 'BOOLEAN',
+          key: 'piscina',
+          label: 'Piscina',
+        },
       ]),
     };
     const service = new PropertyFeaturesService(
@@ -40,7 +49,7 @@ describe('PropertyFeaturesService.replace', () => {
 
   it('grava valor booleano conforme a definição', async () => {
     const { service, features } = createService();
-    const result = await service.replace(user as never, 'p1', {
+    const result = await service.replace(user, 'p1', {
       items: [{ definitionId: 'def-1', value: true }],
     });
     expect(features.deleteByProperty).toHaveBeenCalledWith('p1');

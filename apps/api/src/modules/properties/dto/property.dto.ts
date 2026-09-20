@@ -216,7 +216,7 @@ export class CreatePropertyDto {
     description: 'Destaque ativo até esta data (ISO). Null = sem prazo.',
   })
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value == null || value === '') return null;
     if (value instanceof Date) return value.toISOString();
     return value;

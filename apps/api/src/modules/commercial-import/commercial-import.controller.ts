@@ -10,7 +10,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -57,7 +63,12 @@ export class CommercialImportController {
   @RequirePermissions('leads:manage')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
   @ApiOperation({ summary: 'Pré-visualizar importação de leads' })
   previewLeads(@UploadedFile() file?: { buffer?: Buffer }) {
     return this.imports.previewLeads(this.requireFile(file));
@@ -67,7 +78,12 @@ export class CommercialImportController {
   @RequirePermissions('clients:manage')
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
   @ApiOperation({ summary: 'Pré-visualizar importação de clientes' })
   previewCustomers(@UploadedFile() file?: { buffer?: Buffer }) {
     return this.imports.previewCustomers(this.requireFile(file));

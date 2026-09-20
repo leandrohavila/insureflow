@@ -72,7 +72,9 @@ export function resolveScopedBusinessUnitIds(params: {
   return allowed;
 }
 
-export function leadOrCustomerBusinessUnitWhere(ids: string[] | null):
+export function leadOrCustomerBusinessUnitWhere(
+  ids: string[] | null,
+):
   | { OR: Array<Record<string, unknown>> }
   | { id: { in: string[] } }
   | undefined {
@@ -86,16 +88,17 @@ export function leadOrCustomerBusinessUnitWhere(ids: string[] | null):
   };
 }
 
-export function directBusinessUnitWhere(ids: string[] | null):
-  | { businessUnitId: { in: string[] } }
-  | { id: { in: string[] } }
-  | undefined {
+export function directBusinessUnitWhere(
+  ids: string[] | null,
+): { businessUnitId: { in: string[] } } | { id: { in: string[] } } | undefined {
   if (ids === null) return undefined;
   if (ids.length === 0) return { id: { in: [] } };
   return { businessUnitId: { in: ids } };
 }
 
-export function relatedLeadCustomerDealWhere(ids: string[] | null):
+export function relatedLeadCustomerDealWhere(
+  ids: string[] | null,
+):
   | { OR: Array<Record<string, unknown>> }
   | { id: { in: string[] } }
   | undefined {

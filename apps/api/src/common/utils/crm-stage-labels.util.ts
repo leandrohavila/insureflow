@@ -1,6 +1,4 @@
-import {
-  CRM_DEAL_STATUSES,
-} from '../../modules/crm/dto/deal.dto';
+import { CRM_DEAL_STATUSES } from '../../modules/crm/dto/deal.dto';
 export const CRM_STAGE_LABELS: Record<string, string> = {
   novo: 'Novo Lead',
   qualificacao: 'Qualificação',
@@ -25,7 +23,7 @@ export const CRM_STATUS_LABELS: Record<
 };
 
 export function crmStageLabel(stage: string): string {
-  return CRM_STAGE_LABELS[stage as keyof typeof CRM_STAGE_LABELS] ?? stage;
+  return CRM_STAGE_LABELS[stage] ?? stage;
 }
 
 export function crmStatusLabel(status: string): string {

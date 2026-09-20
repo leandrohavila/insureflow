@@ -49,7 +49,12 @@ describe('PropertiesRepository filters', () => {
   it('destaque vigente inclui featuredUntil nulo ou futuro', async () => {
     const { repo, findMany } = createRepo();
     await repo.findMany(
-      { tenantId: 't1', featured: true, featuredActiveOnly: true, published: true },
+      {
+        tenantId: 't1',
+        featured: true,
+        featuredActiveOnly: true,
+        published: true,
+      },
       0,
       12,
     );
@@ -59,7 +64,10 @@ describe('PropertiesRepository filters', () => {
         { featured: true },
         { published: true },
         {
-          OR: [{ featuredUntil: null }, { featuredUntil: { gt: expect.any(Date) } }],
+          OR: [
+            { featuredUntil: null },
+            { featuredUntil: { gt: expect.any(Date) } },
+          ],
         },
       ]),
     );

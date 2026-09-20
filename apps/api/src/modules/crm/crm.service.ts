@@ -19,7 +19,10 @@ import {
 } from '../../common/utils/crm-stage-labels.util';
 import { nextPipelineOrder } from '../../common/utils/pipeline-order.util';
 import { logDealContract } from '../../common/utils/deal-contract-debug';
-import { computeDealScore, resolveDealSourceType } from '../../common/utils/deal-score.util';
+import {
+  computeDealScore,
+  resolveDealSourceType,
+} from '../../common/utils/deal-score.util';
 import { computeStageSla } from '../../common/utils/deal-pipeline.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { serializeQuoteComparisonSummary } from '../quotes/quote-serialize.util';
@@ -261,7 +264,9 @@ export class CrmService {
         ...(dto.businessUnitId !== undefined
           ? { businessUnitId: dto.businessUnitId || null }
           : {}),
-        ...(dto.productType !== undefined ? { productType: dto.productType } : {}),
+        ...(dto.productType !== undefined
+          ? { productType: dto.productType }
+          : {}),
         ...(dto.stage !== undefined &&
         previous?.stage &&
         dto.stage !== previous.stage

@@ -37,7 +37,9 @@ export class CreatePersonDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? undefined : value))
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : value,
+  )
   @IsEmail()
   @MaxLength(160)
   email?: string;

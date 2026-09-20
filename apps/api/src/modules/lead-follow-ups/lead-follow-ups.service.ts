@@ -13,8 +13,14 @@ import {
   scheduleFollowUpAt,
   subtractUtcDays,
 } from '../../common/utils/commercial-recovery.util';
-import { addUtcDays, startOfUtcDay } from '../../common/utils/lead-reactivation.util';
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  addUtcDays,
+  startOfUtcDay,
+} from '../../common/utils/lead-reactivation.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
@@ -116,11 +122,7 @@ export class LeadFollowUpsService {
     };
   }
 
-  async findOne(
-    tenantId: string,
-    id: string,
-    actor?: BusinessUnitActor,
-  ) {
+  async findOne(tenantId: string, id: string, actor?: BusinessUnitActor) {
     if (this.buAccess) {
       await this.buAccess.assertFollowUpVisible(actor, tenantId, id);
     }
@@ -182,7 +184,9 @@ export class LeadFollowUpsService {
           ? { scheduledAt: new Date(dto.scheduledAt) }
           : {}),
         ...(dto.type !== undefined ? { type: dto.type } : {}),
-        ...(dto.notes !== undefined ? { notes: dto.notes?.trim() || null } : {}),
+        ...(dto.notes !== undefined
+          ? { notes: dto.notes?.trim() || null }
+          : {}),
         ...(dto.assignedUserId !== undefined
           ? { assignedUserId: dto.assignedUserId || null }
           : {}),
@@ -338,7 +342,10 @@ export class LeadFollowUpsService {
       else summary.dueAlerts += 1;
     }
 
-    summary.forgottenCreated = await this.createForgottenFollowUps(now, tenantId);
+    summary.forgottenCreated = await this.createForgottenFollowUps(
+      now,
+      tenantId,
+    );
     return summary;
   }
 

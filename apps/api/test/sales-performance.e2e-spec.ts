@@ -38,10 +38,18 @@ describe('Sales performance (e2e)', () => {
       wonDeals: 3,
     });
     getRanking.mockReset().mockResolvedValue([
-      { id: 'u1', name: 'Ana', revenue: 50000, wonDeals: 3, conversionRate: 50 },
+      {
+        id: 'u1',
+        name: 'Ana',
+        revenue: 50000,
+        wonDeals: 3,
+        conversionRate: 50,
+      },
     ]);
     listTargets.mockReset().mockResolvedValue([]);
-    listCommissions.mockReset().mockResolvedValue({ data: [], meta: { total: 0 } });
+    listCommissions
+      .mockReset()
+      .mockResolvedValue({ data: [], meta: { total: 0 } });
     listRules.mockReset().mockResolvedValue([]);
 
     const moduleFixture: TestingModule = await Test.createTestingModule({

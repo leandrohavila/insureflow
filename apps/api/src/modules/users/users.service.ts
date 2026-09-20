@@ -56,7 +56,13 @@ const userSelect = {
       businessUnitId: true,
       createdAt: true,
       businessUnit: {
-        select: { id: true, name: true, slug: true, type: true, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          type: true,
+          isActive: true,
+        },
       },
     },
   },
@@ -434,9 +440,7 @@ export class UsersService {
     return roles;
   }
 
-  private assertGoLiveAssignableRoles(
-    roles: ReadonlyArray<{ slug: string }>,
-  ) {
+  private assertGoLiveAssignableRoles(roles: ReadonlyArray<{ slug: string }>) {
     const invalid = roles.filter((r) => !isGoLiveAssignableRole(r.slug));
     if (invalid.length > 0) {
       throw new BadRequestException(

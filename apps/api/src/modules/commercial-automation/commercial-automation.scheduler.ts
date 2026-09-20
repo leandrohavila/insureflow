@@ -2,7 +2,10 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Queue } from 'bullmq';
 
-import { LEAD_REACTIVATION_JOB, LEAD_REACTIVATION_QUEUE } from '../lead-reactivation/lead-reactivation.constants';
+import {
+  LEAD_REACTIVATION_JOB,
+  LEAD_REACTIVATION_QUEUE,
+} from '../lead-reactivation/lead-reactivation.constants';
 import {
   COMMERCIAL_AUTOMATION_JOB,
   COMMERCIAL_AUTOMATION_QUEUE,

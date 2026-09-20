@@ -1,4 +1,4 @@
-import { backendFetch, proxyBackendResponse } from "@/lib/api/backend"
+import { backendFetch } from "@/lib/api/backend"
 
 type PropertyListPayload = {
   data?: unknown[]

@@ -1,7 +1,10 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { addUtcDays, startOfUtcDay } from '../../common/utils/lead-reactivation.util';
+import {
+  addUtcDays,
+  startOfUtcDay,
+} from '../../common/utils/lead-reactivation.util';
 import { subtractUtcDays } from '../../common/utils/commercial-recovery.util';
 import {
   andWhere,
@@ -36,7 +39,10 @@ export class CommercialAutomationService {
 
   async runTenant(tenantId: string, now = new Date()) {
     const reactivation = await this.reactivation.processTenant(tenantId);
-    const followUps = await this.followUps.processDailyAutomation(now, tenantId);
+    const followUps = await this.followUps.processDailyAutomation(
+      now,
+      tenantId,
+    );
     const renewals = await this.renewals.processDailyAutomation(now, tenantId);
     const sla = await this.sla.processTenant(tenantId, now);
     return { reactivation, followUps, renewals, sla };
@@ -74,19 +80,23 @@ export class CommercialAutomationService {
     };
 
     if (actor && this.buAccess) {
-      const [leadWhere, followWhere, renewalWhere, dealWhere] = await Promise.all([
-        this.buAccess.leadWhere(actor, query.businessUnitId),
-        this.buAccess.followUpWhere(actor, query.businessUnitId),
-        this.buAccess.renewalWhere(actor, query.businessUnitId),
-        this.buAccess.dealWhere(actor, query.businessUnitId),
-      ]);
+      const [leadWhere, followWhere, renewalWhere, dealWhere] =
+        await Promise.all([
+          this.buAccess.leadWhere(actor, query.businessUnitId),
+          this.buAccess.followUpWhere(actor, query.businessUnitId),
+          this.buAccess.renewalWhere(actor, query.businessUnitId),
+          this.buAccess.dealWhere(actor, query.businessUnitId),
+        ]);
       if (leadWhere) leadScope = andWhere(leadScope, leadWhere);
       if (followWhere) followUpScope = andWhere(followUpScope, followWhere);
       if (renewalWhere) renewalScope = andWhere(renewalScope, renewalWhere);
       if (dealWhere) dealScope = andWhere(dealScope, dealWhere);
     } else if (query.businessUnitId) {
       leadScope = { ...leadScope, businessUnitId: query.businessUnitId };
-      followUpScope = { ...followUpScope, businessUnitId: query.businessUnitId };
+      followUpScope = {
+        ...followUpScope,
+        businessUnitId: query.businessUnitId,
+      };
       renewalScope = { ...renewalScope, businessUnitId: query.businessUnitId };
       dealScope = { ...dealScope, businessUnitId: query.businessUnitId };
     }

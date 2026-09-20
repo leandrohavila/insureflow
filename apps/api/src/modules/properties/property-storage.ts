@@ -114,7 +114,10 @@ export function mimeFromFilename(filename: string) {
   return EXT_TO_MIME[ext] ?? 'application/octet-stream';
 }
 
-export async function savePropertyImage(file: MemoryUpload, propertyId: string) {
+export async function savePropertyImage(
+  file: MemoryUpload,
+  propertyId: string,
+) {
   const ext = MIME_TO_EXT.get(file.mimetype);
   if (!ext || !file.buffer?.length) {
     throw new Error('INVALID_IMAGE');

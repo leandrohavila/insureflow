@@ -67,7 +67,8 @@ export function defaultCommissionPercent(params: {
   if (type && type in DEFAULT_COMMISSION_RATES.INSURANCE) {
     const insurance =
       DEFAULT_COMMISSION_RATES.INSURANCE[type as CommissionProductType];
-    if (insurance != null && params.unitType !== 'REAL_ESTATE') return insurance;
+    if (insurance != null && params.unitType !== 'REAL_ESTATE')
+      return insurance;
   }
   if (type && type in DEFAULT_COMMISSION_RATES.REAL_ESTATE) {
     const realEstate =

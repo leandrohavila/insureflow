@@ -36,7 +36,9 @@ describe('PolicyRenewalsService', () => {
       },
       policy: { findMany: jest.fn() },
       deal: { create: jest.fn() },
-      dealStageHistory: { create: jest.fn().mockResolvedValue({ id: 'hist-1' }) },
+      dealStageHistory: {
+        create: jest.fn().mockResolvedValue({ id: 'hist-1' }),
+      },
       businessUnitPipeline: {
         findUnique: jest.fn().mockResolvedValue({ id: 'pl-1' }),
       },
@@ -49,7 +51,11 @@ describe('PolicyRenewalsService', () => {
       { publish } as unknown as ActivityEngineService,
       { findActiveForChannel: jest.fn() } as unknown as MessageTemplatesService,
       {
-        dispatch: jest.fn().mockResolvedValue({ id: 'comm-1', status: 'sent', provider: 'INTERNAL' }),
+        dispatch: jest.fn().mockResolvedValue({
+          id: 'comm-1',
+          status: 'sent',
+          provider: 'INTERNAL',
+        }),
         resolveRecipient: jest.fn().mockResolvedValue('+5511999999999'),
       } as never,
     );
@@ -85,9 +91,8 @@ describe('PolicyRenewalsService', () => {
   it('gera tarefa, lembrete e oportunidade conforme a janela', async () => {
     const { service } = createService();
     const now = new Date(Date.UTC(2026, 7, 20));
-    const prisma = (
-      service as unknown as { prisma: PrismaService }
-    ).prisma as unknown as {
+    const prisma = (service as unknown as { prisma: PrismaService })
+      .prisma as unknown as {
       policy: { findMany: jest.Mock };
       policyRenewal: {
         findFirst: jest.Mock;

@@ -4,7 +4,10 @@ import { Prisma } from '@prisma/client';
 import { interestCategoryLabel } from '../../common/constants/interest-categories';
 import { suggestCrossSellCategories } from '../../common/utils/cross-sell-rules.util';
 import { renderMessageTemplate } from '../../common/utils/message-template-render.util';
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CommunicationsService } from '../communications/communications.service';
@@ -23,7 +26,11 @@ export class CrossSellService {
     @Optional() private readonly buAccess?: BusinessUnitAccessService,
   ) {}
 
-  async findAll(tenantId: string, query: ListCrossSellQueryDto, actor?: BusinessUnitActor) {
+  async findAll(
+    tenantId: string,
+    query: ListCrossSellQueryDto,
+    actor?: BusinessUnitActor,
+  ) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     let where: Prisma.CrossSellOpportunityWhereInput = {
@@ -88,7 +95,8 @@ export class CrossSellService {
     return {
       generated,
       converted,
-      conversionRate: generated === 0 ? 0 : Math.round((converted / generated) * 1000) / 10,
+      conversionRate:
+        generated === 0 ? 0 : Math.round((converted / generated) * 1000) / 10,
       revenueFromCrossSell: Number(revenue._sum.convertedRevenue ?? 0),
     };
   }

@@ -4,9 +4,11 @@ import type { BusinessUnitsService } from '../business-units/business-units.serv
 
 describe('MessageTemplatesService', () => {
   it('cria template de reativação', async () => {
-    const create = jest.fn().mockImplementation(({ data }) =>
-      Promise.resolve({ id: 'tpl-1', ...data }),
-    );
+    const create = jest
+      .fn()
+      .mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'tpl-1', ...data }),
+      );
     const prisma = {
       messageTemplate: { create },
     } as unknown as PrismaService;

@@ -45,7 +45,7 @@ describe('UsersService super_admin escalation guard', () => {
       [adminRoleId]: { id: adminRoleId, slug: 'admin' },
       [operadorRoleId]: { id: operadorRoleId, slug: 'operador' },
     };
-    return ids.map((id) => byId[id]!);
+    return ids.map((id) => byId[id]);
   }
 
   function createService() {
@@ -81,7 +81,11 @@ describe('UsersService super_admin escalation guard', () => {
                 {
                   userId,
                   roleId: operadorRoleId,
-                  role: { id: operadorRoleId, name: 'Operador', slug: 'operador' },
+                  role: {
+                    id: operadorRoleId,
+                    name: 'Operador',
+                    slug: 'operador',
+                  },
                 },
               ]
             : [
@@ -107,7 +111,7 @@ describe('UsersService super_admin escalation guard', () => {
     const userRoleCreateMany = jest.fn().mockResolvedValue({ count: 1 });
     const userRoleDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
 
-    const transaction = jest.fn().mockImplementation(async (fn) =>
+    const transaction = jest.fn().mockImplementation((fn) =>
       fn({
         user: {
           create: userCreate,
@@ -131,9 +135,12 @@ describe('UsersService super_admin escalation guard', () => {
         update: userUpdate,
       },
       businessUnit: {
-        count: jest.fn().mockImplementation(({ where }: { where: { id?: { in: string[] } } }) =>
-          Promise.resolve(where.id?.in?.length ?? 0),
-        ),
+        count: jest
+          .fn()
+          .mockImplementation(
+            ({ where }: { where: { id?: { in: string[] } } }) =>
+              Promise.resolve(where.id?.in?.length ?? 0),
+          ),
       },
       refreshToken: { deleteMany: jest.fn() },
       $transaction: transaction,
@@ -166,22 +173,30 @@ describe('UsersService super_admin escalation guard', () => {
       const { service } = createService();
 
       await expect(
-        service.create(tenantId, {
-          ...createPayload([superAdminRoleId]),
-          email: 'new-super@example.com',
-          name: 'New Super',
-        }, adminActor),
+        service.create(
+          tenantId,
+          {
+            ...createPayload([superAdminRoleId]),
+            email: 'new-super@example.com',
+            name: 'New Super',
+          },
+          adminActor,
+        ),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('permite super_admin criar super_admin', async () => {
       const { service, transaction } = createService();
 
-      await service.create(tenantId, {
-        ...createPayload([superAdminRoleId]),
-        email: 'new-super@example.com',
-        name: 'New Super',
-      }, superAdminActor);
+      await service.create(
+        tenantId,
+        {
+          ...createPayload([superAdminRoleId]),
+          email: 'new-super@example.com',
+          name: 'New Super',
+        },
+        superAdminActor,
+      );
 
       expect(transaction).toHaveBeenCalled();
     });
@@ -189,11 +204,15 @@ describe('UsersService super_admin escalation guard', () => {
     it('permite actor com tenants:manage criar super_admin', async () => {
       const { service, transaction } = createService();
 
-      await service.create(tenantId, {
-        ...createPayload([superAdminRoleId]),
-        email: 'new-super@example.com',
-        name: 'New Super',
-      }, tenantManageActor);
+      await service.create(
+        tenantId,
+        {
+          ...createPayload([superAdminRoleId]),
+          email: 'new-super@example.com',
+          name: 'New Super',
+        },
+        tenantManageActor,
+      );
 
       expect(transaction).toHaveBeenCalled();
     });
@@ -201,11 +220,15 @@ describe('UsersService super_admin escalation guard', () => {
     it('permite admin criar perfil não-super_admin', async () => {
       const { service, transaction } = createService();
 
-      await service.create(tenantId, {
-        ...createPayload([operadorRoleId]),
-        email: 'operador@example.com',
-        name: 'Operador',
-      }, adminActor);
+      await service.create(
+        tenantId,
+        {
+          ...createPayload([operadorRoleId]),
+          email: 'operador@example.com',
+          name: 'Operador',
+        },
+        adminActor,
+      );
 
       expect(transaction).toHaveBeenCalled();
     });
@@ -366,7 +389,10 @@ describe('UsersService super_admin escalation guard', () => {
         },
       ]);
 
-      const result = await service.listAssignableRoles(tenantId, superAdminActor);
+      const result = await service.listAssignableRoles(
+        tenantId,
+        superAdminActor,
+      );
       expect(result.data.map((r) => r.slug)).toContain('super_admin');
     });
   });

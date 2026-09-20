@@ -59,7 +59,10 @@ describe('Customer 360 contract (e2e)', () => {
       conversionRate: 12.5,
       brokers: [],
     });
-    findAll.mockResolvedValue({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 1 } });
+    findAll.mockResolvedValue({
+      data: [],
+      meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+    });
     findOne.mockImplementation((_tenant: string, id: string) => {
       if (id === 'opp-corretora') return { id, type: 'AUTO_INSURANCE' };
       throw new NotFoundException('Oportunidade não encontrada');

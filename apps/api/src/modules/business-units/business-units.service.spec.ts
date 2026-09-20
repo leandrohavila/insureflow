@@ -16,9 +16,11 @@ describe('BusinessUnitsService', () => {
       },
     ]);
     const findFirst = jest.fn().mockResolvedValue(null);
-    const create = jest.fn().mockImplementation(({ data }) =>
-      Promise.resolve({ id: 'bu-new', ...data }),
-    );
+    const create = jest
+      .fn()
+      .mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'bu-new', ...data }),
+      );
 
     const prisma = {
       businessUnit: { findMany, findFirst, create },
@@ -28,7 +30,9 @@ describe('BusinessUnitsService', () => {
     const buAccess = {
       resolveIds: jest.fn().mockResolvedValue(null),
       membershipIds: jest.fn().mockResolvedValue(['bu-1']),
-      describe: jest.fn().mockReturnValue({ canViewAll: true, canManage: true }),
+      describe: jest
+        .fn()
+        .mockReturnValue({ canViewAll: true, canManage: true }),
     };
 
     const auth = {

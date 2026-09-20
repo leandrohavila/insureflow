@@ -157,7 +157,9 @@ export class CreatePolicyRenewalDto {
   policyId?: string;
 }
 
-export class UpdatePolicyRenewalDto extends PartialType(CreatePolicyRenewalDto) {
+export class UpdatePolicyRenewalDto extends PartialType(
+  CreatePolicyRenewalDto,
+) {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })

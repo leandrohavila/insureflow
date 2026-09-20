@@ -1,11 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
-import {
-  IsDateString,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 import { optionalEmptyValue } from '../../../common/dto/optional-value.util';
 

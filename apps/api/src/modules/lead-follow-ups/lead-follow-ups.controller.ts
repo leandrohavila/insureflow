@@ -69,7 +69,9 @@ export class LeadFollowUpsController {
 
   @Patch(':id')
   @RequirePermissions('crm:manage')
-  @ApiOperation({ summary: 'Atualizar follow-up (concluir, remarcar, cancelar)' })
+  @ApiOperation({
+    summary: 'Atualizar follow-up (concluir, remarcar, cancelar)',
+  })
   update(
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,

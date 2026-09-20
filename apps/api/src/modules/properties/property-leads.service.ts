@@ -47,7 +47,10 @@ export class PropertyLeadsService {
       if (!property || !property.published) {
         throw new NotFoundException('Imóvel não encontrado');
       }
-      if (ctx.businessUnitId && property.businessUnitId !== ctx.businessUnitId) {
+      if (
+        ctx.businessUnitId &&
+        property.businessUnitId !== ctx.businessUnitId
+      ) {
         throw new NotFoundException('Imóvel não encontrado');
       }
 

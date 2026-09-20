@@ -32,7 +32,9 @@ describe('CrossSellService.generateForCustomer', () => {
   });
 
   it('envia comunicação ao marcar oportunidade como CONTACTED', async () => {
-    const dispatch = jest.fn().mockResolvedValue({ id: 'log-1', status: 'sent' });
+    const dispatch = jest
+      .fn()
+      .mockResolvedValue({ id: 'log-1', status: 'sent' });
     const prisma = {
       crossSellOpportunity: {
         findFirst: jest.fn().mockResolvedValue({

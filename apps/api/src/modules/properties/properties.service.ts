@@ -9,7 +9,11 @@ import type { Prisma } from '@prisma/client';
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import type { CreatePropertyDto, ListPropertiesQueryDto, UpdatePropertyDto } from './dto/property.dto';
+import type {
+  CreatePropertyDto,
+  ListPropertiesQueryDto,
+  UpdatePropertyDto,
+} from './dto/property.dto';
 import {
   deleteLocalPropertyFile,
   isAllowedImageMime,
@@ -78,7 +82,12 @@ export class PropertiesService {
     }
   }
 
-  private async uniqueSlug(tenantId: string, title: string, requested?: string, excludeId?: string) {
+  private async uniqueSlug(
+    tenantId: string,
+    title: string,
+    requested?: string,
+    excludeId?: string,
+  ) {
     const base = slugifyTitle(requested?.trim() || title);
     let slug = base;
     let n = 2;
@@ -197,11 +206,15 @@ export class PropertiesService {
 
     const updated = await this.properties.update(id, {
       ...(dto.title != null ? { title: dto.title } : {}),
-      ...(dto.description !== undefined ? { description: dto.description } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description }
+        : {}),
       ...(dto.purpose ? { purpose: dto.purpose } : {}),
       ...(dto.type ? { type: dto.type } : {}),
       ...(dto.city != null ? { city: dto.city } : {}),
-      ...(dto.neighborhood !== undefined ? { neighborhood: dto.neighborhood } : {}),
+      ...(dto.neighborhood !== undefined
+        ? { neighborhood: dto.neighborhood }
+        : {}),
       ...(dto.address !== undefined ? { address: dto.address } : {}),
       ...(dto.state !== undefined ? { state: dto.state?.toUpperCase() } : {}),
       ...(dto.postalCode !== undefined ? { postalCode: dto.postalCode } : {}),
@@ -209,13 +222,17 @@ export class PropertiesService {
       ...(dto.areaM2 !== undefined ? { areaM2: dto.areaM2 } : {}),
       ...(dto.bedrooms !== undefined ? { bedrooms: dto.bedrooms } : {}),
       ...(dto.bathrooms !== undefined ? { bathrooms: dto.bathrooms } : {}),
-      ...(dto.parkingSpots !== undefined ? { parkingSpots: dto.parkingSpots } : {}),
+      ...(dto.parkingSpots !== undefined
+        ? { parkingSpots: dto.parkingSpots }
+        : {}),
       ...(dto.featured != null ? { featured: dto.featured } : {}),
       ...(dto.featuredUntil !== undefined
         ? { featuredUntil: parseFeaturedUntil(dto.featuredUntil) }
         : {}),
       ...(dto.status ? { status: dto.status } : {}),
-      ...(dto.businessUnitId ? { businessUnit: { connect: { id: dto.businessUnitId } } } : {}),
+      ...(dto.businessUnitId
+        ? { businessUnit: { connect: { id: dto.businessUnitId } } }
+        : {}),
       slug,
     });
     return serializeProperty(updated);
@@ -262,22 +279,27 @@ export class PropertiesService {
     };
   }
 
-  async uploadImages(user: JwtAccessPayload, id: string, files: MemoryUpload[]) {
+  async uploadImages(
+    user: JwtAccessPayload,
+    id: string,
+    files: MemoryUpload[],
+  ) {
     const property = await this.findOne(user, id);
     if (!files?.length) {
       throw new BadRequestException('Envie ao menos uma imagem');
     }
     if (files.length > MAX_UPLOAD_FILES) {
-      throw new BadRequestException(`No máximo ${MAX_UPLOAD_FILES} arquivos por envio`);
+      throw new BadRequestException(
+        `No máximo ${MAX_UPLOAD_FILES} arquivos por envio`,
+      );
     }
 
     const invalid = files.find(
-      (file) => !isAllowedImageMime(file.mimetype) || file.size > MAX_IMAGE_BYTES,
+      (file) =>
+        !isAllowedImageMime(file.mimetype) || file.size > MAX_IMAGE_BYTES,
     );
     if (invalid) {
-      throw new BadRequestException(
-        'Use JPEG, PNG, WebP ou GIF de até 8 MB',
-      );
+      throw new BadRequestException('Use JPEG, PNG, WebP ou GIF de até 8 MB');
     }
 
     const startOrder = await this.images.nextSortOrder(property.id);

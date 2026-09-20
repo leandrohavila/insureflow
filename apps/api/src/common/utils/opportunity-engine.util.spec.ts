@@ -32,9 +32,7 @@ describe('opportunity-engine', () => {
   });
 
   it('não sugere o que o cliente já possui', () => {
-    expect(
-      suggestOpportunities(['AUTO_INSURANCE', 'LIFE_INSURANCE']),
-    ).toEqual([
+    expect(suggestOpportunities(['AUTO_INSURANCE', 'LIFE_INSURANCE'])).toEqual([
       expect.objectContaining({
         type: 'HEALTH_INSURANCE',
         originType: 'LIFE_INSURANCE',

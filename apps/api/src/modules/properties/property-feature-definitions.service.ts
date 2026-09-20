@@ -27,7 +27,12 @@ export class PropertyFeatureDefinitionsService {
     return row;
   }
 
-  private async uniqueKey(tenantId: string, label: string, requested?: string, excludeId?: string) {
+  private async uniqueKey(
+    tenantId: string,
+    label: string,
+    requested?: string,
+    excludeId?: string,
+  ) {
     const base = slugifyKey(requested?.trim() || label);
     let key = base;
     let n = 2;
@@ -62,7 +67,12 @@ export class PropertyFeatureDefinitionsService {
     const current = await this.findOne(tenantId, id);
     const key =
       dto.key || dto.label
-        ? await this.uniqueKey(tenantId, dto.label ?? current.label, dto.key, id)
+        ? await this.uniqueKey(
+            tenantId,
+            dto.label ?? current.label,
+            dto.key,
+            id,
+          )
         : current.key;
     return this.definitions.update(id, {
       ...(dto.label != null ? { label: dto.label.trim() } : {}),

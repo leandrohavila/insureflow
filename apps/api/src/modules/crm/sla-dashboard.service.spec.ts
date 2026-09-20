@@ -35,10 +35,9 @@ describe('SlaDashboardService', () => {
     } as unknown as PrismaService;
 
     const service = new SlaDashboardService(prisma);
-    const result = await service.getDashboard(
-      'tenant-1',
-      { to: '2026-08-20T12:00:00.000Z' },
-    );
+    const result = await service.getDashboard('tenant-1', {
+      to: '2026-08-20T12:00:00.000Z',
+    });
 
     expect(result.openDeals).toBe(2);
     expect(result.overdue).toBe(1);

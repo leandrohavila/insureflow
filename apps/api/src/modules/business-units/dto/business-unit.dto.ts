@@ -66,7 +66,7 @@ export class UpdateBusinessUnitContextDto {
     nullable: true,
     description: 'ID da empresa ativa. null = Todas.',
   })
-  @Transform(({ value }) => (value === '' ? null : value))
+  @Transform(({ value }: { value: unknown }) => (value === '' ? null : value))
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsString()

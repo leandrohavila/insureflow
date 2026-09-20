@@ -28,7 +28,9 @@ export class CreateLeadLossReasonDto {
   @MaxLength(120)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'Cliente sem capacidade financeira no momento.' })
+  @ApiPropertyOptional({
+    example: 'Cliente sem capacidade financeira no momento.',
+  })
   @Transform(optionalEmptyValue)
   @IsOptional()
   @IsString()

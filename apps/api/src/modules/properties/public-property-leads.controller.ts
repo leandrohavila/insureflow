@@ -16,7 +16,8 @@ export class PublicPropertyLeadsController {
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiOperation({
-    summary: 'Capturar interesse no portal (imóvel opcional; source + metadata)',
+    summary:
+      'Capturar interesse no portal (imóvel opcional; source + metadata)',
   })
   create(@Body() dto: CreatePublicPropertyLeadDto) {
     return this.leads.createPublic(dto);
