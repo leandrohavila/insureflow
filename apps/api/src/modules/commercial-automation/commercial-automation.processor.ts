@@ -26,9 +26,7 @@ export class CommercialAutomationProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job | undefined, err: Error): void {
-    this.log.error(
-      `CommercialAutomationJob ${job?.id} failed: ${err.message}`,
-    );
+    this.log.error(`CommercialAutomationJob ${job?.id} failed: ${err.message}`);
   }
 
   @OnWorkerEvent('error')

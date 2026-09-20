@@ -23,7 +23,8 @@ describe('LeadsService.createLead', () => {
     };
 
     const leadCreate = jest.fn().mockImplementation(({ data }) => {
-      const { businessUnits: _nested, ...rest } = data;
+      const { businessUnits, ...rest } = data;
+      void businessUnits;
       return Promise.resolve({
         ...rest,
         id: 'lead-new-1',
@@ -96,7 +97,9 @@ describe('LeadsService.createLead', () => {
 
     const activityEngine = {} as ActivityEngineService;
     const businessUnits = {
-      assertIds: jest.fn(async (_tenant: string, ids: string[]) => ids),
+      assertIds: jest.fn((_tenant: string, ids: string[]) =>
+        Promise.resolve(ids),
+      ),
     } as unknown as BusinessUnitsService;
 
     const followUps = {

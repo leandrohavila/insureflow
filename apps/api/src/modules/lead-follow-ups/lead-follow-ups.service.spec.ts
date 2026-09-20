@@ -36,10 +36,9 @@ describe('LeadFollowUpsService', () => {
       $transaction: jest.fn(),
     } as unknown as PrismaService;
 
-    const service = new LeadFollowUpsService(
-      prisma,
-      { publish } as unknown as ActivityEngineService,
-    );
+    const service = new LeadFollowUpsService(prisma, {
+      publish,
+    } as unknown as ActivityEngineService);
 
     return { service, followUpCreate, publish };
   }

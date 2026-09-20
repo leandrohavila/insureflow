@@ -59,7 +59,9 @@ export class PropertyFeatureDefinitionsController {
 
   @Delete(':id')
   @RequirePermissions('properties:manage')
-  @ApiOperation({ summary: 'Excluir característica (remove valores associados)' })
+  @ApiOperation({
+    summary: 'Excluir característica (remove valores associados)',
+  })
   remove(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
     return this.definitions.remove(user.tenantId, id);
   }

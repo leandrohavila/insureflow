@@ -28,9 +28,9 @@ describe('UsersService primary business unit (P1)', () => {
   };
 
   function createService() {
-    const roleFindMany = jest.fn().mockResolvedValue([
-      { id: operadorRoleId, slug: 'operador' },
-    ]);
+    const roleFindMany = jest
+      .fn()
+      .mockResolvedValue([{ id: operadorRoleId, slug: 'operador' }]);
 
     const userFindFirst = jest.fn().mockImplementation(({ where }) => {
       if (where.email) return Promise.resolve(null);
@@ -143,7 +143,7 @@ describe('UsersService primary business unit (P1)', () => {
     const buCreateMany = jest.fn().mockResolvedValue({ count: 1 });
     const buDeleteMany = jest.fn().mockResolvedValue({ count: 1 });
 
-    const transaction = jest.fn().mockImplementation(async (fn) =>
+    const transaction = jest.fn().mockImplementation((fn) =>
       fn({
         user: {
           create: userCreate,
@@ -167,9 +167,12 @@ describe('UsersService primary business unit (P1)', () => {
         update: userUpdate,
       },
       businessUnit: {
-        count: jest.fn().mockImplementation(({ where }: { where: { id: { in: string[] } } }) =>
-          Promise.resolve(where.id.in.length),
-        ),
+        count: jest
+          .fn()
+          .mockImplementation(
+            ({ where }: { where: { id: { in: string[] } } }) =>
+              Promise.resolve(where.id.in.length),
+          ),
       },
       refreshToken: { deleteMany: jest.fn() },
       $transaction: transaction,

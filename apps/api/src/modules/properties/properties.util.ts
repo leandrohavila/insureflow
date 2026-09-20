@@ -48,7 +48,9 @@ export function decimalToNumber(
 ) {
   if (value == null) return null;
   if (typeof value === 'number') return value;
-  return typeof value.toNumber === 'function' ? value.toNumber() : Number(value);
+  return typeof value.toNumber === 'function'
+    ? value.toNumber()
+    : Number(value);
 }
 
 type ImageRow = {
@@ -156,9 +158,10 @@ export function serializePublicProperty<
   },
 >(row: T) {
   const serialized = serializeProperty(row);
-  const { owners: _owners, ...safe } = serialized as typeof serialized & {
+  const { owners, ...safe } = serialized as typeof serialized & {
     owners?: unknown;
   };
+  void owners;
   const primary = (row.owners ?? []).find(
     (owner) => owner.isPrimary && owner.publicVisible && owner.person,
   );

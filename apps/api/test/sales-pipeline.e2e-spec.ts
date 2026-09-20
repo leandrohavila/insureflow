@@ -52,7 +52,10 @@ describe('Sales pipeline insights (e2e)', () => {
       providers: [
         { provide: PipelinesService, useValue: { list } },
         { provide: ExecutiveDashboardService, useValue: { getDashboard } },
-        { provide: SlaDashboardService, useValue: { getDashboard: getSlaDashboard } },
+        {
+          provide: SlaDashboardService,
+          useValue: { getDashboard: getSlaDashboard },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)

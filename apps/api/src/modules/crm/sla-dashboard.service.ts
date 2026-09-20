@@ -74,10 +74,9 @@ export class SlaDashboardService {
 
     for (const deal of deals) {
       const unitType = deal.businessUnit?.type ?? 'INSURANCE';
-      const stages =
-        deal.pipeline?.stages?.length
-          ? deal.pipeline.stages
-          : defaultStagesForUnitType(unitType);
+      const stages = deal.pipeline?.stages?.length
+        ? deal.pipeline.stages
+        : defaultStagesForUnitType(unitType);
       const slug = canonicalDealStage(deal.stage, unitType);
       const stageDef = stages.find((stage) => stage.slug === slug);
       const sla = computeStageSla({

@@ -11,10 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-import {
-  PROPERTY_PURPOSES,
-  type PropertyPurpose,
-} from '../properties.util';
+import { PROPERTY_PURPOSES, type PropertyPurpose } from '../properties.util';
 
 export class PublicPropertyQueryDto {
   @ApiProperty({ example: 'insureflow' })
@@ -82,7 +79,9 @@ export class PublicPropertyQueryDto {
 }
 
 export class PublicPropertySearchQueryDto extends PublicPropertyQueryDto {
-  @ApiPropertyOptional({ description: 'Busca textual (título, descrição, cidade, bairro)' })
+  @ApiPropertyOptional({
+    description: 'Busca textual (título, descrição, cidade, bairro)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(120)

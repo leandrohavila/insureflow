@@ -202,8 +202,7 @@ export class ExecutiveDashboardService {
     const closeDurations = wonWithDates
       .filter((row) => row.wonAt)
       .map(
-        (row) =>
-          (row.wonAt!.getTime() - row.createdAt.getTime()) / 86_400_000,
+        (row) => (row.wonAt!.getTime() - row.createdAt.getTime()) / 86_400_000,
       );
     const avgCloseDays =
       closeDurations.length === 0
@@ -236,7 +235,7 @@ export class ExecutiveDashboardService {
       return {
         userId: row.ownerUserId,
         name: row.ownerUserId
-          ? ownerName.get(row.ownerUserId) ?? 'Sem responsável'
+          ? (ownerName.get(row.ownerUserId) ?? 'Sem responsável')
           : 'Sem responsável',
         total,
         won: won?._count._all ?? 0,
@@ -255,7 +254,7 @@ export class ExecutiveDashboardService {
       return {
         businessUnitId: row.businessUnitId,
         name: row.businessUnitId
-          ? unitName.get(row.businessUnitId) ?? 'Sem empresa'
+          ? (unitName.get(row.businessUnitId) ?? 'Sem empresa')
           : 'Sem empresa',
         total,
         won: won?._count._all ?? 0,

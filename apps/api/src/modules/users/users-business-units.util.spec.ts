@@ -15,9 +15,9 @@ describe('users-business-units.util', () => {
 
   describe('resolvePrimaryBusinessUnitId', () => {
     it('usa primary quando válido', () => {
-      expect(
-        resolvePrimaryBusinessUnitId(['bu-1', 'bu-2'], 'bu-2'),
-      ).toBe('bu-2');
+      expect(resolvePrimaryBusinessUnitId(['bu-1', 'bu-2'], 'bu-2')).toBe(
+        'bu-2',
+      );
     });
 
     it('usa primeira empresa quando primary ausente', () => {
@@ -25,9 +25,9 @@ describe('users-business-units.util', () => {
     });
 
     it('usa primeira empresa quando primary fora da lista', () => {
-      expect(
-        resolvePrimaryBusinessUnitId(['bu-1', 'bu-2'], 'bu-x'),
-      ).toBe('bu-1');
+      expect(resolvePrimaryBusinessUnitId(['bu-1', 'bu-2'], 'bu-x')).toBe(
+        'bu-1',
+      );
     });
   });
 

@@ -9,7 +9,10 @@ import {
 } from 'class-validator';
 
 import { optionalEmptyValue } from '../../../common/dto/optional-value.util';
-import { MESSAGE_CHANNELS, MESSAGE_TEMPLATE_KINDS } from '../../../common/constants/interest-categories';
+import {
+  MESSAGE_CHANNELS,
+  MESSAGE_TEMPLATE_KINDS,
+} from '../../../common/constants/interest-categories';
 
 export class ListMessageTemplatesQueryDto {
   @ApiPropertyOptional({ enum: MESSAGE_CHANNELS })

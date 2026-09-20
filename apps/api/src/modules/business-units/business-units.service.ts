@@ -90,7 +90,7 @@ export class BusinessUnitsService {
       dto.slug !== undefined || dto.name !== undefined
         ? await this.ensureUniqueSlug(
             tenantId,
-            (dto.slug?.trim() || slugify(dto.name ?? '')) as string,
+            dto.slug?.trim() || slugify(dto.name ?? ''),
             id,
           )
         : undefined;
@@ -146,7 +146,10 @@ export class BusinessUnitsService {
     };
   }
 
-  async updateContext(actor: BusinessUnitActor, dto: UpdateBusinessUnitContextDto) {
+  async updateContext(
+    actor: BusinessUnitActor,
+    dto: UpdateBusinessUnitContextDto,
+  ) {
     const nextId = dto.businessUnitId?.trim() || null;
     const previousId = actor.currentBusinessUnitId ?? null;
     const flags = this.buAccess.describe(actor);
@@ -261,7 +264,9 @@ export class BusinessUnitsService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      throw new ConflictException('Já existe uma unidade com este identificador');
+      throw new ConflictException(
+        'Já existe uma unidade com este identificador',
+      );
     }
     throw error;
   }

@@ -40,12 +40,12 @@ class Bug010ValidationPipe extends ValidationPipe {
     metadata: Parameters<ValidationPipe['transform']>[1],
   ) {
     if (metadata.metatype !== CreateLeadDto) {
-      return super.transform(value, metadata);
+      return (await super.transform(value, metadata)) as unknown;
     }
 
     const startedAt = performance.now();
     try {
-      const result = await super.transform(value, metadata);
+      const result: unknown = await super.transform(value, metadata);
       Logger.log(
         `[BUG010][api] ValidationPipe CreateLeadDto durationMs=${bug010DurationMs(
           startedAt,
@@ -155,11 +155,11 @@ async function bootstrap() {
     .get<string>('CORS_ORIGIN')
     ?.split(',')
     .map((s) => s.trim()) ?? [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:3002',
-      'http://127.0.0.1:3002',
-    ];
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002',
+  ];
   app.enableCors({ origin: corsOrigins, credentials: true });
 
   const swaggerConfig = new DocumentBuilder()

@@ -7,9 +7,11 @@ import { InternalCommunicationProvider } from './providers/internal.provider';
 
 describe('CommunicationsService', () => {
   function createService() {
-    const create = jest.fn().mockImplementation(({ data }) =>
-      Promise.resolve({ id: 'log-1', ...data }),
-    );
+    const create = jest
+      .fn()
+      .mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'log-1', ...data }),
+      );
     const findUnique = jest.fn().mockResolvedValue({
       tenantId: 'tenant-1',
       kind: 'INTERNAL',
@@ -112,7 +114,8 @@ describe('CommunicationsService', () => {
 
   it('falha quando o provider do tenant está desabilitado', async () => {
     const { service } = createService();
-    const prisma = (service as unknown as { prisma: PrismaService }).prisma as unknown as {
+    const prisma = (service as unknown as { prisma: PrismaService })
+      .prisma as unknown as {
       communicationProviderConfig: { findUnique: jest.Mock };
     };
     prisma.communicationProviderConfig.findUnique.mockResolvedValue({
@@ -135,7 +138,8 @@ describe('CommunicationsService', () => {
 
   it('falha com stub Evolution sem chamar fornecedor real', async () => {
     const { service } = createService();
-    const prisma = (service as unknown as { prisma: PrismaService }).prisma as unknown as {
+    const prisma = (service as unknown as { prisma: PrismaService })
+      .prisma as unknown as {
       communicationProviderConfig: { findUnique: jest.Mock };
     };
     prisma.communicationProviderConfig.findUnique.mockResolvedValue({
@@ -159,7 +163,8 @@ describe('CommunicationsService', () => {
 
   it('atualiza status delivered via webhook Evolution', async () => {
     const { service, publish } = createService();
-    const prisma = (service as unknown as { prisma: PrismaService }).prisma as unknown as {
+    const prisma = (service as unknown as { prisma: PrismaService })
+      .prisma as unknown as {
       communicationLog: { findFirst: jest.Mock; update: jest.Mock };
     };
     prisma.communicationLog.findFirst.mockResolvedValue({
@@ -186,7 +191,8 @@ describe('CommunicationsService', () => {
       }),
       applyConnectionState: jest.fn(),
     };
-    (service as unknown as { evolution: typeof evolution }).evolution = evolution;
+    (service as unknown as { evolution: typeof evolution }).evolution =
+      evolution;
 
     const result = await service.handleEvolutionWebhook(
       {
@@ -196,7 +202,11 @@ describe('CommunicationsService', () => {
       },
       'token',
     );
-    expect(result).toMatchObject({ ok: true, type: 'status', status: 'delivered' });
+    expect(result).toMatchObject({
+      ok: true,
+      type: 'status',
+      status: 'delivered',
+    });
     expect(publish).toHaveBeenCalledWith(
       expect.objectContaining({
         operationalEventKind: 'communication_delivered',
@@ -206,7 +216,8 @@ describe('CommunicationsService', () => {
 
   it('registra resposta inbound no log original', async () => {
     const { service, publish } = createService();
-    const prisma = (service as unknown as { prisma: PrismaService }).prisma as unknown as {
+    const prisma = (service as unknown as { prisma: PrismaService })
+      .prisma as unknown as {
       communicationLog: { findFirst: jest.Mock; update: jest.Mock };
     };
     prisma.communicationLog.findFirst.mockResolvedValue({
@@ -242,7 +253,9 @@ describe('CommunicationsService', () => {
     const { service } = createService();
     const buAccess = {
       assertCommunicationVisible: jest.fn().mockRejectedValue(
-        Object.assign(new Error('Comunicação não encontrada'), { status: 404 }),
+        Object.assign(new Error('Comunicação não encontrada'), {
+          status: 404,
+        }),
       ),
     };
     (service as unknown as { buAccess: typeof buAccess }).buAccess = buAccess;

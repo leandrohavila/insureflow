@@ -62,10 +62,18 @@ export class PersonsService {
       return await this.persons.update(id, {
         ...(dto.name != null ? { name: dto.name.trim() } : {}),
         ...(dto.kind ? { kind: dto.kind } : {}),
-        ...(dto.document !== undefined ? { document: dto.document?.trim() || null } : {}),
-        ...(dto.email !== undefined ? { email: dto.email?.trim() || null } : {}),
-        ...(dto.phone !== undefined ? { phone: dto.phone?.trim() || null } : {}),
-        ...(dto.customerId !== undefined ? { customerId: dto.customerId || null } : {}),
+        ...(dto.document !== undefined
+          ? { document: dto.document?.trim() || null }
+          : {}),
+        ...(dto.email !== undefined
+          ? { email: dto.email?.trim() || null }
+          : {}),
+        ...(dto.phone !== undefined
+          ? { phone: dto.phone?.trim() || null }
+          : {}),
+        ...(dto.customerId !== undefined
+          ? { customerId: dto.customerId || null }
+          : {}),
       });
     } catch (error) {
       this.rethrowUnique(error);

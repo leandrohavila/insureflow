@@ -85,11 +85,7 @@ export class SalesSlaEngine {
     };
   }
 
-  private async handleDeals(
-    tenantId: string,
-    performerId: string,
-    now: Date,
-  ) {
+  private async handleDeals(tenantId: string, performerId: string, now: Date) {
     const deals = await this.prisma.deal.findMany({
       where: { tenantId, status: 'open' },
       include: {
@@ -121,10 +117,9 @@ export class SalesSlaEngine {
 
     for (const deal of deals) {
       const unitType = deal.businessUnit?.type ?? 'INSURANCE';
-      const stages =
-        deal.pipeline?.stages?.length
-          ? deal.pipeline.stages
-          : defaultStagesForUnitType(unitType);
+      const stages = deal.pipeline?.stages?.length
+        ? deal.pipeline.stages
+        : defaultStagesForUnitType(unitType);
       const slug = canonicalDealStage(deal.stage, unitType);
       const stageDef = stages.find((stage) => stage.slug === slug);
       const sla = computeStageSla({
@@ -197,7 +192,9 @@ export class SalesSlaEngine {
         }
       }
 
-      const levels = escalationLevelsDue(elapsedDaysFromHours(sla.elapsedHours));
+      const levels = escalationLevelsDue(
+        elapsedDaysFromHours(sla.elapsedHours),
+      );
       const existingLevels = await this.existingEscalationLevels(
         tenantId,
         deal.id,

@@ -127,7 +127,8 @@ export class LeadReactivationService {
       ]);
 
     const reactivated = distinctLeads.length;
-    const returnRate = reactivated === 0 ? 0 : roundRate(returned / reactivated);
+    const returnRate =
+      reactivated === 0 ? 0 : roundRate(returned / reactivated);
     const conversionRate =
       reactivated === 0 ? 0 : roundRate(converted / reactivated);
 
@@ -320,7 +321,9 @@ export class LeadReactivationService {
         await this.activityEngine.publish({
           tenantId: lead.tenantId,
           performedById: performerId,
-          operationalEventKind: retry ? 'reactivation_retry' : 'lead_reactivated',
+          operationalEventKind: retry
+            ? 'reactivation_retry'
+            : 'lead_reactivated',
           subject: retry
             ? `Nova tentativa de reativação — ${lead.name}`
             : `Reativação automática — ${lead.name}`,

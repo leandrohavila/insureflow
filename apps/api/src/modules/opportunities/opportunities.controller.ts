@@ -37,7 +37,9 @@ export class OpportunitiesController {
 
   @Post('generate')
   @RequirePermissions('crm:manage')
-  @ApiOperation({ summary: 'Gerar oportunidades para todos os clientes ativos' })
+  @ApiOperation({
+    summary: 'Gerar oportunidades para todos os clientes ativos',
+  })
   generateAll(@CurrentUser() user: JwtAccessPayload) {
     return this.opportunities.generateForTenant(user.tenantId);
   }

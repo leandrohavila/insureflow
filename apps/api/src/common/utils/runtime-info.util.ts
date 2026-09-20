@@ -62,7 +62,9 @@ function readApiVersion(cwd: string): string {
   for (const pkgPath of candidates) {
     if (!existsSync(pkgPath)) continue;
     try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version?: string };
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+        version?: string;
+      };
       if (pkg.version) return pkg.version;
     } catch {
       // try next

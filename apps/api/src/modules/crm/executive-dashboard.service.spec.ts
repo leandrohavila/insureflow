@@ -60,10 +60,14 @@ describe('ExecutiveDashboardService', () => {
       businessUnit: {
         findMany: jest
           .fn()
-          .mockResolvedValue([{ id: 'bu-1', name: 'Corretora', type: 'INSURANCE' }]),
+          .mockResolvedValue([
+            { id: 'bu-1', name: 'Corretora', type: 'INSURANCE' },
+          ]),
       },
       salesTarget: {
-        aggregate: jest.fn().mockResolvedValue({ _sum: { targetRevenue: 120000 } }),
+        aggregate: jest
+          .fn()
+          .mockResolvedValue({ _sum: { targetRevenue: 120000 } }),
       },
       salesCommission: {
         aggregate: jest
@@ -75,9 +79,15 @@ describe('ExecutiveDashboardService', () => {
 
     count.mockResolvedValue(2);
     const buAccess = {
-      leadWhere: jest.fn().mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
-      dealWhere: jest.fn().mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
-      opportunityWhere: jest.fn().mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
+      leadWhere: jest
+        .fn()
+        .mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
+      dealWhere: jest
+        .fn()
+        .mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
+      opportunityWhere: jest
+        .fn()
+        .mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
       renewalWhere: jest.fn().mockResolvedValue({}),
       crossSellWhere: jest.fn().mockResolvedValue({}),
     };

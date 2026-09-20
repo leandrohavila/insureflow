@@ -56,7 +56,12 @@ export class CommissionsService {
     ]);
     return {
       data: rows.map(serializeCommission),
-      meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
     };
   }
 

@@ -15,7 +15,11 @@ describe('CustomersService status filter', () => {
     return {
       service: new CustomersService(
         prisma,
-        { assertIds: jest.fn(async (_t: string, ids: string[]) => ids) } as never,
+        {
+          assertIds: jest.fn((_t: string, ids: string[]) =>
+            Promise.resolve(ids),
+          ),
+        } as never,
         { generateForCustomer: jest.fn() } as never,
       ),
       count,

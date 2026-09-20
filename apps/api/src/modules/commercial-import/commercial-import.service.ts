@@ -35,7 +35,8 @@ export class CommercialImportService {
   ) {}
 
   template(kind: 'leads' | 'clientes') {
-    const columns = kind === 'leads' ? LEAD_IMPORT_COLUMNS : CUSTOMER_IMPORT_COLUMNS;
+    const columns =
+      kind === 'leads' ? LEAD_IMPORT_COLUMNS : CUSTOMER_IMPORT_COLUMNS;
     const name = kind === 'leads' ? 'Leads' : 'Clientes';
     return buildXlsxTemplate(`Modelo ${name}`, columns);
   }
@@ -78,7 +79,11 @@ export class CommercialImportService {
     };
   }
 
-  async commitLeads(tenantId: string, rows: ParsedLeadImportRow[], actor: ImportActor) {
+  async commitLeads(
+    tenantId: string,
+    rows: ParsedLeadImportRow[],
+    actor: ImportActor,
+  ) {
     let created = 0;
     let updated = 0;
     const errors: ImportRowError[] = [];
@@ -114,7 +119,10 @@ export class CommercialImportService {
           ['WhatsApp', row.whatsapp],
           ['Seguradora atual', row.currentInsurer],
           ['Data renovação', row.coverageDueAt?.slice(0, 10)],
-          ['Prêmio atual', row.premiumAtual != null ? String(row.premiumAtual) : undefined],
+          [
+            'Prêmio atual',
+            row.premiumAtual != null ? String(row.premiumAtual) : undefined,
+          ],
         ]);
         const phone = row.phone || row.whatsapp || null;
         const existing = row.document
@@ -169,7 +177,8 @@ export class CommercialImportService {
       } catch (error) {
         errors.push({
           row: row.row,
-          message: error instanceof Error ? error.message : 'Falha ao importar lead',
+          message:
+            error instanceof Error ? error.message : 'Falha ao importar lead',
         });
       }
     }
@@ -204,9 +213,7 @@ export class CommercialImportService {
         );
         const phone = row.phone || row.whatsapp || null;
         const type = row.documentType === 'cnpj' ? 'PJ' : 'PF';
-        const interestCategories = row.product
-          ? [row.product]
-          : [];
+        const interestCategories = row.product ? [row.product] : [];
 
         const existing = await this.prisma.customer.findUnique({
           where: { tenantId_document: { tenantId, document: row.document } },
@@ -215,7 +222,11 @@ export class CommercialImportService {
 
         let customerId: string;
         if (existing) {
-          await this.buAccess.assertCustomerVisible(actor, tenantId, existing.id);
+          await this.buAccess.assertCustomerVisible(
+            actor,
+            tenantId,
+            existing.id,
+          );
           await this.prisma.customer.update({
             where: { id: existing.id },
             data: {
@@ -269,7 +280,9 @@ export class CommercialImportService {
         errors.push({
           row: row.row,
           message:
-            error instanceof Error ? error.message : 'Falha ao importar cliente',
+            error instanceof Error
+              ? error.message
+              : 'Falha ao importar cliente',
         });
       }
     }

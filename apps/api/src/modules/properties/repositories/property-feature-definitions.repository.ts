@@ -34,8 +34,14 @@ export class PropertyFeatureDefinitionsRepository {
     return this.prisma.propertyFeatureDefinition.create({ data });
   }
 
-  update(id: string, data: Prisma.PropertyFeatureDefinitionUncheckedUpdateInput) {
-    return this.prisma.propertyFeatureDefinition.update({ where: { id }, data });
+  update(
+    id: string,
+    data: Prisma.PropertyFeatureDefinitionUncheckedUpdateInput,
+  ) {
+    return this.prisma.propertyFeatureDefinition.update({
+      where: { id },
+      data,
+    });
   }
 
   delete(id: string) {

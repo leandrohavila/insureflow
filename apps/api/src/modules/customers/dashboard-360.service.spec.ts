@@ -86,7 +86,9 @@ describe('Dashboard360Service', () => {
   it('retorna conversão 0 quando não há oportunidades no período', async () => {
     const { service, count, aggregate } = createService();
     count.mockResolvedValue(0);
-    aggregate.mockResolvedValue({ _sum: { value: null, convertedRevenue: null, estimatedValue: null } });
+    aggregate.mockResolvedValue({
+      _sum: { value: null, convertedRevenue: null, estimatedValue: null },
+    });
 
     const result = await service.getDashboard('tenant-1', {});
 

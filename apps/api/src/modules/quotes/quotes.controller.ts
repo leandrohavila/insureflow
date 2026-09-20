@@ -107,11 +107,7 @@ export class QuotesController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
   ) {
-    return this.quotes.findComparison(
-      user.tenantId,
-      id,
-      this.actorFrom(user),
-    );
+    return this.quotes.findComparison(user.tenantId, id, this.actorFrom(user));
   }
 
   @Post('comparisons')

@@ -97,6 +97,8 @@ export function resolveBusinessUnitIds(params: {
   const fromArray = params.businessUnitIds ?? params.existingUnitIds ?? [];
   const origin =
     params.businessUnitId ?? params.existingOriginId ?? fromArray[0] ?? null;
-  const unitIds = [...new Set([origin, ...fromArray].filter(Boolean))] as string[];
+  const unitIds = [
+    ...new Set([origin, ...fromArray].filter(Boolean)),
+  ] as string[];
   return { originId: origin, unitIds };
 }

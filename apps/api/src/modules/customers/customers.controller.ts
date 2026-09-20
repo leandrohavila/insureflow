@@ -58,17 +58,13 @@ export class CustomersController {
     @CurrentUser() user: JwtAccessPayload,
     @Query() query: ListCustomersQueryDto,
   ) {
-    return this.customers.findCustomers(
-      user.tenantId,
-      query,
-      {
-        userId: user.sub,
-        tenantId: user.tenantId,
-        roles: user.roles,
-        permissions: user.permissions,
-        currentBusinessUnitId: user.currentBusinessUnitId,
-      },
-    );
+    return this.customers.findCustomers(user.tenantId, query, {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    });
   }
 
   @Get('dashboard-360')
@@ -124,10 +120,7 @@ export class CustomersController {
   @RequirePermissions('clients:view')
   @ApiOperation({ summary: 'Detalhe do cliente do tenant' })
   @ApiParam({ name: 'id', description: 'ID do cliente' })
-  findCustomer(
-    @CurrentUser() user: JwtAccessPayload,
-    @Param('id') id: string,
-  ) {
+  findCustomer(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
     return this.customers.findCustomer(user.tenantId, id, {
       userId: user.sub,
       tenantId: user.tenantId,

@@ -12,7 +12,10 @@ import {
   renderMessageTemplate,
   type MessageTemplateVariables,
 } from '../../common/utils/message-template-render.util';
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
@@ -106,20 +109,25 @@ export class CommunicationsService {
     });
     const kind =
       dto.kind ??
-      (isEvolutionConfigured(settings) ? 'EVOLUTION' : current?.kind ?? 'INTERNAL');
+      (isEvolutionConfigured(settings)
+        ? 'EVOLUTION'
+        : (current?.kind ?? 'INTERNAL'));
     const updated = await this.prisma.communicationProviderConfig.update({
       where: { tenantId },
       data: {
         kind,
         ...(dto.enabled !== undefined ? { enabled: dto.enabled } : {}),
-        settings: settings as Prisma.InputJsonValue,
+        settings: settings,
       },
     });
     return this.serializeProviderConfig(updated, settings);
   }
 
   async connectEvolution(tenantId: string) {
-    await this.updateProviderConfig(tenantId, { kind: 'EVOLUTION', enabled: true });
+    await this.updateProviderConfig(tenantId, {
+      kind: 'EVOLUTION',
+      enabled: true,
+    });
     if (!this.evolution) {
       return {
         ok: false,
@@ -140,7 +148,10 @@ export class CommunicationsService {
     if (!this.evolution) {
       return this.connectEvolution(tenantId);
     }
-    await this.updateProviderConfig(tenantId, { kind: 'EVOLUTION', enabled: true });
+    await this.updateProviderConfig(tenantId, {
+      kind: 'EVOLUTION',
+      enabled: true,
+    });
     const result = await this.evolution.reconnect(tenantId);
     return {
       ...result.health,
@@ -305,7 +316,11 @@ export class CommunicationsService {
     };
   }
 
-  async sendManual(tenantId: string, dto: SendCommunicationDto, actorUserId: string) {
+  async sendManual(
+    tenantId: string,
+    dto: SendCommunicationDto,
+    actorUserId: string,
+  ) {
     const resolved = await this.resolveManualContent(tenantId, dto);
     return this.dispatch({
       tenantId,
@@ -448,7 +463,11 @@ export class CommunicationsService {
     }
 
     if (parsed.type === 'status') {
-      const log = await this.findLogForStatus(tenantId, parsed.messageId, parsed.from);
+      const log = await this.findLogForStatus(
+        tenantId,
+        parsed.messageId,
+        parsed.from,
+      );
       if (!log) return { ok: true, ignored: true, reason: 'log_not_found' };
       await this.applyStatus(log, parsed.status);
       return { ok: true, type: 'status', status: parsed.status, id: log.id };
@@ -462,14 +481,16 @@ export class CommunicationsService {
     return { ok: true, type: 'inbound', id: replied.id };
   }
 
-  async resolveRecipient(params: {
+  resolveRecipient(params: {
     channel: MessageChannel;
     phone?: string | null;
     email?: string | null;
   }) {
-    return params.channel === 'EMAIL'
-      ? params.email?.trim() || null
-      : params.phone?.trim() || null;
+    return Promise.resolve(
+      params.channel === 'EMAIL'
+        ? params.email?.trim() || null
+        : params.phone?.trim() || null,
+    );
   }
 
   templateKindForPurpose(purpose: CommunicationPurpose) {
@@ -477,10 +498,7 @@ export class CommunicationsService {
     return purpose;
   }
 
-  render(
-    content: string,
-    variables: MessageTemplateVariables,
-  ) {
+  render(content: string, variables: MessageTemplateVariables) {
     return renderMessageTemplate(content, variables);
   }
 
@@ -507,10 +525,14 @@ export class CommunicationsService {
       where: { id: log.id },
       data: {
         status: next,
-        ...(next === 'sent' ? { sentAt: log.status === 'queued' ? now : undefined } : {}),
+        ...(next === 'sent'
+          ? { sentAt: log.status === 'queued' ? now : undefined }
+          : {}),
         ...(next === 'delivered' ? { deliveredAt: now } : {}),
         ...(next === 'read' ? { readAt: now, deliveredAt: now } : {}),
-        ...(next === 'failed' ? { errorMessage: 'Falha reportada pela Evolution' } : {}),
+        ...(next === 'failed'
+          ? { errorMessage: 'Falha reportada pela Evolution' }
+          : {}),
       },
     });
     const kind = statusActivityKind(next);
@@ -554,7 +576,7 @@ export class CommunicationsService {
           externalId: dto.externalId ?? null,
           messageId: dto.externalId ?? null,
           repliedAt: now,
-          metadata: { source: 'evolution_inbound' } as Prisma.InputJsonValue,
+          metadata: { source: 'evolution_inbound' },
         },
       });
       await this.touchLastInteraction(related.leadId, related.customerId, now);
@@ -727,7 +749,8 @@ export class CommunicationsService {
     if (kind === 'communication_failed') return `Falha ao enviar ${purpose}`;
     if (kind === 'communication_delivered') return `Entregue — ${purpose}`;
     if (kind === 'communication_read') return `Lida — ${purpose}`;
-    if (kind === 'communication_replied') return `Resposta recebida — ${purpose}`;
+    if (kind === 'communication_replied')
+      return `Resposta recebida — ${purpose}`;
     return `Comunicação ${purpose}`;
   }
 
@@ -839,7 +862,9 @@ export class CommunicationsService {
 
     const rendered = this.render(content, {
       nome: lead?.name ?? customer?.name,
-      interesse: interestCategoryLabel(lead?.interestCategories[0] ?? customer?.interestCategories[0]),
+      interesse: interestCategoryLabel(
+        lead?.interestCategories[0] ?? customer?.interestCategories[0],
+      ),
       empresa: lead?.businessUnit?.name ?? customer?.companyName,
       corretor: lead?.ownerUser?.name ?? lead?.assignedTo,
     });
@@ -853,14 +878,16 @@ export class CommunicationsService {
     return { content: rendered, to, templateId };
   }
 
-  private async persistLog(params: DispatchCommunicationInput & {
-    provider: CommunicationProviderKind;
-    status: 'queued' | 'sent' | 'failed';
-    externalId?: string | null;
-    messageId?: string | null;
-    errorMessage?: string;
-    now: Date;
-  }) {
+  private async persistLog(
+    params: DispatchCommunicationInput & {
+      provider: CommunicationProviderKind;
+      status: 'queued' | 'sent' | 'failed';
+      externalId?: string | null;
+      messageId?: string | null;
+      errorMessage?: string;
+      now: Date;
+    },
+  ) {
     const log = await this.prisma.communicationLog.create({
       data: {
         tenantId: params.tenantId,
@@ -892,7 +919,9 @@ export class CommunicationsService {
         tenantId: params.tenantId,
         performedById: performerId,
         operationalEventKind:
-          params.status === 'failed' ? 'communication_failed' : 'communication_sent',
+          params.status === 'failed'
+            ? 'communication_failed'
+            : 'communication_sent',
         subject:
           params.status === 'failed'
             ? `Falha ao enviar ${params.purpose}`

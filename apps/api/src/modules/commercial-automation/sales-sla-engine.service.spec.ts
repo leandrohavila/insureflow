@@ -8,19 +8,26 @@ describe('SalesSlaEngine', () => {
 
   function createEngine() {
     const publish = jest.fn().mockResolvedValue({ id: 'act-1', created: true });
-    const dispatch = jest.fn().mockResolvedValue({ id: 'comm-1', status: 'sent' });
+    const dispatch = jest
+      .fn()
+      .mockResolvedValue({ id: 'comm-1', status: 'sent' });
     const prisma = {
       tenant: { findMany: jest.fn().mockResolvedValue([{ id: 'tenant-1' }]) },
       user: {
-        findFirst: jest
-          .fn()
-          .mockResolvedValue({ id: 'user-1', name: 'Ana', email: 'ana@avila.com' }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'user-1',
+          name: 'Ana',
+          email: 'ana@avila.com',
+        }),
       },
       deal: { findMany: jest.fn().mockResolvedValue([]) },
       policyRenewal: { findMany: jest.fn().mockResolvedValue([]) },
       opportunity: { findMany: jest.fn().mockResolvedValue([]) },
       crossSellOpportunity: { findMany: jest.fn().mockResolvedValue([]) },
-      activity: { findFirst: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) },
+      activity: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       teamMember: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 

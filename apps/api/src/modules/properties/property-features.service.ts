@@ -28,22 +28,32 @@ export class PropertyFeaturesService {
     const rows = dto.items.map((item) => {
       const definition = byId.get(item.definitionId);
       if (!definition) {
-        throw new BadRequestException('Característica inválida para este tenant');
+        throw new BadRequestException(
+          'Característica inválida para este tenant',
+        );
       }
       return {
         tenantId: user.tenantId,
         propertyId,
         definitionId: definition.id,
-        valueBoolean: definition.valueType === 'BOOLEAN' ? this.asBoolean(item.value) : null,
-        valueText: definition.valueType === 'TEXT' ? this.asText(item.value) : null,
-        valueNumber: definition.valueType === 'NUMBER' ? this.asNumber(item.value) : null,
+        valueBoolean:
+          definition.valueType === 'BOOLEAN'
+            ? this.asBoolean(item.value)
+            : null,
+        valueText:
+          definition.valueType === 'TEXT' ? this.asText(item.value) : null,
+        valueNumber:
+          definition.valueType === 'NUMBER' ? this.asNumber(item.value) : null,
       };
     });
 
     await this.features.deleteByProperty(propertyId);
     await this.features.createMany(rows);
 
-    const stored = await this.features.findByProperty(user.tenantId, propertyId);
+    const stored = await this.features.findByProperty(
+      user.tenantId,
+      propertyId,
+    );
     return stored
       .map((row) => serializeFeatureValue(row))
       .filter((item): item is NonNullable<typeof item> => item != null);
@@ -60,7 +70,15 @@ export class PropertyFeaturesService {
   private asText(value: unknown) {
     if (value == null) return null;
     if (typeof value === 'string') return value.slice(0, 200);
-    return String(value).slice(0, 200);
+    if (
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      return String(value).slice(0, 200);
+    }
+    if (typeof value === 'symbol') return value.toString().slice(0, 200);
+    return null;
   }
 
   private asNumber(value: unknown) {

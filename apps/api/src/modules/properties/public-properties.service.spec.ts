@@ -25,7 +25,8 @@ describe('PublicPropertiesService', () => {
     findBySlug?: jest.Mock;
     findById?: jest.Mock;
   }) {
-    const findMany = overrides?.findMany ?? jest.fn().mockResolvedValue([published]);
+    const findMany =
+      overrides?.findMany ?? jest.fn().mockResolvedValue([published]);
     const count = overrides?.count ?? jest.fn().mockResolvedValue(1);
     const findBySlug =
       overrides?.findBySlug ?? jest.fn().mockResolvedValue(published);
@@ -37,7 +38,10 @@ describe('PublicPropertiesService', () => {
         businessUnitId: undefined,
       }),
     };
-    const service = new PublicPropertiesService(context as never, repo as never);
+    const service = new PublicPropertiesService(
+      context as never,
+      repo as never,
+    );
     return { service, findMany, count, findBySlug, context };
   }
 
@@ -124,8 +128,7 @@ describe('PropertyLeadsService.createPublic', () => {
       create: jest.fn().mockResolvedValue({ id: 'pl1' }),
     };
     const properties = {
-      findById:
-        overrides?.findById ?? jest.fn().mockResolvedValue(published),
+      findById: overrides?.findById ?? jest.fn().mockResolvedValue(published),
       findBySlug:
         overrides?.findBySlug ?? jest.fn().mockResolvedValue(published),
     };

@@ -27,9 +27,9 @@ describe('BusinessUnitAccessService detail ACL', () => {
 
   function createService(leadFound: { id: string } | null) {
     const leadFindFirst = jest.fn().mockResolvedValue(leadFound);
-    const membershipFindMany = jest.fn().mockResolvedValue([
-      { businessUnitId: 'bu-insurance' },
-    ]);
+    const membershipFindMany = jest
+      .fn()
+      .mockResolvedValue([{ businessUnitId: 'bu-insurance' }]);
     const prisma = {
       userBusinessUnit: { findMany: membershipFindMany },
       lead: { findFirst: leadFindFirst },

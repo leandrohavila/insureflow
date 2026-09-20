@@ -20,6 +20,7 @@ describe('CommissionsService', () => {
         updatedAt: new Date(),
       }),
     };
+    const updateMany = jest.fn().mockResolvedValue({ count: 2 });
     const prisma = {
       salesCommission,
       deal: {
@@ -39,7 +40,7 @@ describe('CommissionsService', () => {
         }),
       },
       commissionRule: { findFirst: jest.fn().mockResolvedValue(null) },
-      salesTarget: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+      salesTarget: { updateMany },
     } as unknown as PrismaService;
     const activityEngine = { publish: jest.fn().mockResolvedValue(undefined) };
     const service = new CommissionsService(prisma, activityEngine as never);
@@ -47,9 +48,11 @@ describe('CommissionsService', () => {
     const result = await service.onDealWon('t1', 'd1', 'u1');
 
     expect(salesCommission.create).toHaveBeenCalled();
-    expect(prisma.salesTarget.updateMany).toHaveBeenCalled();
+    expect(updateMany).toHaveBeenCalled();
     expect(activityEngine.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ operationalEventKind: 'deal_commission_created' }),
+      expect.objectContaining({
+        operationalEventKind: 'deal_commission_created',
+      }),
     );
     expect(result?.commissionValue).toBe(1500);
   });
@@ -67,26 +70,36 @@ describe('CommissionsService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+    const createCommission = jest.fn();
     const prisma = {
       salesCommission: {
         findUnique: jest.fn().mockResolvedValue(existing),
-        create: jest.fn(),
+        create: createCommission,
       },
     } as unknown as PrismaService;
-    const service = new CommissionsService(prisma, { publish: jest.fn() } as never);
+    const service = new CommissionsService(prisma, {
+      publish: jest.fn(),
+    } as never);
     await service.onDealWon('t1', 'd1', 'u1');
-    expect(prisma.salesCommission.create).not.toHaveBeenCalled();
+    expect(createCommission).not.toHaveBeenCalled();
   });
 
   it('aplica ACL de unidade na listagem', async () => {
+    const transaction = jest.fn().mockResolvedValue([0, []]);
     const prisma = {
-      $transaction: jest.fn().mockResolvedValue([0, []]),
+      $transaction: transaction,
       salesCommission: { count: jest.fn(), findMany: jest.fn() },
     } as unknown as PrismaService;
     const buAccess = {
-      dealWhere: jest.fn().mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
+      dealWhere: jest
+        .fn()
+        .mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
     };
-    const service = new CommissionsService(prisma, { publish: jest.fn() } as never, buAccess as never);
+    const service = new CommissionsService(
+      prisma,
+      { publish: jest.fn() } as never,
+      buAccess as never,
+    );
     await service.list(
       't1',
       {},
@@ -98,6 +111,6 @@ describe('CommissionsService', () => {
       },
     );
     expect(buAccess.dealWhere).toHaveBeenCalled();
-    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalled();
   });
 });

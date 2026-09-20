@@ -52,9 +52,7 @@ describe('CommercialAutomationService', () => {
       deal: { aggregate: jest.fn() },
     };
 
-    prisma.lead.count
-      .mockResolvedValueOnce(10)
-      .mockResolvedValueOnce(4);
+    prisma.lead.count.mockResolvedValueOnce(10).mockResolvedValueOnce(4);
     prisma.leadReactivationLog.findMany.mockResolvedValue([
       { leadId: 'a' },
       { leadId: 'b' },
@@ -63,7 +61,9 @@ describe('CommercialAutomationService', () => {
       { leadId: 'e' },
     ]);
     prisma.leadFollowUp.count.mockResolvedValueOnce(8).mockResolvedValueOnce(2);
-    prisma.policyRenewal.count.mockResolvedValueOnce(6).mockResolvedValueOnce(1);
+    prisma.policyRenewal.count
+      .mockResolvedValueOnce(6)
+      .mockResolvedValueOnce(1);
     prisma.deal.aggregate.mockResolvedValue({ _sum: { value: 1500 } });
     prisma.policyRenewal.aggregate.mockResolvedValue({
       _sum: { convertedRevenue: 500 },

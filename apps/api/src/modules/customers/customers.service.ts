@@ -34,7 +34,13 @@ const customerUnitInclude = {
   businessUnits: {
     include: {
       businessUnit: {
-        select: { id: true, name: true, slug: true, type: true, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          type: true,
+          isActive: true,
+        },
       },
     },
   },
@@ -59,10 +65,14 @@ export class CustomersService {
     const limit = query.limit ?? 10;
     const where = await this.buildCustomerWhere(tenantId, query, actor);
 
-    const whereWithoutType = await this.buildCustomerWhere(tenantId, {
-      ...query,
-      type: undefined,
-    }, actor);
+    const whereWithoutType = await this.buildCustomerWhere(
+      tenantId,
+      {
+        ...query,
+        type: undefined,
+      },
+      actor,
+    );
 
     const [total, customers, pj, withEmail] = await this.prisma.$transaction([
       this.prisma.customer.count({ where }),
@@ -96,11 +106,7 @@ export class CustomersService {
     };
   }
 
-  async findCustomer(
-    tenantId: string,
-    id: string,
-    actor?: BusinessUnitActor,
-  ) {
+  async findCustomer(tenantId: string, id: string, actor?: BusinessUnitActor) {
     if (this.buAccess) {
       await this.buAccess.assertCustomerVisible(actor, tenantId, id);
     }
@@ -227,7 +233,10 @@ export class CustomersService {
         include: customerUnitInclude,
       });
 
-      if (dto.businessUnitId !== undefined || dto.businessUnitIds !== undefined) {
+      if (
+        dto.businessUnitId !== undefined ||
+        dto.businessUnitIds !== undefined
+      ) {
         const current = await this.prisma.customer.findFirst({
           where: { id, tenantId },
           select: {

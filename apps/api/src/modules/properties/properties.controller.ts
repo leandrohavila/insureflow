@@ -14,7 +14,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -34,7 +40,11 @@ import {
   CreatePropertyOwnerDto,
   UpdatePropertyOwnerDto,
 } from './dto/property-owner.dto';
-import { MAX_IMAGE_BYTES, MAX_UPLOAD_FILES, type MemoryUpload } from './property-storage';
+import {
+  MAX_IMAGE_BYTES,
+  MAX_UPLOAD_FILES,
+  type MemoryUpload,
+} from './property-storage';
 import { PropertiesService } from './properties.service';
 import { PropertyFeaturesService } from './property-features.service';
 import { PropertyOwnersService } from './property-owners.service';

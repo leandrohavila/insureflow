@@ -1,6 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
 
 import type { CommunicationProviderKind } from '../../../common/constants/interest-categories';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -87,7 +86,8 @@ export class EvolutionCommunicationProvider implements CommunicationProvider {
         provider: this.kind,
         status: 'failed',
         externalId: null,
-        errorMessage: error instanceof Error ? error.message : 'Falha Evolution',
+        errorMessage:
+          error instanceof Error ? error.message : 'Falha Evolution',
       };
     }
   }
@@ -189,7 +189,11 @@ export class EvolutionCommunicationProvider implements CommunicationProvider {
       connectionStatus: 'disconnected',
       lastSyncedAt: new Date().toISOString(),
     });
-    return { ok: true, status: 'disconnected', message: 'Instância desconectada' };
+    return {
+      ok: true,
+      status: 'disconnected',
+      message: 'Instância desconectada',
+    };
   }
 
   async connect(tenantId: string): Promise<{
@@ -344,7 +348,7 @@ export class EvolutionCommunicationProvider implements CommunicationProvider {
     await this.prisma.communicationProviderConfig.update({
       where: { tenantId },
       data: {
-        settings: settings as Prisma.InputJsonValue,
+        settings: settings,
       },
     });
   }

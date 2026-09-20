@@ -14,10 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import {
-  FEATURE_VALUE_TYPES,
-  type FeatureValueType,
-} from '../properties.util';
+import { FEATURE_VALUE_TYPES, type FeatureValueType } from '../properties.util';
 
 export class CreatePropertyFeatureDefinitionDto {
   @ApiPropertyOptional({ example: 'piscina' })

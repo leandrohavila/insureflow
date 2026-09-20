@@ -50,11 +50,7 @@ export class PerformanceController {
     @CurrentUser() user: JwtAccessPayload,
     @Query() query: PerformanceQueryDto,
   ) {
-    return this.performance.getDashboard(
-      user.tenantId,
-      query,
-      actorFrom(user),
-    );
+    return this.performance.getDashboard(user.tenantId, query, actorFrom(user));
   }
 
   @Get('ranking')

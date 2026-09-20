@@ -33,54 +33,51 @@ export class PerformanceService {
       actor,
     );
 
-    const [
-      wonAgg,
-      openAgg,
-      createdCount,
-      wonCount,
-      commissions,
-      targets,
-    ] = await Promise.all([
-      this.prisma.deal.aggregate({
-        where: {
-          ...dealScope,
-          status: 'won',
-          wonAt: { gte: bounds.from, lt: bounds.to },
-        },
-        _sum: { value: true },
-        _count: { _all: true },
-      }),
-      this.prisma.deal.aggregate({
-        where: { ...dealScope, status: 'open' },
-        _sum: { value: true },
-      }),
-      this.prisma.deal.count({
-        where: { ...dealScope, createdAt: { gte: bounds.from, lt: bounds.to } },
-      }),
-      this.prisma.deal.count({
-        where: {
-          ...dealScope,
-          status: 'won',
-          wonAt: { gte: bounds.from, lt: bounds.to },
-        },
-      }),
-      this.prisma.salesCommission.groupBy({
-        by: ['status'],
-        where: {
-          ...commissionScope,
-          createdAt: { gte: bounds.from, lt: bounds.to },
-        },
-        _sum: { commissionValue: true },
-      }),
-      this.prisma.salesTarget.aggregate({
-        where: {
-          ...targetScope,
-          year: bounds.year,
-          ...(bounds.month ? { month: bounds.month } : {}),
-        },
-        _sum: { targetRevenue: true, achievedRevenue: true },
-      }),
-    ]);
+    const [wonAgg, openAgg, createdCount, wonCount, commissions, targets] =
+      await Promise.all([
+        this.prisma.deal.aggregate({
+          where: {
+            ...dealScope,
+            status: 'won',
+            wonAt: { gte: bounds.from, lt: bounds.to },
+          },
+          _sum: { value: true },
+          _count: { _all: true },
+        }),
+        this.prisma.deal.aggregate({
+          where: { ...dealScope, status: 'open' },
+          _sum: { value: true },
+        }),
+        this.prisma.deal.count({
+          where: {
+            ...dealScope,
+            createdAt: { gte: bounds.from, lt: bounds.to },
+          },
+        }),
+        this.prisma.deal.count({
+          where: {
+            ...dealScope,
+            status: 'won',
+            wonAt: { gte: bounds.from, lt: bounds.to },
+          },
+        }),
+        this.prisma.salesCommission.groupBy({
+          by: ['status'],
+          where: {
+            ...commissionScope,
+            createdAt: { gte: bounds.from, lt: bounds.to },
+          },
+          _sum: { commissionValue: true },
+        }),
+        this.prisma.salesTarget.aggregate({
+          where: {
+            ...targetScope,
+            year: bounds.year,
+            ...(bounds.month ? { month: bounds.month } : {}),
+          },
+          _sum: { targetRevenue: true, achievedRevenue: true },
+        }),
+      ]);
 
     const monthRevenue = Number(wonAgg._sum.value ?? 0);
     const forecastRevenue = Number(openAgg._sum.value ?? 0);
@@ -136,7 +133,10 @@ export class PerformanceService {
       const [created, won, commissions] = await Promise.all([
         this.prisma.deal.groupBy({
           by: ['businessUnitId'],
-          where: { ...dealScope, createdAt: { gte: bounds.from, lt: bounds.to } },
+          where: {
+            ...dealScope,
+            createdAt: { gte: bounds.from, lt: bounds.to },
+          },
           _count: { _all: true },
         }),
         this.prisma.deal.groupBy({
@@ -181,7 +181,7 @@ export class PerformanceService {
         return {
           id: row.businessUnitId,
           name: row.businessUnitId
-            ? names.get(row.businessUnitId) ?? 'Sem empresa'
+            ? (names.get(row.businessUnitId) ?? 'Sem empresa')
             : 'Sem empresa',
           revenue: Number(wonRow?._sum.value ?? 0),
           wonDeals: wonCount,
@@ -221,9 +221,7 @@ export class PerformanceService {
     const userIds = [
       ...new Set(
         [...created, ...won, ...commissions]
-          .map((row) =>
-            'ownerUserId' in row ? row.ownerUserId : row.userId,
-          )
+          .map((row) => ('ownerUserId' in row ? row.ownerUserId : row.userId))
           .filter((id): id is string => Boolean(id)),
       ),
     ];
@@ -338,7 +336,10 @@ export class PerformanceService {
 }
 
 function sumStatus(
-  rows: Array<{ status: string; _sum: { commissionValue: Prisma.Decimal | null } }>,
+  rows: Array<{
+    status: string;
+    _sum: { commissionValue: Prisma.Decimal | null };
+  }>,
   status: string,
 ) {
   return Number(

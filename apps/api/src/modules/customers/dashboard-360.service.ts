@@ -1,7 +1,10 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { Dashboard360QueryDto } from '../opportunities/dto/opportunity.dto';
@@ -42,14 +45,19 @@ export class Dashboard360Service {
     let crossSellScope: Prisma.CrossSellOpportunityWhereInput = { tenantId };
 
     if (actor && this.buAccess) {
-      const [customerWhere, dealWhere, opportunityWhere, renewalWhere, crossWhere] =
-        await Promise.all([
-          this.buAccess.customerWhere(actor, query.businessUnitId),
-          this.buAccess.dealWhere(actor, query.businessUnitId),
-          this.buAccess.opportunityWhere(actor, query.businessUnitId),
-          this.buAccess.renewalWhere(actor, query.businessUnitId),
-          this.buAccess.crossSellWhere(actor),
-        ]);
+      const [
+        customerWhere,
+        dealWhere,
+        opportunityWhere,
+        renewalWhere,
+        crossWhere,
+      ] = await Promise.all([
+        this.buAccess.customerWhere(actor, query.businessUnitId),
+        this.buAccess.dealWhere(actor, query.businessUnitId),
+        this.buAccess.opportunityWhere(actor, query.businessUnitId),
+        this.buAccess.renewalWhere(actor, query.businessUnitId),
+        this.buAccess.crossSellWhere(actor),
+      ]);
       if (customerWhere) customerScope = andWhere(customerScope, customerWhere);
       if (dealWhere) dealScope = andWhere(dealScope, dealWhere);
       if (opportunityWhere) {
@@ -58,7 +66,10 @@ export class Dashboard360Service {
       if (renewalWhere) renewalScope = andWhere(renewalScope, renewalWhere);
       if (crossWhere) crossSellScope = andWhere(crossSellScope, crossWhere);
     } else if (query.businessUnitId) {
-      customerScope = { ...customerScope, businessUnitId: query.businessUnitId };
+      customerScope = {
+        ...customerScope,
+        businessUnitId: query.businessUnitId,
+      };
       dealScope = { ...dealScope, businessUnitId: query.businessUnitId };
       opportunityScope = {
         ...opportunityScope,

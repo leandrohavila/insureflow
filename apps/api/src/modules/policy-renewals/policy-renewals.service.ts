@@ -10,7 +10,10 @@ import {
 } from '../../common/utils/commercial-recovery.util';
 import { startOfUtcDay } from '../../common/utils/lead-reactivation.util';
 import { renderMessageTemplate } from '../../common/utils/message-template-render.util';
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
@@ -28,7 +31,9 @@ const renewalInclude = {
   },
   assignedUser: { select: { id: true, name: true } },
   businessUnit: { select: { id: true, name: true, type: true } },
-  deal: { select: { id: true, title: true, status: true, value: true, stage: true } },
+  deal: {
+    select: { id: true, title: true, status: true, value: true, stage: true },
+  },
   policy: {
     select: {
       id: true,
@@ -124,11 +129,7 @@ export class PolicyRenewalsService {
     };
   }
 
-  async findOne(
-    tenantId: string,
-    id: string,
-    actor?: BusinessUnitActor,
-  ) {
+  async findOne(tenantId: string, id: string, actor?: BusinessUnitActor) {
     if (this.buAccess) {
       await this.buAccess.assertRenewalVisible(actor, tenantId, id);
     }
@@ -215,7 +216,9 @@ export class PolicyRenewalsService {
         ...(dto.startDate !== undefined
           ? { startDate: new Date(dto.startDate) }
           : {}),
-        ...(dto.endDate !== undefined ? { endDate: new Date(dto.endDate) } : {}),
+        ...(dto.endDate !== undefined
+          ? { endDate: new Date(dto.endDate) }
+          : {}),
         ...(dto.renewalDate !== undefined
           ? { renewalDate: new Date(dto.renewalDate) }
           : {}),
@@ -635,9 +638,7 @@ export class PolicyRenewalsService {
         ? Number(item.convertedRevenue)
         : null,
       daysUntil: utcDaysUntil(new Date(), item.endDate),
-      deal: item.deal
-        ? { ...item.deal, value: Number(item.deal.value) }
-        : null,
+      deal: item.deal ? { ...item.deal, value: Number(item.deal.value) } : null,
       policy: item.policy
         ? {
             ...item.policy,

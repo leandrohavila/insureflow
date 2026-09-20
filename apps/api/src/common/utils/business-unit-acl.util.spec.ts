@@ -12,18 +12,18 @@ import {
 
 describe('business-unit-acl', () => {
   it('admin e view-all veem todas as unidades', () => {
-    expect(
-      canViewAllBusinessUnits({ roles: ['admin'], permissions: [] }),
-    ).toBe(true);
+    expect(canViewAllBusinessUnits({ roles: ['admin'], permissions: [] })).toBe(
+      true,
+    );
     expect(
       canViewAllBusinessUnits({
         roles: ['sales'],
         permissions: ['business-units:view-all'],
       }),
     ).toBe(true);
-    expect(
-      canViewAllBusinessUnits({ roles: ['sales'], permissions: [] }),
-    ).toBe(false);
+    expect(canViewAllBusinessUnits({ roles: ['sales'], permissions: [] })).toBe(
+      false,
+    );
   });
 
   it('admin em Todas não restringe IDs', () => {
@@ -128,7 +128,9 @@ describe('business-unit-acl', () => {
   });
 
   it('combina where com AND', () => {
-    expect(andWhere({ tenantId: 't1' }, directBusinessUnitWhere(['bu-1']))).toEqual({
+    expect(
+      andWhere({ tenantId: 't1' }, directBusinessUnitWhere(['bu-1'])),
+    ).toEqual({
       AND: [{ tenantId: 't1' }, { businessUnitId: { in: ['bu-1'] } }],
     });
   });
@@ -147,17 +149,15 @@ describe('business-unit-acl', () => {
       }),
     ).toBe(true);
     expect(isLeadOrCustomerInScope(null, { businessUnitId: null })).toBe(true);
-    expect(
-      isDirectBusinessUnitInScope(['bu-1'], 'bu-1'),
-    ).toBe(true);
+    expect(isDirectBusinessUnitInScope(['bu-1'], 'bu-1')).toBe(true);
     expect(isDirectBusinessUnitInScope(['bu-1'], 'bu-2')).toBe(false);
     expect(isDirectBusinessUnitInScope(['bu-1'], null)).toBe(false);
   });
 
   it('manage é exclusivo de admin ou permissão', () => {
-    expect(
-      canManageBusinessUnits({ roles: ['sales'], permissions: [] }),
-    ).toBe(false);
+    expect(canManageBusinessUnits({ roles: ['sales'], permissions: [] })).toBe(
+      false,
+    );
     expect(
       canManageBusinessUnits({
         roles: ['sales'],

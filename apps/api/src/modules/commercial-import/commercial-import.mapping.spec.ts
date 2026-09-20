@@ -96,9 +96,12 @@ describe('commercial-import.mapping', () => {
   });
 
   it('composes notes with extras', () => {
-    expect(composeImportNotes('obs', [['Cidade', 'Santos'], ['UF', 'SP']])).toBe(
-      'obs\nCidade: Santos | UF: SP',
-    );
+    expect(
+      composeImportNotes('obs', [
+        ['Cidade', 'Santos'],
+        ['UF', 'SP'],
+      ]),
+    ).toBe('obs\nCidade: Santos | UF: SP');
   });
 
   it('parses known valid CPF', () => {

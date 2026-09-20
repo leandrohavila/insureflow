@@ -13,7 +13,12 @@ import { SalesPerformanceModule } from '../sales-performance/sales-performance.m
 @Module({
   imports: [ActivitiesModule, CustomersModule, SalesPerformanceModule],
   controllers: [CrmController, CrmInsightsController],
-  providers: [CrmService, PipelinesService, ExecutiveDashboardService, SlaDashboardService],
+  providers: [
+    CrmService,
+    PipelinesService,
+    ExecutiveDashboardService,
+    SlaDashboardService,
+  ],
   exports: [PipelinesService],
 })
 export class CrmModule {}

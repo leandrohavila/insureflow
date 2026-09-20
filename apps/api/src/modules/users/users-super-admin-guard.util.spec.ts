@@ -43,7 +43,9 @@ describe('users-super-admin-guard.util', () => {
           roles: ['admin'],
           permissions: ['users:manage'],
         }),
-      ).toThrow('Somente super administradores podem gerenciar o perfil super_admin');
+      ).toThrow(
+        'Somente super administradores podem gerenciar o perfil super_admin',
+      );
     });
   });
 
@@ -92,9 +94,9 @@ describe('users-super-admin-guard.util', () => {
     });
 
     it('detecta super_admin no usuário', () => {
-      expect(
-        userHasSuperAdminRole([{ role: { slug: 'super_admin' } }]),
-      ).toBe(true);
+      expect(userHasSuperAdminRole([{ role: { slug: 'super_admin' } }])).toBe(
+        true,
+      );
       expect(userHasSuperAdminRole([{ role: { slug: 'admin' } }])).toBe(false);
     });
   });

@@ -58,7 +58,9 @@ export class CommissionRulesService {
       },
     });
     if (existing) {
-      throw new ConflictException('Já existe regra para este produto na empresa');
+      throw new ConflictException(
+        'Já existe regra para este produto na empresa',
+      );
     }
     const created = await this.prisma.commissionRule.create({
       data: {
@@ -86,12 +88,17 @@ export class CommissionRulesService {
       if (extra) where = andWhere(where, extra);
     }
     const current = await this.prisma.commissionRule.findFirst({ where });
-    if (!current) throw new NotFoundException('Regra de comissão não encontrada');
+    if (!current)
+      throw new NotFoundException('Regra de comissão não encontrada');
     const updated = await this.prisma.commissionRule.update({
       where: { id: current.id },
       data: {
         ...(dto.commissionPercentage !== undefined
-          ? { commissionPercentage: new Prisma.Decimal(dto.commissionPercentage) }
+          ? {
+              commissionPercentage: new Prisma.Decimal(
+                dto.commissionPercentage,
+              ),
+            }
           : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       },

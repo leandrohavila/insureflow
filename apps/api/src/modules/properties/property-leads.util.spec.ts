@@ -1,4 +1,7 @@
-import { sanitizePropertyLeadMetadata, serializePropertyLead } from './property-leads.util';
+import {
+  sanitizePropertyLeadMetadata,
+  serializePropertyLead,
+} from './property-leads.util';
 
 describe('sanitizePropertyLeadMetadata', () => {
   it('retorna null para vazio ou não-objeto', () => {

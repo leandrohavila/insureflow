@@ -18,7 +18,13 @@ describe('ListQuestionnaireSubmissionsQueryDto', () => {
       });
     } catch (error) {
       if (error instanceof BadRequestException) {
-        throw error.getResponse();
+        const response = error.getResponse();
+        throw Object.assign(
+          new Error('Bad Request'),
+          typeof response === 'object' && response !== null
+            ? response
+            : { message: response },
+        );
       }
       throw error;
     }
@@ -41,7 +47,11 @@ describe('ListQuestionnaireSubmissionsQueryDto', () => {
   it('accepts leadId only without page/limit', async () => {
     const result = await validate({ leadId: 'clxyz123lead' });
 
-    expect(result).toMatchObject({ leadId: 'clxyz123lead', page: 1, limit: 10 });
+    expect(result).toMatchObject({
+      leadId: 'clxyz123lead',
+      page: 1,
+      limit: 10,
+    });
   });
 
   it('coerces page/limit without enableImplicitConversion when @Type is present', async () => {

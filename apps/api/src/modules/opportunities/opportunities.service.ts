@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { andWhere, type BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
+import {
+  andWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import {
   businessUnitTypeForOpportunity,
   suggestOpportunities,
@@ -103,8 +106,7 @@ export class OpportunitiesService {
         source: dto.source ?? 'MANUAL',
         score: dto.score ?? 'MEDIUM',
         originType: dto.originType ?? 'MANUAL',
-        businessUnitId:
-          dto.businessUnitId ?? customer.businessUnitId ?? null,
+        businessUnitId: dto.businessUnitId ?? customer.businessUnitId ?? null,
         assignedUserId:
           dto.assignedUserId ?? customer.ownerUserId ?? actorUserId ?? null,
         estimatedValue:
@@ -114,7 +116,13 @@ export class OpportunitiesService {
       },
       include: opportunityInclude,
     });
-    await this.publish(tenantId, created.customerId, created.assignedUserId, 'opportunity_created', created.type);
+    await this.publish(
+      tenantId,
+      created.customerId,
+      created.assignedUserId,
+      'opportunity_created',
+      created.type,
+    );
     return serializeOpportunity(created);
   }
 
@@ -232,7 +240,8 @@ export class OpportunitiesService {
     });
     let created = 0;
     for (const customer of customers) {
-      created += (await this.generateForCustomer(tenantId, customer.id)).created;
+      created += (await this.generateForCustomer(tenantId, customer.id))
+        .created;
     }
     return { created };
   }

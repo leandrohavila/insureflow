@@ -67,7 +67,10 @@ export function isFollowUpOverdue(params: {
   now: Date;
 }): boolean {
   if (params.status !== 'PENDING') return false;
-  return startOfUtcDay(params.scheduledAt).getTime() < startOfUtcDay(params.now).getTime();
+  return (
+    startOfUtcDay(params.scheduledAt).getTime() <
+    startOfUtcDay(params.now).getTime()
+  );
 }
 
 export function isFollowUpDueToday(params: {

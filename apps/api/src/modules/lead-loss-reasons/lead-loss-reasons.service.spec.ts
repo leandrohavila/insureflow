@@ -5,13 +5,17 @@ describe('LeadLossReasonsService', () => {
   const tenantId = 'tenant-1';
 
   function createService() {
-    const findMany = jest.fn().mockResolvedValue([
-      { id: 'reason-1', tenantId, name: 'Sem orçamento', isActive: true },
-    ]);
+    const findMany = jest
+      .fn()
+      .mockResolvedValue([
+        { id: 'reason-1', tenantId, name: 'Sem orçamento', isActive: true },
+      ]);
     const findFirst = jest.fn().mockResolvedValue(null);
-    const create = jest.fn().mockImplementation(({ data }) =>
-      Promise.resolve({ id: 'reason-new', ...data }),
-    );
+    const create = jest
+      .fn()
+      .mockImplementation(({ data }) =>
+        Promise.resolve({ id: 'reason-new', ...data }),
+      );
 
     const prisma = {
       leadLossReason: { findMany, findFirst, create },

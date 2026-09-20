@@ -92,7 +92,11 @@ describe('Communications contract (e2e)', () => {
             sub: 'user-admin',
             tenantId: 'tenant-1',
             roles: ['admin'],
-            permissions: ['automation:view', 'automation:manage', 'settings:manage'],
+            permissions: [
+              'automation:view',
+              'automation:manage',
+              'settings:manage',
+            ],
           };
           return true;
         },
@@ -112,7 +116,11 @@ describe('Communications contract (e2e)', () => {
           sub: 'user-admin',
           tenantId: 'tenant-1',
           roles: ['admin'],
-          permissions: ['automation:view', 'automation:manage', 'settings:manage'],
+          permissions: [
+            'automation:view',
+            'automation:manage',
+            'settings:manage',
+          ],
         };
         next();
       },

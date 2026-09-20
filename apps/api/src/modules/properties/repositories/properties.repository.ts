@@ -83,11 +83,7 @@ export class PropertiesRepository {
     return { AND: and };
   }
 
-  findMany(
-    filters: PropertyListFilters,
-    skip: number,
-    take: number,
-  ) {
+  findMany(filters: PropertyListFilters, skip: number, take: number) {
     return this.prisma.property.findMany({
       where: this.where(filters),
       include: PROPERTY_DETAIL_INCLUDE,

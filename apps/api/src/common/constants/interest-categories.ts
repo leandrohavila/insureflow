@@ -44,7 +44,12 @@ export const CROSS_SELL_STATUSES = [
 ] as const;
 export type CrossSellStatus = (typeof CROSS_SELL_STATUSES)[number];
 
-export const FOLLOW_UP_TYPES = ['CALL', 'WHATSAPP', 'EMAIL', 'MEETING'] as const;
+export const FOLLOW_UP_TYPES = [
+  'CALL',
+  'WHATSAPP',
+  'EMAIL',
+  'MEETING',
+] as const;
 export type FollowUpType = (typeof FOLLOW_UP_TYPES)[number];
 
 export const FOLLOW_UP_STATUSES = [
@@ -61,7 +66,8 @@ export const COMMERCIAL_RENEWAL_STATUSES = [
   'RENEWED',
   'LOST',
 ] as const;
-export type CommercialRenewalStatus = (typeof COMMERCIAL_RENEWAL_STATUSES)[number];
+export type CommercialRenewalStatus =
+  (typeof COMMERCIAL_RENEWAL_STATUSES)[number];
 
 export const MESSAGE_TEMPLATE_KINDS = [
   'reactivation',
@@ -117,14 +123,16 @@ export const COMMUNICATION_PROVIDER_LABELS: Record<
   TWILIO: 'Twilio',
 };
 
-export const COMMUNICATION_PURPOSE_LABELS: Record<CommunicationPurpose, string> =
-  {
-    REACTIVATION: 'Reativação',
-    FOLLOW_UP: 'Follow-up',
-    RENEWAL: 'Renovação',
-    CROSS_SELL: 'Cross-sell',
-    MANUAL: 'Manual',
-  };
+export const COMMUNICATION_PURPOSE_LABELS: Record<
+  CommunicationPurpose,
+  string
+> = {
+  REACTIVATION: 'Reativação',
+  FOLLOW_UP: 'Follow-up',
+  RENEWAL: 'Renovação',
+  CROSS_SELL: 'Cross-sell',
+  MANUAL: 'Manual',
+};
 
 export const COMMUNICATION_STATUS_LABELS: Record<CommunicationStatus, string> =
   {
@@ -145,7 +153,9 @@ export function isInterestCategory(
   );
 }
 
-export function interestCategoryLabel(value: string | null | undefined): string {
+export function interestCategoryLabel(
+  value: string | null | undefined,
+): string {
   if (isInterestCategory(value)) return INTEREST_CATEGORY_LABELS[value];
   return value?.trim() || 'interesse';
 }

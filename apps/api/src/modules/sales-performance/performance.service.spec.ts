@@ -7,7 +7,10 @@ describe('PerformanceService', () => {
       deal: {
         aggregate: jest
           .fn()
-          .mockResolvedValueOnce({ _sum: { value: 80000 }, _count: { _all: 2 } })
+          .mockResolvedValueOnce({
+            _sum: { value: 80000 },
+            _count: { _all: 2 },
+          })
           .mockResolvedValueOnce({ _sum: { value: 20000 } }),
         count: jest.fn().mockResolvedValueOnce(4).mockResolvedValueOnce(2),
         groupBy: jest.fn().mockResolvedValue([]),
@@ -26,7 +29,9 @@ describe('PerformanceService', () => {
       },
     } as unknown as PrismaService;
     const buAccess = {
-      dealWhere: jest.fn().mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
+      dealWhere: jest
+        .fn()
+        .mockResolvedValue({ businessUnitId: { in: ['bu-1'] } }),
     };
     const service = new PerformanceService(prisma, buAccess as never);
     const result = await service.getDashboard(
