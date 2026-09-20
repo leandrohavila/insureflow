@@ -80,5 +80,5 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
 }
 
 export function getPermissionsForRole(role: AppRole): Permission[] {
-  return [...ROLE_PERMISSIONS[role]]
+  return [...(ROLE_PERMISSIONS[role] ?? [])]
 }
