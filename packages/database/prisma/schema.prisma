@@ -1313,7 +1313,8 @@ model ReactivationCampaign {
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
 
-  leads CampaignLead[]
+  leads     CampaignLead[]
+  followUps LeadFollowUp[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -1377,6 +1378,8 @@ model LeadFollowUp {
   tenant           Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   leadId           String
   lead             Lead           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaignId       String?        @map("campaign_id")
+  campaign         ReactivationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   scheduledAt      DateTime       @map("scheduled_at")
   type             FollowUpType
   status           FollowUpStatus @default(PENDING)
@@ -1391,10 +1394,12 @@ model LeadFollowUp {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  @@unique([campaignId, leadId])
   @@index([tenantId, status, scheduledAt])
   @@index([tenantId, assignedUserId])
   @@index([tenantId, leadId])
   @@index([tenantId, businessUnitId])
+  @@index([tenantId, campaignId])
   @@map("lead_follow_ups")
 }
 

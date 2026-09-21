@@ -38,6 +38,7 @@ export class ActivityEngineService implements ActivityEventPublisher {
 
     const campaignEventsWithoutEntity = new Set([
       'campaign_created',
+      'campaign_updated',
       'campaign_started',
       'campaign_finished',
       'campaign_lead_added',

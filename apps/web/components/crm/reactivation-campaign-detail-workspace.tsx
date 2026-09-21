@@ -7,8 +7,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { PermissionGate } from "@/components/auth/permission-gate"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { ReactivationCampaignEditForm } from "@/components/crm/reactivation-campaign-edit-form"
 import { FilterChip } from "@/components/crm/primitives"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import {
+  canEditReactivationCampaign,
+  COMMERCIAL_AUTO_REFRESH_MS,
+  REACTIVATION_CAMPAIGNS_PATH,
+} from "@/lib/crm/reactivation-campaigns"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import { fetchLeadLossReasons } from "@/lib/data-access/modules/lead-loss-reasons/api"
 import {
@@ -68,6 +74,7 @@ export function ReactivationCampaignDetailWorkspace({
   const query = useQuery({
     queryKey: queryKeys.commercialReactivationCampaigns.detail(campaignId),
     queryFn: () => fetchReactivationCampaign(campaignId),
+    refetchInterval: COMMERCIAL_AUTO_REFRESH_MS,
   })
 
   const reasonsQuery = useQuery({
@@ -213,7 +220,7 @@ export function ReactivationCampaignDetailWorkspace({
     return (
       <div className={CRM_PAGE_SHELL}>
         <p className="text-sm text-destructive">Campanha não encontrada.</p>
-        <Link href="/crm/campaigns/reactivation" className="text-sm underline">
+        <Link href={REACTIVATION_CAMPAIGNS_PATH} className="text-sm underline">
           Voltar
         </Link>
       </div>
@@ -236,10 +243,23 @@ export function ReactivationCampaignDetailWorkspace({
         <span>·</span>
         <span>Responsável: {campaign.ownerName}</span>
         <span>·</span>
-        <Link href="/crm/campaigns/reactivation" className="underline">
+        <Link href={REACTIVATION_CAMPAIGNS_PATH} className="underline">
           Voltar à lista
         </Link>
       </div>
+
+      {canEditReactivationCampaign(campaign.status) ? (
+        <div className="mb-4">
+          <PermissionGate permission="crm:manage">
+            <ReactivationCampaignEditForm
+              campaign={campaign}
+              onSaved={async () => {
+                await refresh()
+              }}
+            />
+          </PermissionGate>
+        </div>
+      ) : null}
 
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Kpi label="Total leads" value={campaign.totalLeads} />
