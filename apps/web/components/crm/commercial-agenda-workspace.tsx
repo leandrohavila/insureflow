@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { FilterChip } from "@/components/crm/primitives"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import { COMMERCIAL_AUTO_REFRESH_MS } from "@/lib/crm/commercial-auto-refresh"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import { updateActivity } from "@/lib/data-access/modules/activities"
 import { updateLeadFollowUp } from "@/lib/data-access/modules/lead-follow-ups"
@@ -130,6 +131,7 @@ export function CommercialAgendaWorkspace() {
   const query = useQuery({
     queryKey: queryKeys.commercialAgenda.list({ window, type }),
     queryFn: () => fetchCommercialAgenda({ window, type }),
+    refetchInterval: COMMERCIAL_AUTO_REFRESH_MS,
   })
   const items = query.data?.data ?? []
   const metrics = query.data?.metrics

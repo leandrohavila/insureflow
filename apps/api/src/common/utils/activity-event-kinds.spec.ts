@@ -30,10 +30,12 @@ describe('activity-event-kinds', () => {
         'reactivation_retry',
         'lead_reactivation_postponed',
         'campaign_created',
+        'campaign_updated',
         'campaign_started',
         'campaign_finished',
         'campaign_lead_added',
         'campaign_lead_removed',
+        'campaign_followup_created',
         'lead_reactivated_campaign',
         'lead_lost',
       ]),
@@ -50,6 +52,10 @@ describe('activity-event-kinds', () => {
       'Lead reativado por campanha',
     );
     expect(activityEventLabel('campaign_created')).toBe('Campanha criada');
+    expect(activityEventLabel('campaign_updated')).toBe('Campanha atualizada');
+    expect(activityEventLabel('campaign_followup_created')).toBe(
+      'Follow-up de campanha criado',
+    );
     expect(activityEventLabel('communication_sent')).toBe(
       'Comunicação enviada',
     );

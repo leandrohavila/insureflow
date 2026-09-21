@@ -256,6 +256,84 @@ export class LeadFollowUpsService {
     return created;
   }
 
+  async scheduleForCampaign(params: {
+    tenantId: string;
+    leadId: string;
+    campaignId: string;
+    campaignName: string;
+    actorUserId: string;
+    assignedUserId: string;
+    scheduledAt?: Date;
+  }) {
+    const existing = await this.prisma.leadFollowUp.findFirst({
+      where: {
+        tenantId: params.tenantId,
+        campaignId: params.campaignId,
+        leadId: params.leadId,
+      },
+    });
+    if (existing) {
+      return { created: false as const, followUp: existing };
+    }
+
+    const lead = await this.requireLead(params.tenantId, params.leadId);
+    const scheduledAt = params.scheduledAt ?? addUtcDays(new Date(), 1);
+    const notes =
+      'Follow-up gerado automaticamente pela campanha de reativação.';
+
+    try {
+      const created = await this.prisma.leadFollowUp.create({
+        data: {
+          tenantId: params.tenantId,
+          leadId: lead.id,
+          campaignId: params.campaignId,
+          scheduledAt,
+          type: 'WHATSAPP',
+          status: 'PENDING',
+          notes,
+          createdById: params.actorUserId,
+          assignedUserId: params.assignedUserId,
+          businessUnitId: lead.businessUnitId,
+        },
+      });
+
+      await this.activityEngine.publish({
+        tenantId: params.tenantId,
+        performedById: params.actorUserId,
+        operationalEventKind: 'campaign_followup_created',
+        subject: `Follow-up de campanha — ${lead.name}`,
+        description: notes,
+        leadId: lead.id,
+        metadata: {
+          followUpId: created.id,
+          campaignId: params.campaignId,
+          campaignName: params.campaignName,
+          type: 'WHATSAPP',
+          status: 'PENDING',
+        },
+      });
+
+      return { created: true as const, followUp: created };
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const duplicate = await this.prisma.leadFollowUp.findFirst({
+          where: {
+            tenantId: params.tenantId,
+            campaignId: params.campaignId,
+            leadId: params.leadId,
+          },
+        });
+        if (duplicate) {
+          return { created: false as const, followUp: duplicate };
+        }
+      }
+      throw error;
+    }
+  }
+
   async scheduleAfterReactivation(params: {
     tenantId: string;
     leadId: string;

@@ -94,6 +94,17 @@ export async function createReactivationCampaign(body: {
   return apiClient.post<ReactivationCampaign>(PATH, body)
 }
 
+export async function updateReactivationCampaign(
+  id: string,
+  body: {
+    name?: string
+    description?: string | null
+    ownerUserId?: string
+  },
+) {
+  return apiClient.patch<ReactivationCampaign>(`${PATH}/${id}`, body)
+}
+
 export async function startReactivationCampaign(id: string) {
   return apiClient.post<ReactivationCampaignDetail>(`${PATH}/${id}/start`)
 }

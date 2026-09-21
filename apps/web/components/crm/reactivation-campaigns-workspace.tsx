@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
@@ -8,8 +8,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { PermissionGate } from "@/components/auth/permission-gate"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
+import { ReactivationCampaignEditForm } from "@/components/crm/reactivation-campaign-edit-form"
 import { FilterChip } from "@/components/crm/primitives"
 import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import {
+  canEditReactivationCampaign,
+  COMMERCIAL_AUTO_REFRESH_MS,
+  reactivationCampaignPath,
+} from "@/lib/crm/reactivation-campaigns"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import {
   createReactivationCampaign,
@@ -42,6 +48,7 @@ export function ReactivationCampaignsWorkspace() {
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<CampaignStatus | "">("")
   const [creating, setCreating] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [busy, setBusy] = useState(false)
@@ -54,6 +61,7 @@ export function ReactivationCampaignsWorkspace() {
         status: status || undefined,
         limit: 100,
       }),
+    refetchInterval: COMMERCIAL_AUTO_REFRESH_MS,
   })
 
   const items = query.data?.data ?? []
@@ -73,7 +81,7 @@ export function ReactivationCampaignsWorkspace() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.commercialReactivationCampaigns.all,
       })
-      router.push(`/crm/campaigns/reactivation/${created.id}`)
+      router.push(reactivationCampaignPath(created.id))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao criar campanha.")
     } finally {
@@ -172,30 +180,65 @@ export function ReactivationCampaignsWorkspace() {
               </tr>
             ) : null}
             {items.map((item) => (
-              <tr key={item.id} className="border-t border-white/[0.04]">
-                <td className="px-3 py-2 font-medium">{item.name}</td>
-                <td className="px-3 py-2 tabular-nums">
-                  {formatDate(item.createdAt)}
-                </td>
-                <td className="px-3 py-2">{item.ownerName}</td>
-                <td className="px-3 py-2 tabular-nums">{item.totalLeads}</td>
-                <td className="px-3 py-2 tabular-nums">{item.contacted}</td>
-                <td className="px-3 py-2 tabular-nums">{item.reactivated}</td>
-                <td className="px-3 py-2 tabular-nums">
-                  {item.conversionRate.toFixed(1)}%
-                </td>
-                <td className="px-3 py-2">{statusLabel(item.status)}</td>
-                <td className="px-3 py-2">
-                  <Link
-                    href={`/crm/campaigns/reactivation/${item.id}`}
-                    className={cn(
-                      buttonVariants({ size: "sm", variant: "ghost" }),
-                    )}
-                  >
-                    Abrir
-                  </Link>
-                </td>
-              </tr>
+              <Fragment key={item.id}>
+                <tr className="border-t border-white/[0.04]">
+                  <td className="px-3 py-2 font-medium">{item.name}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {formatDate(item.createdAt)}
+                  </td>
+                  <td className="px-3 py-2">{item.ownerName}</td>
+                  <td className="px-3 py-2 tabular-nums">{item.totalLeads}</td>
+                  <td className="px-3 py-2 tabular-nums">{item.contacted}</td>
+                  <td className="px-3 py-2 tabular-nums">{item.reactivated}</td>
+                  <td className="px-3 py-2 tabular-nums">
+                    {item.conversionRate.toFixed(1)}%
+                  </td>
+                  <td className="px-3 py-2">{statusLabel(item.status)}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex flex-wrap gap-1">
+                      <Link
+                        href={reactivationCampaignPath(item.id)}
+                        className={cn(
+                          buttonVariants({ size: "sm", variant: "ghost" }),
+                        )}
+                      >
+                        Abrir
+                      </Link>
+                      {canEditReactivationCampaign(item.status) ? (
+                        <PermissionGate permission="crm:manage">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              setEditingId((current) =>
+                                current === item.id ? null : item.id,
+                              )
+                            }
+                          >
+                            {editingId === item.id ? "Fechar" : "Editar"}
+                          </Button>
+                        </PermissionGate>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+                {editingId === item.id ? (
+                  <tr className="border-t border-white/[0.04]">
+                    <td colSpan={9} className="px-3 py-3">
+                      <ReactivationCampaignEditForm
+                        campaign={item}
+                        onSaved={async () => {
+                          setEditingId(null)
+                          await queryClient.invalidateQueries({
+                            queryKey:
+                              queryKeys.commercialReactivationCampaigns.all,
+                          })
+                        }}
+                      />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
             ))}
           </tbody>
         </table>

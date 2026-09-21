@@ -14,6 +14,8 @@ import { buildManualReactivatePatch } from '../../common/utils/lead-reactivation
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { LeadFollowUpsService } from '../lead-follow-ups/lead-follow-ups.service';
 import type {
   AddCampaignLeadsDto,
   CreateCampaignDto,
@@ -36,6 +38,8 @@ export class CommercialReactivationCampaignsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityEngine: ActivityEngineService,
+    private readonly followUps: LeadFollowUpsService,
+    private readonly auditLogs: AuditLogsService,
     @Optional() private readonly buAccess?: BusinessUnitAccessService,
   ) {}
 
@@ -159,19 +163,21 @@ export class CommercialReactivationCampaignsService {
       include: campaignInclude,
     });
 
+    const metadata = {
+      campaignId: created.id,
+      campaignName: created.name,
+      ownerUserId: created.ownerUserId,
+      status: created.status,
+    };
     await this.activityEngine.publish({
       tenantId,
       performedById: actor.userId,
       operationalEventKind: 'campaign_created',
       subject: `Campanha criada — ${created.name}`,
       description: created.description ?? undefined,
-      metadata: {
-        campaignId: created.id,
-        campaignName: created.name,
-        ownerUserId: created.ownerUserId,
-        status: created.status,
-      },
+      metadata,
     });
+    this.auditCampaign(actor, 'campaign_created', created.id, metadata);
 
     const kpis = await this.computeKpis(created.id);
     return this.toCampaignListItem(created, kpis);
@@ -184,8 +190,10 @@ export class CommercialReactivationCampaignsService {
     actor: BusinessUnitActor & { userId: string },
   ) {
     const campaign = await this.requireCampaign(tenantId, id, actor);
-    if (campaign.status === 'FINISHED') {
-      throw new BadRequestException('Campanha encerrada não pode ser editada.');
+    if (campaign.status !== 'DRAFT') {
+      throw new BadRequestException(
+        'Somente campanhas em rascunho podem ser editadas.',
+      );
     }
     if (dto.ownerUserId) {
       await this.assertUserInTenant(tenantId, dto.ownerUserId);
@@ -203,6 +211,22 @@ export class CommercialReactivationCampaignsService {
       include: campaignInclude,
     });
 
+    const metadata = {
+      campaignId: updated.id,
+      campaignName: updated.name,
+      ownerUserId: updated.ownerUserId,
+      status: updated.status,
+    };
+    await this.activityEngine.publish({
+      tenantId,
+      performedById: actor.userId,
+      operationalEventKind: 'campaign_updated',
+      subject: `Campanha atualizada — ${updated.name}`,
+      description: updated.description ?? undefined,
+      metadata,
+    });
+    this.auditCampaign(actor, 'campaign_updated', updated.id, metadata);
+
     const kpis = await this.computeKpis(updated.id);
     return this.toCampaignListItem(updated, kpis);
   }
@@ -216,36 +240,45 @@ export class CommercialReactivationCampaignsService {
     if (campaign.status === 'FINISHED') {
       throw new BadRequestException('Campanha já encerrada.');
     }
-    if (campaign.status === 'IN_PROGRESS') {
-      return this.getById(tenantId, id, actor);
-    }
 
     const leadCount = await this.prisma.campaignLead.count({
       where: { campaignId: campaign.id },
     });
-    if (leadCount < 1) {
+    if (campaign.status === 'DRAFT' && leadCount < 1) {
       throw new BadRequestException(
         'Adicione leads à campanha antes de iniciar.',
       );
     }
 
-    const updated = await this.prisma.reactivationCampaign.update({
-      where: { id: campaign.id },
-      data: { status: 'IN_PROGRESS', startedAt: new Date() },
-      include: campaignInclude,
-    });
+    if (campaign.status === 'DRAFT') {
+      const updated = await this.prisma.reactivationCampaign.update({
+        where: { id: campaign.id },
+        data: { status: 'IN_PROGRESS', startedAt: new Date() },
+        include: campaignInclude,
+      });
 
-    await this.activityEngine.publish({
-      tenantId,
-      performedById: actor.userId,
-      operationalEventKind: 'campaign_started',
-      subject: `Campanha iniciada — ${updated.name}`,
-      metadata: {
+      const metadata = {
         campaignId: updated.id,
         campaignName: updated.name,
         totalLeads: leadCount,
-      },
-    });
+      };
+      await this.activityEngine.publish({
+        tenantId,
+        performedById: actor.userId,
+        operationalEventKind: 'campaign_started',
+        subject: `Campanha iniciada — ${updated.name}`,
+        metadata,
+      });
+      this.auditCampaign(actor, 'campaign_started', updated.id, metadata);
+    }
+
+    await this.ensureCampaignFollowUps(
+      tenantId,
+      campaign.id,
+      campaign.name,
+      campaign.ownerUserId,
+      actor,
+    );
 
     return this.getById(tenantId, id, actor);
   }
@@ -267,17 +300,19 @@ export class CommercialReactivationCampaignsService {
     });
 
     const kpis = await this.computeKpis(updated.id);
+    const metadata = {
+      campaignId: updated.id,
+      campaignName: updated.name,
+      ...kpis,
+    };
     await this.activityEngine.publish({
       tenantId,
       performedById: actor.userId,
       operationalEventKind: 'campaign_finished',
       subject: `Campanha encerrada — ${updated.name}`,
-      metadata: {
-        campaignId: updated.id,
-        campaignName: updated.name,
-        ...kpis,
-      },
+      metadata,
     });
+    this.auditCampaign(actor, 'campaign_finished', updated.id, metadata);
 
     return this.getById(tenantId, id, actor);
   }
@@ -360,19 +395,21 @@ export class CommercialReactivationCampaignsService {
       skipDuplicates: true,
     });
 
+    const metadata = {
+      campaignId,
+      campaignName: campaign.name,
+      added: result.count,
+      requested: leadIds.length,
+    };
     await this.activityEngine.publish({
       tenantId,
       performedById: actor.userId,
       operationalEventKind: 'campaign_lead_added',
       subject: `Leads adicionados — ${campaign.name}`,
       description: `${result.count} lead(s) vinculados à campanha.`,
-      metadata: {
-        campaignId,
-        campaignName: campaign.name,
-        added: result.count,
-        requested: leadIds.length,
-      },
+      metadata,
     });
+    this.auditCampaign(actor, 'campaign_lead_added', campaignId, metadata);
 
     return {
       added: result.count,
@@ -401,6 +438,12 @@ export class CommercialReactivationCampaignsService {
 
     await this.prisma.campaignLead.delete({ where: { id: row.id } });
 
+    const metadata = {
+      campaignId,
+      campaignName: campaign.name,
+      campaignLeadId: row.id,
+      leadId: row.leadId,
+    };
     await this.activityEngine.publish({
       tenantId,
       performedById: actor.userId,
@@ -408,13 +451,9 @@ export class CommercialReactivationCampaignsService {
       subject: `Lead removido — ${campaign.name}`,
       description: row.lead.name,
       leadId: row.leadId,
-      metadata: {
-        campaignId,
-        campaignName: campaign.name,
-        campaignLeadId: row.id,
-        leadId: row.leadId,
-      },
+      metadata,
     });
+    this.auditCampaign(actor, 'campaign_lead_removed', campaignId, metadata);
 
     return { deleted: true, id: row.id };
   }
@@ -705,6 +744,57 @@ export class CommercialReactivationCampaignsService {
     }
 
     return where;
+  }
+
+  private async ensureCampaignFollowUps(
+    tenantId: string,
+    campaignId: string,
+    campaignName: string,
+    ownerUserId: string,
+    actor: BusinessUnitActor & { userId: string },
+  ) {
+    const rows = await this.prisma.campaignLead.findMany({
+      where: { campaignId },
+      select: { leadId: true },
+    });
+
+    for (const row of rows) {
+      const result = await this.followUps.scheduleForCampaign({
+        tenantId,
+        leadId: row.leadId,
+        campaignId,
+        campaignName,
+        actorUserId: actor.userId,
+        assignedUserId: ownerUserId,
+      });
+      if (!result.created) continue;
+
+      this.auditCampaign(actor, 'campaign_followup_created', campaignId, {
+        campaignId,
+        campaignName,
+        leadId: row.leadId,
+        followUpId: result.followUp.id,
+        type: 'WHATSAPP',
+        status: 'PENDING',
+      });
+    }
+  }
+
+  private auditCampaign(
+    actor: BusinessUnitActor & { userId: string },
+    action: string,
+    resourceId: string,
+    metadata: Record<string, unknown>,
+  ) {
+    this.auditLogs.enqueue({
+      tenantId: actor.tenantId,
+      userId: actor.userId,
+      action,
+      resource: 'reactivation_campaigns',
+      resourceId,
+      severity: 'info',
+      metadata,
+    });
   }
 
   private async assertUserInTenant(tenantId: string, userId: string) {
