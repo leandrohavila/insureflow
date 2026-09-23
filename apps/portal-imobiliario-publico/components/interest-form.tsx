@@ -15,7 +15,7 @@ export function InterestForm({
   propertySlug: string;
   propertyId: string;
 }) {
-  const { submit, loading, error, result, source } = useSubmitLead();
+  const { submit, loading, error, result } = useSubmitLead();
   const [localError, setLocalError] = useState<string | null>(null);
 
   async function onSubmit(formData: FormData) {
@@ -49,9 +49,7 @@ export function InterestForm({
       <div className="rounded-xl border border-border bg-card p-4">
         <p className="font-medium">Interesse enviado.</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {source === "mock"
-            ? "Modo mock: o CRM não recebeu este lead."
-            : "O time comercial recebe este contato no CRM (PropertyLead)."}
+          O time comercial recebe este contato no CRM (PropertyLead).
         </p>
       </div>
     );

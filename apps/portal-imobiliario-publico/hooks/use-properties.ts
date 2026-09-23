@@ -3,33 +3,29 @@
 import { useEffect, useState } from "react";
 
 import { searchProperties } from "@/services/catalog";
-import type {
-  CatalogSource,
-  PropertyListQuery,
-  PropertyListResult,
-} from "@/types/property";
+import type { PropertyListQuery, PropertyListResult } from "@/types/property";
 
 export function useProperties(query: PropertyListQuery) {
   const [data, setData] = useState<PropertyListResult | null>(null);
-  const [source, setSource] = useState<CatalogSource>("api");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   const key = JSON.stringify(query);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
+    setError(false);
     searchProperties(query)
       .then((result) => {
         if (cancelled) return;
         setData(result.data);
-        setSource(result.source);
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Falha ao carregar imóveis");
+        setData(null);
+        setError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -37,9 +33,14 @@ export function useProperties(query: PropertyListQuery) {
     return () => {
       cancelled = true;
     };
-    // query is serialized in `key`
+    // query is serialized in `key`; attempt repeats the same query
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, attempt]);
 
-  return { data, source, error, loading };
+  return {
+    data,
+    error,
+    loading,
+    retry: () => setAttempt((current) => current + 1),
+  };
 }

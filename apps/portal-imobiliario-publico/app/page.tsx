@@ -2,18 +2,17 @@
 
 import Link from "next/link";
 
+import { CatalogLoadError } from "@/components/catalog-load-error";
 import { PropertyCard } from "@/components/property-card";
-import { SourceBanner } from "@/components/source-banner";
 import { buttonVariants } from "@/components/ui/button";
 import { useHighlights } from "@/hooks/use-highlights";
 import { cn } from "@/lib/utils";
 
 export default function HomePage() {
-  const { data, source, error, loading } = useHighlights();
+  const { data, error, loading, retry } = useHighlights();
 
   return (
     <div className="space-y-6">
-      <SourceBanner source={source} />
       <section className="space-y-3">
         <h1 className="text-2xl font-semibold tracking-tight">Imóveis em Cuiabá</h1>
         <p className="text-sm text-muted-foreground">
@@ -27,17 +26,19 @@ export default function HomePage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Destaques</h2>
         {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-        {error && <p className="text-sm text-red-700">{error}</p>}
-        {!loading && data.length === 0 && (
+        {!loading && error && <CatalogLoadError onRetry={retry} />}
+        {!loading && !error && data.length === 0 && (
           <p className="text-sm text-muted-foreground">
             Nenhum destaque publicado. Cadastre e publique um imóvel no CRM para validar.
           </p>
         )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {data.map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
-        </div>
+        {!loading && !error && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {data.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

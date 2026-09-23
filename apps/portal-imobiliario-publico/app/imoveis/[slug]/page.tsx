@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SourceBanner } from "@/components/source-banner";
+import { CatalogLoadError } from "@/components/catalog-load-error";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { CatalogNotFoundError } from "@/lib/errors";
@@ -72,7 +72,7 @@ function formatFeatureValue(value: boolean | string | number | null) {
 export default async function PropertyDetailPage({ params }: PageProps) {
   const { slug } = await params;
   try {
-    const { data: property, source } = await getPropertyBySlug(slug);
+    const { data: property } = await getPropertyBySlug(slug);
     const cover = resolveCover(property);
     const location = [property.address, property.neighborhood, property.city, property.state]
       .filter(Boolean)
@@ -81,7 +81,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
     return (
       <div className="space-y-4">
-        <SourceBanner source={source} />
         <Link href="/imoveis" className="text-sm text-muted-foreground">
           ← Voltar à listagem
         </Link>
@@ -144,6 +143,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     );
   } catch (error) {
     if (error instanceof CatalogNotFoundError) notFound();
-    throw error;
+    return <CatalogLoadError />;
   }
 }
