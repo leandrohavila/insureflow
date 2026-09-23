@@ -30,6 +30,7 @@ import {
   type LeadContextSubmission,
 } from "@/lib/data-access/modules/leads"
 import { leadOwnerDisplayName } from "@/lib/leads/lead-owner"
+import { LEAD_OPPORTUNITY_PIPELINE_HINT } from "@/lib/leads/lead-pipeline-clarity"
 import { cn } from "@/lib/utils"
 
 type LeadConversionSectionProps = {
@@ -205,7 +206,7 @@ export function LeadConversionSection({
     <div className="flex flex-col gap-4">
       <SectionPanel
         title="Pronto para virar negócio?"
-        description="Quando o lead estiver qualificado, converta em negócio para entrar no pipeline do CRM."
+        description={LEAD_OPPORTUNITY_PIPELINE_HINT}
         eyebrow={
           <StatusPill
             tone={

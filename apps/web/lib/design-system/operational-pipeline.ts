@@ -17,8 +17,8 @@ export const dsPipeline = {
     className:
       "pipeline-board-v2 inline-flex h-full min-h-full w-max flex-nowrap items-stretch px-0.5",
   },
-  laneWidthPx: 368,
+  laneWidthPx: 400,
   laneMinWidthPx: 248,
   laneCompactWidthPx: 248,
-  laneComfortableWidthPx: 368,
+  laneComfortableWidthPx: 400,
 } as const

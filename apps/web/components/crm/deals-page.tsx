@@ -15,6 +15,7 @@ import { CrmMetrics } from "@/components/crm/crm-metrics"
 import { CrmPageHeaderActions } from "@/components/crm/crm-page-header-actions"
 import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
+import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-empty"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
@@ -355,6 +356,9 @@ export function DealsPage() {
                 : "h-full overflow-hidden",
             )}
           >
+            {!dealsQuery.isLoading && deals.length === 0 ? (
+              <PipelineConversionEmpty dealCount={0} />
+            ) : null}
             {view === "board" ? (
               <PipelineBoard
                 compact={pipelineDensity.compact}
