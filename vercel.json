@@ -1,9 +1,16 @@
 {
-  "experimentalServices": {
+  "services": {
     "api": {
       "root": "apps/api",
-      "entrypoint": "src/main.ts",
-      "routePrefix": "/"
+      "entrypoint": "src/main.ts"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    }
+  ]
 }
