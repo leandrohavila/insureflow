@@ -16,6 +16,7 @@ import {
   STAGE_TONE,
 } from "@/components/crm/sheet-sections/deal-shared"
 import { getDealCardSignals } from "@/lib/crm/deal-card-signals"
+import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import type { CrmDeal } from "@/lib/data-access/modules/crm"
 import { formatCurrency, stageLabelMap } from "@/lib/data-access/modules/crm"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -31,7 +32,7 @@ type DealCardProps = {
   isDragging?: boolean
   isOverlay?: boolean
   canDrag?: boolean
-  /** Densidade reduzida para overview / futuro modo compacto. */
+  /** Compacto esconde campos e reduz altura. Ausente = confortável. */
   compact?: boolean
 }
 
@@ -49,10 +50,16 @@ export function DealCard({
   const reduce = useReducedMotion()
 
   const signals = useMemo(() => getDealCardSignals(deal), [deal])
+  const density = resolvePipelineDensity(compact ? "compact" : "comfortable")
+  const show = (field: (typeof density.visibleFields)[number]) =>
+    density.visibleFields.includes(field)
 
   const cardStyle = {
     ["--crm-accent-color" as string]: signals.accentVar,
     ["--crm-priority-accent" as string]: signals.priorityAccentVar,
+    minHeight: density.cardMinHeightPx,
+    gap: density.cardGapPx,
+    padding: density.cardPadding,
   } as CSSProperties
 
   const card = (
@@ -82,14 +89,14 @@ export function DealCard({
       style={cardStyle}
       data-priority={deal.priority}
       data-stale={signals.isStale || undefined}
-      data-density={compact ? "compact" : "default"}
+      data-density={density.dataDensity}
       data-status={deal.status}
       className={cn(
         "deal-card-v2 crm-accent-rail group/deal w-full min-w-0",
+        density.cardClassName,
         onClick && !isOverlay && "cursor-pointer",
         isOverlay && "deal-card-v2--overlay",
         isDragging && "deal-card-v2--dragging",
-        compact && "deal-card-v2--compact",
       )}
     >
       {deal.priority !== "baixa" ? (
@@ -104,10 +111,15 @@ export function DealCard({
       <div className="deal-card-v2__head">
         <div className="min-w-0 flex-1">
           <h4 className="deal-card-v2__title">{deal.title}</h4>
-          <p className="deal-card-v2__company">
-            <Building2 className="size-3 shrink-0 opacity-50" strokeWidth={1.5} />
-            <span className="truncate">{deal.company}</span>
-          </p>
+          {show("company") ? (
+            <p className="deal-card-v2__company">
+              <Building2 className="size-3 shrink-0 opacity-50" strokeWidth={1.5} />
+              <span className="truncate">{deal.company}</span>
+            </p>
+          ) : null}
+          {show("contact") && deal.contact ? (
+            <p className="deal-card-v2__contact truncate">{deal.contact}</p>
+          ) : null}
         </div>
 
         <div className="deal-card-v2__chrome">
@@ -137,33 +149,29 @@ export function DealCard({
           {formatCurrency(deal.value)}
         </p>
         <div className="deal-card-v2__meta">
-          {!compact ? (
-            <span className="deal-card-v2__owner">
-              <Avatar className="size-5">
-                <AvatarFallback className="bg-primary/15 text-[8px] text-primary">
-                  {deal.ownerInitials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="crm-text-micro max-w-[5.5rem] truncate">
-                {deal.owner}
-              </span>
-            </span>
-          ) : (
-            <Avatar className="size-5">
+          <span className="deal-card-v2__owner">
+            <Avatar className={show("ownerName") ? "size-6" : "size-5"}>
               <AvatarFallback className="bg-primary/15 text-[8px] text-primary">
                 {deal.ownerInitials}
               </AvatarFallback>
             </Avatar>
-          )}
-          <span
-            className={cn(
-              "deal-card-v2__interaction crm-text-micro tabular-nums",
-              signals.isStale && "deal-card-v2__interaction--stale",
-            )}
-            title={signals.interactionLabel}
-          >
-            {signals.interactionLabel}
+            {show("ownerName") ? (
+              <span className="crm-text-micro max-w-[8rem] truncate">
+                {deal.owner}
+              </span>
+            ) : null}
           </span>
+          {show("interaction") ? (
+            <span
+              className={cn(
+                "deal-card-v2__interaction crm-text-micro tabular-nums",
+                signals.isStale && "deal-card-v2__interaction--stale",
+              )}
+              title={signals.interactionLabel}
+            >
+              {signals.interactionLabel}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -185,7 +193,7 @@ export function DealCard({
           >
             {businessUnitPipelineBadge(deal.businessUnit?.type)}
           </StatusPill>
-          {deal.score ? (
+          {show("score") && deal.score ? (
             <StatusPill
               tone={
                 deal.score === "HIGH"
@@ -200,10 +208,12 @@ export function DealCard({
               {deal.score}
             </StatusPill>
           ) : null}
-          <StatusPill tone={STAGE_TONE[deal.stage]} variant="ghost" size="xs">
-            {stageLabelMap[deal.stage]}
-          </StatusPill>
-          {deal.priority !== "baixa" ? (
+          {show("stage") ? (
+            <StatusPill tone={STAGE_TONE[deal.stage]} variant="ghost" size="xs">
+              {stageLabelMap[deal.stage]}
+            </StatusPill>
+          ) : null}
+          {show("priority") && deal.priority !== "baixa" ? (
             <StatusPill
               tone={PRIORITY_TONE[deal.priority]}
               variant="ghost"
@@ -213,11 +223,13 @@ export function DealCard({
               {PRIORITY_LABEL[deal.priority]}
             </StatusPill>
           ) : null}
-          <DealQuestionnaireBadge
-            deal={deal}
-            className="h-5 rounded-md px-1.5 text-[10px]"
-          />
-          {!compact && deal.product ? (
+          {show("questionnaire") ? (
+            <DealQuestionnaireBadge
+              deal={deal}
+              className="h-5 rounded-md px-1.5 text-[10px]"
+            />
+          ) : null}
+          {show("product") && deal.product ? (
             <span className="deal-card-v2__chip">{deal.product}</span>
           ) : null}
         </div>

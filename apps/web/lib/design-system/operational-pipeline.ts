@@ -15,9 +15,10 @@ export const dsPipeline = {
   /** Fileira de colunas — inline-flex + w-max evita compressão; stretch em altura. */
   columns: {
     className:
-      "pipeline-board-v2 inline-flex h-full min-h-full w-max flex-nowrap items-stretch gap-3 px-0.5",
+      "pipeline-board-v2 inline-flex h-full min-h-full w-max flex-nowrap items-stretch px-0.5",
   },
-  laneWidthPx: 320,
-  laneMinWidthPx: 280,
-  laneCompactWidthPx: 280,
+  laneWidthPx: 368,
+  laneMinWidthPx: 248,
+  laneCompactWidthPx: 248,
+  laneComfortableWidthPx: 368,
 } as const
