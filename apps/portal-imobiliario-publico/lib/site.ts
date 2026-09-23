@@ -1,5 +1,6 @@
 export function portalOrigin() {
   return (
+    process.env.PORTAL_PUBLIC_URL?.trim() ||
     process.env.NEXT_PUBLIC_PORTAL_URL?.trim() ||
     "http://localhost:3002"
   ).replace(/\/$/, "");

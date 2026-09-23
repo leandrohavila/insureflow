@@ -22,13 +22,17 @@ import {
 import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-business-unit"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 
-export function PortalManagementPage() {
+export function PortalManagementPage({
+  portalOrigin,
+}: {
+  portalOrigin: string
+}) {
   const businessUnitId = useRealEstateBusinessUnitId()
   const context = useBusinessUnitContext()
   const statsQuery = useRealEstateDashboardStats(businessUnitId)
   const stats = statsQuery.data
-  const portalUrl = getPortalHomeUrl(context.data)
-  const sitemapUrl = getPortalSitemapUrl()
+  const portalUrl = getPortalHomeUrl(context.data, portalOrigin)
+  const sitemapUrl = getPortalSitemapUrl(portalOrigin)
 
   return (
     <PageContainer className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-[var(--if-space-2)] md:py-[var(--if-space-3)]">
