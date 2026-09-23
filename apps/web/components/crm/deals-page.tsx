@@ -52,7 +52,11 @@ import {
 import { boardDealStage } from "@/lib/crm/deal-pipeline"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useFocusReturn } from "@/lib/hooks/use-focus-return"
-import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
+import {
+  useCrmPersistedValue,
+  useCrmWorkspacePreferences,
+} from "@/lib/hooks/use-crm-workspace-preferences"
+import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import { easeOut } from "@/lib/motion"
 import { buildCrmReturnHref } from "@/lib/questionnaires/questionnaire-crm-navigation"
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
@@ -88,6 +92,8 @@ export function DealsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null)
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null)
+  const { density } = useCrmWorkspacePreferences()
+  const pipelineDensity = resolvePipelineDensity(density)
   const reduce = useReducedMotion()
   const canManageCrm = useCanManage("crm:view")
   const { captureFocus, restoreFocus } = useFocusReturn()
@@ -317,7 +323,7 @@ export function DealsPage() {
           />
 
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density="compact" />
+            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
           </OperationalWorkspaceMetrics>
 
           <CRMRightSidebar
@@ -351,6 +357,7 @@ export function DealsPage() {
           >
             {view === "board" ? (
               <PipelineBoard
+                compact={pipelineDensity.compact}
                 deals={boardDeals}
                 stages={boardStages}
                 interactive={canManageCrm}
@@ -361,6 +368,7 @@ export function DealsPage() {
               />
             ) : (
               <CrmDealsList
+                density={pipelineDensity.listDensity}
                 deals={filteredDeals}
                 onDealSelect={handleDealSelect}
                 onDealEdit={handleDealEdit}
