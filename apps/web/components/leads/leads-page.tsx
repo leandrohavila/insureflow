@@ -28,6 +28,7 @@ import {
 import { PermissionGate } from "@/components/auth/permission-gate"
 import {
   useCanManage,
+  usePermission,
   useShowMineLeadsFilter,
 } from "@/components/auth/session-provider"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
@@ -95,6 +96,8 @@ import {
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { isLeadConverted, leadOwnerDisplayName } from "@/lib/leads/lead-owner"
+import { leadPipelinePresentation } from "@/lib/leads/lead-pipeline-clarity"
+import { stageLabelMap, useCrmDeals } from "@/lib/data-access/modules/crm"
 import {
   deriveLeadOperationalBadges,
   deriveLeadPriority,
@@ -215,6 +218,8 @@ export function LeadsPage() {
   )
   const [forceLegacyForm, setForceLegacyForm] = useState(false)
   const canManageLeads = useCanManage("leads:view")
+  const canConvertLeads = usePermission("leads:manage")
+  const canViewDeals = usePermission("crm:view")
   const canManageQuestionnaires = useCanManage("questionnaires:view")
   const showMineFilter = useShowMineLeadsFilter()
   // Feature flag de rollout do LeadSheetV2 — espelho de `?sheet=v2` do
@@ -447,6 +452,15 @@ export function LeadsPage() {
     })
   }, [leads, period])
   const meta = leadsQuery.data?.meta
+  const hasConvertedOnPage = visibleLeads.some((row) => Boolean(row.dealId))
+  const dealsForStage = useCrmDeals({ enabled: hasConvertedOnPage })
+  const stageByDealId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const deal of dealsForStage.data ?? []) {
+      map.set(deal.id, stageLabelMap[deal.stage] ?? deal.stage)
+    }
+    return map
+  }, [dealsForStage.data])
   const activeFilterCount =
     (searchInput.trim() ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
@@ -605,6 +619,78 @@ export function LeadsPage() {
         ),
       },
       {
+        key: "pipeline",
+        header: "Pipeline",
+        className: "min-w-[9.5rem]",
+        render: (row) => {
+          const stage = row.dealId ? stageByDealId.get(row.dealId) : null
+          const view = leadPipelinePresentation(row, stage)
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-xs font-medium",
+                  view.converted ? "text-emerald-300" : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    view.converted ? "bg-emerald-400" : "bg-white/35",
+                  )}
+                  aria-hidden
+                />
+                {view.statusLabel}
+              </span>
+              {view.stageLabel ? (
+                <span className="pl-3.5 text-[10px] text-muted-foreground">
+                  Estágio: {view.stageLabel}
+                </span>
+              ) : null}
+            </div>
+          )
+        },
+      },
+      {
+        key: "pipelineAction",
+        header: "Ação",
+        className: "min-w-[10.5rem]",
+        render: (row) => {
+          const view = leadPipelinePresentation(row)
+          return (
+            <div onClick={(event) => event.stopPropagation()}>
+              {view.showConvert && canConvertLeads ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-7 px-2.5 text-[11px]"
+                  disabled={convertLead.isPending}
+                  onClick={() => openConvertDialog(row)}
+                >
+                  Converter em negócio
+                </Button>
+              ) : null}
+              {view.showOpenDeal && canViewDeals && row.dealId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1 px-2.5 text-[11px]"
+                  onClick={() => router.push(`/crm/negocios?deal=${row.dealId}`)}
+                >
+                  Abrir negócio
+                </Button>
+              ) : null}
+              {view.converted && !view.showOpenDeal ? (
+                <span className="text-xs font-medium text-emerald-300">
+                  Negócio criado
+                </span>
+              ) : null}
+            </div>
+          )
+        },
+      },
+      {
         key: "quick",
         header: "Rápidas",
         className: "w-[9.5rem]",
@@ -671,7 +757,15 @@ export function LeadsPage() {
         },
       },
     ],
-    [openLeadDialog],
+    [
+      canConvertLeads,
+      canViewDeals,
+      convertLead.isPending,
+      openConvertDialog,
+      openLeadDialog,
+      router,
+      stageByDealId,
+    ],
   )
 
   return (

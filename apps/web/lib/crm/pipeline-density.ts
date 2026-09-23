@@ -8,12 +8,12 @@ import type { CrmDensity } from "./crm-workspace-preferences"
 
 export const PIPELINE_LANE_WIDTH_PX = {
   compact: 248,
-  comfortable: 368,
+  comfortable: 400,
 } as const
 
 export const PIPELINE_CARD_MIN_HEIGHT_PX = {
   compact: 72,
-  comfortable: 168,
+  comfortable: 212,
 } as const
 
 export const PIPELINE_CARD_GAP_PX = {
@@ -45,6 +45,8 @@ export type PipelineDensityField =
   | "priority"
   | "questionnaire"
   | "interaction"
+  | "phone"
+  | "nextAction"
 
 const COMPACT_FIELDS: readonly PipelineDensityField[] = [
   "title",
@@ -64,6 +66,8 @@ const COMFORTABLE_FIELDS: readonly PipelineDensityField[] = [
   "priority",
   "questionnaire",
   "interaction",
+  "phone",
+  "nextAction",
 ]
 
 export type PipelineDensityPresentation = {
@@ -199,6 +203,10 @@ export function runPipelineDensityManualValidation(): PipelineDensityManualCheck
         pipelineDensityShows("comfortable", "ownerName") &&
         pipelineDensityShows("comfortable", "product") &&
         pipelineDensityShows("comfortable", "interaction") &&
+        pipelineDensityShows("comfortable", "phone") &&
+        pipelineDensityShows("comfortable", "nextAction") &&
+        !pipelineDensityShows("compact", "phone") &&
+        !pipelineDensityShows("compact", "nextAction") &&
         comfortable.visibleFields.length > compact.visibleFields.length,
     },
     {

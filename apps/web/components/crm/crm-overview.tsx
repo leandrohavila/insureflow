@@ -13,6 +13,7 @@ import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle
 import { CrmUpcomingActions } from "@/components/crm/crm-upcoming-actions"
 import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
+import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-empty"
 import { useCanManage } from "@/components/auth/session-provider"
 import {
   ContentContainer,
@@ -117,6 +118,7 @@ export function CrmOverview() {
               </div>
             }
           >
+            <PipelineConversionEmpty dealCount={deals.length} />
             <PipelineBoard
               compact={pipelineDensity.compact}
               interactive={false}
