@@ -23,6 +23,29 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { easeOut } from "@/lib/motion"
 
+function dealPhone(deal: CrmDeal) {
+  return (
+    deal.commercialContext?.phone?.trim() ||
+    deal.convertedLead?.phone?.trim() ||
+    "Sem telefone"
+  )
+}
+
+function dealNextAction(deal: CrmDeal) {
+  if (deal.sla?.status === "overdue") return "Follow-up atrasado"
+  if (deal.sla?.dueAt) {
+    const date = new Date(deal.sla.dueAt)
+    if (!Number.isNaN(date.getTime())) {
+      return `Até ${date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+      })}`
+    }
+  }
+  if (deal.sla?.status === "warning") return "Follow-up em alerta"
+  return "Sem próxima ação"
+}
+
 type DealCardProps = {
   deal: CrmDeal
   index?: number
@@ -161,7 +184,7 @@ export function DealCard({
               </span>
             ) : null}
           </span>
-          {show("interaction") ? (
+          {show("interaction") && !show("phone") ? (
             <span
               className={cn(
                 "deal-card-v2__interaction crm-text-micro tabular-nums",
@@ -174,6 +197,50 @@ export function DealCard({
           ) : null}
         </div>
       </div>
+
+      {show("phone") ? (
+        <dl className="deal-card-v2__context">
+          <div className="deal-card-v2__context-row">
+            <dt className="deal-card-v2__context-label">Telefone</dt>
+            <dd className="deal-card-v2__context-value">{dealPhone(deal)}</dd>
+          </div>
+          {show("product") ? (
+            <div className="deal-card-v2__context-row">
+              <dt className="deal-card-v2__context-label">Produto</dt>
+              <dd className="deal-card-v2__context-value">
+                {deal.product || "Sem produto"}
+              </dd>
+            </div>
+          ) : null}
+          {show("ownerName") ? (
+            <div className="deal-card-v2__context-row">
+              <dt className="deal-card-v2__context-label">Responsável</dt>
+              <dd className="deal-card-v2__context-value">
+                {deal.owner || "Sem responsável"}
+              </dd>
+            </div>
+          ) : null}
+          {show("nextAction") ? (
+            <div className="deal-card-v2__context-row">
+              <dt className="deal-card-v2__context-label">Próxima ação</dt>
+              <dd className="deal-card-v2__context-value">{dealNextAction(deal)}</dd>
+            </div>
+          ) : null}
+          {show("interaction") ? (
+            <div className="deal-card-v2__context-row">
+              <dt className="deal-card-v2__context-label">Última interação</dt>
+              <dd
+                className={cn(
+                  "deal-card-v2__context-value",
+                  signals.isStale && "deal-card-v2__interaction--stale",
+                )}
+              >
+                {signals.interactionLabel}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : null}
 
       {/* ── Rodapé: badges + indicadores ── */}
       <div className="deal-card-v2__foot">
