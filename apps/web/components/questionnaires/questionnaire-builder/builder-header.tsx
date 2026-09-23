@@ -73,12 +73,12 @@ export function QuestionnaireBuilderHeader({
   savePending,
 }: QuestionnaireBuilderHeaderProps) {
   return (
-    <header className="flex flex-col gap-[var(--if-space-4)]">
+    <header className="flex shrink-0 flex-col gap-[var(--if-space-3)]">
       <div className="flex flex-col gap-[var(--if-space-2)]">
         <h1 className="text-xl font-semibold tracking-[-0.03em] md:text-2xl">
           Builder de Questionários
         </h1>
-        <p className="max-w-3xl text-sm text-muted-foreground">
+        <p className="hidden max-w-3xl text-sm text-muted-foreground [@media(min-height:860px)]:block">
           Organize templates, seções e perguntas com preview em tempo real —
           produtividade visual para montar formulários comerciais.
         </p>
@@ -198,18 +198,30 @@ export function QuestionnaireBuilderHeader({
             </Button>
           ) : null}
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2 xl:hidden"
-            onClick={onTogglePreview}
-            aria-expanded={previewOpen}
-            aria-controls="questionnaire-preview-panel"
-          >
-            <Eye className="size-3.5" />
-            Preview
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant={previewOpen ? "outline" : "default"}
+                  size="sm"
+                  className="h-9 gap-2"
+                  onClick={onTogglePreview}
+                  aria-expanded={previewOpen}
+                  aria-controls="questionnaire-preview-panel"
+                  aria-label={previewOpen ? "Recolher preview" : "Abrir preview"}
+                />
+              }
+            >
+              <Eye className="size-4" />
+              Preview
+            </TooltipTrigger>
+            <TooltipContent>
+              {previewOpen
+                ? "Recolher o preview e liberar o canvas"
+                : "Abrir o preview do formulário"}
+            </TooltipContent>
+          </Tooltip>
 
           {canManage ? (
             <>
