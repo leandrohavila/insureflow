@@ -1,16 +1,18 @@
 "use client"
 
-import { memo, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
+  defaultDropAnimationSideEffects,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DropAnimation,
 } from "@dnd-kit/core"
 import {
   SortableContext,
@@ -19,36 +21,24 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import {
-  ChevronDown,
-  Copy,
-  Edit3,
-  GripVertical,
-  MoreVertical,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { ChevronDown, Copy, Edit3, GripVertical, Plus, Trash2 } from "lucide-react"
+import { useReducedMotion } from "framer-motion"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import type { QuestionnaireField } from "@/lib/data-access/modules/questionnaires"
 import { cn } from "@/lib/utils"
 
+import { BuilderIconAction } from "./builder-icon-action"
 import { BuilderCanvasSkeleton } from "./builder-skeleton"
 import { builderSurfaces } from "./builder-surfaces"
 import { CanvasEmptyState, canvasSectionDomId } from "./canvas-empty-state"
 import type { FieldLibraryItem } from "./field-library"
 import { QuickAddMenu } from "./quick-add-menu"
 import type { SectionGroup } from "./types"
+import { useLatestCallback } from "./use-latest-callback"
 import { getQuestionKindLabel } from "./utils"
 
 type QuestionnaireBuilderCanvasProps = {
@@ -93,11 +83,28 @@ function parseFieldId(id: string) {
   return id.replace(/^field:/, "")
 }
 
+function sortableStyle(
+  transform: ReturnType<typeof useSortable>["transform"],
+  transition: string | undefined,
+  isDragging: boolean,
+  reduceMotion: boolean,
+) {
+  return {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging
+      ? undefined
+      : reduceMotion
+        ? "none"
+        : (transition ?? "transform 200ms cubic-bezier(0.2, 0, 0, 1)"),
+  }
+}
+
 const SortableFieldCard = memo(function SortableFieldCard({
   field,
   index,
   disabled,
   selected,
+  reduceMotion,
   onSelect,
   onDuplicate,
   onDelete,
@@ -106,9 +113,10 @@ const SortableFieldCard = memo(function SortableFieldCard({
   index: number
   disabled: boolean
   selected: boolean
-  onSelect: () => void
-  onDuplicate: () => void
-  onDelete: () => void
+  reduceMotion: boolean
+  onSelect: (field: QuestionnaireField) => void
+  onDuplicate: (field: QuestionnaireField) => void
+  onDelete: (field: QuestionnaireField) => void
 }) {
   const {
     attributes,
@@ -117,37 +125,37 @@ const SortableFieldCard = memo(function SortableFieldCard({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({
     id: fieldId(field),
     data: { type: "field", section: field.settings?.section, field },
     disabled,
   })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
+  const select = useCallback(() => onSelect(field), [field, onSelect])
+  const duplicate = useCallback(() => onDuplicate(field), [field, onDuplicate])
+  const remove = useCallback(() => onDelete(field), [field, onDelete])
 
   return (
     <article
       ref={setNodeRef}
-      style={style}
+      style={sortableStyle(transform, transition, isDragging, reduceMotion)}
+      data-builder-level="field"
       className={cn(
-        builderSurfaces.card,
-        "group p-[var(--if-space-4)]",
-        selected && builderSurfaces.cardSelected,
-        isDragging && "z-10 opacity-60 shadow-if-lg",
+        "group",
+        builderSurfaces.field,
+        selected && builderSurfaces.fieldSelected,
+        isDragging && "z-10 cursor-grabbing opacity-40",
+        isOver && !isDragging && builderSurfaces.dropTarget,
       )}
     >
+      {isOver && !isDragging ? (
+        <span className={builderSurfaces.dropLine} aria-hidden />
+      ) : null}
       <div className="flex items-center gap-[var(--if-space-3)]">
         <button
           type="button"
-          className={cn(
-            "shrink-0 rounded-md p-1 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            disabled
-              ? "cursor-not-allowed opacity-40"
-              : "cursor-grab touch-none active:cursor-grabbing",
-          )}
+          className={builderSurfaces.dragHandle}
           aria-label={`Reordenar pergunta ${field.label}`}
           disabled={disabled}
           {...attributes}
@@ -158,64 +166,49 @@ const SortableFieldCard = memo(function SortableFieldCard({
 
         <button
           type="button"
-          onClick={onSelect}
-          className="flex min-w-0 flex-1 items-center gap-[var(--if-space-3)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          onClick={select}
+          className="flex min-w-0 flex-1 items-center gap-[var(--if-space-3)] rounded-lg py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-pressed={selected}
         >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/[0.10] bg-white/[0.06] text-xs font-semibold tabular-nums text-muted-foreground">
+          <span className="w-6 shrink-0 text-center text-xs font-medium tabular-nums text-muted-foreground">
             {index + 1}
-          </div>
+          </span>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-[var(--if-space-2)]">
-              <p className="truncate font-medium tracking-[-0.01em]">
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-[var(--if-space-2)]">
+              <span className="truncate text-sm font-medium tracking-[-0.01em]">
                 {field.label}
-              </p>
+              </span>
               {field.required ? (
                 <Badge className="rounded-full bg-primary/15 text-[10px] text-primary">
                   Obrigatória
                 </Badge>
               ) : null}
-            </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            </span>
+            <span className="mt-1 block text-xs text-muted-foreground">
               {getQuestionKindLabel(field)}
-            </p>
-          </div>
+            </span>
+          </span>
         </button>
 
         {!disabled ? (
-          <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 has-data-[state=open]:opacity-100">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-                aria-label={`Ações da pergunta ${field.label}`}
-              >
-                <MoreVertical className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem className="gap-2" onClick={onSelect}>
-                  <Edit3 className="size-3.5" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" onClick={onDuplicate}>
-                  <Copy className="size-3.5" />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" onClick={onSelect}>
-                  <GripVertical className="size-3.5" />
-                  Mover
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  variant="destructive"
-                  className="gap-2"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="size-3.5" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity group-hover:opacity-100">
+            <BuilderIconAction label={`Editar ${field.label}`} onClick={select}>
+              <Edit3 className="size-4" />
+            </BuilderIconAction>
+            <BuilderIconAction
+              label={`Duplicar ${field.label}`}
+              onClick={duplicate}
+            >
+              <Copy className="size-4" />
+            </BuilderIconAction>
+            <BuilderIconAction
+              label={`Excluir ${field.label}`}
+              onClick={remove}
+              destructive
+            >
+              <Trash2 className="size-4" />
+            </BuilderIconAction>
           </div>
         ) : null}
       </div>
@@ -227,11 +220,12 @@ const SortableSection = memo(function SortableSection({
   group,
   disabled,
   reorderPending,
+  reduceMotion,
   selectedFieldId,
   onSelectField,
-  onRename,
-  onDuplicate,
-  onDelete,
+  onRenameSection,
+  onDuplicateSection,
+  onDeleteSection,
   onOpenLibrary,
   onDuplicateField,
   onDeleteField,
@@ -240,12 +234,13 @@ const SortableSection = memo(function SortableSection({
   group: SectionGroup
   disabled: boolean
   reorderPending: boolean
+  reduceMotion: boolean
   selectedFieldId: string | null
   onSelectField: (field: QuestionnaireField) => void
-  onRename: (nextName: string) => void
-  onDuplicate: () => void
-  onDelete: () => void
-  onOpenLibrary: () => void
+  onRenameSection: (section: string, nextName: string) => void
+  onDuplicateSection: (section: string) => void
+  onDeleteSection: (section: string) => void
+  onOpenLibrary: (section?: string) => void
   onDuplicateField: (field: QuestionnaireField) => void
   onDeleteField: (field: QuestionnaireField) => void
   virtualize?: boolean
@@ -261,47 +256,57 @@ const SortableSection = memo(function SortableSection({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({
     id: sectionId(group.section),
     data: { type: "section", section: group.section },
     disabled,
   })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
   const fieldIds = useMemo(
     () => group.fields.map((field) => fieldId(field)),
     [group.fields],
   )
 
+  const commitRename = useCallback(() => {
+    onRenameSection(group.section, renameDraft)
+    setRenaming(false)
+  }, [group.section, onRenameSection, renameDraft])
+
+  const openLibrary = useCallback(() => {
+    onOpenLibrary(group.section)
+  }, [group.section, onOpenLibrary])
+
   return (
     <section
       ref={setNodeRef}
       style={{
-        ...style,
+        ...sortableStyle(transform, transition, isDragging, reduceMotion),
         ...(virtualize
-          ? { contentVisibility: "auto", containIntrinsicSize: "0 240px" }
+          ? { contentVisibility: "auto", containIntrinsicSize: "0 280px" }
           : undefined),
       }}
       id={canvasSectionDomId(group.section)}
+      data-builder-level="section"
       className={cn(
-        builderSurfaces.level1,
-        "overflow-hidden scroll-mt-4",
-        isDragging && "opacity-80 shadow-if-lg",
+        builderSurfaces.section,
+        "scroll-mt-6",
+        isDragging && "z-10 cursor-grabbing opacity-45 shadow-if-lg",
+        isOver && !isDragging && builderSurfaces.dropTarget,
       )}
     >
-      <header className="flex items-start gap-[var(--if-space-2)] border-b border-white/[0.08] bg-white/[0.05] px-[var(--if-space-4)] py-[var(--if-space-3)]">
+      {isOver && !isDragging ? (
+        <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
+          <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold tracking-wide text-primary-foreground shadow-sm">
+            Soltar aqui
+          </span>
+        </div>
+      ) : null}
+
+      <header className={cn(builderSurfaces.sectionHeader, "flex items-start gap-[var(--if-space-3)]")}>
         <button
           type="button"
-          className={cn(
-            "mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            disabled
-              ? "cursor-not-allowed opacity-40"
-              : "cursor-grab touch-none active:cursor-grabbing",
-          )}
+          className={cn(builderSurfaces.dragHandle, "mt-0.5")}
           aria-label={`Reordenar seção ${group.section}`}
           disabled={disabled}
           {...attributes}
@@ -319,36 +324,38 @@ const SortableSection = memo(function SortableSection({
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault()
-                  onRename(renameDraft)
-                  setRenaming(false)
+                  commitRename()
                 }
                 if (event.key === "Escape") {
                   setRenaming(false)
                   setRenameDraft(group.section)
                 }
               }}
-              className="h-8"
+              className="h-10"
               aria-label="Novo nome da seção"
             />
           ) : (
             <button
               type="button"
-              className="flex w-full items-center justify-between gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="flex w-full items-center justify-between gap-3 rounded-lg py-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-expanded={open}
               onClick={() => setOpen((value) => !value)}
             >
-              <div>
-                <p className="text-sm font-semibold tracking-[-0.02em]">
+              <span className="min-w-0">
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                  Seção
+                </span>
+                <span className="mt-1 block truncate text-base font-semibold tracking-[-0.02em]">
                   {group.section}
-                </p>
-                <p className="text-xs text-muted-foreground">
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
                   {group.fields.length}{" "}
                   {group.fields.length === 1 ? "pergunta" : "perguntas"}
-                </p>
-              </div>
+                </span>
+              </span>
               <ChevronDown
                 className={cn(
-                  "size-4 shrink-0 text-muted-foreground transition-transform",
+                  "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
                   open && "rotate-180",
                 )}
               />
@@ -364,10 +371,7 @@ const SortableSection = memo(function SortableSection({
                   type="button"
                   size="sm"
                   disabled={reorderPending || !renameDraft.trim()}
-                  onClick={() => {
-                    onRename(renameDraft)
-                    setRenaming(false)
-                  }}
+                  onClick={commitRename}
                 >
                   Salvar
                 </Button>
@@ -385,41 +389,30 @@ const SortableSection = memo(function SortableSection({
               </>
             ) : (
               <>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  aria-label={`Duplicar seção ${group.section}`}
+                <BuilderIconAction
+                  label={`Duplicar seção ${group.section}`}
                   disabled={reorderPending}
-                  onClick={onDuplicate}
+                  onClick={() => onDuplicateSection(group.section)}
                 >
-                  <Copy className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  aria-label={`Renomear seção ${group.section}`}
+                  <Copy className="size-4" />
+                </BuilderIconAction>
+                <BuilderIconAction
+                  label={`Renomear seção ${group.section}`}
                   onClick={() => {
                     setRenaming(true)
                     setRenameDraft(group.section)
                   }}
                 >
-                  <Edit3 className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8 text-destructive hover:text-destructive"
-                  aria-label={`Excluir seção ${group.section}`}
+                  <Edit3 className="size-4" />
+                </BuilderIconAction>
+                <BuilderIconAction
+                  label={`Excluir seção ${group.section}`}
                   disabled={reorderPending}
-                  onClick={onDelete}
+                  destructive
+                  onClick={() => onDeleteSection(group.section)}
                 >
-                  <Trash2 className="size-3.5" />
-                </Button>
+                  <Trash2 className="size-4" />
+                </BuilderIconAction>
               </>
             )}
           </div>
@@ -427,19 +420,10 @@ const SortableSection = memo(function SortableSection({
       </header>
 
       {open ? (
-        <div
-          className={cn(
-            builderSurfaces.level2,
-            builderSurfaces.fieldGap,
-            "m-[var(--if-space-4)] p-[var(--if-space-4)] md:p-[var(--if-space-5)]",
-          )}
-        >
-          <SortableContext
-            items={fieldIds}
-            strategy={verticalListSortingStrategy}
-          >
+        <div className={cn(builderSurfaces.sectionBody, builderSurfaces.fieldGap)}>
+          <SortableContext items={fieldIds} strategy={verticalListSortingStrategy}>
             {group.fields.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-white/[0.12] px-[var(--if-space-4)] py-[var(--if-space-6)] text-center text-xs text-muted-foreground">
+              <div className="rounded-xl border border-dashed border-white/[0.12] px-[var(--if-space-5)] py-[var(--if-space-8)] text-center text-sm text-muted-foreground">
                 Nenhuma pergunta nesta seção. Use Campo Personalizado ou Inserir
                 Bloco.
               </div>
@@ -451,25 +435,26 @@ const SortableSection = memo(function SortableSection({
                   index={index}
                   disabled={disabled || reorderPending}
                   selected={selectedFieldId === field.id}
-                  onSelect={() => onSelectField(field)}
-                  onDuplicate={() => onDuplicateField(field)}
-                  onDelete={() => onDeleteField(field)}
+                  reduceMotion={reduceMotion}
+                  onSelect={onSelectField}
+                  onDuplicate={onDuplicateField}
+                  onDelete={onDeleteField}
                 />
               ))
             )}
           </SortableContext>
 
           {!disabled ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-[var(--if-space-2)] w-full gap-2 border-dashed bg-transparent"
-              onClick={onOpenLibrary}
-            >
-              <Plus className="size-3.5" />
-              Campo Personalizado
-            </Button>
+            <div className="mt-[var(--if-space-3)] rounded-2xl border border-primary/35 bg-primary/[0.08] p-[var(--if-space-3)]">
+              <Button
+                type="button"
+                className="h-11 w-full gap-2 text-sm font-semibold shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-md"
+                onClick={openLibrary}
+              >
+                <Plus className="size-4" />
+                Campo Personalizado
+              </Button>
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -477,7 +462,24 @@ const SortableSection = memo(function SortableSection({
   )
 })
 
-export function QuestionnaireBuilderCanvas({
+function DragPreviewCard({
+  kicker,
+  title,
+}: {
+  kicker: string
+  title: string
+}) {
+  return (
+    <div className="cursor-grabbing rounded-xl border border-primary/45 bg-background px-[var(--if-space-4)] py-[var(--if-space-3)] shadow-if-lg">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+        {kicker}
+      </p>
+      <p className="mt-1 text-sm font-semibold">{title}</p>
+    </div>
+  )
+}
+
+export const QuestionnaireBuilderCanvas = memo(function QuestionnaireBuilderCanvas({
   sectionGroups,
   allSections,
   loading,
@@ -503,6 +505,22 @@ export function QuestionnaireBuilderCanvas({
 }: QuestionnaireBuilderCanvasProps) {
   const [newSectionName, setNewSectionName] = useState("")
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
+  const reduceMotionPreference = useReducedMotion()
+  const reduceMotion = Boolean(reduceMotionPreference)
+
+  const selectField = useLatestCallback(onSelectField)
+  const renameSection = useLatestCallback(onRenameSection)
+  const duplicateSection = useLatestCallback(onDuplicateSection)
+  const deleteSection = useLatestCallback(onDeleteSection)
+  const reorderSections = useLatestCallback(onReorderSections)
+  const reorderFields = useLatestCallback(onReorderFields)
+  const openLibrary = useLatestCallback(onOpenLibrary)
+  const quickInsert = useLatestCallback(onQuickInsert)
+  const duplicateField = useLatestCallback(onDuplicateField)
+  const deleteField = useLatestCallback(onDeleteField)
+  const focusCanvas = useLatestCallback(() => {
+    onFocusCanvas?.()
+  })
 
   const groups = useMemo(() => {
     const existing = new Map(sectionGroups.map((group) => [group.section, group]))
@@ -534,108 +552,146 @@ export function QuestionnaireBuilderCanvas({
     }),
   )
 
-  function handleDragStart(event: DragStartEvent) {
+  const dropAnimation = useMemo<DropAnimation>(
+    () => ({
+      duration: reduceMotion ? 0 : 220,
+      easing: "cubic-bezier(0.2, 0, 0, 1)",
+      sideEffects: defaultDropAnimationSideEffects({
+        styles: { active: { opacity: "0.35" } },
+      }),
+    }),
+    [reduceMotion],
+  )
+
+  useEffect(() => {
+    if (!activeDragId) return
+    const previous = document.body.style.cursor
+    document.body.style.cursor = "grabbing"
+    return () => {
+      document.body.style.cursor = previous
+    }
+  }, [activeDragId])
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragId(String(event.active.id))
-  }
+  }, [])
 
-  function handleDragEnd(event: DragEndEvent) {
+  const clearDrag = useCallback(() => {
     setActiveDragId(null)
-    const { active, over } = event
-    if (!over || active.id === over.id) return
+  }, [])
 
-    const activeId = String(active.id)
-    const overId = String(over.id)
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDragId(null)
+      const { active, over } = event
+      if (!over || active.id === over.id) return
 
-    if (activeId.startsWith("section:") && overId.startsWith("section:")) {
-      const activeSection = parseSectionId(activeId)
-      const overSection = parseSectionId(overId)
-      const oldIndex = groups.findIndex((g) => g.section === activeSection)
-      const newIndex = groups.findIndex((g) => g.section === overSection)
-      if (oldIndex < 0 || newIndex < 0) return
+      const activeId = String(active.id)
+      const overId = String(over.id)
 
-      const next = [...groups]
-      const [removed] = next.splice(oldIndex, 1)
-      next.splice(newIndex, 0, removed!)
-      onReorderSections(next)
-      return
-    }
+      if (activeId.startsWith("section:") && overId.startsWith("section:")) {
+        const activeSection = parseSectionId(activeId)
+        const overSection = parseSectionId(overId)
+        const oldIndex = groups.findIndex((group) => group.section === activeSection)
+        const newIndex = groups.findIndex((group) => group.section === overSection)
+        if (oldIndex < 0 || newIndex < 0) return
 
-    if (activeId.startsWith("field:")) {
-      const activeFieldId = parseFieldId(activeId)
-      let overFieldId = overId.startsWith("field:")
-        ? parseFieldId(overId)
-        : null
-      let targetSection = groups.find((group) =>
-        group.fields.some((field) => field.id === activeFieldId),
-      )?.section
+        const next = [...groups]
+        const [removed] = next.splice(oldIndex, 1)
+        next.splice(newIndex, 0, removed!)
+        reorderSections(next)
+        return
+      }
 
-      if (overId.startsWith("section:")) {
-        targetSection = parseSectionId(overId)
-        overFieldId = null
-      } else if (overFieldId) {
-        targetSection = groups.find((group) =>
-          group.fields.some((field) => field.id === overFieldId),
+      if (activeId.startsWith("field:")) {
+        const activeFieldId = parseFieldId(activeId)
+        let overFieldId = overId.startsWith("field:") ? parseFieldId(overId) : null
+        let targetSection = groups.find((group) =>
+          group.fields.some((field) => field.id === activeFieldId),
         )?.section
-      }
 
-      if (!targetSection) return
-
-      const next = groups.map((group) => ({
-        ...group,
-        fields: [...group.fields],
-      }))
-
-      let movingField: QuestionnaireField | undefined
-      for (const group of next) {
-        const index = group.fields.findIndex((field) => field.id === activeFieldId)
-        if (index >= 0) {
-          movingField = group.fields.splice(index, 1)[0]
-          break
+        if (overId.startsWith("section:")) {
+          targetSection = parseSectionId(overId)
+          overFieldId = null
+        } else if (overFieldId) {
+          targetSection = groups.find((group) =>
+            group.fields.some((field) => field.id === overFieldId),
+          )?.section
         }
-      }
-      if (!movingField) return
 
-      const targetGroup = next.find((group) => group.section === targetSection)
-      if (!targetGroup) return
+        if (!targetSection) return
 
-      if (overFieldId) {
-        const insertIndex = targetGroup.fields.findIndex(
-          (field) => field.id === overFieldId,
+        const next = groups.map((group) => ({
+          ...group,
+          fields: [...group.fields],
+        }))
+
+        let movingField: QuestionnaireField | undefined
+        for (const group of next) {
+          const index = group.fields.findIndex((field) => field.id === activeFieldId)
+          if (index >= 0) {
+            movingField = group.fields.splice(index, 1)[0]
+            break
+          }
+        }
+        if (!movingField) return
+
+        const targetGroup = next.find((group) => group.section === targetSection)
+        if (!targetGroup) return
+
+        if (overFieldId) {
+          const insertIndex = targetGroup.fields.findIndex(
+            (field) => field.id === overFieldId,
+          )
+          targetGroup.fields.splice(
+            insertIndex >= 0 ? insertIndex : targetGroup.fields.length,
+            0,
+            movingField,
+          )
+        } else {
+          targetGroup.fields.push(movingField)
+        }
+
+        reorderFields(
+          next.filter(
+            (group) =>
+              group.fields.length > 0 || allSections.includes(group.section),
+          ),
         )
-        targetGroup.fields.splice(
-          insertIndex >= 0 ? insertIndex : targetGroup.fields.length,
-          0,
-          movingField,
-        )
-      } else {
-        targetGroup.fields.push(movingField)
       }
-
-      onReorderFields(
-        next.filter(
-          (group) =>
-            group.fields.length > 0 || allSections.includes(group.section),
-        ),
-      )
-    }
-  }
+    },
+    [allSections, groups, reorderFields, reorderSections],
+  )
 
   const activeField = activeDragId?.startsWith("field:")
     ? groups
         .flatMap((group) => group.fields)
         .find((field) => fieldId(field) === activeDragId)
     : null
+  const activeSection = activeDragId?.startsWith("section:")
+    ? parseSectionId(activeDragId)
+    : null
+
+  const addSection = useCallback(() => {
+    const name = newSectionName.trim()
+    if (!name) return
+    onAddSection(name)
+    setNewSectionName("")
+    focusCanvas()
+  }, [focusCanvas, newSectionName, onAddSection])
 
   if (loading) return <BuilderCanvasSkeleton />
 
   return (
-    <div className="flex min-h-0 flex-col gap-[var(--if-space-5)]">
+    <div className="flex min-h-0 flex-col gap-[var(--if-space-6)] md:gap-[var(--if-space-8)]">
       {!isCanvasEmpty ? (
-        <div className="flex flex-col gap-[var(--if-space-3)] sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-[var(--if-space-4)] sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold tracking-[-0.02em]">Canvas</h2>
-            <p className="text-xs text-muted-foreground">
-              Módulos independentes — arraste para reorganizar.
+            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Seções
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Arraste para reorganizar. A seção é o bloco; a pergunta é o item.
             </p>
           </div>
 
@@ -643,18 +699,18 @@ export function QuestionnaireBuilderCanvas({
             <div className="flex flex-wrap items-center gap-[var(--if-space-2)]">
               <QuickAddMenu
                 disabled={reorderPending}
-                onInsert={onQuickInsert}
-                onOpenLibrary={() => onOpenLibrary()}
+                onInsert={quickInsert}
+                onOpenLibrary={() => openLibrary()}
               />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className="h-9 gap-2 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
                 disabled={reorderPending}
-                onClick={() => onOpenLibrary()}
+                onClick={() => openLibrary()}
               >
-                <Plus className="size-3.5" />
+                <Plus className="size-4" />
                 Campo Personalizado
               </Button>
             </div>
@@ -664,36 +720,28 @@ export function QuestionnaireBuilderCanvas({
 
       {!isCanvasEmpty ? (
         <PermissionGate permission="questionnaires:manage">
-          <div className={cn(builderSurfaces.level2, "flex gap-[var(--if-space-2)] p-[var(--if-space-2)]")}>
+          <div className="flex gap-[var(--if-space-2)] rounded-xl border border-dashed border-white/[0.14] bg-transparent p-[var(--if-space-2)]">
             <Input
               value={newSectionName}
               onChange={(event) => setNewSectionName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault()
-                  if (newSectionName.trim()) {
-                    onAddSection(newSectionName.trim())
-                    setNewSectionName("")
-                    onFocusCanvas?.()
-                  }
+                  addSection()
                 }
               }}
               placeholder="Ex.: Dados pessoais"
               aria-label="Nome da nova seção"
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+              className="h-10 border-0 bg-transparent shadow-none focus-visible:ring-0"
             />
             <Button
               type="button"
               variant="outline"
-              className="shrink-0 gap-2"
+              className="h-10 shrink-0 gap-2"
               disabled={!newSectionName.trim() || reorderPending}
-              onClick={() => {
-                onAddSection(newSectionName.trim())
-                setNewSectionName("")
-                onFocusCanvas?.()
-              }}
+              onClick={addSection}
             >
-              <Plus className="size-3.5" />
+              <Plus className="size-4" />
               Nova seção
             </Button>
           </div>
@@ -708,7 +756,7 @@ export function QuestionnaireBuilderCanvas({
         <CanvasEmptyState
           canManage={canManage}
           onOpenWizard={() => onOpenWizard?.()}
-          onInsertBlock={() => onInsertBlock?.() ?? onOpenLibrary()}
+          onInsertBlock={() => onInsertBlock?.() ?? openLibrary()}
           onBlankTemplate={() => onBlankTemplate?.()}
         />
       ) : (
@@ -716,12 +764,15 @@ export function QuestionnaireBuilderCanvas({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
+          onDragCancel={clearDrag}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext
-            items={sectionIds}
-            strategy={verticalListSortingStrategy}
-          >
+          <p className="sr-only" aria-live="polite">
+            {activeDragId
+              ? "Movendo. Solte sobre a área destacada para reposicionar."
+              : ""}
+          </p>
+          <SortableContext items={sectionIds} strategy={verticalListSortingStrategy}>
             <div className={builderSurfaces.sectionGap}>
               {groups.map((group) => (
                 <SortableSection
@@ -729,36 +780,30 @@ export function QuestionnaireBuilderCanvas({
                   group={group}
                   disabled={!canManage}
                   reorderPending={reorderPending}
+                  reduceMotion={reduceMotion}
                   selectedFieldId={selectedFieldId}
-                  onSelectField={onSelectField}
-                  onRename={(nextName) =>
-                    onRenameSection(group.section, nextName)
-                  }
-                  onDuplicate={() => onDuplicateSection(group.section)}
-                  onDelete={() => onDeleteSection(group.section)}
-                  onOpenLibrary={() => onOpenLibrary(group.section)}
-                  onDuplicateField={onDuplicateField}
-                  onDeleteField={onDeleteField}
+                  onSelectField={selectField}
+                  onRenameSection={renameSection}
+                  onDuplicateSection={duplicateSection}
+                  onDeleteSection={deleteSection}
+                  onOpenLibrary={openLibrary}
+                  onDuplicateField={duplicateField}
+                  onDeleteField={deleteField}
                   virtualize={virtualize}
                 />
               ))}
             </div>
           </SortableContext>
 
-          <DragOverlay>
+          <DragOverlay dropAnimation={dropAnimation}>
             {activeField ? (
-              <div
-                className={cn(
-                  builderSurfaces.card,
-                  "p-3 shadow-if-lg",
-                )}
-              >
-                <p className="text-sm font-medium">{activeField.label}</p>
-              </div>
+              <DragPreviewCard kicker="Movendo pergunta" title={activeField.label} />
+            ) : activeSection ? (
+              <DragPreviewCard kicker="Movendo seção" title={activeSection} />
             ) : null}
           </DragOverlay>
         </DndContext>
       )}
     </div>
   )
-}
+})

@@ -1,6 +1,7 @@
 "use client"
 
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 import { builderSurfaces } from "./builder-surfaces"
 
@@ -13,16 +14,17 @@ export function BuilderCanvasSkeleton() {
       </div>
       <div className={builderSurfaces.sectionGap}>
         {[0, 1].map((section) => (
-          <div key={section} className={builderSurfaces.level1}>
-            <div className="border-b border-white/[0.06] p-[var(--if-space-4)]">
-              <Skeleton className="h-5 w-40" />
+          <div key={section} className={builderSurfaces.section}>
+            <div className={builderSurfaces.sectionHeader}>
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="mt-2 h-5 w-40" />
               <Skeleton className="mt-2 h-3 w-20" />
             </div>
-            <div className="space-y-[var(--if-space-3)] p-[var(--if-space-4)]">
+            <div className={cn(builderSurfaces.sectionBody, builderSurfaces.fieldGap)}>
               {[0, 1, 2].map((field) => (
-                <div key={field} className={builderSurfaces.level2}>
-                  <div className="flex gap-[var(--if-space-3)] p-[var(--if-space-4)]">
-                    <Skeleton className="size-8 shrink-0 rounded-full" />
+                <div key={field} className={builderSurfaces.field}>
+                  <div className="flex gap-[var(--if-space-3)]">
+                    <Skeleton className="h-4 w-6 shrink-0" />
                     <div className="flex-1 space-y-2">
                       <Skeleton className="h-4 w-3/5" />
                       <Skeleton className="h-3 w-24" />

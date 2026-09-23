@@ -65,16 +65,27 @@ function TemplateCard({
           onSelect()
         }
       }}
+      data-builder-level="template"
       className={cn(
-        "group cursor-pointer rounded-xl border p-[var(--if-space-4)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        "group cursor-pointer rounded-2xl border p-[var(--if-space-4)] transition-[border-color,background-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         selected
-          ? "border-primary/40 bg-primary/[0.06] shadow-[var(--if-shadow-sm)]"
-          : "border-white/[0.08] bg-white/[0.03] hover:border-white/[0.14] hover:bg-white/[0.05]",
+          ? "border-primary/45 border-l-[3px] border-l-primary bg-primary/[0.09] p-[var(--if-space-5)] shadow-if-sm"
+          : "border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.045]",
       )}
     >
       <div className="flex items-start justify-between gap-[var(--if-space-2)]">
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium tracking-[-0.02em]">
+          {selected ? (
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              Template
+            </p>
+          ) : null}
+          <p
+            className={cn(
+              "truncate tracking-[-0.02em]",
+              selected ? "text-base font-semibold" : "text-sm font-medium",
+            )}
+          >
             {template.name}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -84,7 +95,7 @@ function TemplateCard({
         {canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 outline-none transition-opacity hover:bg-white/[0.06] hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-80 outline-none transition-colors hover:bg-white/[0.12] hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
               aria-label={`Ações do template ${template.name}`}
               onClick={(event) => event.stopPropagation()}
             >
@@ -163,7 +174,7 @@ export function QuestionnaireTemplateList({
 }: QuestionnaireTemplateListProps) {
   return (
     <aside
-      className="flex min-h-0 flex-col gap-[var(--if-space-3)]"
+      className="flex h-full min-h-0 flex-col gap-[var(--if-space-4)] overflow-hidden"
       aria-label="Lista de templates"
     >
       <div className="flex items-center justify-between gap-[var(--if-space-2)]">
@@ -171,7 +182,7 @@ export function QuestionnaireTemplateList({
         <span className="text-xs text-muted-foreground">{templates.length}</span>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-[var(--if-space-2)] overflow-y-auto pr-1">
+      <div className="min-h-0 flex-1 space-y-[var(--if-space-3)] overflow-x-hidden overflow-y-auto overscroll-contain pr-1 md:space-y-[var(--if-space-4)]">
         {loading ? (
           <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />

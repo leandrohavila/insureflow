@@ -54,6 +54,8 @@ type QuestionnaireBuilderWorkspaceProps = {
   onOpenWizard?: () => void
   onInsertBlock?: () => void
   onBlankTemplate?: () => void
+  templateName?: string
+  templateStatusLabel?: string
 }
 
 export const QuestionnaireBuilderWorkspace = memo(
@@ -90,6 +92,8 @@ export const QuestionnaireBuilderWorkspace = memo(
     onOpenWizard,
     onInsertBlock,
     onBlankTemplate,
+    templateName,
+    templateStatusLabel,
   }: QuestionnaireBuilderWorkspaceProps) {
     const canvasRef = useRef<HTMLDivElement>(null)
 
@@ -143,15 +147,34 @@ export const QuestionnaireBuilderWorkspace = memo(
 
     return (
       <>
-        <div className="flex min-h-0 flex-1 flex-col gap-[var(--if-space-3)]">
-          <CanvasStructureMinimap sections={allSections} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-[var(--if-space-4)] overflow-hidden">
+          {templateName ? (
+            <div
+              data-builder-level="template"
+              className="shrink-0 rounded-2xl border border-primary/35 border-l-[3px] border-l-primary bg-primary/[0.08] px-[var(--if-space-5)] py-[var(--if-space-4)]"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
+                Template
+              </p>
+              <div className="mt-1 flex min-w-0 items-center gap-[var(--if-space-3)]">
+                <h2 className="truncate text-lg font-semibold tracking-[-0.03em] md:text-xl">
+                  {templateName}
+                </h2>
+                {templateStatusLabel ? (
+                  <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {templateStatusLabel}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          <CanvasStructureMinimap sections={allSections} className="shrink-0" />
           <div
             ref={canvasRef}
             tabIndex={-1}
             onClick={handleCanvasBackgroundClick}
             className={cn(
-              "min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none",
-              builderSurfaces.level1,
+              "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain outline-none",
               builderSurfaces.canvas,
             )}
             aria-label="Canvas do formulário"

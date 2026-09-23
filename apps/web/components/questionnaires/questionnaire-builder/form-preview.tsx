@@ -1,14 +1,18 @@
 "use client"
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Eye,
+  Maximize2,
+  Minimize2,
   Monitor,
+  PanelRightClose,
   Smartphone,
   Tablet,
+  UnfoldHorizontal,
 } from "lucide-react"
 
 import { QuestionnaireAnswerField } from "@/components/questionnaires/questionnaire-answer-field"
@@ -34,6 +38,11 @@ import {
 import { cn } from "@/lib/utils"
 
 import { builderSurfaces } from "./builder-surfaces"
+import {
+  previewSectionStorageKey,
+  resolvePreviewSectionIndex,
+  type BuilderPreviewMode,
+} from "./preview-layout"
 import { PreviewSectionNav } from "./preview-section-nav"
 import type { PreviewViewport } from "./types"
 import { getQuestionnaireSections, groupFieldsBySection } from "./utils"
@@ -46,6 +55,11 @@ type QuestionnaireFormPreviewProps = {
   id?: string
   collapsed?: boolean
   syncCanvasNavigation?: boolean
+  presentation?: Exclude<BuilderPreviewMode, "collapsed">
+  focusSection?: string | null
+  onCollapse?: () => void
+  onToggleExpanded?: () => void
+  onToggleFullscreen?: () => void
 }
 
 const viewportButtons: Array<{
@@ -58,7 +72,7 @@ const viewportButtons: Array<{
   { value: "mobile", label: "Mobile", icon: Smartphone },
 ]
 
-function PreviewProgress({
+const PreviewProgress = memo(function PreviewProgress({
   percent,
   page,
   total,
@@ -95,9 +109,9 @@ function PreviewProgress({
       </div>
     </div>
   )
-}
+})
 
-function PageDots({
+const PageDots = memo(function PageDots({
   total,
   current,
   onSelect,
@@ -130,9 +144,9 @@ function PageDots({
       ))}
     </div>
   )
-}
+})
 
-function DeviceFrame({
+const DeviceFrame = memo(function DeviceFrame({
   viewport,
   children,
 }: {
@@ -174,6 +188,42 @@ function DeviceFrame({
       </div>
     </div>
   )
+})
+
+function PreviewChromeButton({
+  label,
+  pressed,
+  onClick,
+  children,
+}: {
+  label: string
+  pressed?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            aria-pressed={pressed}
+            onClick={onClick}
+            className={cn(
+              "inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+              "hover:bg-white/[0.12] hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              pressed && "bg-primary/15 text-primary",
+            )}
+          />
+        }
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
 }
 
 export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
@@ -183,11 +233,18 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
   id,
   collapsed,
   syncCanvasNavigation = true,
+  presentation = "docked",
+  focusSection,
+  onCollapse,
+  onToggleExpanded,
+  onToggleFullscreen,
 }: QuestionnaireFormPreviewProps) {
   const [viewport, setViewport] = useState<PreviewViewport>("desktop")
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
-  const [currentPage, setCurrentPage] = useState(0)
+  const [activeSection, setActiveSection] = useState<string | null>(null)
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+  const appliedFocusRef = useRef<string | null>(null)
+  const templateId = template?.id ?? null
 
   const orderedFields = useMemo(
     () => [...fields].sort((a, b) => a.order - b.order),
@@ -225,13 +282,64 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
       .filter((group) => group.fields.length > 0)
   }, [groups, ruleResult])
 
+  const visibleSectionKey = useMemo(
+    () => visibleGroups.map((group) => group.section).join("\u0001"),
+    [visibleGroups],
+  )
+  const seenTemplateRef = useRef<string | null>(null)
+  const stampedTemplateRef = useRef<string | null>(null)
+  const focusSectionRef = useRef(focusSection)
+  focusSectionRef.current = focusSection
+
   useEffect(() => {
-    setAnswers({})
-    setCurrentPage(0)
-    setOpenSections(
-      Object.fromEntries(groups.map((group) => [group.section, true])),
+    if (stampedTemplateRef.current === null) {
+      stampedTemplateRef.current = templateId
+      return
+    }
+    if (stampedTemplateRef.current === templateId) return
+    stampedTemplateRef.current = templateId
+    appliedFocusRef.current = focusSectionRef.current ?? null
+  }, [templateId])
+
+  useEffect(() => {
+    const names = visibleSectionKey ? visibleSectionKey.split("\u0001") : []
+    const templateChanged = seenTemplateRef.current !== templateId
+    seenTemplateRef.current = templateId
+
+    if (templateChanged) {
+      setAnswers({})
+      setOpenSections({})
+    }
+
+    if (!templateId) {
+      setActiveSection(null)
+      return
+    }
+
+    const stored = window.sessionStorage.getItem(previewSectionStorageKey(templateId))
+    setActiveSection((current) => {
+      const index = resolvePreviewSectionIndex(
+        names,
+        templateChanged ? null : current,
+        stored,
+      )
+      return names[index] ?? null
+    })
+  }, [templateId, visibleSectionKey])
+
+  useEffect(() => {
+    if (!templateId || !focusSection || focusSection === appliedFocusRef.current) {
+      return
+    }
+    const names = visibleSectionKey ? visibleSectionKey.split("\u0001") : []
+    if (!names.includes(focusSection)) return
+    appliedFocusRef.current = focusSection
+    setActiveSection(focusSection)
+    window.sessionStorage.setItem(
+      previewSectionStorageKey(templateId),
+      focusSection,
     )
-  }, [template?.id, groups])
+  }, [focusSection, templateId, visibleSectionKey])
 
   const completionPercent = useMemo(
     () =>
@@ -258,10 +366,30 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
     [effectiveAnswers, orderedFields, template?.settings, template?.name],
   )
 
+  const visibleSectionNames = useMemo(
+    () => (visibleSectionKey ? visibleSectionKey.split("\u0001") : []),
+    [visibleSectionKey],
+  )
+  const currentPage = Math.max(
+    0,
+    visibleSectionNames.indexOf(activeSection ?? ""),
+  )
   const totalPages = Math.max(visibleGroups.length, 1)
   const currentGroup = visibleGroups[currentPage]
   const isFirstPage = currentPage === 0
   const isLastPage = currentPage >= visibleGroups.length - 1
+
+  const selectPage = useCallback(
+    (index: number) => {
+      const section = visibleSectionNames[index]
+      if (!section) return
+      setActiveSection(section)
+      if (templateId) {
+        window.sessionStorage.setItem(previewSectionStorageKey(templateId), section)
+      }
+    },
+    [templateId, visibleSectionNames],
+  )
 
   const completedSections = useMemo(() => {
     const done = new Set<string>()
@@ -274,12 +402,12 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
 
   const handleSectionNav = useCallback(
     (section: string, index: number) => {
-      setCurrentPage(index)
+      selectPage(index)
       if (syncCanvasNavigation) {
         scrollToCanvasSection(section)
       }
     },
-    [syncCanvasNavigation],
+    [selectPage, syncCanvasNavigation],
   )
 
   const updateAnswer = useCallback((key: string, value: unknown) => {
@@ -299,20 +427,55 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
     <aside
       id={id}
       className={cn(
-        "flex min-h-0 flex-col",
+        "flex h-full min-h-0 min-w-0 flex-col overflow-hidden",
         builderSurfaces.level1,
-        "lg:sticky lg:top-[var(--if-space-4)] lg:max-h-[calc(100svh-var(--if-space-8))]",
         className,
       )}
       aria-label="Preview do formulário"
     >
       <div className="shrink-0 space-y-[var(--if-space-3)] border-b border-white/[0.08] bg-white/[0.04] p-[var(--if-space-4)]">
-        <div className="flex items-center justify-between gap-[var(--if-space-2)]">
+        <div className="flex flex-wrap items-center justify-between gap-[var(--if-space-2)]">
           <div className="flex items-center gap-2">
             <Eye className="size-4 text-primary" aria-hidden />
             <p className="text-sm font-semibold tracking-[-0.02em]">Preview</p>
           </div>
-          <div
+          <div className="flex flex-wrap items-center gap-1">
+            {onCollapse ? (
+              <PreviewChromeButton label="Recolher preview" onClick={onCollapse}>
+                <PanelRightClose className="size-4" />
+              </PreviewChromeButton>
+            ) : null}
+            {onToggleExpanded && presentation !== "fullscreen" ? (
+              <PreviewChromeButton
+                label={
+                  presentation === "expanded"
+                    ? "Reduzir preview"
+                    : "Expandir preview"
+                }
+                pressed={presentation === "expanded"}
+                onClick={onToggleExpanded}
+              >
+                <UnfoldHorizontal className="size-4" />
+              </PreviewChromeButton>
+            ) : null}
+            {onToggleFullscreen ? (
+              <PreviewChromeButton
+                label={
+                  presentation === "fullscreen"
+                    ? "Sair da tela cheia"
+                    : "Preview em tela cheia"
+                }
+                pressed={presentation === "fullscreen"}
+                onClick={onToggleFullscreen}
+              >
+                {presentation === "fullscreen" ? (
+                  <Minimize2 className="size-4" />
+                ) : (
+                  <Maximize2 className="size-4" />
+                )}
+              </PreviewChromeButton>
+            ) : null}
+            <div
             className="flex items-center gap-0.5 rounded-lg border border-white/[0.10] bg-white/[0.05] p-0.5"
             role="radiogroup"
             aria-label="Viewport do preview"
@@ -342,6 +505,7 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
               </Tooltip>
             ))}
           </div>
+          </div>
         </div>
         <PreviewProgress
           percent={completionPercent}
@@ -352,20 +516,22 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
           <PageDots
             total={visibleGroups.length}
             current={currentPage}
-            onSelect={setCurrentPage}
+            onSelect={selectPage}
           />
         ) : null}
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <PreviewSectionNav
-          sections={visibleGroups.map((group) => group.section)}
-          currentSection={currentGroup?.section ?? null}
-          completedSections={completedSections}
-          onSelect={handleSectionNav}
-          className="hidden w-36 shrink-0 border-r border-white/[0.06] md:block"
-        />
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white/[0.02] p-[var(--if-space-4)]">
+        {presentation !== "docked" ? (
+          <PreviewSectionNav
+            sections={visibleGroups.map((group) => group.section)}
+            currentSection={currentGroup?.section ?? null}
+            completedSections={completedSections}
+            onSelect={handleSectionNav}
+            className="hidden w-40 shrink-0 border-r border-white/[0.06] md:block"
+          />
+        ) : null}
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-white/[0.02] p-[var(--if-space-4)] md:p-[var(--if-space-5)]">
         <DeviceFrame viewport={viewport}>
           {template ? (
             <>
@@ -434,9 +600,7 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
                       size="sm"
                       className="gap-1.5"
                       disabled={isFirstPage}
-                      onClick={() =>
-                        setCurrentPage((page) => Math.max(0, page - 1))
-                      }
+                      onClick={() => selectPage(Math.max(0, currentPage - 1))}
                     >
                       <ChevronLeft className="size-3.5" />
                       Anterior
@@ -447,9 +611,7 @@ export const QuestionnaireFormPreview = memo(function QuestionnaireFormPreview({
                       className="gap-1.5"
                       disabled={isLastPage}
                       onClick={() =>
-                        setCurrentPage((page) =>
-                          Math.min(visibleGroups.length - 1, page + 1),
-                        )
+                        selectPage(Math.min(visibleGroups.length - 1, currentPage + 1))
                       }
                     >
                       {isLastPage ? "Enviar" : "Próxima"}
