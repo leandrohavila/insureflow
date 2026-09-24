@@ -20,7 +20,7 @@ export default function InterestPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <SourceBanner source={source} />
       <Link href={`/imoveis/${data.slug}`} className="text-sm text-muted-foreground">
         ← Voltar ao imóvel

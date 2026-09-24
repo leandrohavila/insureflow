@@ -212,6 +212,20 @@ export class CreatePropertyDto {
   featured?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Alias de featured. Destaque no portal comercial.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isFeatured?: boolean;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isLaunch?: boolean;
+
+  @ApiPropertyOptional({
     nullable: true,
     description: 'Destaque ativo até esta data (ISO). Null = sem prazo.',
   })

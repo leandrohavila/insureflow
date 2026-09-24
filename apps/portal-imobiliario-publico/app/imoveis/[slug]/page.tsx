@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RealEstateListingJsonLd } from "@/components/listing-jsonld";
+import { SiteHeader } from "@/components/site-header";
 import { SourceBanner } from "@/components/source-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { CatalogNotFoundError } from "@/lib/errors";
 import { toAbsoluteUrl } from "@/lib/site";
 import { cn, formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
-import { getPropertyBySlug } from "@/services/catalog";
+import { getPortalHome, getPropertyBySlug } from "@/services/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -79,8 +81,13 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       .join(" · ");
     const features = property.features ?? [];
 
+    const portal = await getPortalHome();
+
     return (
-      <div className="space-y-4">
+      <>
+      <SiteHeader config={portal.data.config} />
+      <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
+        <RealEstateListingJsonLd property={property} />
         <SourceBanner source={source} />
         <Link href="/imoveis" className="text-sm text-muted-foreground">
           ← Voltar à listagem
@@ -141,6 +148,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           Tenho interesse
         </Link>
       </div>
+      </>
     );
   } catch (error) {
     if (error instanceof CatalogNotFoundError) notFound();

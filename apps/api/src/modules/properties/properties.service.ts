@@ -163,7 +163,8 @@ export class PropertiesService {
       bedrooms: dto.bedrooms,
       bathrooms: dto.bathrooms,
       parkingSpots: dto.parkingSpots,
-      featured: dto.featured ?? false,
+      featured: dto.isFeatured ?? dto.featured ?? false,
+      isLaunch: dto.isLaunch ?? false,
       featuredUntil: parseFeaturedUntil(dto.featuredUntil),
       published: false,
       publishedAt: null,
@@ -225,7 +226,10 @@ export class PropertiesService {
       ...(dto.parkingSpots !== undefined
         ? { parkingSpots: dto.parkingSpots }
         : {}),
-      ...(dto.featured != null ? { featured: dto.featured } : {}),
+      ...(dto.isFeatured != null || dto.featured != null
+        ? { featured: dto.isFeatured ?? dto.featured }
+        : {}),
+      ...(dto.isLaunch != null ? { isLaunch: dto.isLaunch } : {}),
       ...(dto.featuredUntil !== undefined
         ? { featuredUntil: parseFeaturedUntil(dto.featuredUntil) }
         : {}),

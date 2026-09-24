@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -11,7 +12,12 @@ import {
   Min,
 } from 'class-validator';
 
-import { PROPERTY_PURPOSES, type PropertyPurpose } from '../properties.util';
+import {
+  PROPERTY_PURPOSES,
+  PROPERTY_TYPES,
+  type PropertyPurpose,
+  type PropertyType,
+} from '../properties.util';
 
 export class PublicPropertyQueryDto {
   @ApiProperty({ example: 'insureflow' })
@@ -47,6 +53,23 @@ export class PublicPropertyQueryDto {
   @IsOptional()
   @IsIn(PROPERTY_PURPOSES)
   purpose?: PropertyPurpose;
+
+  @ApiPropertyOptional({ enum: PROPERTY_TYPES })
+  @IsOptional()
+  @IsIn(PROPERTY_TYPES)
+  type?: PropertyType;
+
+  @ApiPropertyOptional({ description: 'Código público (slug) ou id do imóvel' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(88)
+  code?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isLaunch?: boolean;
 
   @ApiPropertyOptional({ example: 200000 })
   @IsOptional()

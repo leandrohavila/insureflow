@@ -48,6 +48,8 @@ type PropertyFormState = {
   bedrooms: string
   bathrooms: string
   areaM2: string
+  featured: boolean
+  isLaunch: boolean
 }
 
 const EMPTY_FORM: PropertyFormState = {
@@ -61,6 +63,8 @@ const EMPTY_FORM: PropertyFormState = {
   bedrooms: "",
   bathrooms: "",
   areaM2: "",
+  featured: false,
+  isLaunch: false,
 }
 
 function toFormState(property: NonNullable<ReturnType<typeof useProperty>["data"]>): PropertyFormState {
@@ -75,6 +79,8 @@ function toFormState(property: NonNullable<ReturnType<typeof useProperty>["data"
     bedrooms: property.bedrooms != null ? String(property.bedrooms) : "",
     bathrooms: property.bathrooms != null ? String(property.bathrooms) : "",
     areaM2: property.areaM2 != null ? String(property.areaM2) : "",
+    featured: property.featured,
+    isLaunch: Boolean(property.isLaunch),
   }
 }
 
@@ -94,6 +100,9 @@ function toPayload(
     bedrooms: form.bedrooms ? Number(form.bedrooms) : undefined,
     bathrooms: form.bathrooms ? Number(form.bathrooms) : undefined,
     areaM2: form.areaM2 ? Number(form.areaM2) : undefined,
+    featured: form.featured,
+    isFeatured: form.featured,
+    isLaunch: form.isLaunch,
   }
 }
 
@@ -307,6 +316,29 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
                         updateField("areaM2", event.target.value)
                       }
                     />
+                  </FormField>
+
+                  <FormField label="Destaque no portal" htmlFor="featured">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        id="featured"
+                        type="checkbox"
+                        checked={form.featured}
+                        onChange={(event) => updateField("featured", event.target.checked)}
+                      />
+                      Imóvel em destaque
+                    </label>
+                  </FormField>
+                  <FormField label="Lançamento" htmlFor="isLaunch">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        id="isLaunch"
+                        type="checkbox"
+                        checked={form.isLaunch}
+                        onChange={(event) => updateField("isLaunch", event.target.checked)}
+                      />
+                      Exibir em Lançamentos
+                    </label>
                   </FormField>
 
                   <FormField label="Descrição" htmlFor="description" fullWidth>

@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 
+import { CATEGORY_LINKS } from "@/lib/commercial";
 import { CatalogUnavailableError } from "@/lib/errors";
 import { portalOrigin } from "@/lib/site";
-import { apiList } from "@/services/catalog-api";
+import { apiFacets, apiList } from "@/services/catalog-api";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
   ];
+
+  for (const category of CATEGORY_LINKS) {
+    entries.push({
+      url: `${origin}/imoveis/tipos/${category.slug}`,
+      changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
+
+  try {
+    const facets = await apiFacets();
+    for (const neighborhood of facets.neighborhoods) {
+      entries.push({
+        url: `${origin}/imoveis/bairros/${neighborhood.slug}`,
+        changeFrequency: "daily",
+        priority: 0.7,
+      });
+    }
+  } catch (error) {
+    if (!(error instanceof CatalogUnavailableError)) {
+      /* sitemap segue com as rotas estruturais */
+    }
+  }
 
   try {
     let page = 1;

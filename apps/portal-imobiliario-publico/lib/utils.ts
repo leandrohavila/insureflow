@@ -25,6 +25,7 @@ export function typeLabel(type: string) {
     HOUSE: "Casa",
     LAND: "Terreno",
     COMMERCIAL: "Comercial",
+    CONDOMINIUM: "Condomínio",
     OTHER: "Imóvel",
   };
   return labels[type] ?? "Imóvel";

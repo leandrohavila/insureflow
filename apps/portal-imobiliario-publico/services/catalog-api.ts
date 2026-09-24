@@ -10,7 +10,7 @@ import type {
 } from "@/types/property";
 
 function toSearchParams(
-  query: PropertyListQuery & Record<string, string | number | undefined>,
+  query: PropertyListQuery & Record<string, string | number | boolean | undefined>,
 ) {
   const params = new URLSearchParams();
   const defaults = publicQueryDefaults();
@@ -71,6 +71,24 @@ export function apiSearch(query: PropertyListQuery = {}) {
 export function apiHighlights(query: PropertyListQuery = {}) {
   return request<HighlightsResult>(
     `/api/v1/public/properties/highlights?${toSearchParams(query).toString()}`,
+  );
+}
+
+export function apiLaunches(query: PropertyListQuery = {}) {
+  return request<HighlightsResult>(
+    `/api/v1/public/properties/launches?${toSearchParams(query).toString()}`,
+  );
+}
+
+export function apiFacets() {
+  return request<import("@/types/property").CatalogFacets>(
+    `/api/v1/public/properties/facets?${toSearchParams({}).toString()}`,
+  );
+}
+
+export function apiPortal() {
+  return request<import("@/types/property").PortalHome>(
+    `/api/v1/public/portal?${toSearchParams({}).toString()}`,
   );
 }
 

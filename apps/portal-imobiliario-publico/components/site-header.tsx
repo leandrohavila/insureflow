@@ -1,21 +1,84 @@
-import Link from "next/link";
+"use client";
 
-export function SiteHeader() {
+import Link from "next/link";
+import { useState } from "react";
+import { Menu, X } from "lucide-react";
+
+import { companyName } from "@/lib/commercial";
+import { cn } from "@/lib/utils";
+import type { PortalConfig } from "@/types/property";
+
+const LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/imoveis", label: "Imóveis" },
+  { href: "/#lancamentos", label: "Lançamentos" },
+  { href: "/#sobre", label: "Sobre" },
+  { href: "/#contato", label: "Contato" },
+];
+
+export function SiteHeader({
+  config,
+  overlay = false,
+}: {
+  config: PortalConfig | null;
+  overlay?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const name = companyName(config);
+
   return (
-    <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="text-sm font-semibold tracking-tight">
-          Ávila Imóveis
+    <header
+      className={cn(
+        "z-30 w-full",
+        overlay ? "absolute inset-x-0 top-0" : "sticky top-0 border-b border-white/10 bg-[#10241b]",
+      )}
+    >
+      <div className="mx-auto flex h-16 w-full max-w-[90rem] items-center justify-between gap-4 px-4 md:h-20 md:px-8 2xl:max-w-[110rem]">
+        <Link href="/" className="flex min-w-0 items-center gap-3 text-white">
+          {config?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={config.logoUrl}
+              alt={name}
+              className="h-10 w-auto max-w-[10rem] object-contain md:h-12"
+            />
+          ) : (
+            <span className="truncate text-sm font-semibold tracking-[0.14em] uppercase md:text-base">
+              {name}
+            </span>
+          )}
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
-            Home
-          </Link>
-          <Link href="/imoveis" className="text-muted-foreground hover:text-foreground">
-            Imóveis
-          </Link>
+        <nav className="hidden items-center gap-6 text-sm text-white/90 lg:flex">
+          {LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="hover:text-white">
+              {link.label}
+            </Link>
+          ))}
         </nav>
+        <button
+          type="button"
+          className="inline-flex size-10 items-center justify-center rounded-md text-white lg:hidden"
+          aria-expanded={open}
+          aria-label={open ? "Fechar menu" : "Abrir menu"}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? <X className="size-5" /> : <Menu className="size-5" />}
+        </button>
       </div>
+      {open && (
+        <nav className="border-t border-white/10 bg-[#10241b] px-4 py-3 lg:hidden">
+          {LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block py-2 text-sm text-white"
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }

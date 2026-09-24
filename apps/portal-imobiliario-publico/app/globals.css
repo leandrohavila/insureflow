@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #f7f5f2;
+  --color-background: #f6f3ee;
   --color-foreground: #1c1917;
   --color-card: #ffffff;
   --color-card-foreground: #1c1917;
   --color-muted: #e7e5e4;
   --color-muted-foreground: #57534e;
   --color-border: #d6d3d1;
-  --color-primary: #14532d;
+  --color-primary: #123524;
   --color-primary-foreground: #f7fee7;
-  --color-ring: #166534;
+  --color-ring: #123524;
   --radius: 0.75rem;
 }
 
@@ -22,4 +22,8 @@ body {
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+}
+
+img {
+  max-width: 100%;
 }

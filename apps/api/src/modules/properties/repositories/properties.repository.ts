@@ -4,7 +4,9 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import {
   PROPERTY_DETAIL_INCLUDE,
+  slugifyTitle,
   type PropertyPurpose,
+  type PropertyType,
 } from '../properties.util';
 
 export type PropertyListFilters = {
@@ -13,11 +15,14 @@ export type PropertyListFilters = {
   city?: string;
   neighborhood?: string;
   purpose?: PropertyPurpose;
+  type?: PropertyType;
   priceMin?: number;
   priceMax?: number;
   published?: boolean;
   featured?: boolean;
   featuredActiveOnly?: boolean;
+  isLaunch?: boolean;
+  code?: string;
   search?: string;
   q?: string;
 };
@@ -47,6 +52,21 @@ export class PropertiesRepository {
     }
     if (filters.purpose) {
       and.push({ purpose: filters.purpose });
+    }
+    if (filters.type) {
+      and.push({ type: filters.type });
+    }
+    if (filters.isLaunch != null) {
+      and.push({ isLaunch: filters.isLaunch });
+    }
+    if (filters.code?.trim()) {
+      const code = filters.code.trim();
+      and.push({
+        OR: [
+          { slug: { equals: code, mode: 'insensitive' } },
+          { id: code },
+        ],
+      });
     }
     if (filters.priceMin != null || filters.priceMax != null) {
       and.push({
@@ -144,5 +164,47 @@ export class PropertiesRepository {
 
   delete(id: string) {
     return this.prisma.property.delete({ where: { id } });
+  }
+
+  async facets(filters: Pick<PropertyListFilters, 'tenantId' | 'businessUnitIds' | 'published'>) {
+    const rows = await this.prisma.property.groupBy({
+      by: ['neighborhood', 'city', 'type'],
+      where: this.where({ ...filters }),
+      _count: { _all: true },
+    });
+
+    const neighborhoods = new Map<
+      string,
+      { name: string; city: string; slug: string; count: number }
+    >();
+    const cities = new Map<string, number>();
+    const types = new Map<string, number>();
+
+    for (const row of rows) {
+      const count = row._count._all;
+      types.set(row.type, (types.get(row.type) ?? 0) + count);
+      const city = row.city.trim();
+      if (city) cities.set(city, (cities.get(city) ?? 0) + count);
+      const name = row.neighborhood?.trim();
+      if (!name || !city) continue;
+      const slug = slugifyTitle(`${name}-${city}`);
+      const current = neighborhoods.get(slug);
+      neighborhoods.set(slug, {
+        name,
+        city,
+        slug,
+        count: (current?.count ?? 0) + count,
+      });
+    }
+
+    return {
+      neighborhoods: [...neighborhoods.values()].sort((a, b) =>
+        a.name.localeCompare(b.name, 'pt-BR'),
+      ),
+      cities: [...cities.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+      types: [...types.entries()].map(([type, count]) => ({ type, count })),
+    };
   }
 }

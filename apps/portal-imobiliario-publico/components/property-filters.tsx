@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PROPERTY_PURPOSES, type PropertyListQuery } from "@/types/property";
+import { PROPERTY_PURPOSES, PROPERTY_TYPES, type PropertyListQuery } from "@/types/property";
+import { typeLabel } from "@/lib/utils";
 
 const PURPOSE_OPTIONS = [
   { value: "", label: "Todas" },
@@ -29,6 +30,26 @@ export function PropertyFilters({ query }: { query: PropertyListQuery }) {
           defaultValue={query.neighborhood ?? ""}
           placeholder="Centro"
         />
+      </div>
+      <div>
+        <Label htmlFor="type">Tipo</Label>
+        <select
+          id="type"
+          name="type"
+          defaultValue={query.type ?? ""}
+          className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
+        >
+          <option value="">Todos</option>
+          {PROPERTY_TYPES.filter((type) => type !== "OTHER").map((type) => (
+            <option key={type} value={type}>
+              {typeLabel(type)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <Label htmlFor="code">Código</Label>
+        <Input id="code" name="code" defaultValue={query.code ?? ""} />
       </div>
       <div>
         <Label htmlFor="purpose">Finalidade</Label>
@@ -82,6 +103,7 @@ export function parseListQuery(
     return Array.isArray(value) ? value[0] : value;
   };
   const purpose = read("purpose");
+  const type = read("type");
   const priceMin = Number(read("priceMin"));
   const priceMax = Number(read("priceMax"));
   const page = Number(read("page"));
@@ -94,6 +116,11 @@ export function parseListQuery(
       purpose && (PROPERTY_PURPOSES as readonly string[]).includes(purpose)
         ? (purpose as PropertyListQuery["purpose"])
         : undefined,
+    type:
+      type && (PROPERTY_TYPES as readonly string[]).includes(type)
+        ? (type as PropertyListQuery["type"])
+        : undefined,
+    code: read("code") || undefined,
     priceMin: Number.isFinite(priceMin) && priceMin > 0 ? priceMin : undefined,
     priceMax: Number.isFinite(priceMax) && priceMax > 0 ? priceMax : undefined,
     page: Number.isFinite(page) && page > 0 ? page : 1,

@@ -6,6 +6,7 @@ export const PROPERTY_TYPES = [
   "HOUSE",
   "LAND",
   "COMMERCIAL",
+  "CONDOMINIUM",
   "OTHER",
 ] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
@@ -54,6 +55,8 @@ export type PublicProperty = {
   bathrooms: number | null;
   parkingSpots: number | null;
   featured: boolean;
+  isFeatured?: boolean;
+  isLaunch?: boolean;
   featuredUntil?: string | null;
   published: boolean;
   publishedAt: string | null;
@@ -68,6 +71,9 @@ export type PropertyListQuery = {
   city?: string;
   neighborhood?: string;
   purpose?: PropertyPurpose;
+  type?: PropertyType;
+  code?: string;
+  isLaunch?: boolean;
   priceMin?: number;
   priceMax?: number;
   page?: number;
@@ -103,6 +109,55 @@ export type PropertyLead = {
   message: string | null;
   source: string;
   createdAt: string;
+};
+
+export type PortalConfig = {
+  id: string;
+  companyName: string;
+  heroTitle: string | null;
+  heroSubtitle: string | null;
+  heroImage: string | null;
+  logoUrl: string | null;
+  aboutTitle: string | null;
+  aboutText: string | null;
+  aboutImage: string | null;
+  differentials: string[];
+  whatsapp: string | null;
+  phone: string | null;
+  email: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  youtube: string | null;
+  creci: string | null;
+  address: string | null;
+};
+
+export type PortalBanner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  image: string;
+  link: string | null;
+  active: boolean;
+  order: number;
+};
+
+export type PortalHome = {
+  config: PortalConfig | null;
+  banners: PortalBanner[];
+};
+
+export type CatalogFacetNeighborhood = {
+  name: string;
+  city: string;
+  slug: string;
+  count: number;
+};
+
+export type CatalogFacets = {
+  neighborhoods: CatalogFacetNeighborhood[];
+  cities: { name: string; count: number }[];
+  types: { type: string; count: number }[];
 };
 
 export type CatalogSource = "api" | "mock";

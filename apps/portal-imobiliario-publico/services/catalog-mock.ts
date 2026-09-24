@@ -90,6 +90,14 @@ function matches(property: PublicProperty, query: PropertyListQuery) {
     return false;
   }
   if (query.purpose && property.purpose !== query.purpose) return false;
+  if (query.type && property.type !== query.type) return false;
+  if (query.isLaunch && !property.isLaunch) return false;
+  if (query.code) {
+    const code = query.code.trim().toLowerCase();
+    if (property.slug.toLowerCase() !== code && property.id !== query.code.trim()) {
+      return false;
+    }
+  }
   if (query.priceMin != null && property.price < query.priceMin) return false;
   if (query.priceMax != null && property.price > query.priceMax) return false;
 

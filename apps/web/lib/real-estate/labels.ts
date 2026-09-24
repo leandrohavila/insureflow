@@ -9,6 +9,7 @@ export const PROPERTY_TYPE_LABELS: Record<string, string> = {
   HOUSE: "Casa",
   LAND: "Terreno",
   COMMERCIAL: "Comercial",
+  CONDOMINIUM: "Condomínio",
   OTHER: "Outro",
 }
 

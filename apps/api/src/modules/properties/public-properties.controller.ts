@@ -26,6 +26,18 @@ export class PublicPropertiesController {
     return this.catalog.highlights(query);
   }
 
+  @Get('launches')
+  @ApiOperation({ summary: 'Lançamentos publicados' })
+  launches(@Query() query: PublicPropertyQueryDto) {
+    return this.catalog.launches(query);
+  }
+
+  @Get('facets')
+  @ApiOperation({ summary: 'Bairros, cidades e tipos publicados (SEO)' })
+  facets(@Query() query: PublicPropertyQueryDto) {
+    return this.catalog.facets(query);
+  }
+
   @Get('search')
   @ApiOperation({ summary: 'Buscar imóveis publicados' })
   search(@Query() query: PublicPropertySearchQueryDto) {

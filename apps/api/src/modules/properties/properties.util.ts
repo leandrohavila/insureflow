@@ -23,6 +23,7 @@ export const PROPERTY_TYPES = [
   'HOUSE',
   'LAND',
   'COMMERCIAL',
+  'CONDOMINIUM',
   'OTHER',
 ] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
@@ -132,8 +133,11 @@ export function serializeProperty<
   },
 >(row: T) {
   const images = withAbsoluteImageUrls(row.images);
+  const featured = Boolean((row as { featured?: boolean }).featured);
   return {
     ...row,
+    featured,
+    isFeatured: featured,
     price: decimalToNumber(row.price) ?? 0,
     areaM2: decimalToNumber(row.areaM2 ?? null),
     ...(images ? { images } : {}),

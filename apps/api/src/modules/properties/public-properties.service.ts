@@ -18,7 +18,11 @@ export class PublicPropertiesService {
   private filters(
     ctx: { tenantId: string; businessUnitId?: string },
     query: PublicPropertyQueryDto & { q?: string },
-    extras?: { featured?: boolean; featuredActiveOnly?: boolean },
+    extras?: {
+      featured?: boolean;
+      featuredActiveOnly?: boolean;
+      isLaunch?: boolean;
+    },
   ) {
     return {
       tenantId: ctx.tenantId,
@@ -26,11 +30,14 @@ export class PublicPropertiesService {
       city: query.city,
       neighborhood: query.neighborhood,
       purpose: query.purpose,
+      type: query.type,
       priceMin: query.priceMin,
       priceMax: query.priceMax,
+      code: query.code,
       published: true as const,
       featured: extras?.featured,
       featuredActiveOnly: extras?.featuredActiveOnly,
+      isLaunch: extras?.isLaunch ?? query.isLaunch,
       q: query.q,
     };
   }
@@ -54,6 +61,23 @@ export class PublicPropertiesService {
 
   async search(query: PublicPropertySearchQueryDto) {
     return this.list(query);
+  }
+
+  async launches(query: PublicPropertyQueryDto) {
+    const ctx = await this.context.resolve(query);
+    const limit = query.limit ?? 6;
+    const filters = this.filters(ctx, query, { isLaunch: true });
+    const rows = await this.properties.findMany(filters, 0, limit);
+    return { data: rows.map((row) => serializePublicProperty(row)) };
+  }
+
+  async facets(query: PublicPropertyQueryDto) {
+    const ctx = await this.context.resolve(query);
+    return this.properties.facets({
+      tenantId: ctx.tenantId,
+      businessUnitIds: ctx.businessUnitId ? [ctx.businessUnitId] : undefined,
+      published: true,
+    });
   }
 
   async highlights(query: PublicPropertyQueryDto) {

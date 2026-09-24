@@ -6,8 +6,11 @@ import {
 import {
   apiCreateLead,
   apiFindBySlug,
+  apiFacets,
   apiHighlights,
+  apiLaunches,
   apiList,
+  apiPortal,
   apiSearch,
 } from "@/services/catalog-api";
 import {
@@ -18,8 +21,10 @@ import {
   mockSearch,
 } from "@/services/catalog-mock";
 import type {
+  CatalogFacets,
   CatalogResult,
   CreatePropertyLeadInput,
+  PortalHome,
   PropertyLead,
   PropertyListQuery,
   PublicProperty,
@@ -57,6 +62,41 @@ export function searchProperties(query: PropertyListQuery = {}) {
 
 export function listHighlights(query: PropertyListQuery = {}) {
   return withFallback(() => apiHighlights(query), () => mockHighlights());
+}
+
+export function listLaunches(query: PropertyListQuery = {}) {
+  return withFallback(
+    () => apiLaunches(query),
+    () => ({ data: mockList({ ...query, isLaunch: true }).data }),
+  );
+}
+
+const EMPTY_FACETS: CatalogFacets = {
+  neighborhoods: [],
+  cities: [],
+  types: [],
+};
+
+const EMPTY_PORTAL: PortalHome = { config: null, banners: [] };
+
+export async function getPortalHome(): Promise<CatalogResult<PortalHome>> {
+  if (getCatalogConfig().forceMock) return { data: EMPTY_PORTAL, source: "mock" };
+  try {
+    return { data: await apiPortal(), source: "api" };
+  } catch (error) {
+    if (isCatalogUnavailable(error)) return { data: EMPTY_PORTAL, source: "mock" };
+    throw error;
+  }
+}
+
+export async function getFacets(): Promise<CatalogResult<CatalogFacets>> {
+  if (getCatalogConfig().forceMock) return { data: EMPTY_FACETS, source: "mock" };
+  try {
+    return { data: await apiFacets(), source: "api" };
+  } catch (error) {
+    if (isCatalogUnavailable(error)) return { data: EMPTY_FACETS, source: "mock" };
+    throw error;
+  }
 }
 
 export async function getPropertyBySlug(

@@ -20,6 +20,7 @@ import {
   getPortalSitemapUrl,
 } from "@/lib/real-estate/portal-url"
 import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-business-unit"
+import { PortalSettingsPanel } from "@/components/real-estate/portal-settings-panel"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 
 export function PortalManagementPage({
@@ -89,6 +90,8 @@ export function PortalManagementPage({
               </AppCard>
             </Grid>
           </Section>
+
+          <PortalSettingsPanel />
         </Stack>
       </ContentContainer>
     </PageContainer>

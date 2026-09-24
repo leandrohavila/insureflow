@@ -4,6 +4,7 @@ export type PropertyType =
   | "HOUSE"
   | "LAND"
   | "COMMERCIAL"
+  | "CONDOMINIUM"
   | "OTHER"
 export type PropertyStatus =
   | "DRAFT"
@@ -42,6 +43,8 @@ export type Property = {
   bathrooms?: number | null
   parkingSpots?: number | null
   featured: boolean
+  isFeatured?: boolean
+  isLaunch?: boolean
   featuredUntil?: string | null
   published: boolean
   publishedAt?: string | null
@@ -86,6 +89,8 @@ export type CreatePropertyInput = {
   bathrooms?: number
   parkingSpots?: number
   featured?: boolean
+  isFeatured?: boolean
+  isLaunch?: boolean
 }
 
 export type UpdatePropertyInput = Partial<CreatePropertyInput>

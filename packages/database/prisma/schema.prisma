@@ -187,6 +187,7 @@ enum PropertyType {
   HOUSE
   LAND
   COMMERCIAL
+  CONDOMINIUM
   OTHER
 }
 
@@ -261,6 +262,8 @@ model Tenant {
   properties               Property[]
   propertyImages           PropertyImage[]
   propertyLeads            PropertyLead[]
+  portalConfigs            PortalConfig[]
+  portalBanners            PortalBanner[]
   persons                  Person[]
   propertyOwners           PropertyOwner[]
   propertyFeatureDefinitions PropertyFeatureDefinition[]
@@ -1044,6 +1047,8 @@ model BusinessUnit {
   commissionRules  CommissionRule[]
   properties       Property[]
   propertyLeads    PropertyLead[]
+  portalConfig     PortalConfig?
+  portalBanners    PortalBanner[]
   reactivationCampaigns ReactivationCampaign[]
 
   @@unique([tenantId, slug])
@@ -1549,6 +1554,7 @@ model Property {
   parkingSpots   Int?            @map("parking_spots")
   featured       Boolean         @default(false)
   featuredUntil  DateTime?       @map("featured_until")
+  isLaunch       Boolean         @default(false) @map("is_launch")
   published      Boolean         @default(false)
   publishedAt    DateTime?       @map("published_at")
   status         PropertyStatus  @default(DRAFT)
@@ -1569,7 +1575,59 @@ model Property {
   @@index([tenantId, purpose, price])
   @@index([tenantId, featured, published])
   @@index([tenantId, featured, featuredUntil])
+  @@index([tenantId, isLaunch, published])
   @@map("properties")
+}
+
+/// Configuração comercial do portal público. Um registro por unidade.
+/// `featured` do imóvel é o destaque (`isFeatured` na API).
+model PortalConfig {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessUnitId String       @unique @map("business_unit_id")
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id], onDelete: Cascade)
+  companyName    String       @map("company_name")
+  heroTitle      String?      @map("hero_title")
+  heroSubtitle   String?      @map("hero_subtitle")
+  heroImage      String?      @map("hero_image")
+  logoUrl        String?      @map("logo_url")
+  aboutTitle     String?      @map("about_title")
+  aboutText      String?      @map("about_text") @db.Text
+  aboutImage     String?      @map("about_image")
+  differentials  Json?
+  whatsapp       String?
+  phone          String?
+  email          String?
+  instagram      String?
+  facebook       String?
+  youtube        String?
+  creci          String?
+  address        String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@unique([tenantId, businessUnitId])
+  @@map("portal_configs")
+}
+
+model PortalBanner {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessUnitId String       @map("business_unit_id")
+  businessUnit   BusinessUnit @relation(fields: [businessUnitId], references: [id], onDelete: Cascade)
+  title          String
+  subtitle       String?
+  image          String
+  link           String?
+  active         Boolean      @default(true)
+  order          Int          @default(0)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  @@index([tenantId, businessUnitId, active, order])
+  @@map("portal_banners")
 }
 
 model PropertyImage {

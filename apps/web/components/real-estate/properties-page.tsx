@@ -82,6 +82,16 @@ export function PropertiesPage() {
       ),
     },
     {
+      key: "launch",
+      header: "Lançamento",
+      hideOnMobile: true,
+      render: (row) => (
+        <Badge variant={row.isLaunch ? "default" : "outline"}>
+          {row.isLaunch ? "Sim" : "Não"}
+        </Badge>
+      ),
+    },
+    {
       key: "featured",
       header: "Destaque",
       hideOnMobile: true,
