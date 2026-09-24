@@ -33,7 +33,9 @@ function serializeConfig(row: {
   [key: string]: unknown;
 }) {
   const differentials = Array.isArray(row.differentials)
-    ? row.differentials.filter((item): item is string => typeof item === 'string')
+    ? row.differentials.filter(
+        (item): item is string => typeof item === 'string',
+      )
     : [];
   return { ...row, differentials };
 }

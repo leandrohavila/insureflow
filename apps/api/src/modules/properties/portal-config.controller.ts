@@ -47,7 +47,10 @@ export class PortalConfigController {
   @Get('portal-config')
   @RequirePermissions('properties:view')
   @ApiOperation({ summary: 'Ler configuração comercial do portal' })
-  get(@CurrentUser() user: JwtAccessPayload, @Query() query: BusinessUnitQuery) {
+  get(
+    @CurrentUser() user: JwtAccessPayload,
+    @Query() query: BusinessUnitQuery,
+  ) {
     return this.portal.getForUser(user, query.businessUnitId);
   }
 
@@ -109,7 +112,9 @@ export class PortalConfigController {
       },
     },
   })
-  @ApiOperation({ summary: 'Upload de imagem do portal (logo, hero, institucional ou banner)' })
+  @ApiOperation({
+    summary: 'Upload de imagem do portal (logo, hero, institucional ou banner)',
+  })
   uploadMedia(
     @CurrentUser() user: JwtAccessPayload,
     @UploadedFile() file: MemoryUpload | undefined,

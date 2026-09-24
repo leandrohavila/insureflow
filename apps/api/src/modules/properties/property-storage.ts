@@ -161,7 +161,10 @@ function safeStorageId(id: string) {
   return id;
 }
 
-export async function savePortalImage(file: MemoryUpload, businessUnitId: string) {
+export async function savePortalImage(
+  file: MemoryUpload,
+  businessUnitId: string,
+) {
   const unitId = safeStorageId(businessUnitId);
   const ext = MIME_TO_EXT.get(file.mimetype);
   if (!unitId || !ext || !file.buffer?.length) {
@@ -192,7 +195,10 @@ export function filenameFromPortalUrl(url: string, businessUnitId: string) {
   return safeFilename(rest);
 }
 
-export async function deleteLocalPortalFile(businessUnitId: string, url: string) {
+export async function deleteLocalPortalFile(
+  businessUnitId: string,
+  url: string,
+) {
   const unitId = safeStorageId(businessUnitId);
   const filename = unitId ? filenameFromPortalUrl(url, unitId) : null;
   if (!unitId || !filename) return;
@@ -203,7 +209,10 @@ export async function deleteLocalPortalFile(businessUnitId: string, url: string)
   }
 }
 
-export function resolveLocalPortalFile(businessUnitId: string, filename: string) {
+export function resolveLocalPortalFile(
+  businessUnitId: string,
+  filename: string,
+) {
   const unitId = safeStorageId(businessUnitId);
   const safe = safeFilename(filename);
   if (!unitId || !safe) return null;

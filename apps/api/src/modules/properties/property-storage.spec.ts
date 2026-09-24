@@ -74,7 +74,9 @@ describe('property-storage', () => {
         'bu1',
       ),
     ).toBe('a.jpg');
-    expect(filenameFromPortalUrl('https://cdn.example/x.jpg', 'bu1')).toBeNull();
+    expect(
+      filenameFromPortalUrl('https://cdn.example/x.jpg', 'bu1'),
+    ).toBeNull();
     expect(resolveLocalPortalFile('../etc', 'passwd')).toBeNull();
     expect(resolveLocalPortalFile('bu1', '../secret.jpg')).toBeNull();
   });
