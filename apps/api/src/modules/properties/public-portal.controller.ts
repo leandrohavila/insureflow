@@ -17,3 +17,16 @@ export class PublicPortalController {
     return this.portal.publicPortal(query);
   }
 }
+
+@ApiTags('public-portal')
+@Public()
+@Controller('public/banners')
+export class PublicBannersController {
+  constructor(private readonly portal: PortalConfigService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Banners ativos do portal' })
+  banners(@Query() query: PublicPropertyQueryDto) {
+    return this.portal.publicBanners(query);
+  }
+}

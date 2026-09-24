@@ -13,7 +13,10 @@ import { PropertyOwnersService } from './property-owners.service';
 import { PublicCatalogContextService } from './public-catalog-context.service';
 import { PortalConfigController } from './portal-config.controller';
 import { PortalConfigService } from './portal-config.service';
-import { PublicPortalController } from './public-portal.controller';
+import {
+  PublicBannersController,
+  PublicPortalController,
+} from './public-portal.controller';
 import { PublicPropertiesController } from './public-properties.controller';
 import { PublicPropertiesService } from './public-properties.service';
 import { PublicPropertyLeadsController } from './public-property-leads.controller';
@@ -31,6 +34,7 @@ import { PropertyOwnersRepository } from './repositories/property-owners.reposit
   controllers: [
     PublicPropertiesController,
     PublicPortalController,
+    PublicBannersController,
     PublicPropertyLeadsController,
     PortalConfigController,
     PropertyFilesController,

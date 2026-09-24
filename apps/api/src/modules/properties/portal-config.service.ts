@@ -182,4 +182,13 @@ export class PortalConfigService {
       banners,
     };
   }
+
+  async publicBanners(params: {
+    tenantSlug: string;
+    businessUnitId?: string;
+    businessUnitSlug?: string;
+  }) {
+    const portal = await this.publicPortal(params);
+    return { banners: portal.banners };
+  }
 }
