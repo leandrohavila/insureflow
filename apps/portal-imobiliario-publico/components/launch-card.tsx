@@ -16,9 +16,9 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
   const current = images[active];
 
   return (
-    <article className="grid overflow-hidden rounded-3xl bg-white shadow-lg lg:grid-cols-2">
-      <div className="bg-stone-200">
-        <div className="aspect-[16/10] lg:aspect-auto lg:h-full lg:min-h-[22rem]">
+    <article className="overflow-hidden rounded-3xl border border-border bg-card shadow-lg">
+      <div className="bg-muted">
+        <div className="relative aspect-[16/9] md:aspect-[21/9]">
           {current ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -27,19 +27,22 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full min-h-56 items-center justify-center text-sm text-stone-500">
+            <div className="flex h-full min-h-56 items-center justify-center text-sm text-muted-foreground">
               Sem foto
             </div>
           )}
+          <p className="absolute bottom-4 right-4 rounded-lg bg-navy-deep/90 px-5 py-3 text-2xl font-semibold text-gold md:text-3xl">
+            A partir de {formatPrice(property.price)}
+          </p>
         </div>
         {images.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto p-3">
+          <div className="flex gap-2 overflow-x-auto bg-card p-3">
             {images.slice(0, 8).map((image, index) => (
               <button
                 key={image.id}
                 type="button"
                 onClick={() => setActive(index)}
-                className="h-16 w-20 shrink-0 overflow-hidden rounded-md border border-white"
+                className="h-16 w-24 shrink-0 overflow-hidden rounded-md border border-border"
                 aria-label={`Foto ${index + 1} de ${property.title}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -49,16 +52,17 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a6a2f]">Lançamento</p>
-        <h3 className="text-2xl font-semibold tracking-tight md:text-3xl">{property.title}</h3>
-        {property.description && (
-          <p className="line-clamp-5 text-sm leading-relaxed text-stone-600">{property.description}</p>
-        )}
-        <p className="text-lg font-semibold text-[#123524]">A partir de {formatPrice(property.price)}</p>
+      <div className="flex flex-col gap-4 p-6 md:flex-row md:items-end md:justify-between md:p-8">
+        <div className="max-w-3xl space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Lançamento</p>
+          <h3 className="text-2xl font-semibold tracking-tight text-navy md:text-4xl">{property.title}</h3>
+          {property.description && (
+            <p className="line-clamp-3 text-sm leading-relaxed text-navy/80">{property.description}</p>
+          )}
+        </div>
         <Link
           href={`/imoveis/${property.slug}`}
-          className="mt-auto inline-flex h-11 w-fit items-center rounded-lg bg-[#123524] px-5 text-sm font-semibold text-white"
+          className="inline-flex h-12 shrink-0 items-center justify-center rounded-lg bg-navy px-8 text-base font-semibold text-white transition-colors hover:bg-navy-deep"
         >
           Conheça
         </Link>

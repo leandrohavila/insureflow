@@ -76,7 +76,7 @@ export function InterestForm({
         <Textarea id="message" name="message" maxLength={2000} />
       </div>
       {(localError || error) && (
-        <p className="text-sm text-red-700">{localError || error}</p>
+        <p className="text-sm text-danger">{localError || error}</p>
       )}
       <Button type="submit" disabled={loading}>
         {loading ? "Enviando..." : "Enviar interesse"}

@@ -27,14 +27,14 @@ export function PropertyListing() {
     <div className="space-y-4">
       <SourceBanner source={source} />
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Imóveis</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-navy md:text-3xl">Imóveis</h1>
         <p className="text-sm text-muted-foreground">
           Finalidade, tipo, bairro, cidade, valor e código.
         </p>
       </div>
       <PropertyFilters query={query} />
       {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {!loading && data && data.data.length === 0 && (
         <p className="text-sm text-muted-foreground">Nenhum imóvel publicado com esses filtros.</p>
       )}
@@ -46,7 +46,7 @@ export function PropertyListing() {
       {data && total > limit && (
         <div className="flex items-center justify-between text-sm">
           {page > 1 ? (
-            <Link href={`/imoveis?${withPage(searchParams, page - 1)}`}>Anterior</Link>
+            <Link href={`/imoveis?${withPage(searchParams, page - 1)}`} className="text-navy hover:text-gold">Anterior</Link>
           ) : (
             <span />
           )}
@@ -54,7 +54,7 @@ export function PropertyListing() {
             Página {page} · {total} imóveis
           </span>
           {hasNext ? (
-            <Link href={`/imoveis?${withPage(searchParams, page + 1)}`}>Próxima</Link>
+            <Link href={`/imoveis?${withPage(searchParams, page + 1)}`} className="text-navy hover:text-gold">Próxima</Link>
           ) : (
             <span />
           )}
