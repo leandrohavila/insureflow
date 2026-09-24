@@ -71,15 +71,14 @@ export function useResponsiveSidebar() {
     }
   }, [])
 
-  const isInlineOpen = mode === "wide" || (mode === "notebook" && !collapsed)
+  const isInlineOpen = mode !== "compact" && !collapsed
 
   const isDrawerOpen = mode === "compact" && drawerOpen
   const isOpen = isInlineOpen || isDrawerOpen
-  const showToggle = mode !== "wide"
+  const showToggle = true
 
   const setOpen = useCallback(
     (open: boolean) => {
-      if (mode === "wide") return
       if (mode === "compact") {
         setDrawerOpen(open)
         return
@@ -92,7 +91,6 @@ export function useResponsiveSidebar() {
   )
 
   const toggle = useCallback(() => {
-    if (mode === "wide") return
     if (mode === "compact") {
       setDrawerOpen((current) => !current)
       return
@@ -107,7 +105,7 @@ export function useResponsiveSidebar() {
   return useMemo(
     () => ({
       mode,
-      collapsed: mode === "wide" ? false : collapsed,
+      collapsed,
       hydrated,
       isInlineOpen,
       isDrawerOpen,

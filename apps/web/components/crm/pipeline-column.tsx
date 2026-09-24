@@ -22,6 +22,8 @@ type PipelineColumnProps = {
   columnIndex: number
   deals: CrmDeal[]
   compact?: boolean
+  laneWidthPx?: number
+  fitted?: boolean
   interactive?: boolean
   isDropTarget?: boolean
   onDealSelect?: (deal: CrmDeal) => void
@@ -36,6 +38,8 @@ export function PipelineColumn({
   columnIndex,
   deals,
   compact,
+  laneWidthPx,
+  fitted = false,
   interactive = true,
   isDropTarget,
   onDealSelect,
@@ -63,13 +67,15 @@ export function PipelineColumn({
       transition={{ delay: 0.06 * columnIndex, duration: 0.4, ease: easeOut }}
       data-crm-density={density.dataDensity}
       className={cn(
-        "pipeline-lane flex h-full min-h-0 shrink-0 grow-0 flex-col",
+        "pipeline-lane flex h-full min-h-0 flex-col",
+        fitted ? "min-w-0 flex-1" : "shrink-0 grow-0",
         density.laneClassName,
       )}
       style={{
         ["--crm-lane-accent" as string]: stageAccent,
-        width: density.laneWidthPx,
-        minWidth: density.laneWidthPx,
+        width: fitted ? undefined : (laneWidthPx ?? density.laneMinWidthPx),
+        minWidth: fitted ? 0 : (laneWidthPx ?? density.laneMinWidthPx),
+        maxWidth: fitted ? density.laneWidthPx : undefined,
       } as CSSProperties}
       aria-label={`Coluna ${label}`}
     >
@@ -150,7 +156,7 @@ export function PipelineColumn({
         {deals.length === 0 ? (
           <div
             className={cn(
-              "pipeline-lane__empty flex flex-1 flex-col items-center justify-center gap-1.5 rounded-lg px-4 py-8 text-center",
+              "pipeline-lane__empty flex flex-col items-center justify-start gap-1.5 rounded-lg px-2 py-3 text-center",
               highlighted && "pipeline-lane__empty--highlight",
             )}
           >

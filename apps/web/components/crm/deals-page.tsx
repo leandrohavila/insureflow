@@ -7,6 +7,8 @@ import { motion, useReducedMotion } from "framer-motion"
 import {
   Kanban,
   List,
+  Maximize2,
+  Minimize2,
   SlidersHorizontal,
   Upload,
 } from "lucide-react"
@@ -91,6 +93,7 @@ export function DealsPage() {
   const [queryInput, setQueryInput] = useState("")
   const query = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS)
   const [createOpen, setCreateOpen] = useState(false)
+  const [pipelineFullscreen, setPipelineFullscreen] = useState(false)
   const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null)
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null)
   const { density } = useCrmWorkspacePreferences()
@@ -120,6 +123,15 @@ export function DealsPage() {
     },
     [pathname, router, searchParams],
   )
+
+  useEffect(() => {
+    if (!pipelineFullscreen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPipelineFullscreen(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [pipelineFullscreen])
 
   useEffect(() => {
     const dealId = searchParams.get("deal")
@@ -255,7 +267,22 @@ export function DealsPage() {
             {label}
           </button>
         ))}
-        <CRMRightSidebarToggle />
+        <CRMRightSidebarToggle label="Timeline" />
+        <Button
+          type="button"
+          variant={pipelineFullscreen ? "secondary" : "outline"}
+          size="sm"
+          className="shrink-0 gap-2"
+          aria-pressed={pipelineFullscreen}
+          onClick={() => setPipelineFullscreen((open) => !open)}
+        >
+          {pipelineFullscreen ? (
+            <Minimize2 className="size-3.5" strokeWidth={1.5} />
+          ) : (
+            <Maximize2 className="size-3.5" strokeWidth={1.5} />
+          )}
+          {pipelineFullscreen ? "Sair" : "Tela cheia"}
+        </Button>
         <Button variant="outline" size="sm" className="shrink-0 gap-2">
           <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
           Filtros
@@ -284,8 +311,15 @@ export function DealsPage() {
 
   return (
     <PageContainer fillHeight>
-      <ContentContainer variant={dsContentLayoutVariant.crmDeals}>
+      <ContentContainer
+        variant={dsContentLayoutVariant.crmDeals}
+        className={cn(
+          pipelineFullscreen &&
+            "fixed inset-0 z-[60] max-w-none bg-background px-3 py-2",
+        )}
+      >
         <OperationalPageLayout density="dense">
+          {pipelineFullscreen ? null : (
           <PageHeader
             compact
             className="shrink-0"
@@ -322,10 +356,13 @@ export function DealsPage() {
               />
             }
           />
+          )}
 
+          {pipelineFullscreen ? null : (
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
+            <CrmMetrics deals={deals} density="strip" />
           </OperationalWorkspaceMetrics>
+          )}
 
           <CRMRightSidebar
         toolbarDense

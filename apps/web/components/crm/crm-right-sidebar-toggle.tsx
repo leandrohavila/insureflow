@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils"
 
 type CRMRightSidebarToggleProps = {
   className?: string
+  label?: string
 }
 
 export function CRMRightSidebarToggle({
   className,
+  label = "Contexto",
 }: CRMRightSidebarToggleProps) {
   const { showToggle, isOpen, toggle, hydrated } = useCRMRightSidebar()
 
@@ -26,11 +28,11 @@ export function CRMRightSidebarToggle({
       onClick={toggle}
       aria-expanded={isOpen}
       aria-controls="crm-right-sidebar"
-      aria-label={isOpen ? "Recolher painel de contexto" : "Abrir painel de contexto"}
+      aria-label={isOpen ? `Recolher ${label.toLowerCase()}` : `Abrir ${label.toLowerCase()}`}
       disabled={!hydrated}
     >
       <PanelRight className="size-3.5" strokeWidth={1.5} />
-      Contexto
+      {label}
     </Button>
   )
 }

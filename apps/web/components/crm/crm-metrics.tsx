@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils"
 
 type CrmMetricsProps = {
   deals: CrmDeal[]
-  /** `compact` — linha única densa; detalhes secundários recolhíveis. */
-  density?: StatCardDensity
+  /** `compact` — linha densa. `strip` — uma linha baixa para o Kanban. */
+  density?: StatCardDensity | "strip"
 }
 
 type MetricItem = {
@@ -63,6 +63,27 @@ export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
       tone: "warning",
     },
   ]
+
+  if (density === "strip") {
+    return (
+      <div className="grid w-full min-w-0 grid-cols-2 gap-2 lg:grid-cols-4">
+        {metrics.map((metric) => (
+          <div
+            key={metric.label}
+            title={metric.sub}
+            className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-white/10 bg-card/60 px-2.5 py-1"
+          >
+            <span className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {metric.label}
+            </span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+              {metric.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   if (density === "compact") {
     return (
