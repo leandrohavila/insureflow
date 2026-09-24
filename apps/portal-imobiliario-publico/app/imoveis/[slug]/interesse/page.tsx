@@ -16,17 +16,17 @@ export default function InterestPage() {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
   }
   if (error || !data) {
-    return <p className="text-sm text-red-700">{error ?? "Imóvel não encontrado"}</p>;
+    return <p className="px-4 py-8 text-sm text-danger">{error ?? "Imóvel não encontrado"}</p>;
   }
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
       <SourceBanner source={source} />
-      <Link href={`/imoveis/${data.slug}`} className="text-sm text-muted-foreground">
+      <Link href={`/imoveis/${data.slug}`} className="text-sm text-navy underline decoration-gold underline-offset-4">
         ← Voltar ao imóvel
       </Link>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Tenho interesse</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-navy">Tenho interesse</h1>
         <p className="text-sm text-muted-foreground">{data.title}</p>
       </div>
       <InterestForm propertyId={data.id} propertySlug={data.slug} />

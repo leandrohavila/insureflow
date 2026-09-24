@@ -1,16 +1,33 @@
 @import "tailwindcss";
 
+:root {
+  --avila-navy-950: #000c24;
+  --avila-navy-900: #10294b;
+  --avila-gold-600: #c09048;
+  --avila-gold-400: #deae5d;
+  --avila-white: #ffffff;
+  --avila-gray-50: #f8f9fa;
+  --avila-gray-200: #e5e7eb;
+}
+
 @theme inline {
-  --color-background: #f6f3ee;
-  --color-foreground: #1c1917;
-  --color-card: #ffffff;
-  --color-card-foreground: #1c1917;
-  --color-muted: #e7e5e4;
-  --color-muted-foreground: #57534e;
-  --color-border: #d6d3d1;
-  --color-primary: #123524;
-  --color-primary-foreground: #f7fee7;
-  --color-ring: #123524;
+  --color-background: var(--avila-gray-50);
+  --color-foreground: var(--avila-navy-950);
+  --color-card: var(--avila-white);
+  --color-card-foreground: var(--avila-navy-950);
+  --color-muted: var(--avila-gray-200);
+  --color-muted-foreground: var(--avila-navy-900);
+  --color-border: var(--avila-gray-200);
+  --color-primary: var(--avila-navy-900);
+  --color-primary-foreground: var(--avila-white);
+  --color-secondary: var(--avila-gold-600);
+  --color-secondary-foreground: var(--avila-navy-950);
+  --color-gold: var(--avila-gold-600);
+  --color-gold-bright: var(--avila-gold-400);
+  --color-navy: var(--avila-navy-900);
+  --color-navy-deep: var(--avila-navy-950);
+  --color-ring: var(--avila-gold-400);
+  --color-danger: #9b2c2c;
   --radius: 0.75rem;
 }
 
@@ -26,4 +43,24 @@ body {
 
 img {
   max-width: 100%;
+}
+
+@layer components {
+  .avila-hero-overlay {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--avila-navy-950) 88%, transparent) 0%,
+      color-mix(in srgb, var(--avila-navy-900) 58%, transparent) 46%,
+      color-mix(in srgb, var(--avila-navy-950) 92%, transparent) 100%
+    );
+  }
+
+  .avila-logo-plate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--avila-white);
+    border-radius: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
 }

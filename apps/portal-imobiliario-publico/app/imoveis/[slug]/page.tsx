@@ -3,14 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RealEstateListingJsonLd } from "@/components/listing-jsonld";
-import { SiteHeader } from "@/components/site-header";
 import { SourceBanner } from "@/components/source-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { CatalogNotFoundError } from "@/lib/errors";
 import { toAbsoluteUrl } from "@/lib/site";
 import { cn, formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
-import { getPortalHome, getPropertyBySlug } from "@/services/catalog";
+import { getPropertyBySlug } from "@/services/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -81,15 +80,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
       .join(" · ");
     const features = property.features ?? [];
 
-    const portal = await getPortalHome();
-
     return (
-      <>
-      <SiteHeader config={portal.data.config} />
       <div className="mx-auto w-full max-w-5xl space-y-4 px-4 py-8">
         <RealEstateListingJsonLd property={property} />
         <SourceBanner source={source} />
-        <Link href="/imoveis" className="text-sm text-muted-foreground">
+        <Link href="/imoveis" className="text-sm text-navy underline decoration-gold underline-offset-4">
           ← Voltar à listagem
         </Link>
         <div className="aspect-[16/10] overflow-hidden rounded-xl bg-muted">
@@ -110,8 +105,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           <Badge>{purposeLabel(property.purpose)}</Badge>
           <Badge>{typeLabel(property.type)}</Badge>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">{property.title}</h1>
-        <p className="text-2xl font-semibold">{formatPrice(property.price)}</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-navy md:text-4xl">{property.title}</h1>
+        <p className="text-3xl font-semibold text-gold">{formatPrice(property.price)}</p>
         <p className="text-sm text-muted-foreground">{location}</p>
         <p className="text-sm text-muted-foreground">
           {[
@@ -143,12 +138,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         )}
         <Link
           href={`/imoveis/${property.slug}/interesse`}
-          className={cn(buttonVariants(), "inline-flex")}
+          className={cn(buttonVariants({ size: "lg" }), "inline-flex")}
         >
           Tenho interesse
         </Link>
       </div>
-      </>
     );
   } catch (error) {
     if (error instanceof CatalogNotFoundError) notFound();

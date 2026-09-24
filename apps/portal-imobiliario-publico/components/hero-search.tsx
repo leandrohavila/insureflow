@@ -1,6 +1,9 @@
 import { PROPERTY_PURPOSES, PROPERTY_TYPES, type CatalogFacets, type PropertyListQuery } from "@/types/property";
 import { purposeLabel, typeLabel } from "@/lib/utils";
 
+const fieldClass =
+  "h-11 w-full rounded-lg border border-border bg-card px-3 text-sm normal-case text-foreground";
+
 export function HeroSearch({
   facets,
   defaults,
@@ -13,11 +16,11 @@ export function HeroSearch({
   return (
     <form
       action={action}
-      className="grid gap-3 rounded-2xl bg-white p-4 text-[#1c1917] shadow-2xl md:grid-cols-2 md:p-5 lg:grid-cols-4 xl:grid-cols-8"
+      className="grid gap-3 rounded-2xl border border-border bg-card p-4 text-foreground shadow-2xl md:grid-cols-2 md:p-5 lg:grid-cols-4 xl:grid-cols-8"
     >
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Finalidade
-        <select name="purpose" defaultValue={defaults?.purpose ?? ""} className="h-11 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm normal-case text-stone-900">
+        <select name="purpose" defaultValue={defaults?.purpose ?? ""} className={fieldClass}>
           <option value="">Todas</option>
           {PROPERTY_PURPOSES.map((purpose) => (
             <option key={purpose} value={purpose}>
@@ -26,9 +29,9 @@ export function HeroSearch({
           ))}
         </select>
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Tipo
-        <select name="type" defaultValue={defaults?.type ?? ""} className="h-11 w-full rounded-lg border border-stone-200 bg-white px-3 text-sm normal-case text-stone-900">
+        <select name="type" defaultValue={defaults?.type ?? ""} className={fieldClass}>
           <option value="">Todos</option>
           {PROPERTY_TYPES.filter((type) => type !== "OTHER").map((type) => (
             <option key={type} value={type}>
@@ -37,13 +40,13 @@ export function HeroSearch({
           ))}
         </select>
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Bairro
         <input
           name="neighborhood"
           list="portal-neighborhoods"
           defaultValue={defaults?.neighborhood ?? ""}
-          className="h-11 w-full rounded-lg border border-stone-200 px-3 text-sm normal-case text-stone-900"
+          className={fieldClass}
         />
         <datalist id="portal-neighborhoods">
           {facets.neighborhoods.map((item) => (
@@ -51,13 +54,13 @@ export function HeroSearch({
           ))}
         </datalist>
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Cidade
         <input
           name="city"
           list="portal-cities"
           defaultValue={defaults?.city ?? ""}
-          className="h-11 w-full rounded-lg border border-stone-200 px-3 text-sm normal-case text-stone-900"
+          className={fieldClass}
         />
         <datalist id="portal-cities">
           {facets.cities.map((item) => (
@@ -65,38 +68,34 @@ export function HeroSearch({
           ))}
         </datalist>
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Valor mínimo
         <input
           name="priceMin"
           type="number"
           min={0}
           defaultValue={defaults?.priceMin ?? ""}
-          className="h-11 w-full rounded-lg border border-stone-200 px-3 text-sm normal-case text-stone-900"
+          className={fieldClass}
         />
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Valor máximo
         <input
           name="priceMax"
           type="number"
           min={0}
           defaultValue={defaults?.priceMax ?? ""}
-          className="h-11 w-full rounded-lg border border-stone-200 px-3 text-sm normal-case text-stone-900"
+          className={fieldClass}
         />
       </label>
-      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
+      <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Código do imóvel
-        <input
-          name="code"
-          defaultValue={defaults?.code ?? ""}
-          className="h-11 w-full rounded-lg border border-stone-200 px-3 text-sm normal-case text-stone-900"
-        />
+        <input name="code" defaultValue={defaults?.code ?? ""} className={fieldClass} />
       </label>
       <div className="flex items-end">
         <button
           type="submit"
-          className="h-11 w-full rounded-lg bg-[#123524] px-4 text-sm font-semibold tracking-wide text-white hover:bg-[#0d291b]"
+          className="h-11 w-full rounded-lg bg-gold px-4 text-sm font-semibold tracking-wide text-navy-deep transition-colors hover:bg-gold-bright"
         >
           BUSCAR IMÓVEL
         </button>
