@@ -140,10 +140,10 @@ export function PortalSettingsPanel() {
 
   const fields: { key: keyof PortalConfigForm; label: string }[] = [
     { key: "companyName", label: "Nome da imobiliária" },
-    { key: "heroTitle", label: "Título do hero" },
-    { key: "heroSubtitle", label: "Subtítulo do hero" },
-    { key: "heroImage", label: "Imagem do hero (URL)" },
-    { key: "logoUrl", label: "Logo (URL)" },
+    { key: "heroTitle", label: "Hero — título" },
+    { key: "heroSubtitle", label: "Hero — subtítulo" },
+    { key: "heroImage", label: "Hero — imagem" },
+    { key: "logoUrl", label: "Logo" },
     { key: "whatsapp", label: "WhatsApp" },
     { key: "phone", label: "Telefone" },
     { key: "email", label: "E-mail" },
@@ -160,7 +160,7 @@ export function PortalSettingsPanel() {
     <Section>
       <Stack gap="sm">
         <AppCard padding="compact" className="space-y-4">
-          <p className="text-sm font-medium">Portal comercial</p>
+          <p className="text-sm font-medium">Configuração Portal Comercial</p>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={saveConfig}>
             {fields.map((field) => (
               <label key={field.key} className="space-y-1 text-xs text-muted-foreground">
@@ -173,7 +173,7 @@ export function PortalSettingsPanel() {
               </label>
             ))}
             <label className="space-y-1 text-xs text-muted-foreground md:col-span-2">
-              Texto institucional
+              Institucional
               <textarea
                 className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.aboutText}
@@ -181,7 +181,7 @@ export function PortalSettingsPanel() {
               />
             </label>
             <label className="space-y-1 text-xs text-muted-foreground md:col-span-2">
-              Diferenciais (um por linha)
+              Diferenciais
               <textarea
                 className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={form.differentials}
@@ -198,7 +198,7 @@ export function PortalSettingsPanel() {
         </AppCard>
 
         <AppCard padding="compact" className="space-y-4">
-          <p className="text-sm font-medium">Banners</p>
+          <p className="text-sm font-medium">Gestão de Banners</p>
           <ul className="space-y-2 text-sm">
             {banners.map((item) => (
               <li key={item.id} className="flex items-center justify-between gap-3">
