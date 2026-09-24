@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
@@ -309,14 +310,16 @@ export function DealsPage() {
     </FilterBar>
   )
 
-  return (
-    <PageContainer fillHeight>
+  const page = (
+    <PageContainer
+      fillHeight
+      className={cn(
+        pipelineFullscreen && "fixed inset-0 z-[80] max-w-none bg-background",
+      )}
+    >
       <ContentContainer
         variant={dsContentLayoutVariant.crmDeals}
-        className={cn(
-          pipelineFullscreen &&
-            "fixed inset-0 z-[60] max-w-none bg-background px-3 py-2",
-        )}
+        className={cn(pipelineFullscreen && "max-w-none px-3 py-2")}
       >
         <OperationalPageLayout density="dense">
           {pipelineFullscreen ? null : (
@@ -476,4 +479,10 @@ export function DealsPage() {
       </ContentContainer>
     </PageContainer>
   )
+
+  if (pipelineFullscreen && typeof document !== "undefined") {
+    return createPortal(page, document.body)
+  }
+
+  return page
 }
