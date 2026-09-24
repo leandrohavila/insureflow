@@ -1,8 +1,3 @@
-import { getCatalogConfig } from "@/lib/config";
-import {
-  CatalogNotFoundError,
-  isCatalogUnavailable,
-} from "@/lib/errors";
 import {
   apiCreateLead,
   apiFindBySlug,
@@ -10,13 +5,6 @@ import {
   apiList,
   apiSearch,
 } from "@/services/catalog-api";
-import {
-  mockCreateLead,
-  mockFindBySlug,
-  mockHighlights,
-  mockList,
-  mockSearch,
-} from "@/services/catalog-mock";
 import type {
   CatalogResult,
   CreatePropertyLeadInput,
@@ -25,68 +13,32 @@ import type {
   PublicProperty,
 } from "@/types/property";
 
-async function withFallback<T>(
-  apiFn: () => Promise<T>,
-  mockFn: () => T | Promise<T>,
-): Promise<CatalogResult<T>> {
-  if (getCatalogConfig().forceMock) {
-    return { data: await mockFn(), source: "mock" };
-  }
-  try {
-    return { data: await apiFn(), source: "api" };
-  } catch (error) {
-    if (error instanceof CatalogNotFoundError) throw error;
-    if (isCatalogUnavailable(error)) {
-      return { data: await mockFn(), source: "mock" };
-    }
-    throw error;
-  }
+function fromApi<T>(data: T): CatalogResult<T> {
+  return { data, source: "api" };
 }
 
-export function listProperties(query: PropertyListQuery = {}) {
-  return withFallback(() => apiList(query), () => mockList(query));
+export async function listProperties(query: PropertyListQuery = {}) {
+  return fromApi(await apiList(query));
 }
 
-export function searchProperties(query: PropertyListQuery = {}) {
+export async function searchProperties(query: PropertyListQuery = {}) {
   const useSearch = Boolean(query.q?.trim());
-  return withFallback(
-    () => (useSearch ? apiSearch(query) : apiList(query)),
-    () => (useSearch ? mockSearch(query) : mockList(query)),
-  );
+  const data = useSearch ? await apiSearch(query) : await apiList(query);
+  return fromApi(data);
 }
 
-export function listHighlights(query: PropertyListQuery = {}) {
-  return withFallback(() => apiHighlights(query), () => mockHighlights());
+export async function listHighlights(query: PropertyListQuery = {}) {
+  return fromApi(await apiHighlights(query));
 }
 
 export async function getPropertyBySlug(
   slug: string,
 ): Promise<CatalogResult<PublicProperty>> {
-  const result = await withFallback(
-    () => apiFindBySlug(slug),
-    () => {
-      const row = mockFindBySlug(slug);
-      if (!row) throw new CatalogNotFoundError();
-      return row;
-    },
-  );
-  return result;
+  return fromApi(await apiFindBySlug(slug));
 }
 
 export async function submitPropertyLead(
   input: CreatePropertyLeadInput,
 ): Promise<CatalogResult<PropertyLead>> {
-  return withFallback(
-    () => apiCreateLead(input),
-    () => {
-      const slug = input.propertySlug ?? "";
-      const property =
-        mockFindBySlug(slug) ??
-        (input.propertyId
-          ? mockList({}).data.find((item) => item.id === input.propertyId)
-          : undefined);
-      if (!property) throw new CatalogNotFoundError();
-      return mockCreateLead(input, property);
-    },
-  );
+  return fromApi(await apiCreateLead(input));
 }

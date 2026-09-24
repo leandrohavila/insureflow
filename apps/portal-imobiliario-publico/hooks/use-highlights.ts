@@ -3,25 +3,27 @@
 import { useEffect, useState } from "react";
 
 import { listHighlights } from "@/services/catalog";
-import type { CatalogSource, PublicProperty } from "@/types/property";
+import type { PublicProperty } from "@/types/property";
 
 export function useHighlights() {
   const [data, setData] = useState<PublicProperty[]>([]);
-  const [source, setSource] = useState<CatalogSource>("api");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(false);
     listHighlights({ limit: 6 })
       .then((result) => {
         if (cancelled) return;
         setData(result.data.data);
-        setSource(result.source);
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Falha ao carregar destaques");
+        setData([]);
+        setError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -29,7 +31,12 @@ export function useHighlights() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
-  return { data, source, error, loading };
+  return {
+    data,
+    error,
+    loading,
+    retry: () => setAttempt((current) => current + 1),
+  };
 }

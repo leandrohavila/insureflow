@@ -105,7 +105,7 @@ export type PropertyLead = {
   createdAt: string;
 };
 
-export type CatalogSource = "api" | "mock";
+export type CatalogSource = "api";
 
 export type CatalogResult<T> = {
   data: T;

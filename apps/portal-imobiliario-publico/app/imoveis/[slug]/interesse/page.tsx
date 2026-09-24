@@ -3,25 +3,27 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { CatalogLoadError } from "@/components/catalog-load-error";
 import { InterestForm } from "@/components/interest-form";
-import { SourceBanner } from "@/components/source-banner";
 import { useProperty } from "@/hooks/use-property";
 
 export default function InterestPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
-  const { data, source, error, loading } = useProperty(slug);
+  const { data, notFound, error, loading, retry } = useProperty(slug);
 
   if (loading) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
   }
-  if (error || !data) {
-    return <p className="text-sm text-red-700">{error ?? "Imóvel não encontrado"}</p>;
+  if (error) {
+    return <CatalogLoadError onRetry={retry} />;
+  }
+  if (notFound || !data) {
+    return <p className="text-sm text-muted-foreground">Imóvel não encontrado</p>;
   }
 
   return (
     <div className="space-y-4">
-      <SourceBanner source={source} />
       <Link href={`/imoveis/${data.slug}`} className="text-sm text-muted-foreground">
         ← Voltar ao imóvel
       </Link>

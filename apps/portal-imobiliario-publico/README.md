@@ -17,6 +17,6 @@ Abre em [http://localhost:3002](http://localhost:3002).
 4. Envie o formulário de interesse.
 5. No CRM/API, `GET /api/v1/properties/:id/leads` deve listar o `PropertyLead`.
 
-Se a API em `:4000` estiver fora, o portal cai no **mock** (banner amarelo). Nesse modo o CRM não recebe lead.
+Se a API estiver fora, o portal mostra “Não foi possível carregar os imóveis neste momento.” e não exibe catálogo fictício.
 
 Variáveis: copie `.env.example` para `.env.local`.
