@@ -22,6 +22,7 @@ import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-em
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
+import { useCRMRightSidebar } from "@/components/crm/crm-right-sidebar-context"
 import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle"
 import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { DealSheetV2 } from "@/components/crm/deal-sheet-v2"
@@ -75,6 +76,18 @@ type ViewMode = "board" | "list"
 type PipelineUnitFilter = "all" | "INSURANCE" | "REAL_ESTATE"
 const EMPTY_DEALS: CrmDeal[] = []
 const SEARCH_DEBOUNCE_MS = 400
+
+function FullscreenTimelineGate({ active }: { active: boolean }) {
+  const { setCollapsedOverride } = useCRMRightSidebar()
+
+  useEffect(() => {
+    if (!active) return
+    setCollapsedOverride(true)
+    return () => setCollapsedOverride(null)
+  }, [active, setCollapsedOverride])
+
+  return null
+}
 
 function isDealsView(value: string): value is ViewMode {
   return value === "board" || value === "list"
@@ -169,7 +182,8 @@ export function DealsPage() {
   const boardType =
     unitFilter === "REAL_ESTATE" ? "REAL_ESTATE" : "INSURANCE"
   const boardStages = useMemo(() => {
-    const match = pipelinesQuery.data?.find(
+    const pipelines = Array.isArray(pipelinesQuery.data) ? pipelinesQuery.data : []
+    const match = pipelines.find(
       (pipeline) => pipeline.businessUnit.type === boardType,
     )
     if (match?.stages.length) {
@@ -244,30 +258,57 @@ export function DealsPage() {
   }
 
   const dealsToolbar = (
-    <FilterBar>
-      <FilterSearch
-        label="Filtrar negócios"
-        placeholder="Filtrar negócios, empresas ou contatos…"
-        value={queryInput}
-        onChange={(event) => setQueryInput(event.target.value)}
-      />
-      <Inline wrap={false} className="shrink-0">
-        {(
-          [
-            ["all", "Todas"],
-            ["INSURANCE", "Corretora"],
-            ["REAL_ESTATE", "Imobiliária"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setUnitFilter(id)}
-            className={crmViewToggleButton(unitFilter === id)}
-          >
-            {label}
-          </button>
-        ))}
+    <div className="flex w-full min-w-0 items-center gap-2">
+      <FullscreenTimelineGate active={pipelineFullscreen} />
+      <FilterBar className="min-w-0 flex-1">
+        <FilterSearch
+          label="Filtrar negócios"
+          placeholder="Filtrar negócios, empresas ou contatos…"
+          value={queryInput}
+          onChange={(event) => setQueryInput(event.target.value)}
+        />
+        <Inline wrap={false} className="shrink-0">
+          {(
+            [
+              ["all", "Todas"],
+              ["INSURANCE", "Corretora"],
+              ["REAL_ESTATE", "Imobiliária"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setUnitFilter(id)}
+              className={crmViewToggleButton(unitFilter === id)}
+            >
+              {label}
+            </button>
+          ))}
+          <Button variant="outline" size="sm" className="shrink-0 gap-2">
+            <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+            Filtros
+          </Button>
+          <div className={CRM_VIEW_TOGGLE_WRAP}>
+            <button
+              type="button"
+              onClick={() => setView("board")}
+              className={crmViewToggleButton(view === "board")}
+            >
+              <Kanban className="size-3.5" strokeWidth={1.5} />
+              Kanban
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className={crmViewToggleButton(view === "list")}
+            >
+              <List className="size-3.5" strokeWidth={1.5} />
+              Lista
+            </button>
+          </div>
+        </Inline>
+      </FilterBar>
+      <div className="flex shrink-0 items-center gap-2">
         <CRMRightSidebarToggle label="Timeline" />
         <Button
           type="button"
@@ -284,30 +325,8 @@ export function DealsPage() {
           )}
           {pipelineFullscreen ? "Sair" : "Tela cheia"}
         </Button>
-        <Button variant="outline" size="sm" className="shrink-0 gap-2">
-          <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
-          Filtros
-        </Button>
-        <div className={CRM_VIEW_TOGGLE_WRAP}>
-          <button
-            type="button"
-            onClick={() => setView("board")}
-            className={crmViewToggleButton(view === "board")}
-          >
-            <Kanban className="size-3.5" strokeWidth={1.5} />
-            Kanban
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            className={crmViewToggleButton(view === "list")}
-          >
-            <List className="size-3.5" strokeWidth={1.5} />
-            Lista
-          </button>
-        </div>
-      </Inline>
-    </FilterBar>
+      </div>
+    </div>
   )
 
   const page = (

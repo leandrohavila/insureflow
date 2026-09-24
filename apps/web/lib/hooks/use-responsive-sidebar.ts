@@ -42,6 +42,8 @@ function resolveMode(): ResponsiveSidebarMode {
 export function useResponsiveSidebar() {
   const [mode, setMode] = useState<ResponsiveSidebarMode>("notebook")
   const [collapsed, setCollapsed] = useState(true)
+  /** Sessão (tela cheia) sem gravar a preferência do usuário. */
+  const [overrideCollapsed, setOverrideCollapsed] = useState<boolean | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [hydrated, setHydrated] = useState(false)
 
@@ -71,11 +73,16 @@ export function useResponsiveSidebar() {
     }
   }, [])
 
-  const isInlineOpen = mode !== "compact" && !collapsed
+  const effectiveCollapsed = overrideCollapsed ?? collapsed
+  const isInlineOpen = mode !== "compact" && !effectiveCollapsed
 
   const isDrawerOpen = mode === "compact" && drawerOpen
   const isOpen = isInlineOpen || isDrawerOpen
   const showToggle = true
+
+  const setCollapsedOverride = useCallback((value: boolean | null) => {
+    setOverrideCollapsed(value)
+  }, [])
 
   const setOpen = useCallback(
     (open: boolean) => {
@@ -83,11 +90,15 @@ export function useResponsiveSidebar() {
         setDrawerOpen(open)
         return
       }
+      if (overrideCollapsed !== null) {
+        setOverrideCollapsed(!open)
+        return
+      }
       const nextCollapsed = !open
       setCollapsed(nextCollapsed)
       writeCollapsedToStorage(nextCollapsed)
     },
-    [mode],
+    [mode, overrideCollapsed],
   )
 
   const toggle = useCallback(() => {
@@ -95,12 +106,16 @@ export function useResponsiveSidebar() {
       setDrawerOpen((current) => !current)
       return
     }
+    if (overrideCollapsed !== null) {
+      setOverrideCollapsed((current) => !current)
+      return
+    }
     setCollapsed((current) => {
       const next = !current
       writeCollapsedToStorage(next)
       return next
     })
-  }, [mode])
+  }, [mode, overrideCollapsed])
 
   return useMemo(
     () => ({
@@ -114,6 +129,7 @@ export function useResponsiveSidebar() {
       drawerOpen,
       setDrawerOpen,
       setOpen,
+      setCollapsedOverride,
       toggle,
     }),
     [
@@ -126,6 +142,7 @@ export function useResponsiveSidebar() {
       showToggle,
       drawerOpen,
       setOpen,
+      setCollapsedOverride,
       toggle,
     ],
   )
