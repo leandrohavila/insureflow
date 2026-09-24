@@ -64,11 +64,18 @@ export function listHighlights(query: PropertyListQuery = {}) {
   return withFallback(() => apiHighlights(query), () => mockHighlights());
 }
 
-export function listLaunches(query: PropertyListQuery = {}) {
-  return withFallback(
-    () => apiLaunches(query),
-    () => ({ data: mockList({ ...query, isLaunch: true }).data }),
-  );
+export async function listLaunches(query: PropertyListQuery = {}) {
+  try {
+    return await withFallback(
+      () => apiLaunches(query),
+      () => ({ data: mockList({ ...query, isLaunch: true }).data }),
+    );
+  } catch (error) {
+    if (error instanceof CatalogNotFoundError) {
+      return { data: { data: [] }, source: "api" as const };
+    }
+    throw error;
+  }
 }
 
 const EMPTY_FACETS: CatalogFacets = {
@@ -84,7 +91,9 @@ export async function getPortalHome(): Promise<CatalogResult<PortalHome>> {
   try {
     return { data: await apiPortal(), source: "api" };
   } catch (error) {
-    if (isCatalogUnavailable(error)) return { data: EMPTY_PORTAL, source: "mock" };
+    if (error instanceof CatalogNotFoundError || isCatalogUnavailable(error)) {
+      return { data: EMPTY_PORTAL, source: "mock" };
+    }
     throw error;
   }
 }
@@ -94,7 +103,9 @@ export async function getFacets(): Promise<CatalogResult<CatalogFacets>> {
   try {
     return { data: await apiFacets(), source: "api" };
   } catch (error) {
-    if (isCatalogUnavailable(error)) return { data: EMPTY_FACETS, source: "mock" };
+    if (error instanceof CatalogNotFoundError || isCatalogUnavailable(error)) {
+      return { data: EMPTY_FACETS, source: "mock" };
+    }
     throw error;
   }
 }
