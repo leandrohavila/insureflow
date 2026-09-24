@@ -50,6 +50,10 @@ export function propertyUploadDir(propertyId: string) {
   return path.join(uploadsRoot(), 'properties', propertyId);
 }
 
+export function portalUploadDir(businessUnitId: string) {
+  return path.join(uploadsRoot(), 'portal', businessUnitId);
+}
+
 export function isAllowedImageMime(mime: string) {
   return MIME_TO_EXT.has(mime);
 }
@@ -62,6 +66,14 @@ export function propertyImagePath(propertyId: string, filename: string) {
 /** URL absoluta para resposta HTTP / <img src>. */
 export function publicImageUrl(propertyId: string, filename: string) {
   return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+}
+
+export function portalImagePath(businessUnitId: string, filename: string) {
+  return `/api/v1/files/portal/${businessUnitId}/${filename}`;
+}
+
+export function publicPortalImageUrl(businessUnitId: string, filename: string) {
+  return `${apiPublicBaseUrl()}${portalImagePath(businessUnitId, filename)}`;
 }
 
 /**
@@ -142,6 +154,64 @@ export async function deleteLocalPropertyFile(propertyId: string, url: string) {
   } catch {
     /* arquivo já ausente */
   }
+}
+
+function safeStorageId(id: string) {
+  if (!id || id.length > 40 || !/^[A-Za-z0-9_-]+$/.test(id)) return null;
+  return id;
+}
+
+export async function savePortalImage(file: MemoryUpload, businessUnitId: string) {
+  const unitId = safeStorageId(businessUnitId);
+  const ext = MIME_TO_EXT.get(file.mimetype);
+  if (!unitId || !ext || !file.buffer?.length) {
+    throw new Error('INVALID_IMAGE');
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error('IMAGE_TOO_LARGE');
+  }
+  const filename = `${randomUUID()}${ext}`;
+  const dir = portalUploadDir(unitId);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, filename), file.buffer);
+  return {
+    filename,
+    url: publicPortalImageUrl(unitId, filename),
+  };
+}
+
+function localPortalPathPrefix(businessUnitId: string) {
+  return `/api/v1/files/portal/${businessUnitId}/`;
+}
+
+export function filenameFromPortalUrl(url: string, businessUnitId: string) {
+  const marker = localPortalPathPrefix(businessUnitId);
+  const idx = url.indexOf(marker);
+  if (idx < 0) return null;
+  const rest = url.slice(idx + marker.length).split(/[?#]/)[0] ?? '';
+  return safeFilename(rest);
+}
+
+export async function deleteLocalPortalFile(businessUnitId: string, url: string) {
+  const unitId = safeStorageId(businessUnitId);
+  const filename = unitId ? filenameFromPortalUrl(url, unitId) : null;
+  if (!unitId || !filename) return;
+  try {
+    await unlink(path.join(portalUploadDir(unitId), filename));
+  } catch {
+    /* arquivo já ausente */
+  }
+}
+
+export function resolveLocalPortalFile(businessUnitId: string, filename: string) {
+  const unitId = safeStorageId(businessUnitId);
+  const safe = safeFilename(filename);
+  if (!unitId || !safe) return null;
+  const root = path.resolve(portalUploadDir(unitId));
+  const dest = path.resolve(root, safe);
+  if (dest !== root && !dest.startsWith(root + path.sep)) return null;
+  if (!existsSync(dest)) return null;
+  return dest;
 }
 
 export function resolveLocalPropertyFile(propertyId: string, filename: string) {

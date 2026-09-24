@@ -1,9 +1,13 @@
 import {
   apiPublicBaseUrl,
   filenameFromLocalUrl,
+  filenameFromPortalUrl,
   isLocalPropertyUrl,
+  portalImagePath,
   propertyImagePath,
   publicImageUrl,
+  publicPortalImageUrl,
+  resolveLocalPortalFile,
   resolveLocalPropertyFile,
   safeFilename,
   toAbsolutePropertyMediaUrl,
@@ -54,6 +58,25 @@ describe('property-storage', () => {
     expect(toAbsolutePropertyMediaUrl('https://cdn.example/x.jpg')).toBe(
       'https://cdn.example/x.jpg',
     );
+  });
+
+  it('portal image url fica no storage local e rejeita path traversal', () => {
+    process.env.API_PUBLIC_URL = 'https://api.example.com';
+    expect(portalImagePath('bu1', 'a.jpg')).toBe(
+      '/api/v1/files/portal/bu1/a.jpg',
+    );
+    expect(publicPortalImageUrl('bu1', 'a.jpg')).toBe(
+      'https://api.example.com/api/v1/files/portal/bu1/a.jpg',
+    );
+    expect(
+      filenameFromPortalUrl(
+        'https://api.example.com/api/v1/files/portal/bu1/a.jpg',
+        'bu1',
+      ),
+    ).toBe('a.jpg');
+    expect(filenameFromPortalUrl('https://cdn.example/x.jpg', 'bu1')).toBeNull();
+    expect(resolveLocalPortalFile('../etc', 'passwd')).toBeNull();
+    expect(resolveLocalPortalFile('bu1', '../secret.jpg')).toBeNull();
   });
 
   it('isLocalPropertyUrl / filenameFromLocalUrl aceitam relativo e absoluto', () => {

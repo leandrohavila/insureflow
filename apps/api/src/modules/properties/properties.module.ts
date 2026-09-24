@@ -11,6 +11,7 @@ import { PropertyFeaturesService } from './property-features.service';
 import { PropertyFilesController } from './property-files.controller';
 import { PropertyOwnersService } from './property-owners.service';
 import { PublicCatalogContextService } from './public-catalog-context.service';
+import { PortalFilesController } from './portal-files.controller';
 import { PortalConfigController } from './portal-config.controller';
 import { PortalConfigService } from './portal-config.service';
 import {
@@ -37,6 +38,7 @@ import { PropertyOwnersRepository } from './repositories/property-owners.reposit
     PublicBannersController,
     PublicPropertyLeadsController,
     PortalConfigController,
+    PortalFilesController,
     PropertyFilesController,
     PersonsController,
     PropertyFeatureDefinitionsController,

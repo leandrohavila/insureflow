@@ -8,8 +8,17 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { IsString, MaxLength } from 'class-validator';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -21,6 +30,7 @@ import {
   UpsertPortalConfigDto,
 } from './dto/portal-config.dto';
 import { PortalConfigService } from './portal-config.service';
+import { MAX_IMAGE_BYTES, type MemoryUpload } from './property-storage';
 
 class BusinessUnitQuery {
   @IsString()
@@ -80,6 +90,33 @@ export class PortalConfigController {
     @Body() dto: UpdatePortalBannerDto,
   ) {
     return this.portal.updateBanner(user, id, dto);
+  }
+
+  @Post('portal-media')
+  @RequirePermissions('properties:manage')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_IMAGE_BYTES } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'businessUnitId'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        businessUnitId: { type: 'string' },
+        previousUrl: { type: 'string' },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload de imagem do portal (logo, hero, institucional ou banner)' })
+  uploadMedia(
+    @CurrentUser() user: JwtAccessPayload,
+    @UploadedFile() file: MemoryUpload | undefined,
+    @Body('businessUnitId') businessUnitId: string,
+    @Body('previousUrl') previousUrl?: string,
+  ) {
+    return this.portal.uploadMedia(user, businessUnitId, file, previousUrl);
   }
 
   @Delete('portal-banners/:id')

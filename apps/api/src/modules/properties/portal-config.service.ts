@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -14,6 +15,13 @@ import type {
   UpsertPortalConfigDto,
 } from './dto/portal-config.dto';
 import { PublicCatalogContextService } from './public-catalog-context.service';
+import {
+  deleteLocalPortalFile,
+  isAllowedImageMime,
+  MAX_IMAGE_BYTES,
+  savePortalImage,
+  type MemoryUpload,
+} from './property-storage';
 
 function emptyToNull(value?: string | null) {
   const trimmed = value?.trim();
@@ -153,6 +161,26 @@ export class PortalConfigService {
     await this.assertUnit(user, current.businessUnitId);
     await this.prisma.portalBanner.delete({ where: { id } });
     return { ok: true };
+  }
+
+  async uploadMedia(
+    user: JwtAccessPayload,
+    businessUnitId: string,
+    file: MemoryUpload | undefined,
+    previousUrl?: string,
+  ) {
+    await this.assertUnit(user, businessUnitId);
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('Envie uma imagem');
+    }
+    if (!isAllowedImageMime(file.mimetype) || file.size > MAX_IMAGE_BYTES) {
+      throw new BadRequestException('Use JPEG, PNG, WebP ou GIF de até 8 MB');
+    }
+    const saved = await savePortalImage(file, businessUnitId);
+    if (previousUrl?.trim()) {
+      await deleteLocalPortalFile(businessUnitId, previousUrl);
+    }
+    return { url: saved.url };
   }
 
   async publicPortal(params: {
