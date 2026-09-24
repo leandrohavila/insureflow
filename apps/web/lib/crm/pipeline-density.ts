@@ -7,9 +7,23 @@ import type { CrmDensity } from "./crm-workspace-preferences"
  */
 
 export const PIPELINE_LANE_WIDTH_PX = {
-  compact: 248,
-  comfortable: 400,
+  compact: 220,
+  comfortable: 320,
 } as const
+
+/** Piso da coluna. Abaixo disso o quadro volta a rolar. */
+export const PIPELINE_LANE_MIN_WIDTH_PX = {
+  compact: 148,
+  comfortable: 168,
+} as const
+
+/** Orçamento para caber 5 etapas com a sidebar aberta em viewport de 1600px. */
+export const PIPELINE_WIDE_VIEWPORT_PX = 1600
+export const PIPELINE_APP_SIDEBAR_PX = 256
+export const PIPELINE_PAGE_PADDING_X_PX = 64
+export const PIPELINE_TIMELINE_WIDTH_PX = 320
+export const PIPELINE_TIMELINE_GAP_PX = 20
+export const PIPELINE_STANDARD_STAGE_COUNT = 5
 
 export const PIPELINE_CARD_MIN_HEIGHT_PX = {
   compact: 72,
@@ -80,6 +94,7 @@ export type PipelineDensityPresentation = {
     | "pipeline-lane__header--comfortable"
   dataDensity: CrmDensity
   laneWidthPx: number
+  laneMinWidthPx: number
   cardMinHeightPx: number
   cardGapPx: number
   cardPadding: string
@@ -111,6 +126,9 @@ export function resolvePipelineDensity(
     laneWidthPx: compact
       ? PIPELINE_LANE_WIDTH_PX.compact
       : PIPELINE_LANE_WIDTH_PX.comfortable,
+    laneMinWidthPx: compact
+      ? PIPELINE_LANE_MIN_WIDTH_PX.compact
+      : PIPELINE_LANE_MIN_WIDTH_PX.comfortable,
     cardMinHeightPx: compact
       ? PIPELINE_CARD_MIN_HEIGHT_PX.compact
       : PIPELINE_CARD_MIN_HEIGHT_PX.comfortable,
@@ -129,6 +147,35 @@ export function resolvePipelineDensity(
     listDensity: compact ? "compact" : "default",
     visibleFields: compact ? COMPACT_FIELDS : COMFORTABLE_FIELDS,
   }
+}
+
+export function pipelineBoardWidthAtViewport(
+  viewportPx: number,
+  options?: { timelineOpen?: boolean; sidebarOpen?: boolean },
+) {
+  const sidebar =
+    options?.sidebarOpen === false ? 48 : PIPELINE_APP_SIDEBAR_PX
+  const timeline = options?.timelineOpen
+    ? PIPELINE_TIMELINE_WIDTH_PX + PIPELINE_TIMELINE_GAP_PX
+    : 0
+  return Math.max(0, viewportPx - sidebar - PIPELINE_PAGE_PADDING_X_PX - timeline)
+}
+
+export function resolvePipelineLaneLayout(input: {
+  containerWidth: number
+  stageCount: number
+  density: CrmDensity
+}) {
+  const spec = resolvePipelineDensity(input.density)
+  const count = Math.max(1, input.stageCount)
+  const gapTotal = spec.boardGapPx * (count - 1)
+  const available = Math.max(0, input.containerWidth - gapTotal)
+  const share = available / count
+  const fitsWithoutScroll = share + 0.01 >= spec.laneMinWidthPx
+  const laneWidthPx = fitsWithoutScroll
+    ? Math.min(spec.laneWidthPx, share)
+    : spec.laneMinWidthPx
+  return { laneWidthPx, fitsWithoutScroll, sharePx: share }
 }
 
 export function pipelineDensityShows(
@@ -155,7 +202,7 @@ export function runPipelineDensityManualValidation(): PipelineDensityManualCheck
   return [
     {
       id: "lane-width",
-      label: "Coluna confortável é pelo menos 100px mais larga",
+      label: "Teto confortável é pelo menos 100px mais largo que o teto compacto",
       pass: comfortable.laneWidthPx - compact.laneWidthPx >= 100,
     },
     {

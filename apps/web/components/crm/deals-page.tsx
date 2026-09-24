@@ -1,12 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "framer-motion"
 import {
   Kanban,
   List,
+  Maximize2,
+  Minimize2,
   SlidersHorizontal,
   Upload,
 } from "lucide-react"
@@ -19,6 +22,7 @@ import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-em
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
+import { useCRMRightSidebar } from "@/components/crm/crm-right-sidebar-context"
 import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle"
 import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { DealSheetV2 } from "@/components/crm/deal-sheet-v2"
@@ -73,6 +77,18 @@ type PipelineUnitFilter = "all" | "INSURANCE" | "REAL_ESTATE"
 const EMPTY_DEALS: CrmDeal[] = []
 const SEARCH_DEBOUNCE_MS = 400
 
+function FullscreenTimelineGate({ active }: { active: boolean }) {
+  const { setCollapsedOverride } = useCRMRightSidebar()
+
+  useEffect(() => {
+    if (!active) return
+    setCollapsedOverride(true)
+    return () => setCollapsedOverride(null)
+  }, [active, setCollapsedOverride])
+
+  return null
+}
+
 function isDealsView(value: string): value is ViewMode {
   return value === "board" || value === "list"
 }
@@ -91,6 +107,7 @@ export function DealsPage() {
   const [queryInput, setQueryInput] = useState("")
   const query = useDebouncedValue(queryInput, SEARCH_DEBOUNCE_MS)
   const [createOpen, setCreateOpen] = useState(false)
+  const [pipelineFullscreen, setPipelineFullscreen] = useState(false)
   const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null)
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null)
   const { density } = useCrmWorkspacePreferences()
@@ -120,6 +137,15 @@ export function DealsPage() {
     },
     [pathname, router, searchParams],
   )
+
+  useEffect(() => {
+    if (!pipelineFullscreen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPipelineFullscreen(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [pipelineFullscreen])
 
   useEffect(() => {
     const dealId = searchParams.get("deal")
@@ -156,7 +182,8 @@ export function DealsPage() {
   const boardType =
     unitFilter === "REAL_ESTATE" ? "REAL_ESTATE" : "INSURANCE"
   const boardStages = useMemo(() => {
-    const match = pipelinesQuery.data?.find(
+    const pipelines = Array.isArray(pipelinesQuery.data) ? pipelinesQuery.data : []
+    const match = pipelines.find(
       (pipeline) => pipeline.businessUnit.type === boardType,
     )
     if (match?.stages.length) {
@@ -231,61 +258,90 @@ export function DealsPage() {
   }
 
   const dealsToolbar = (
-    <FilterBar>
-      <FilterSearch
-        label="Filtrar negócios"
-        placeholder="Filtrar negócios, empresas ou contatos…"
-        value={queryInput}
-        onChange={(event) => setQueryInput(event.target.value)}
-      />
-      <Inline wrap={false} className="shrink-0">
-        {(
-          [
-            ["all", "Todas"],
-            ["INSURANCE", "Corretora"],
-            ["REAL_ESTATE", "Imobiliária"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setUnitFilter(id)}
-            className={crmViewToggleButton(unitFilter === id)}
-          >
-            {label}
-          </button>
-        ))}
-        <CRMRightSidebarToggle />
-        <Button variant="outline" size="sm" className="shrink-0 gap-2">
-          <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
-          Filtros
+    <div className="flex w-full min-w-0 items-center gap-2">
+      <FullscreenTimelineGate active={pipelineFullscreen} />
+      <FilterBar className="min-w-0 flex-1">
+        <FilterSearch
+          label="Filtrar negócios"
+          placeholder="Filtrar negócios, empresas ou contatos…"
+          value={queryInput}
+          onChange={(event) => setQueryInput(event.target.value)}
+        />
+        <Inline wrap={false} className="shrink-0">
+          {(
+            [
+              ["all", "Todas"],
+              ["INSURANCE", "Corretora"],
+              ["REAL_ESTATE", "Imobiliária"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setUnitFilter(id)}
+              className={crmViewToggleButton(unitFilter === id)}
+            >
+              {label}
+            </button>
+          ))}
+          <Button variant="outline" size="sm" className="shrink-0 gap-2">
+            <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+            Filtros
+          </Button>
+          <div className={CRM_VIEW_TOGGLE_WRAP}>
+            <button
+              type="button"
+              onClick={() => setView("board")}
+              className={crmViewToggleButton(view === "board")}
+            >
+              <Kanban className="size-3.5" strokeWidth={1.5} />
+              Kanban
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className={crmViewToggleButton(view === "list")}
+            >
+              <List className="size-3.5" strokeWidth={1.5} />
+              Lista
+            </button>
+          </div>
+        </Inline>
+      </FilterBar>
+      <div className="flex shrink-0 items-center gap-2">
+        <CRMRightSidebarToggle label="Timeline" />
+        <Button
+          type="button"
+          variant={pipelineFullscreen ? "secondary" : "outline"}
+          size="sm"
+          className="shrink-0 gap-2"
+          aria-pressed={pipelineFullscreen}
+          onClick={() => setPipelineFullscreen((open) => !open)}
+        >
+          {pipelineFullscreen ? (
+            <Minimize2 className="size-3.5" strokeWidth={1.5} />
+          ) : (
+            <Maximize2 className="size-3.5" strokeWidth={1.5} />
+          )}
+          {pipelineFullscreen ? "Sair" : "Tela cheia"}
         </Button>
-        <div className={CRM_VIEW_TOGGLE_WRAP}>
-          <button
-            type="button"
-            onClick={() => setView("board")}
-            className={crmViewToggleButton(view === "board")}
-          >
-            <Kanban className="size-3.5" strokeWidth={1.5} />
-            Kanban
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            className={crmViewToggleButton(view === "list")}
-          >
-            <List className="size-3.5" strokeWidth={1.5} />
-            Lista
-          </button>
-        </div>
-      </Inline>
-    </FilterBar>
+      </div>
+    </div>
   )
 
-  return (
-    <PageContainer fillHeight>
-      <ContentContainer variant={dsContentLayoutVariant.crmDeals}>
+  const page = (
+    <PageContainer
+      fillHeight
+      className={cn(
+        pipelineFullscreen && "fixed inset-0 z-[80] max-w-none bg-background",
+      )}
+    >
+      <ContentContainer
+        variant={dsContentLayoutVariant.crmDeals}
+        className={cn(pipelineFullscreen && "max-w-none px-3 py-2")}
+      >
         <OperationalPageLayout density="dense">
+          {pipelineFullscreen ? null : (
           <PageHeader
             compact
             className="shrink-0"
@@ -322,10 +378,13 @@ export function DealsPage() {
               />
             }
           />
+          )}
 
+          {pipelineFullscreen ? null : (
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
+            <CrmMetrics deals={deals} density="strip" />
           </OperationalWorkspaceMetrics>
+          )}
 
           <CRMRightSidebar
         toolbarDense
@@ -439,4 +498,10 @@ export function DealsPage() {
       </ContentContainer>
     </PageContainer>
   )
+
+  if (pipelineFullscreen && typeof document !== "undefined") {
+    return createPortal(page, document.body)
+  }
+
+  return page
 }
