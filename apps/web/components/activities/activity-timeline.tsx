@@ -10,7 +10,14 @@ import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
   dedupeAndSortActivities,
 } from "@/lib/crm/commercial-timeline"
-import { buildTimelineGroups } from "@/lib/crm/timeline-groups"
+import { foldLeadConversionTimeline } from "@/lib/crm/conversion-timeline"
+import type { TimelinePresentationItem } from "@/lib/crm/conversion-timeline"
+import {
+  timelineGroupKeyOf,
+  type TimelineGroupKey,
+  type TimelineGroupLabel,
+} from "@/lib/crm/timeline-groups"
+import { ConversionTimelineStoryCard } from "@/components/activities/conversion-timeline-story"
 import { getErrorMessage } from "@/lib/data-access"
 import {
   pickActivityRelationFields,
@@ -69,12 +76,43 @@ export function ActivityTimeline({
     if (!filterType) return commercial
     return commercial.filter((activity) => activity.type === filterType)
   }, [timelineQuery.data?.data, filterType])
+  const presentation = useMemo(
+    () =>
+      filterType
+        ? activities.map((activity) => ({ kind: "activity" as const, activity }))
+        : foldLeadConversionTimeline(activities),
+    [activities, filterType],
+  )
   const latestOccurredAt = activities[0]?.occurredAt ?? null
 
-  const groups = useMemo(
-    () => buildTimelineGroups(activities),
-    [activities],
-  )
+  const groups = useMemo(() => {
+    const order: TimelineGroupKey[] = [
+      "today",
+      "yesterday",
+      "this-week",
+      "older",
+    ]
+    const labels: Record<TimelineGroupKey, TimelineGroupLabel> = {
+      today: "Hoje",
+      yesterday: "Ontem",
+      "this-week": "Esta semana",
+      older: "Mais antigas",
+    }
+    const buckets = new Map<TimelineGroupKey, TimelinePresentationItem[]>()
+    for (const item of presentation) {
+      const occurredAt =
+        item.kind === "activity" ? item.activity.occurredAt : item.occurredAt
+      const key = timelineGroupKeyOf(occurredAt)
+      const bucket = buckets.get(key)
+      if (bucket) bucket.push(item)
+      else buckets.set(key, [item])
+    }
+    return order.flatMap((key) => {
+      const items = buckets.get(key)
+      if (!items?.length) return []
+      return [{ key, label: labels[key], items }]
+    })
+  }, [presentation])
 
   const handleEdit = useCallback((activity: Activity) => {
     setEditingActivity(activity)
@@ -179,24 +217,28 @@ export function ActivityTimeline({
               <span className="timeline-day-label">{group.label}</span>
               <span aria-hidden className="timeline-day-divider" />
               <span className="timeline-day-count tabular-nums">
-                {group.activities.length}
+                {group.items.length}
               </span>
             </li>
 
-            {group.activities.map((activity) => (
-              <TimelineEntry
-                key={activity.id}
-                activity={activity}
-                contextLeadId={leadId}
-                contextDealId={dealId}
-                isCompleting={completingId === activity.id}
-                isDeleting={deletingId === activity.id}
-                onEdit={handleEdit}
-                onComplete={handleComplete}
-                onReschedule={handleReschedule}
-                onDelete={handleDelete}
-              />
-            ))}
+            {group.items.map((item) =>
+              item.kind === "conversion" ? (
+                <ConversionTimelineStoryCard key={item.id} story={item} />
+              ) : (
+                <TimelineEntry
+                  key={item.activity.id}
+                  activity={item.activity}
+                  contextLeadId={leadId}
+                  contextDealId={dealId}
+                  isCompleting={completingId === item.activity.id}
+                  isDeleting={deletingId === item.activity.id}
+                  onEdit={handleEdit}
+                  onComplete={handleComplete}
+                  onReschedule={handleReschedule}
+                  onDelete={handleDelete}
+                />
+              ),
+            )}
           </Fragment>
         ))}
       </ol>

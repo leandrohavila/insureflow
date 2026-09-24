@@ -25,10 +25,11 @@ import type { CrmDeal, DealPipelineUpdateInput, UpdateCrmDealInput } from "./typ
 
 const DEALS_LIST_KEY = queryKeys.crm.deals.list()
 
-export function useCrmDeals() {
+export function useCrmDeals(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: DEALS_LIST_KEY,
     queryFn: fetchDeals,
+    enabled: options?.enabled ?? true,
   })
 }
 

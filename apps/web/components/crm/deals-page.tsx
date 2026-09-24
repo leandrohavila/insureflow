@@ -15,6 +15,7 @@ import { CrmMetrics } from "@/components/crm/crm-metrics"
 import { CrmPageHeaderActions } from "@/components/crm/crm-page-header-actions"
 import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
+import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-empty"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
 import { CrmActivityFeed } from "@/components/crm/crm-activity-feed"
 import { CRMRightSidebar } from "@/components/crm/crm-right-sidebar"
@@ -52,7 +53,11 @@ import {
 import { boardDealStage } from "@/lib/crm/deal-pipeline"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useFocusReturn } from "@/lib/hooks/use-focus-return"
-import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
+import {
+  useCrmPersistedValue,
+  useCrmWorkspacePreferences,
+} from "@/lib/hooks/use-crm-workspace-preferences"
+import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import { easeOut } from "@/lib/motion"
 import { buildCrmReturnHref } from "@/lib/questionnaires/questionnaire-crm-navigation"
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
@@ -88,6 +93,8 @@ export function DealsPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editingDeal, setEditingDeal] = useState<CrmDeal | null>(null)
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null)
+  const { density } = useCrmWorkspacePreferences()
+  const pipelineDensity = resolvePipelineDensity(density)
   const reduce = useReducedMotion()
   const canManageCrm = useCanManage("crm:view")
   const { captureFocus, restoreFocus } = useFocusReturn()
@@ -317,7 +324,7 @@ export function DealsPage() {
           />
 
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density="compact" />
+            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
           </OperationalWorkspaceMetrics>
 
           <CRMRightSidebar
@@ -349,8 +356,12 @@ export function DealsPage() {
                 : "h-full overflow-hidden",
             )}
           >
+            {!dealsQuery.isLoading && deals.length === 0 ? (
+              <PipelineConversionEmpty dealCount={0} />
+            ) : null}
             {view === "board" ? (
               <PipelineBoard
+                compact={pipelineDensity.compact}
                 deals={boardDeals}
                 stages={boardStages}
                 interactive={canManageCrm}
@@ -361,6 +372,7 @@ export function DealsPage() {
               />
             ) : (
               <CrmDealsList
+                density={pipelineDensity.listDensity}
                 deals={filteredDeals}
                 onDealSelect={handleDealSelect}
                 onDealEdit={handleDealEdit}

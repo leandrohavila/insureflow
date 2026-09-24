@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { motion, useReducedMotion } from "framer-motion"
 
 import { useCanManage } from "@/components/auth/session-provider"
@@ -15,7 +16,13 @@ import {
   PAGE_SIZE,
   SEARCH_DEBOUNCE_MS,
   DEFAULT_SECTION,
+  statusLabels,
 } from "@/components/questionnaires/questionnaire-builder/constants"
+import {
+  BUILDER_PREVIEW_MODE_KEY,
+  readStoredPreviewMode,
+  type BuilderPreviewMode,
+} from "@/components/questionnaires/questionnaire-builder/preview-layout"
 import type { AutoSaveStatus } from "@/components/questionnaires/questionnaire-builder/autosave-indicator"
 import {
   buildFieldInputFromForm,
@@ -114,8 +121,8 @@ export function QuestionnaireTemplatesPage() {
   })
   const [editingTemplate, setEditingTemplate] =
     useState<QuestionnaireTemplate | null>(null)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewCollapsed, setPreviewCollapsed] = useState(false)
+  const [previewMode, setPreviewMode] = useState<BuilderPreviewMode>("collapsed")
+  const lastPreviewLayout = useRef<Exclude<BuilderPreviewMode, "fullscreen" | "collapsed">>("docked")
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [libraryTargetSection, setLibraryTargetSection] = useState<
     string | undefined
@@ -136,6 +143,31 @@ export function QuestionnaireTemplatesPage() {
   const rulesSnapshotHashRef = useRef<string | null>(null)
   const reduce = useReducedMotion()
   const canManage = useCanManage("questionnaires:view")
+
+  const updatePreviewMode = useCallback((mode: BuilderPreviewMode) => {
+    setPreviewMode((current) => {
+      if (mode === "fullscreen") {
+        if (current === "docked" || current === "expanded") {
+          lastPreviewLayout.current = current
+        }
+      } else if (mode === "docked" || mode === "expanded") {
+        lastPreviewLayout.current = mode
+      }
+      return mode
+    })
+    if (typeof window === "undefined" || mode === "fullscreen") return
+    window.sessionStorage.setItem(BUILDER_PREVIEW_MODE_KEY, mode)
+  }, [])
+
+  useEffect(() => {
+    const stored = window.sessionStorage.getItem(BUILDER_PREVIEW_MODE_KEY)
+    const wide = window.matchMedia("(min-width: 1440px)").matches
+    const next = readStoredPreviewMode(stored, wide)
+    if (next === "docked" || next === "expanded") {
+      lastPreviewLayout.current = next
+    }
+    setPreviewMode(next)
+  }, [])
   const fieldReorderInFlight = useRef(false)
   const wasSavingRef = useRef(false)
 
@@ -178,6 +210,10 @@ export function QuestionnaireTemplatesPage() {
     () => groupFieldsBySection(fields, builderSections),
     [builderSections, fields],
   )
+  const previewFocusSection = useMemo(() => {
+    const field = fields.find((item) => item.id === selectedFieldId)
+    return field ? getFieldSection(field) : null
+  }, [fields, selectedFieldId])
 
   useEffect(() => {
     setPage(1)
@@ -320,7 +356,11 @@ export function QuestionnaireTemplatesPage() {
       }
       if (event.key === "p") {
         event.preventDefault()
-        setPreviewOpen((open) => !open)
+        setPreviewMode((current) => {
+          const next = current === "collapsed" ? "docked" : "collapsed"
+          window.sessionStorage.setItem(BUILDER_PREVIEW_MODE_KEY, next)
+          return next
+        })
       }
     }
 
@@ -756,6 +796,15 @@ export function QuestionnaireTemplatesPage() {
 
   const reorderPending =
     updateField.isPending || updateTemplate.isPending || fieldReorderInFlight.current
+  const previewPresentation = previewMode === "collapsed" ? "docked" : previewMode
+  const previewPanelClass = cn(
+    "min-h-0 min-w-0",
+    "fixed inset-y-0 right-0 z-40 flex w-[min(100vw,30rem)] flex-col bg-background/98 p-3 shadow-2xl",
+    "min-[1440px]:static min-[1440px]:z-auto min-[1440px]:h-full min-[1440px]:shrink-0 min-[1440px]:bg-transparent min-[1440px]:p-0 min-[1440px]:shadow-none",
+    previewMode === "expanded"
+      ? "min-[1440px]:w-[min(36vw,34rem)]"
+      : "min-[1440px]:w-[20rem] min-[1680px]:w-[24rem]",
+  )
 
   return (
     <TooltipProvider>
@@ -763,7 +812,7 @@ export function QuestionnaireTemplatesPage() {
         initial={reduce ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: easeOut }}
-        className="flex min-h-0 flex-1 flex-col gap-[var(--if-layout-section-gap)] px-[var(--if-layout-page-x)] py-[var(--if-layout-page-y)]"
+        className="flex min-h-0 min-w-0 flex-1 flex-col gap-[var(--if-space-4)] overflow-hidden px-[var(--if-layout-page-x)] py-[var(--if-space-4)] [@media(min-height:900px)]:gap-[var(--if-space-5)] [@media(min-height:900px)]:py-[var(--if-layout-page-y)]"
       >
         <QuestionnaireNavTabs />
 
@@ -779,20 +828,15 @@ export function QuestionnaireTemplatesPage() {
             setEditingTemplate(null)
             setWizardOpen(true)
           }}
-          onTogglePreview={() => {
-            if (window.matchMedia("(min-width: 1280px)").matches) return
-            if (window.matchMedia("(min-width: 1024px)").matches) {
-              setPreviewCollapsed((value) => !value)
-              return
-            }
-            setPreviewOpen(true)
-          }}
+          onTogglePreview={() =>
+            updatePreviewMode(previewMode === "collapsed" ? "docked" : "collapsed")
+          }
           onToggleTemplates={() => setTemplatesOpen(true)}
           onToggleRules={() => setRulesOpen(true)}
           onToggleBlocks={() => setBlockLibraryOpen(true)}
           onSave={() => void handleSave()}
           onPublish={handlePublish}
-          previewOpen={previewOpen || !previewCollapsed}
+          previewOpen={previewMode !== "collapsed"}
           canManage={canManage}
           publishDisabled={
             !selectedTemplate || selectedTemplate.status === "active"
@@ -800,15 +844,8 @@ export function QuestionnaireTemplatesPage() {
           savePending={templatesQuery.isFetching || fieldsQuery.isFetching}
         />
 
-        <div
-          className={cn(
-            "grid min-h-0 flex-1 gap-[var(--if-space-4)]",
-            "grid-cols-1",
-            "xl:grid-cols-[20%_minmax(0,55fr)_25%]",
-          )}
-        >
-          <div className="hidden min-h-0 overflow-hidden xl:block">
-            <div className="h-full max-h-full overflow-y-auto overscroll-contain pr-1">
+        <div className="flex min-h-0 min-w-0 flex-1 gap-[var(--if-space-4)] overflow-hidden">
+          <div className="hidden h-full min-h-0 w-[16.5rem] shrink-0 min-[1600px]:w-[18rem] xl:flex xl:flex-col">
               <QuestionnaireTemplateList
               templates={templates}
               selectedId={selectedTemplate?.id ?? null}
@@ -839,11 +876,10 @@ export function QuestionnaireTemplatesPage() {
                 setWizardOpen(true)
               }}
             />
-            </div>
           </div>
 
           <section
-            className="flex min-h-0 flex-col overflow-hidden"
+            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
             aria-label="Área do builder"
           >
             {selectedTemplate ? (
@@ -888,6 +924,8 @@ export function QuestionnaireTemplatesPage() {
                     addQuestionnaireSection(DEFAULT_SECTION)
                   }
                 }}
+                templateName={selectedTemplate.name}
+                templateStatusLabel={statusLabels[selectedTemplate.status]}
               />
               </div>
             ) : (
@@ -897,26 +935,51 @@ export function QuestionnaireTemplatesPage() {
             )}
           </section>
 
-          <div className="hidden min-h-0 overflow-hidden xl:block">
-            <QuestionnaireFormPreview
-              id="questionnaire-preview-panel"
-              template={selectedTemplate}
-              fields={fields}
-              className="h-full max-h-[calc(100svh-12rem)]"
-            />
-          </div>
-        </div>
-
-        {!previewCollapsed ? (
-          <div className="pointer-events-none fixed inset-y-0 right-0 z-40 hidden w-[min(100%,380px)] p-[var(--if-space-4)] lg:block xl:hidden">
-            <div className="pointer-events-auto h-full">
+          {previewMode !== "collapsed" && previewMode !== "fullscreen" ? (
+            <div className={previewPanelClass}>
               <QuestionnaireFormPreview
+                id="questionnaire-preview-panel"
                 template={selectedTemplate}
                 fields={fields}
-                className="h-full max-h-full shadow-xl"
+                presentation={previewPresentation}
+                focusSection={previewFocusSection}
+                onCollapse={() => updatePreviewMode("collapsed")}
+                onToggleExpanded={() =>
+                  updatePreviewMode(previewMode === "expanded" ? "docked" : "expanded")
+                }
+                onToggleFullscreen={() => updatePreviewMode("fullscreen")}
+                className="h-full max-h-full min-h-0 w-full"
               />
             </div>
-          </div>
+          ) : null}
+        </div>
+
+        {previewMode === "fullscreen" && typeof document !== "undefined"
+          ? createPortal(
+              <div className="fixed inset-0 z-[80] flex bg-background p-[var(--if-space-4)] md:p-[var(--if-space-6)]">
+                <QuestionnaireFormPreview
+                  id="questionnaire-preview-panel"
+                  template={selectedTemplate}
+                  fields={fields}
+                  presentation="fullscreen"
+                  focusSection={previewFocusSection}
+                  onCollapse={() => updatePreviewMode("collapsed")}
+                  onToggleExpanded={() => updatePreviewMode(lastPreviewLayout.current)}
+                  onToggleFullscreen={() => updatePreviewMode(lastPreviewLayout.current)}
+                  className="h-full max-h-full min-h-0 w-full"
+                />
+              </div>,
+              document.body,
+            )
+          : null}
+
+        {previewMode !== "collapsed" && previewMode !== "fullscreen" ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-30 bg-black/45 min-[1440px]:hidden"
+            aria-label="Fechar preview"
+            onClick={() => updatePreviewMode("collapsed")}
+          />
         ) : null}
 
         {meta && meta.totalPages > 1 ? (
@@ -1057,22 +1120,6 @@ export function QuestionnaireTemplatesPage() {
                 }}
               />
             </div>
-          </SheetContent>
-        </Sheet>
-
-        <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
-          <SheetContent
-            side="right"
-            className="w-full border-white/[0.08] bg-background/95 p-0 sm:max-w-lg lg:hidden"
-          >
-            <SheetHeader className="border-b border-white/[0.06] p-[var(--if-space-4)]">
-              <SheetTitle>Preview do formulário</SheetTitle>
-            </SheetHeader>
-            <QuestionnaireFormPreview
-              template={selectedTemplate}
-              fields={fields}
-              className="rounded-none border-0 lg:static lg:max-h-none"
-            />
           </SheetContent>
         </Sheet>
 

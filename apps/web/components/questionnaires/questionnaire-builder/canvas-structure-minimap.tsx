@@ -6,7 +6,6 @@ import { ChevronDown, Map } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { builderSurfaces } from "./builder-surfaces"
 import { canvasSectionDomId, scrollToCanvasSection } from "./canvas-empty-state"
 
 type CanvasStructureMinimapProps = {
@@ -27,8 +26,7 @@ export const CanvasStructureMinimap = memo(function CanvasStructureMinimap({
   return (
     <div
       className={cn(
-        builderSurfaces.level2,
-        "overflow-hidden",
+        "overflow-hidden rounded-xl border border-white/[0.06] bg-transparent",
         className,
       )}
     >

@@ -45,6 +45,7 @@ import {
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
+import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import {
   dsPipeline,
 } from "@/lib/design-system"
@@ -387,6 +388,7 @@ export function PipelineBoard({
   }, [revertDragState])
 
   const rootClass = dsPipeline.board.className
+  const density = resolvePipelineDensity(compact ? "compact" : "comfortable")
 
   const scrollClass = dsPipeline.scroll.className
 
@@ -454,7 +456,7 @@ export function PipelineBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={rootClass}>
+      <div className={rootClass} data-crm-density={density.dataDensity}>
         <div
           className={scrollClass}
           role="region"
@@ -464,6 +466,7 @@ export function PipelineBoard({
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             className={columnsClass}
+            style={{ gap: density.boardGapPx }}
           >
             {columns}
           </motion.div>
@@ -480,9 +483,9 @@ export function PipelineBoard({
         {activeDeal ? (
           <div
             className="pipeline-drag-overlay rotate-[1.25deg] scale-[1.02]"
-            style={{ width: dsPipeline.laneWidthPx }}
+            style={{ width: density.laneWidthPx }}
           >
-            <DealCard deal={activeDeal} isOverlay />
+            <DealCard deal={activeDeal} isOverlay compact={density.compact} />
           </div>
         ) : null}
       </DragOverlay>

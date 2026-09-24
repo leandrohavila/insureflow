@@ -27,6 +27,7 @@ export function CrmDensityToggle({
       )}
       role="group"
       aria-label="Densidade operacional"
+      data-density={density}
     >
       <button
         type="button"
@@ -39,7 +40,7 @@ export function CrmDensityToggle({
         onClick={() => setDensity("compact")}
       >
         <AlignJustify className="size-3.5" strokeWidth={1.75} />
-        <span className="sr-only sm:not-sr-only sm:inline">Compacto</span>
+        <span>Compacto</span>
       </button>
       <button
         type="button"
@@ -52,7 +53,7 @@ export function CrmDensityToggle({
         onClick={() => setDensity("comfortable")}
       >
         <LayoutList className="size-3.5" strokeWidth={1.75} />
-        <span className="sr-only sm:not-sr-only sm:inline">Confortável</span>
+        <span>Confortável</span>
       </button>
     </div>
   )

@@ -13,6 +13,7 @@ import { CRMRightSidebarToggle } from "@/components/crm/crm-right-sidebar-toggle
 import { CrmUpcomingActions } from "@/components/crm/crm-upcoming-actions"
 import { DealFormDialog } from "@/components/crm/deal-form-dialog"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
+import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-empty"
 import { useCanManage } from "@/components/auth/session-provider"
 import {
   ContentContainer,
@@ -27,6 +28,8 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { useCreateCrmDeal, useCrmDeals } from "@/lib/data-access/modules/crm"
 import { getErrorMessage } from "@/lib/data-access"
 import { dsContentLayoutVariant } from "@/lib/design-system"
+import { useCrmWorkspacePreferences } from "@/lib/hooks/use-crm-workspace-preferences"
+import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import { cn } from "@/lib/utils"
 
 export function CrmOverview() {
@@ -35,6 +38,8 @@ export function CrmOverview() {
   const dealsQuery = useCrmDeals()
   const createDeal = useCreateCrmDeal()
   const deals = dealsQuery.data ?? []
+  const { density } = useCrmWorkspacePreferences()
+  const pipelineDensity = resolvePipelineDensity(density)
 
   return (
     <PageContainer fillHeight>
@@ -76,7 +81,7 @@ export function CrmOverview() {
           ) : (
         <>
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density="compact" />
+            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
           </OperationalWorkspaceMetrics>
 
           <CRMRightSidebar
@@ -113,7 +118,12 @@ export function CrmOverview() {
               </div>
             }
           >
-            <PipelineBoard compact interactive={false} deals={deals} />
+            <PipelineConversionEmpty dealCount={deals.length} />
+            <PipelineBoard
+              compact={pipelineDensity.compact}
+              interactive={false}
+              deals={deals}
+            />
           </CRMRightSidebar>
         </>
       )}

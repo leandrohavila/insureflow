@@ -54,6 +54,7 @@ import {
   leadIntentFromUnitType,
   type LeadCreateIntent,
 } from "@/lib/leads/lead-intent"
+import { LEAD_OPPORTUNITY_PIPELINE_HINT } from "@/lib/leads/lead-pipeline-clarity"
 import {
   bug010DrawerLog,
   bug010DrawerResetFlow,
@@ -490,6 +491,9 @@ export function LeadDialog({
                     { value: "indication", label: "Indicação" },
                   ]}
                 />
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {LEAD_OPPORTUNITY_PIPELINE_HINT}
+                </p>
               </label>
               <label className="space-y-2">
                 <span className="text-sm font-medium">Seguradora atual</span>
