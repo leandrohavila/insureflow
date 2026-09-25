@@ -13,7 +13,7 @@ export function HeroSearch({
   return (
     <form
       action={action}
-      className="grid gap-3 rounded-2xl bg-white p-4 text-[#1c1917] shadow-2xl md:grid-cols-2 md:p-5 lg:grid-cols-4 xl:grid-cols-8"
+      className="grid gap-3 rounded-[20px] bg-white p-4 text-[#000C24] shadow-[0_20px_60px_rgba(0,0,0,.15)] transition-all duration-300 md:grid-cols-2 md:p-5 lg:grid-cols-4 xl:grid-cols-8"
     >
       <label className="space-y-1 text-xs font-medium uppercase tracking-wide text-stone-500">
         Finalidade
@@ -96,7 +96,7 @@ export function HeroSearch({
       <div className="flex items-end">
         <button
           type="submit"
-          className="h-11 w-full rounded-lg bg-[#123524] px-4 text-sm font-semibold tracking-wide text-white hover:bg-[#0d291b]"
+          className="h-11 w-full rounded-xl bg-[#C09048] px-4 text-sm font-semibold tracking-wide text-[#000C24] transition-all duration-300 hover:bg-[#DEAE5D]"
         >
           BUSCAR IMÓVEL
         </button>

@@ -30,7 +30,7 @@ export function SiteHeader({
     <header
       className={cn(
         "z-30 w-full",
-        overlay ? "absolute inset-x-0 top-0" : "sticky top-0 border-b border-white/10 bg-[#10241b]",
+        overlay ? "absolute inset-x-0 top-0" : "sticky top-0 border-b border-white/10 bg-[#000C24]",
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-[90rem] items-center justify-between gap-4 px-4 md:h-20 md:px-8 2xl:max-w-[110rem]">
@@ -40,7 +40,7 @@ export function SiteHeader({
             <img
               src={config.logoUrl}
               alt={name}
-              className="h-10 w-auto max-w-[10rem] object-contain md:h-12"
+              className="h-14 w-auto max-w-[14rem] object-contain md:h-16"
             />
           ) : (
             <span className="truncate text-sm font-semibold tracking-[0.14em] uppercase md:text-base">
@@ -50,7 +50,7 @@ export function SiteHeader({
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-white/90 lg:flex">
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-white">
+            <Link key={link.href} href={link.href} className="hover:text-[#DEAE5D]">
               {link.label}
             </Link>
           ))}
@@ -66,12 +66,12 @@ export function SiteHeader({
         </button>
       </div>
       {open && (
-        <nav className="border-t border-white/10 bg-[#10241b] px-4 py-3 lg:hidden">
+        <nav className="border-t border-white/10 bg-[#000C24] px-4 py-3 lg:hidden">
           {LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="block py-2 text-sm text-white"
+              className="block py-2 text-sm text-white hover:text-[#DEAE5D]"
               onClick={() => setOpen(false)}
             >
               {link.label}

@@ -55,10 +55,10 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
         {property.description && (
           <p className="line-clamp-5 text-sm leading-relaxed text-stone-600">{property.description}</p>
         )}
-        <p className="text-lg font-semibold text-[#123524]">A partir de {formatPrice(property.price)}</p>
+        <p className="text-lg font-semibold text-[#000C24]">A partir de {formatPrice(property.price)}</p>
         <Link
           href={`/imoveis/${property.slug}`}
-          className="mt-auto inline-flex h-11 w-fit items-center rounded-lg bg-[#123524] px-5 text-sm font-semibold text-white"
+          className="mt-auto inline-flex h-11 w-fit items-center rounded-lg bg-[#C09048] px-5 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
         >
           Conheça
         </Link>

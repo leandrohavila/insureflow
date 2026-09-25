@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const portal = await getPortalHome();
   return (
     <html lang="pt-BR">
-      <body className="min-h-svh bg-[#f6f3ee] text-[#1c1917] antialiased">
+      <body className="min-h-svh bg-[#F8F9FA] text-[#000C24] antialiased">
         {children}
         <SiteFooter config={portal.data.config} />
       </body>
