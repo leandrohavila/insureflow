@@ -18,13 +18,18 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PropertyPhotosTab } from "@/components/real-estate/property-photos-tab"
+import { PropertyPreviewDialog } from "@/components/real-estate/property-preview"
+import { Badge } from "@/components/ui/badge"
 import {
   useCreateProperty,
   useProperty,
+  usePublishProperty,
+  useUnpublishProperty,
   useUpdateProperty,
 } from "@/lib/data-access/modules/properties"
 import type {
   CreatePropertyInput,
+  Property,
   PropertyPurpose,
   PropertyType,
 } from "@/lib/data-access/modules/properties"
@@ -39,6 +44,7 @@ import { cn } from "@/lib/utils"
 
 type PropertyFormState = {
   title: string
+  slug: string
   description: string
   purpose: PropertyPurpose
   type: PropertyType
@@ -50,10 +56,14 @@ type PropertyFormState = {
   areaM2: string
   featured: boolean
   isLaunch: boolean
+  portalOrder: string
+  metaTitle: string
+  metaDescription: string
 }
 
 const EMPTY_FORM: PropertyFormState = {
   title: "",
+  slug: "",
   description: "",
   purpose: "SALE",
   type: "APARTMENT",
@@ -65,11 +75,15 @@ const EMPTY_FORM: PropertyFormState = {
   areaM2: "",
   featured: false,
   isLaunch: false,
+  portalOrder: "0",
+  metaTitle: "",
+  metaDescription: "",
 }
 
 function toFormState(property: NonNullable<ReturnType<typeof useProperty>["data"]>): PropertyFormState {
   return {
     title: property.title,
+    slug: property.slug,
     description: property.description ?? "",
     purpose: property.purpose,
     type: property.type,
@@ -81,6 +95,9 @@ function toFormState(property: NonNullable<ReturnType<typeof useProperty>["data"
     areaM2: property.areaM2 != null ? String(property.areaM2) : "",
     featured: property.featured,
     isLaunch: Boolean(property.isLaunch),
+    portalOrder: String(property.portalOrder ?? 0),
+    metaTitle: property.metaTitle ?? "",
+    metaDescription: property.metaDescription ?? "",
   }
 }
 
@@ -91,6 +108,7 @@ function toPayload(
   return {
     businessUnitId,
     title: form.title.trim(),
+    slug: form.slug.trim() || undefined,
     description: form.description.trim() || undefined,
     purpose: form.purpose,
     type: form.type,
@@ -103,6 +121,9 @@ function toPayload(
     featured: form.featured,
     isFeatured: form.featured,
     isLaunch: form.isLaunch,
+    portalOrder: form.portalOrder ? Number(form.portalOrder) : 0,
+    metaTitle: form.metaTitle.trim() || null,
+    metaDescription: form.metaDescription.trim() || null,
   }
 }
 
@@ -117,7 +138,10 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
   const propertyQuery = useProperty(propertyId)
   const createMutation = useCreateProperty()
   const updateMutation = useUpdateProperty()
+  const publishMutation = usePublishProperty()
+  const unpublishMutation = useUnpublishProperty()
   const [tab, setTab] = useState<"details" | "photos">("details")
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [form, setForm] = useState<PropertyFormState>(EMPTY_FORM)
   const [initialized, setInitialized] = useState(false)
 
@@ -165,13 +189,53 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
             title={title}
             description="Cadastre os dados principais do imóvel."
             actions={
-              <Link
-                href="/real-estate/properties"
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-              >
-                <ArrowLeft className="mr-1.5 size-4" />
-                Voltar
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                {propertyQuery.data ? (
+                  <Badge variant={propertyQuery.data.published ? "default" : "secondary"}>
+                    {propertyQuery.data.published
+                      ? "Publicado no Portal"
+                      : "Não publicado"}
+                  </Badge>
+                ) : null}
+                {propertyQuery.data ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPreviewOpen(true)}
+                  >
+                    Pré-visualizar
+                  </Button>
+                ) : null}
+                {propertyQuery.data && !propertyQuery.data.published ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={publishMutation.isPending}
+                    onClick={() => publishMutation.mutate(propertyQuery.data!.id)}
+                  >
+                    Publicar no portal
+                  </Button>
+                ) : null}
+                {propertyQuery.data?.published ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={unpublishMutation.isPending}
+                    onClick={() => unpublishMutation.mutate(propertyQuery.data!.id)}
+                  >
+                    Despublicar
+                  </Button>
+                ) : null}
+                <Link
+                  href="/real-estate/properties"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                >
+                  <ArrowLeft className="mr-1.5 size-4" />
+                  Voltar
+                </Link>
+              </div>
             }
           />
 
@@ -318,6 +382,58 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
                     />
                   </FormField>
 
+                  <FormField label="URL amigável" htmlFor="slug" fullWidth>
+                    <Input
+                      id="slug"
+                      value={form.slug}
+                      maxLength={80}
+                      placeholder="apartamento-centro-uberaba"
+                      onChange={(event) => updateField("slug", event.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      /imoveis/{form.slug.trim() || "gerada-a-partir-do-titulo"}
+                    </p>
+                  </FormField>
+
+                  <FormField label="Ordem de exibição" htmlFor="portalOrder">
+                    <Input
+                      id="portalOrder"
+                      type="number"
+                      min={0}
+                      max={9999}
+                      value={form.portalOrder}
+                      onChange={(event) => updateField("portalOrder", event.target.value)}
+                    />
+                  </FormField>
+
+                  <FormField label="Meta title" htmlFor="metaTitle">
+                    <Input
+                      id="metaTitle"
+                      maxLength={70}
+                      value={form.metaTitle}
+                      onChange={(event) => updateField("metaTitle", event.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {form.metaTitle.length} / 70
+                    </p>
+                  </FormField>
+
+                  <FormField label="Meta description" htmlFor="metaDescription" fullWidth>
+                    <textarea
+                      id="metaDescription"
+                      rows={3}
+                      maxLength={160}
+                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      value={form.metaDescription}
+                      onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+                        updateField("metaDescription", event.target.value)
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {form.metaDescription.length} / 160
+                    </p>
+                  </FormField>
+
                   <FormField label="Destaque no portal" htmlFor="featured">
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -376,7 +492,32 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
             </Section>
           )}
         </Stack>
+        <PropertyPreviewDialog
+          property={previewProperty(propertyQuery.data, form)}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+        />
       </ContentContainer>
     </PageContainer>
   )
+}
+
+function previewProperty(
+  property: Property | undefined,
+  form: PropertyFormState,
+): Property | null {
+  if (!property) return null
+  return {
+    ...property,
+    title: form.title || property.title,
+    slug: form.slug.trim() || property.slug,
+    description: form.description,
+    featured: form.featured,
+    portalOrder: form.portalOrder ? Number(form.portalOrder) : 0,
+    metaTitle: form.metaTitle,
+    metaDescription: form.metaDescription,
+    price: form.price ? Number(form.price) : property.price,
+    city: form.city || property.city,
+    neighborhood: form.neighborhood,
+  }
 }

@@ -10,6 +10,7 @@ import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.inter
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type {
+  BatchPropertyPublicationDto,
   CreatePropertyDto,
   ListPropertiesQueryDto,
   UpdatePropertyDto,
@@ -166,6 +167,9 @@ export class PropertiesService {
       featured: dto.isFeatured ?? dto.featured ?? false,
       isLaunch: dto.isLaunch ?? false,
       featuredUntil: parseFeaturedUntil(dto.featuredUntil),
+      portalOrder: dto.portalOrder ?? 0,
+      metaTitle: dto.metaTitle?.trim() || null,
+      metaDescription: dto.metaDescription?.trim() || null,
       published: false,
       publishedAt: null,
       status: dto.status ?? 'DRAFT',
@@ -196,7 +200,7 @@ export class PropertiesService {
     }
 
     let slug = current.slug;
-    if (dto.slug || dto.title) {
+    if (dto.slug !== undefined && dto.slug.trim()) {
       slug = await this.uniqueSlug(
         user.tenantId,
         dto.title ?? current.title,
@@ -234,6 +238,13 @@ export class PropertiesService {
         ? { featuredUntil: parseFeaturedUntil(dto.featuredUntil) }
         : {}),
       ...(dto.status ? { status: dto.status } : {}),
+      ...(dto.portalOrder != null ? { portalOrder: dto.portalOrder } : {}),
+      ...(dto.metaTitle !== undefined
+        ? { metaTitle: dto.metaTitle?.trim() || null }
+        : {}),
+      ...(dto.metaDescription !== undefined
+        ? { metaDescription: dto.metaDescription?.trim() || null }
+        : {}),
       ...(dto.businessUnitId
         ? { businessUnit: { connect: { id: dto.businessUnitId } } }
         : {}),
@@ -258,6 +269,31 @@ export class PropertiesService {
       published: false,
     });
     return serializeProperty(updated);
+  }
+
+  async setPublication(
+    user: JwtAccessPayload,
+    dto: BatchPropertyPublicationDto,
+  ) {
+    const ids = [...new Set(dto.ids.map((id) => id.trim()).filter(Boolean))];
+    if (!ids.length) {
+      throw new BadRequestException('Informe ao menos um imóvel');
+    }
+    for (const id of ids) {
+      await this.findOne(user, id);
+    }
+    const data = dto.published
+      ? {
+          published: true,
+          publishedAt: new Date(),
+          status: 'AVAILABLE' as const,
+        }
+      : { published: false };
+    const updated = [];
+    for (const id of ids) {
+      updated.push(serializeProperty(await this.properties.update(id, data)));
+    }
+    return { data: updated, total: updated.length };
   }
 
   async addImage(

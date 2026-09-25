@@ -16,6 +16,7 @@ import {
   fetchRealEstateDashboardStats,
   publishProperty,
   reorderPropertyImages,
+  setPropertiesPublication,
   setPropertyCoverImage,
   unpublishProperty,
   updateProperty,
@@ -110,6 +111,15 @@ export function useUnpublishProperty() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => unpublishProperty(id),
+    onSettled: () => invalidatePropertyQueries(queryClient),
+  })
+}
+
+export function useSetPropertiesPublication() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { ids: string[]; published: boolean }) =>
+      setPropertiesPublication(input.ids, input.published),
     onSettled: () => invalidatePropertyQueries(queryClient),
   })
 }

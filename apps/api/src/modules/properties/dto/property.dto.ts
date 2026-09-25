@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -243,6 +244,39 @@ export class CreatePropertyDto {
   @IsIn(PROPERTY_STATUSES)
   status?: PropertyStatus;
 
+  @ApiPropertyOptional({
+    description: 'Ordem de exibição no portal. Menor número aparece antes.',
+    default: 0,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(9999)
+  portalOrder?: number;
+
+  @ApiPropertyOptional({ description: 'Meta title da página pública.' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value == null) return value;
+    if (typeof value === 'string' && value.trim() === '') return null;
+    return value;
+  })
+  @IsString()
+  @MaxLength(70)
+  metaTitle?: string | null;
+
+  @ApiPropertyOptional({ description: 'Meta description da página pública.' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value == null) return value;
+    if (typeof value === 'string' && value.trim() === '') return null;
+    return value;
+  })
+  @IsString()
+  @MaxLength(160)
+  metaDescription?: string | null;
+
   @ApiPropertyOptional({ type: [PropertyImageInputDto] })
   @IsOptional()
   @IsArray()
@@ -253,3 +287,18 @@ export class CreatePropertyDto {
 }
 
 export class UpdatePropertyDto extends PartialType(CreatePropertyDto) {}
+
+export class BatchPropertyPublicationDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  ids!: string[];
+
+  @ApiProperty({ description: 'true publica no portal; false despublica.' })
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  published!: boolean;
+}

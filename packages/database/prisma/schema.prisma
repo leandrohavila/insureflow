@@ -1552,11 +1552,14 @@ model Property {
   bedrooms       Int?
   bathrooms      Int?
   parkingSpots   Int?            @map("parking_spots")
-  featured       Boolean         @default(false)
-  featuredUntil  DateTime?       @map("featured_until")
-  isLaunch       Boolean         @default(false) @map("is_launch")
-  published      Boolean         @default(false)
-  publishedAt    DateTime?       @map("published_at")
+  featured         Boolean         @default(false)
+  featuredUntil    DateTime?       @map("featured_until")
+  isLaunch         Boolean         @default(false) @map("is_launch")
+  portalOrder      Int             @default(0) @map("portal_order")
+  metaTitle        String?         @map("meta_title")
+  metaDescription  String?         @map("meta_description")
+  published        Boolean         @default(false)
+  publishedAt      DateTime?       @map("published_at")
   status         PropertyStatus  @default(DRAFT)
   createdByUserId String?        @map("created_by_user_id")
   createdByUser   User?          @relation("PropertyCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
@@ -1576,6 +1579,7 @@ model Property {
   @@index([tenantId, featured, published])
   @@index([tenantId, featured, featuredUntil])
   @@index([tenantId, isLaunch, published])
+  @@index([tenantId, published, portalOrder])
   @@map("properties")
 }
 
@@ -1664,6 +1668,7 @@ model PropertyLead {
   message        String?
   source         String        @default("public_portal")
   metadata       Json?
+  crmLeadId      String?       @map("crm_lead_id")
   createdAt      DateTime      @default(now()) @map("created_at")
 
   @@index([tenantId, propertyId])

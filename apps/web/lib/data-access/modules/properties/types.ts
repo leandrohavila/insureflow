@@ -46,6 +46,9 @@ export type Property = {
   isFeatured?: boolean
   isLaunch?: boolean
   featuredUntil?: string | null
+  portalOrder?: number
+  metaTitle?: string | null
+  metaDescription?: string | null
   published: boolean
   publishedAt?: string | null
   createdAt: string
@@ -91,6 +94,10 @@ export type CreatePropertyInput = {
   featured?: boolean
   isFeatured?: boolean
   isLaunch?: boolean
+  slug?: string
+  portalOrder?: number
+  metaTitle?: string | null
+  metaDescription?: string | null
 }
 
 export type UpdatePropertyInput = Partial<CreatePropertyInput>

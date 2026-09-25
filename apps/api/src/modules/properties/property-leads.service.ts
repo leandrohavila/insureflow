@@ -15,6 +15,18 @@ import { PropertiesRepository } from './repositories/properties.repository';
 import { PropertyLeadsRepository } from './repositories/property-leads.repository';
 import { sanitizePropertyLeadMetadata } from './property-leads.util';
 
+function portalLeadNotes(
+  property: { title: string; slug: string } | null,
+  message?: string | null,
+) {
+  const lines = property
+    ? [`Imóvel: ${property.title}`, `URL: /imoveis/${property.slug}`]
+    : ['Interesse geral no portal'];
+  const text = message?.trim();
+  if (text) lines.push(text);
+  return lines.join('\n').slice(0, 1000);
+}
+
 @Injectable()
 export class PropertyLeadsService {
   private readonly logger = new Logger(PropertyLeadsService.name);
@@ -38,9 +50,16 @@ export class PropertyLeadsService {
 
     let resolvedPropertyId: string | null = null;
     let businessUnitId: string;
+    let property: {
+      id: string;
+      title: string;
+      slug: string;
+      published: boolean;
+      businessUnitId: string;
+    } | null = null;
 
     if (hasProperty) {
-      const property = propertyId
+      property = propertyId
         ? await this.properties.findById(ctx.tenantId, propertyId)
         : await this.properties.findBySlug(ctx.tenantId, propertySlug!, true);
 
@@ -77,15 +96,19 @@ export class PropertyLeadsService {
 
     if (this.crmLeads) {
       try {
-        await this.crmLeads.createLead(ctx.tenantId, {
+        const crmLead = await this.crmLeads.createLead(ctx.tenantId, {
           name: dto.name.trim(),
           email: dto.email?.trim() || undefined,
           phone: dto.phone?.trim() || undefined,
           source: dto.source?.trim() || 'public_portal',
-          notes: dto.message?.trim() || undefined,
+          notes: portalLeadNotes(property, dto.message),
           businessUnitId,
           interestCategories: ['PROPERTY_BUY'],
         });
+        const crmLeadId = crmLead?.id;
+        if (crmLeadId) {
+          await this.leads.linkCrmLead(propertyLead.id, crmLeadId);
+        }
       } catch (error) {
         this.logger.warn(
           `Portal lead ${propertyLead.id} não espelhado no CRM: ${

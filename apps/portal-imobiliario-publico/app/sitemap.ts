@@ -50,9 +50,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       for (const property of result.data) {
         entries.push({
           url: `${origin}/imoveis/${property.slug}`,
-          lastModified: property.publishedAt
-            ? new Date(property.publishedAt)
-            : new Date(),
+          lastModified: property.updatedAt
+            ? new Date(property.updatedAt)
+            : property.publishedAt
+              ? new Date(property.publishedAt)
+              : new Date(),
           changeFrequency: "weekly",
           priority: property.featured ? 0.8 : 0.6,
         });

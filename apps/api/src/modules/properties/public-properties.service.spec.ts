@@ -52,6 +52,7 @@ describe('PublicPropertiesService', () => {
       expect.objectContaining({ published: true, tenantId: 't1' }),
       0,
       12,
+      'catalog',
     );
   });
 
@@ -66,6 +67,7 @@ describe('PublicPropertiesService', () => {
       }),
       0,
       12,
+      'catalog',
     );
   });
 
@@ -92,6 +94,7 @@ describe('PublicPropertiesService', () => {
       }),
       0,
       12,
+      'catalog',
     );
   });
 
@@ -116,6 +119,8 @@ describe('PropertyLeadsService.createPublic', () => {
     id: 'p1',
     published: true,
     businessUnitId: 'bu1',
+    title: 'Apto Centro',
+    slug: 'apto-centro',
   };
 
   function createLeadService(overrides?: {
@@ -126,6 +131,9 @@ describe('PropertyLeadsService.createPublic', () => {
   }) {
     const leads = {
       create: jest.fn().mockResolvedValue({ id: 'pl1' }),
+      linkCrmLead: jest
+        .fn()
+        .mockResolvedValue({ id: 'pl1', crmLeadId: 'lead1' }),
     };
     const properties = {
       findById: overrides?.findById ?? jest.fn().mockResolvedValue(published),
@@ -193,7 +201,7 @@ describe('PropertyLeadsService.createPublic', () => {
   });
 
   it('espelha o interesse do portal no Lead único do CRM', async () => {
-    const { service, crmLeads } = createLeadService();
+    const { service, crmLeads, leads } = createLeadService();
 
     await service.createPublic({
       tenantSlug: 'insureflow',
@@ -210,8 +218,10 @@ describe('PropertyLeadsService.createPublic', () => {
         source: 'public_portal',
         businessUnitId: 'bu1',
         interestCategories: ['PROPERTY_BUY'],
+        notes: 'Imóvel: Apto Centro\nURL: /imoveis/apto-centro',
       }),
     );
+    expect(leads.linkCrmLead).toHaveBeenCalledWith('pl1', 'lead1');
   });
 
   it('não falha o portal se o espelhamento no CRM Lead falhar', async () => {

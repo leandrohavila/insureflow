@@ -44,6 +44,22 @@ describe('PropertiesRepository filters', () => {
     await repo.findMany({ tenantId: 't1' }, 0, 20);
     const arg = findMany.mock.calls[0][0];
     expect(arg.where.AND).toEqual([{ tenantId: 't1' }]);
+    expect(arg.orderBy).toEqual([
+      { publishedAt: 'desc' },
+      { createdAt: 'desc' },
+    ]);
+  });
+
+  it('catálogo público ordena destaque, ordem de exibição e publicação', async () => {
+    const { repo, findMany } = createRepo();
+    await repo.findMany({ tenantId: 't1', published: true }, 0, 12, 'catalog');
+    const arg = findMany.mock.calls[0][0];
+    expect(arg.orderBy).toEqual([
+      { featured: 'desc' },
+      { portalOrder: 'asc' },
+      { publishedAt: 'desc' },
+      { createdAt: 'desc' },
+    ]);
   });
 
   it('destaque vigente inclui featuredUntil nulo ou futuro', async () => {
