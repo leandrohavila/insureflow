@@ -180,6 +180,7 @@ enum PropertyPurpose {
   SALE
   RENT
   SALE_AND_RENT
+  SEASONAL
 }
 
 enum PropertyType {
@@ -1538,6 +1539,8 @@ model Property {
   businessUnitId String          @map("business_unit_id")
   businessUnit   BusinessUnit    @relation(fields: [businessUnitId], references: [id], onDelete: Restrict)
   slug           String
+  publicCode     String?         @map("public_code")
+  legacySlugs    String[]        @default([]) @map("legacy_slugs")
   title          String
   description    String?
   purpose        PropertyPurpose
@@ -1572,6 +1575,7 @@ model Property {
   features PropertyFeature[]
 
   @@unique([tenantId, slug])
+  @@unique([tenantId, publicCode])
   @@index([tenantId, businessUnitId])
   @@index([tenantId, published, publishedAt])
   @@index([tenantId, city, neighborhood])

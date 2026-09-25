@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 
 import { SearchSheet } from "@/components/search-sheet";
+import { codeOnlyHref } from "@/lib/property-code";
 import { purposeLabel, typeLabel } from "@/lib/utils";
 import { PROPERTY_PURPOSES, PROPERTY_TYPES, type CatalogFacets, type PropertyListQuery } from "@/types/property";
 
@@ -22,7 +23,16 @@ function SearchForm({
   idPrefix: string;
 }) {
   return (
-    <form action={action} className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+    <form
+      action={action}
+      className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8"
+      onSubmit={(event) => {
+        const href = codeOnlyHref(event.currentTarget);
+        if (!href) return;
+        event.preventDefault();
+        window.location.assign(href);
+      }}
+    >
       <label htmlFor={`${idPrefix}-purpose`} className="space-y-1 text-xs font-semibold text-[#10294B]">
         Finalidade
         <select
@@ -146,7 +156,7 @@ export function HeroSearch({
       <div className="md:hidden">
         <button
           type="button"
-          className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-white px-4 text-left text-[#000C24] shadow-[0_12px_40px_rgba(0,0,0,.18)]"
+          className="flex min-h-12 w-full items-center gap-3 rounded-2xl bg-[#C09048] px-4 text-left text-[#000C24] shadow-[0_12px_40px_rgba(0,0,0,.18)]"
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen(true)}
@@ -154,7 +164,7 @@ export function HeroSearch({
           <Search className="size-5 shrink-0 text-[#8a6a2f]" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">Buscar imóveis</span>
-            <span className="block truncate text-xs font-medium text-[#10294B]">
+            <span className="block truncate text-xs font-medium text-[#000C24]/80">
               Finalidade, tipo, bairro, cidade ou código
             </span>
           </span>

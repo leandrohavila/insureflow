@@ -15,7 +15,12 @@ export const PROPERTY_DETAIL_INCLUDE = {
 /** @deprecated use PROPERTY_DETAIL_INCLUDE */
 export const PROPERTY_IMAGE_INCLUDE = PROPERTY_DETAIL_INCLUDE;
 
-export const PROPERTY_PURPOSES = ['SALE', 'RENT', 'SALE_AND_RENT'] as const;
+export const PROPERTY_PURPOSES = [
+  'SALE',
+  'RENT',
+  'SALE_AND_RENT',
+  'SEASONAL',
+] as const;
 export type PropertyPurpose = (typeof PROPERTY_PURPOSES)[number];
 
 export const PROPERTY_TYPES = [
@@ -177,7 +182,7 @@ export function serializePublicProperty<
   };
 }
 
-export function slugifyTitle(title: string) {
+export function slugifyTitle(title: string, maxLength = 80) {
   return (
     title
       .normalize('NFD')
@@ -185,7 +190,7 @@ export function slugifyTitle(title: string) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
-      .slice(0, 80) || 'imovel'
+      .slice(0, maxLength) || 'imovel'
   );
 }
 

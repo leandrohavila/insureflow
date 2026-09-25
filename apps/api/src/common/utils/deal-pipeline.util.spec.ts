@@ -7,7 +7,9 @@ import {
 describe('deal-pipeline', () => {
   it('normaliza estágios legados por tipo de empresa', () => {
     expect(canonicalDealStage('qualificacao', 'INSURANCE')).toBe('contato');
-    expect(canonicalDealStage('qualificacao', 'REAL_ESTATE')).toBe('visita');
+    expect(canonicalDealStage('qualificacao', 'REAL_ESTATE')).toBe(
+      'primeiro-contato',
+    );
     expect(canonicalDealStage('fechado')).toBe('fechamento');
   });
 

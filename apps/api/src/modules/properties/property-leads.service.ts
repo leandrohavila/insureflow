@@ -15,18 +15,34 @@ import type { CreatePublicPropertyLeadDto } from './dto/property-lead.dto';
 import { PublicCatalogContextService } from './public-catalog-context.service';
 import { PropertiesRepository } from './repositories/properties.repository';
 import { PropertyLeadsRepository } from './repositories/property-leads.repository';
+import { ensureRealEstatePipeline } from '../crm/ensure-real-estate-pipeline';
 import { sanitizePropertyLeadMetadata } from './property-leads.util';
 
 function portalLeadNotes(
-  property: { title: string; slug: string } | null,
+  property: {
+    title: string;
+    slug: string;
+    publicCode?: string | null;
+    purpose?: string | null;
+  } | null,
   message?: string | null,
 ) {
   const lines = property
-    ? [`Imóvel: ${property.title}`, `URL: /imoveis/${property.slug}`]
+    ? [
+        `Imóvel: ${property.title}`,
+        ...(property.publicCode ? [`Código: ${property.publicCode}`] : []),
+        `URL: /imoveis/${property.slug}`,
+        ...(property.purpose ? [`Finalidade: ${property.purpose}`] : []),
+      ]
     : ['Interesse geral no portal'];
   const text = message?.trim();
   if (text) lines.push(text);
   return lines.join('\n').slice(0, 1000);
+}
+
+function interestForPurpose(purpose?: string | null) {
+  if (purpose === 'RENT' || purpose === 'SEASONAL') return 'PROPERTY_RENT' as const;
+  return 'PROPERTY_BUY' as const;
 }
 
 @Injectable()
@@ -60,6 +76,8 @@ export class PropertyLeadsService {
       slug: string;
       published: boolean;
       businessUnitId: string;
+      publicCode?: string | null;
+      purpose?: string | null;
     } | null = null;
 
     if (hasProperty) {
@@ -86,6 +104,19 @@ export class PropertyLeadsService {
       businessUnitId = ctx.businessUnitId;
     }
 
+    const prisma = this.prisma;
+    if (prisma?.businessUnit?.findFirst) {
+      try {
+        await ensureRealEstatePipeline(prisma, ctx.tenantId, businessUnitId);
+      } catch (error) {
+        this.logger.warn(
+          `Pipeline imobiliário não garantido para ${businessUnitId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
     const propertyLead = await this.leads.create({
       tenantId: ctx.tenantId,
       businessUnitId,
@@ -107,7 +138,7 @@ export class PropertyLeadsService {
           source: dto.source?.trim() || 'public_portal',
           notes: portalLeadNotes(property, dto.message),
           businessUnitId,
-          interestCategories: ['PROPERTY_BUY'],
+          interestCategories: [interestForPurpose(property?.purpose)],
         });
         const crmLeadId = crmLead?.id;
         if (crmLeadId) {
@@ -120,6 +151,7 @@ export class PropertyLeadsService {
             name: dto.name.trim(),
             source: dto.source?.trim() || 'public_portal',
             notes: portalLeadNotes(property, dto.message),
+            propertyTitle: property?.title,
           });
         }
       } catch (error) {
@@ -147,6 +179,7 @@ export class PropertyLeadsService {
     name: string;
     source: string;
     notes: string;
+    propertyTitle?: string | null;
   }) {
     if (!this.activityEngine || !this.prisma) return;
 
@@ -166,7 +199,9 @@ export class PropertyLeadsService {
         tenantId: input.tenantId,
         performedById,
         operationalEventKind: 'portal_lead_received',
-        subject: `Interesse no portal — ${input.name}`,
+        subject: input.propertyTitle
+          ? `Lead interessado no imóvel ${input.propertyTitle}`
+          : `Interesse no portal — ${input.name}`,
         description: input.notes,
         leadId: input.crmLeadId,
         occurredAt: new Date(),

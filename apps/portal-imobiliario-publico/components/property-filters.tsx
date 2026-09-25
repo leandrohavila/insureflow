@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 
 import { SearchSheet } from "@/components/search-sheet";
+import { codeOnlyHref } from "@/lib/property-code";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +15,9 @@ import { PROPERTY_PURPOSES, PROPERTY_TYPES, type PropertyListQuery } from "@/typ
 const PURPOSE_OPTIONS = [
   { value: "", label: "Todas" },
   { value: "SALE", label: "Venda" },
-  { value: "RENT", label: "Aluguel" },
-  { value: "SALE_AND_RENT", label: "Venda e aluguel" },
+  { value: "RENT", label: "Locação" },
+  { value: "SALE_AND_RENT", label: "Venda e locação" },
+  { value: "SEASONAL", label: "Temporada" },
 ] as const;
 
 const selectClass =
@@ -36,7 +38,16 @@ function activeFilterLabels(query: PropertyListQuery) {
 
 function FilterForm({ query, idPrefix }: { query: PropertyListQuery; idPrefix: string }) {
   return (
-    <form method="get" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <form
+      method="get"
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      onSubmit={(event) => {
+        const href = codeOnlyHref(event.currentTarget);
+        if (!href) return;
+        event.preventDefault();
+        window.location.assign(href);
+      }}
+    >
       <div className="sm:col-span-2 lg:col-span-3">
         <Label htmlFor={`${idPrefix}-q`}>Busca</Label>
         <Input
@@ -125,8 +136,8 @@ function FilterForm({ query, idPrefix }: { query: PropertyListQuery; idPrefix: s
         />
       </div>
       <div className="flex items-end sm:col-span-2 lg:col-span-1">
-        <Button type="submit" className="min-h-12 w-full">
-          Filtrar
+        <Button type="submit" className="min-h-12 w-full bg-[#C09048] text-[#000C24] hover:bg-[#DEAE5D]">
+          Buscar imóveis
         </Button>
       </div>
     </form>
@@ -142,7 +153,7 @@ export function PropertyFilters({ query }: { query: PropertyListQuery }) {
       <div className="space-y-2 md:hidden">
         <button
           type="button"
-          className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-[#E6E8EC] bg-white px-4 text-left text-sm font-semibold text-[#000C24]"
+          className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-[#C09048] px-4 text-left text-sm font-semibold text-[#000C24]"
           aria-haspopup="dialog"
           aria-expanded={open}
           onClick={() => setOpen(true)}

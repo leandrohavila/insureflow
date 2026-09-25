@@ -54,6 +54,14 @@ export class PublicPropertyQueryDto {
   @IsIn(PROPERTY_PURPOSES)
   purpose?: PropertyPurpose;
 
+  @ApiPropertyOptional({
+    enum: ['buy', 'rent'],
+    description: 'Compra (venda) ou locação, incluindo imóveis venda e locação',
+  })
+  @IsOptional()
+  @IsIn(['buy', 'rent'])
+  purposeMode?: 'buy' | 'rent';
+
   @ApiPropertyOptional({ enum: PROPERTY_TYPES })
   @IsOptional()
   @IsIn(PROPERTY_TYPES)

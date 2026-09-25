@@ -1,4 +1,4 @@
-export const PROPERTY_PURPOSES = ["SALE", "RENT", "SALE_AND_RENT"] as const;
+export const PROPERTY_PURPOSES = ["SALE", "RENT", "SALE_AND_RENT", "SEASONAL"] as const;
 export type PropertyPurpose = (typeof PROPERTY_PURPOSES)[number];
 
 export const PROPERTY_TYPES = [
@@ -40,6 +40,7 @@ export type PropertyPrimaryOwner = {
 export type PublicProperty = {
   id: string;
   slug: string;
+  publicCode?: string | null;
   title: string;
   description: string | null;
   purpose: PropertyPurpose;
@@ -75,6 +76,7 @@ export type PropertyListQuery = {
   city?: string;
   neighborhood?: string;
   purpose?: PropertyPurpose;
+  purposeMode?: "buy" | "rent";
   type?: PropertyType;
   code?: string;
   isLaunch?: boolean;
@@ -102,6 +104,7 @@ export type CreatePropertyLeadInput = {
   email?: string;
   phone?: string;
   message?: string;
+  source?: string;
   metadata?: Record<string, string>;
 };
 

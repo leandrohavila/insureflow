@@ -7,6 +7,7 @@ import { parseListQuery, PropertyFilters } from "@/components/property-filters";
 import { PropertyCard } from "@/components/property-card";
 import { SourceBanner } from "@/components/source-banner";
 import { useProperties } from "@/hooks/use-properties";
+import type { PropertyListQuery } from "@/types/property";
 
 function withPage(searchParams: URLSearchParams, page: number) {
   const params = new URLSearchParams(searchParams.toString());
@@ -14,9 +15,18 @@ function withPage(searchParams: URLSearchParams, page: number) {
   return params.toString();
 }
 
-export function PropertyListing() {
+export function PropertyListing({
+  preset,
+  title = "Imóveis",
+  description,
+}: {
+  preset?: Partial<PropertyListQuery>;
+  title?: string;
+  description?: string;
+}) {
   const searchParams = useSearchParams();
-  const query = parseListQuery(Object.fromEntries(searchParams.entries()));
+  const fromUrl = parseListQuery(Object.fromEntries(searchParams.entries()));
+  const query = { ...fromUrl, ...preset, page: fromUrl.page };
   const { data, source, error, loading } = useProperties(query);
   const total = data?.total ?? 0;
   const page = data?.page ?? 1;
@@ -28,7 +38,8 @@ export function PropertyListing() {
       <SourceBanner source={source} />
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">Imóveis</h1>
+          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{title}</h1>
+          {description && <p className="mt-1 max-w-3xl text-sm text-[#10294B]">{description}</p>}
           <p className="text-sm text-[#10294B]">
             {loading ? "Carregando imóveis..." : data ? `${total} ${total === 1 ? "imóvel" : "imóveis"}` : "Catálogo publicado"}
           </p>

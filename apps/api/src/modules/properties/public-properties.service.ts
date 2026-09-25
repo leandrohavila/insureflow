@@ -30,6 +30,7 @@ export class PublicPropertiesService {
       city: query.city,
       neighborhood: query.neighborhood,
       purpose: query.purpose,
+      purposeMode: query.purposeMode,
       type: query.type,
       priceMin: query.priceMin,
       priceMax: query.priceMax,
@@ -89,6 +90,16 @@ export class PublicPropertiesService {
     });
     const rows = await this.properties.findMany(filters, 0, limit, 'catalog');
     return { data: rows.map((row) => serializePublicProperty(row)) };
+  }
+
+  async findByCode(code: string, query: PublicPropertyQueryDto) {
+    const ctx = await this.context.resolve(query);
+    const row = await this.properties.findByPublicCode(ctx.tenantId, code, true);
+    if (!row) throw new NotFoundException('Imóvel não encontrado');
+    if (ctx.businessUnitId && row.businessUnitId !== ctx.businessUnitId) {
+      throw new NotFoundException('Imóvel não encontrado');
+    }
+    return serializePublicProperty(row);
   }
 
   async findBySlug(slug: string, query: PublicPropertyQueryDto) {

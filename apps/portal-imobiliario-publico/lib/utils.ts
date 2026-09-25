@@ -14,8 +14,9 @@ export function formatPrice(value: number) {
 }
 
 export function purposeLabel(purpose: string) {
-  if (purpose === "RENT") return "Aluguel";
-  if (purpose === "SALE_AND_RENT") return "Venda e aluguel";
+  if (purpose === "RENT") return "Locação";
+  if (purpose === "SALE_AND_RENT") return "Venda e locação";
+  if (purpose === "SEASONAL") return "Temporada";
   return "Venda";
 }
 

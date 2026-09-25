@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { normalizePropertyCode } from '../property-slug';
 import {
   PROPERTY_DETAIL_INCLUDE,
   slugifyTitle,
@@ -15,6 +16,7 @@ export type PropertyListFilters = {
   city?: string;
   neighborhood?: string;
   purpose?: PropertyPurpose;
+  purposeMode?: 'buy' | 'rent';
   type?: PropertyType;
   priceMin?: number;
   priceMax?: number;
@@ -50,7 +52,11 @@ export class PropertiesRepository {
         },
       });
     }
-    if (filters.purpose) {
+    if (filters.purposeMode === 'buy') {
+      and.push({ purpose: { in: ['SALE', 'SALE_AND_RENT'] } });
+    } else if (filters.purposeMode === 'rent') {
+      and.push({ purpose: { in: ['RENT', 'SALE_AND_RENT'] } });
+    } else if (filters.purpose) {
       and.push({ purpose: filters.purpose });
     }
     if (filters.type) {
@@ -61,9 +67,18 @@ export class PropertiesRepository {
     }
     if (filters.code?.trim()) {
       const code = filters.code.trim();
-      and.push({
-        OR: [{ slug: { equals: code, mode: 'insensitive' } }, { id: code }],
-      });
+      const digits = normalizePropertyCode(code);
+      const codeOr: Prisma.PropertyWhereInput[] = [
+        { slug: { equals: code, mode: 'insensitive' } },
+        { id: code },
+      ];
+      if (digits) {
+        codeOr.push(
+          { publicCode: digits },
+          { slug: { endsWith: `-cod-${digits}`, mode: 'insensitive' } },
+        );
+      }
+      and.push({ OR: codeOr });
     }
     if (filters.priceMin != null || filters.priceMax != null) {
       and.push({
@@ -136,10 +151,28 @@ export class PropertiesRepository {
 
   findBySlug(tenantId: string, slug: string, publishedOnly = false) {
     return this.prisma.property.findFirst({
+      where: publishedOnly
+        ? {
+            tenantId,
+            published: true,
+            OR: [{ slug }, { legacySlugs: { has: slug } }],
+          }
+        : { tenantId, slug },
+      include: PROPERTY_DETAIL_INCLUDE,
+    });
+  }
+
+  findByPublicCode(tenantId: string, rawCode: string, publishedOnly = true) {
+    const code = normalizePropertyCode(rawCode);
+    if (!code) return Promise.resolve(null);
+    return this.prisma.property.findFirst({
       where: {
         tenantId,
-        slug,
         ...(publishedOnly ? { published: true } : {}),
+        OR: [
+          { publicCode: code },
+          { slug: { endsWith: `-cod-${code}`, mode: 'insensitive' } },
+        ],
       },
       include: PROPERTY_DETAIL_INCLUDE,
     });
@@ -150,6 +183,18 @@ export class PropertiesRepository {
       where: {
         tenantId,
         slug,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { id: true },
+    });
+    return Boolean(row);
+  }
+
+  async isPublicCodeTaken(tenantId: string, publicCode: string, excludeId?: string) {
+    const row = await this.prisma.property.findFirst({
+      where: {
+        tenantId,
+        publicCode,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true },

@@ -2,13 +2,16 @@ export type CrmStageId =
   | "novo"
   | "qualificacao"
   | "contato"
+  | "primeiro-contato"
   | "cotacao"
   | "visita"
+  | "visita-agendada"
   | "proposta"
   | "negociacao"
   | "contrato"
   | "fechamento"
   | "fechado"
+  | "perdido"
 
 export type CrmDealStatus = "open" | "won" | "lost" | "archived"
 

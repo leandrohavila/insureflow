@@ -27,6 +27,10 @@ import {
 import { PropertiesRepository } from './repositories/properties.repository';
 import { PropertyImagesRepository } from './repositories/property-images.repository';
 import { PropertyLeadsRepository } from './repositories/property-leads.repository';
+import {
+  buildFriendlyPropertySlug,
+  withUniqueFriendlySuffix,
+} from './property-slug';
 import { serializeProperty, slugifyTitle } from './properties.util';
 import { serializePropertyLead } from './property-leads.util';
 
@@ -99,6 +103,42 @@ export class PropertiesService {
     return slug;
   }
 
+  private async uniquePublicCode(tenantId: string, excludeId?: string) {
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      if (!(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))) {
+        return code;
+      }
+    }
+    const fallback = String(Date.now()).slice(-8);
+    return fallback;
+  }
+
+  private async uniqueFriendlySlug(
+    tenantId: string,
+    input: {
+      type?: string | null;
+      neighborhood?: string | null;
+      city?: string | null;
+      bedrooms?: number | null;
+      publicCode: string;
+    },
+    excludeId?: string,
+  ) {
+    const base = buildFriendlyPropertySlug(input);
+    let slug = base;
+    let attempt = 1;
+    while (await this.properties.isSlugTaken(tenantId, slug, excludeId)) {
+      attempt += 1;
+      slug = withUniqueFriendlySuffix(base, attempt);
+    }
+    return slug;
+  }
+
+  private needsFriendlySlug(row: { slug?: string | null; publicCode?: string | null }) {
+    return !row.publicCode || !/-cod-\d+/i.test(row.slug ?? '');
+  }
+
   async findAll(user: JwtAccessPayload, query: ListPropertiesQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -146,11 +186,25 @@ export class PropertiesService {
   async create(user: JwtAccessPayload, dto: CreatePropertyDto) {
     await this.assertCanUseBusinessUnit(user, dto.businessUnitId);
 
-    const slug = await this.uniqueSlug(user.tenantId, dto.title, dto.slug);
+    const publicCode = await this.uniquePublicCode(user.tenantId);
+    const slug = await this.uniqueFriendlySlug(user.tenantId, {
+      type: dto.type,
+      neighborhood: dto.neighborhood,
+      city: dto.city,
+      bedrooms: dto.bedrooms,
+      publicCode,
+    });
+    const legacySlugs: string[] = [];
+    if (dto.slug?.trim()) {
+      const requested = await this.uniqueSlug(user.tenantId, dto.title, dto.slug);
+      if (requested !== slug) legacySlugs.push(requested);
+    }
     const images = dto.images ?? [];
     const data: Prisma.PropertyCreateInput = {
       title: dto.title,
       slug,
+      publicCode,
+      legacySlugs,
       description: dto.description,
       purpose: dto.purpose,
       type: dto.type ?? 'OTHER',
@@ -200,6 +254,7 @@ export class PropertiesService {
     }
 
     let slug = current.slug;
+    const legacySlugs = [...(current.legacySlugs ?? [])];
     if (dto.slug !== undefined && dto.slug.trim()) {
       slug = await this.uniqueSlug(
         user.tenantId,
@@ -207,6 +262,9 @@ export class PropertiesService {
         dto.slug,
         id,
       );
+      if (slug !== current.slug && !legacySlugs.includes(current.slug)) {
+        legacySlugs.push(current.slug);
+      }
     }
 
     const updated = await this.properties.update(id, {
@@ -249,16 +307,56 @@ export class PropertiesService {
         ? { businessUnit: { connect: { id: dto.businessUnitId } } }
         : {}),
       slug,
+      ...(slug !== current.slug ? { legacySlugs } : {}),
     });
     return serializeProperty(updated);
   }
 
+  private async publicationIdentity(
+    tenantId: string,
+    current: {
+      id: string;
+      slug: string;
+      publicCode?: string | null;
+      legacySlugs?: string[];
+      type?: string | null;
+      neighborhood?: string | null;
+      city?: string | null;
+      bedrooms?: number | null;
+    },
+  ) {
+    if (!this.needsFriendlySlug(current)) return {};
+    const publicCode =
+      current.publicCode ?? (await this.uniquePublicCode(tenantId, current.id));
+    const slug = await this.uniqueFriendlySlug(
+      tenantId,
+      {
+        type: current.type,
+        neighborhood: current.neighborhood,
+        city: current.city,
+        bedrooms: current.bedrooms,
+        publicCode,
+      },
+      current.id,
+    );
+    const legacySlugs = [...(current.legacySlugs ?? [])];
+    if (slug !== current.slug && !legacySlugs.includes(current.slug)) {
+      legacySlugs.push(current.slug);
+    }
+    return {
+      publicCode,
+      slug,
+      ...(slug !== current.slug ? { legacySlugs } : {}),
+    };
+  }
+
   async publish(user: JwtAccessPayload, id: string) {
-    await this.findOne(user, id);
+    const current = await this.findOne(user, id);
     const updated = await this.properties.update(id, {
       published: true,
       publishedAt: new Date(),
       status: 'AVAILABLE',
+      ...(await this.publicationIdentity(user.tenantId, current)),
     });
     return serializeProperty(updated);
   }
@@ -282,15 +380,17 @@ export class PropertiesService {
     for (const id of ids) {
       await this.findOne(user, id);
     }
-    const data = dto.published
-      ? {
-          published: true,
-          publishedAt: new Date(),
-          status: 'AVAILABLE' as const,
-        }
-      : { published: false };
     const updated = [];
     for (const id of ids) {
+      const current = await this.findOne(user, id);
+      const data = dto.published
+        ? {
+            published: true,
+            publishedAt: new Date(),
+            status: 'AVAILABLE' as const,
+            ...(await this.publicationIdentity(user.tenantId, current)),
+          }
+        : { published: false };
       updated.push(serializeProperty(await this.properties.update(id, data)));
     }
     return { data: updated, total: updated.length };

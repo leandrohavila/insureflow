@@ -16,6 +16,9 @@ const stageBarColor: Record<(typeof pipelineStages)[number]["id"], string> = {
   contrato: "bg-amber-500",
   fechamento: "bg-emerald-500",
   fechado: "bg-emerald-500",
+  "primeiro-contato": "bg-violet-500",
+  "visita-agendada": "bg-primary",
+  perdido: "bg-neutral-400",
 }
 
 type DashboardPipelineStageBarProps = {

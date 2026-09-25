@@ -12,10 +12,12 @@ export const pipelineStages: {
 
 export const realEstatePipelineStages: typeof pipelineStages = [
   { id: "novo", label: "Novo Lead", accent: "sky" },
-  { id: "visita", label: "Visita", accent: "violet" },
+  { id: "primeiro-contato", label: "Primeiro Contato", accent: "violet" },
+  { id: "visita-agendada", label: "Visita Agendada", accent: "primary" },
   { id: "proposta", label: "Proposta", accent: "amber" },
-  { id: "contrato", label: "Contrato", accent: "primary" },
-  { id: "fechamento", label: "Fechamento", accent: "emerald" },
+  { id: "negociacao", label: "Negociação", accent: "amber" },
+  { id: "fechado", label: "Fechado", accent: "emerald" },
+  { id: "perdido", label: "Perdido", accent: "slate" },
 ]
 
 export const allPipelineStages: typeof pipelineStages = [
@@ -24,7 +26,10 @@ export const allPipelineStages: typeof pipelineStages = [
   { id: "contrato", label: "Contrato", accent: "primary" },
   { id: "qualificacao", label: "Qualificação", accent: "violet" },
   { id: "negociacao", label: "Negociação", accent: "amber" },
-  { id: "fechado", label: "Fechamento", accent: "emerald" },
+  { id: "fechado", label: "Fechado", accent: "emerald" },
+  { id: "primeiro-contato", label: "Primeiro Contato", accent: "violet" },
+  { id: "visita-agendada", label: "Visita Agendada", accent: "primary" },
+  { id: "perdido", label: "Perdido", accent: "slate" },
 ]
 
 export const stageLabelMap = Object.fromEntries(

@@ -92,6 +92,13 @@ export function apiPortal() {
   );
 }
 
+export function apiFindByCode(code: string) {
+  const params = toSearchParams({});
+  return request<PublicProperty>(
+    `/api/v1/public/properties/code/${encodeURIComponent(code)}?${params.toString()}`,
+  );
+}
+
 export function apiFindBySlug(slug: string) {
   const params = toSearchParams({});
   return request<PublicProperty>(
