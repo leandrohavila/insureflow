@@ -128,6 +128,8 @@ describe('PropertyLeadsService.createPublic', () => {
     findBySlug?: jest.Mock;
     businessUnitId?: string;
     crmLeads?: { createLead: jest.Mock };
+    activityEngine?: { publish: jest.Mock };
+    prisma?: { user: { findFirst: jest.Mock } };
   }) {
     const leads = {
       create: jest.fn().mockResolvedValue({ id: 'pl1' }),
@@ -149,13 +151,21 @@ describe('PropertyLeadsService.createPublic', () => {
     const crmLeads = overrides?.crmLeads ?? {
       createLead: jest.fn().mockResolvedValue({ id: 'lead1' }),
     };
+    const activityEngine = overrides?.activityEngine ?? {
+      publish: jest.fn().mockResolvedValue({ id: 'act1', created: true }),
+    };
+    const prisma = overrides?.prisma ?? {
+      user: { findFirst: jest.fn().mockResolvedValue({ id: 'user-1' }) },
+    };
     const service = new PropertyLeadsService(
       context as never,
       properties as never,
       leads as never,
       crmLeads as never,
+      activityEngine as never,
+      prisma as never,
     );
-    return { service, leads, properties, context, crmLeads };
+    return { service, leads, properties, context, crmLeads, activityEngine, prisma };
   }
 
   it('rejeita imóvel não publicado', async () => {
@@ -201,7 +211,7 @@ describe('PropertyLeadsService.createPublic', () => {
   });
 
   it('espelha o interesse do portal no Lead único do CRM', async () => {
-    const { service, crmLeads, leads } = createLeadService();
+    const { service, crmLeads, leads, activityEngine } = createLeadService();
 
     await service.createPublic({
       tenantSlug: 'insureflow',
@@ -221,6 +231,38 @@ describe('PropertyLeadsService.createPublic', () => {
         notes: 'Imóvel: Apto Centro\nURL: /imoveis/apto-centro',
       }),
     );
+    expect(leads.linkCrmLead).toHaveBeenCalledWith('pl1', 'lead1');
+    expect(activityEngine.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 't1',
+        performedById: 'user-1',
+        operationalEventKind: 'portal_lead_received',
+        leadId: 'lead1',
+        subject: 'Interesse no portal — Maria',
+        description: 'Imóvel: Apto Centro\nURL: /imoveis/apto-centro',
+        idempotencyKey: {
+          operationalEventKind: 'portal_lead_received',
+          leadId: 'lead1',
+        },
+      }),
+    );
+  });
+
+  it('mantém o lead do portal quando a Activity não pode ser gravada', async () => {
+    const { service, leads } = createLeadService({
+      activityEngine: {
+        publish: jest.fn().mockRejectedValue(new Error('activity down')),
+      },
+    });
+
+    await expect(
+      service.createPublic({
+        tenantSlug: 'insureflow',
+        propertySlug: 'apto-centro',
+        name: 'Maria',
+        phone: '65999999999',
+      }),
+    ).resolves.toEqual({ id: 'pl1' });
     expect(leads.linkCrmLead).toHaveBeenCalledWith('pl1', 'lead1');
   });
 

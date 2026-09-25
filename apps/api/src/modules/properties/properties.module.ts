@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { ActivitiesModule } from '../activities/activities.module';
 import { LeadsModule } from '../leads/leads.module';
 import { PersonsController } from './persons.controller';
 import { PersonsService } from './persons.service';
@@ -31,7 +32,7 @@ import { PropertyLeadsRepository } from './repositories/property-leads.repositor
 import { PropertyOwnersRepository } from './repositories/property-owners.repository';
 
 @Module({
-  imports: [LeadsModule],
+  imports: [LeadsModule, ActivitiesModule],
   controllers: [
     PublicPropertiesController,
     PublicPortalController,
