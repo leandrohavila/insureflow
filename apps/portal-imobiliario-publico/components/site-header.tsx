@@ -40,7 +40,7 @@ export function SiteHeader({
             <img
               src={config.logoUrl}
               alt={name}
-              className="h-10 w-auto max-w-[10rem] object-contain md:h-12"
+              className="h-14 w-auto max-w-[14rem] object-contain md:h-16"
             />
           ) : (
             <span className="truncate text-sm font-semibold tracking-[0.14em] uppercase md:text-base">

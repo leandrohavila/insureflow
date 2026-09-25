@@ -25,10 +25,9 @@ export const ABOUT_TEXT_FALLBACK =
 
 export const DIFFERENTIAL_FALLBACK = [
   "Atendimento Personalizado",
-  "Compra Segura",
-  "Avaliação de Imóveis",
-  "Financiamento Imobiliário",
-  "Equipe Especializada",
+  "Segurança Jurídica",
+  "Melhores Oportunidades",
+  "Acompanhamento Completo",
 ] as const;
 
 export function companyName(config: PortalConfig | null) {

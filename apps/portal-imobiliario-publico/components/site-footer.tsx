@@ -14,13 +14,13 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
 
   return (
     <footer className="bg-[#000C24] text-white">
-      <div className="mx-auto grid w-full max-w-[90rem] gap-8 px-4 py-12 sm:grid-cols-2 md:px-8 lg:grid-cols-4 2xl:max-w-[110rem]">
-        <div className="space-y-3">
+      <div className="mx-auto grid w-full max-w-[90rem] gap-10 px-4 py-14 md:grid-cols-3 md:px-8 2xl:max-w-[110rem]">
+        <div className="space-y-3 md:col-span-3">
           {config?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={config.logoUrl} alt={name} className="h-12 w-auto object-contain" />
+            <img src={config.logoUrl} alt={name} className="h-16 w-auto object-contain" />
           ) : (
-            <p className="text-sm font-semibold tracking-[0.14em] uppercase">{name}</p>
+            <p className="text-lg font-semibold tracking-[0.14em] uppercase">{name}</p>
           )}
           {config?.creci && <p className="text-sm text-white/80">CRECI {config.creci}</p>}
           {config?.address && <p className="text-sm text-white/80">{config.address}</p>}
@@ -76,7 +76,8 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
       </div>
       <div className="border-t border-white/10">
         <p className="mx-auto w-full max-w-[90rem] px-4 py-4 text-xs text-white/70 md:px-8 2xl:max-w-[110rem]">
-          © Grupo Ávila - Todos os direitos reservados
+          © Grupo Ávila 2026
+          <span className="mt-1 block">Todos os direitos reservados.</span>
         </p>
       </div>
     </footer>
