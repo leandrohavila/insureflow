@@ -1,0 +1,40 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.grupoavilaimoveis.com.br" }],
+      "destination": "https://grupoavilaimoveis.com.br/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "insureflow-portal-imobiliario-publico.vercel.app" }],
+      "destination": "https://grupoavilaimoveis.com.br/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "insureflow-portal-imobiliario-publi.vercel.app" }],
+      "destination": "https://grupoavilaimoveis.com.br/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "insureflow-portal-imobiliario-publico-leandro-avila-s-projects.vercel.app"
+        }
+      ],
+      "destination": "https://grupoavilaimoveis.com.br/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "portal-imobiliario-publico.vercel.app" }],
+      "destination": "https://grupoavilaimoveis.com.br/:path*",
+      "permanent": true
+    }
+  ]
+}
