@@ -26,7 +26,7 @@ export function PropertyCard({ property }: { property: PublicProperty }) {
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-stone-500">Sem foto</div>
         )}
-        <p className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1 text-sm font-semibold text-[#123524]">
+        <p className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1 text-sm font-semibold text-[#000C24]">
           {formatPrice(property.price)}
         </p>
       </div>
@@ -42,7 +42,7 @@ export function PropertyCard({ property }: { property: PublicProperty }) {
         <p className="text-xs text-stone-400">Cód. {property.slug}</p>
         <Link
           href={`/imoveis/${property.slug}`}
-          className="mt-auto inline-flex h-10 items-center justify-center rounded-lg bg-[#123524] text-sm font-medium text-white"
+          className="mt-auto inline-flex h-10 items-center justify-center rounded-lg bg-[#C09048] text-sm font-medium text-[#000C24] hover:bg-[#DEAE5D]"
         >
           Ver Imóvel
         </Link>

@@ -96,7 +96,7 @@ export function HeroSearch({
       <div className="flex items-end">
         <button
           type="submit"
-          className="h-11 w-full rounded-lg bg-[#123524] px-4 text-sm font-semibold tracking-wide text-white hover:bg-[#0d291b]"
+          className="h-11 w-full rounded-lg bg-[#C09048] px-4 text-sm font-semibold tracking-wide text-[#000C24] hover:bg-[#DEAE5D]"
         >
           BUSCAR IMÓVEL
         </button>

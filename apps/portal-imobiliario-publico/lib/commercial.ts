@@ -20,8 +20,24 @@ export function whatsappHref(phone: string, text?: string) {
   return `https://wa.me/${withCountry}${query}`;
 }
 
+export const ABOUT_TEXT_FALLBACK =
+  "Atuamos na compra, venda e locação de imóveis em Uberaba e região, oferecendo atendimento personalizado, segurança jurídica e acompanhamento completo durante toda a negociação.";
+
+export const DIFFERENTIAL_FALLBACK = [
+  "Atendimento Personalizado",
+  "Compra Segura",
+  "Avaliação de Imóveis",
+  "Financiamento Imobiliário",
+  "Equipe Especializada",
+] as const;
+
 export function companyName(config: PortalConfig | null) {
   return config?.companyName?.trim() || "Imobiliária";
+}
+
+export function portalDifferentials(config: PortalConfig | null) {
+  const fromCrm = config?.differentials?.map((item) => item.trim()).filter(Boolean) ?? [];
+  return fromCrm.length > 0 ? fromCrm : [...DIFFERENTIAL_FALLBACK];
 }
 
 export function socialHref(value: string | null | undefined) {
