@@ -8,6 +8,8 @@ import {
 
 import { Prisma } from '@prisma/client';
 
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ActivityEngineService } from '../activities/activity-engine.service';
 import { LeadsService } from '../leads/leads.service';
 import type { CreatePublicPropertyLeadDto } from './dto/property-lead.dto';
 import { PublicCatalogContextService } from './public-catalog-context.service';
@@ -36,6 +38,8 @@ export class PropertyLeadsService {
     private readonly properties: PropertiesRepository,
     private readonly leads: PropertyLeadsRepository,
     @Optional() private readonly crmLeads?: LeadsService,
+    @Optional() private readonly activityEngine?: ActivityEngineService,
+    @Optional() private readonly prisma?: PrismaService,
   ) {}
 
   async createPublic(dto: CreatePublicPropertyLeadDto) {
@@ -108,6 +112,15 @@ export class PropertyLeadsService {
         const crmLeadId = crmLead?.id;
         if (crmLeadId) {
           await this.leads.linkCrmLead(propertyLead.id, crmLeadId);
+          await this.recordPortalLeadActivity({
+            tenantId: ctx.tenantId,
+            businessUnitId,
+            crmLeadId,
+            propertyLeadId: propertyLead.id,
+            name: dto.name.trim(),
+            source: dto.source?.trim() || 'public_portal',
+            notes: portalLeadNotes(property, dto.message),
+          });
         }
       } catch (error) {
         this.logger.warn(
@@ -119,5 +132,82 @@ export class PropertyLeadsService {
     }
 
     return propertyLead;
+  }
+
+  /**
+   * O cadastro público não tem usuário autenticado. A Activity exige
+   * performedById, então o responsável é um usuário ativo da unidade
+   * (ou o primeiro usuário ativo do tenant).
+   */
+  private async recordPortalLeadActivity(input: {
+    tenantId: string;
+    businessUnitId: string;
+    crmLeadId: string;
+    propertyLeadId: string;
+    name: string;
+    source: string;
+    notes: string;
+  }) {
+    if (!this.activityEngine || !this.prisma) return;
+
+    try {
+      const performedById = await this.resolvePortalPerformer(
+        input.tenantId,
+        input.businessUnitId,
+      );
+      if (!performedById) {
+        this.logger.warn(
+          `Portal lead ${input.propertyLeadId} sem usuário para registrar Activity`,
+        );
+        return;
+      }
+
+      await this.activityEngine.publish({
+        tenantId: input.tenantId,
+        performedById,
+        operationalEventKind: 'portal_lead_received',
+        subject: `Interesse no portal — ${input.name}`,
+        description: input.notes,
+        leadId: input.crmLeadId,
+        occurredAt: new Date(),
+        metadata: {
+          source: input.source,
+          propertyLeadId: input.propertyLeadId,
+        },
+        idempotencyKey: {
+          operationalEventKind: 'portal_lead_received',
+          leadId: input.crmLeadId,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Activity do portal lead ${input.propertyLeadId} não gravada: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  private async resolvePortalPerformer(
+    tenantId: string,
+    businessUnitId: string,
+  ) {
+    const linked = await this.prisma!.user.findFirst({
+      where: {
+        tenantId,
+        isActive: true,
+        businessUnits: { some: { businessUnitId } },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (linked) return linked.id;
+
+    const fallback = await this.prisma!.user.findFirst({
+      where: { tenantId, isActive: true },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    return fallback?.id ?? null;
   }
 }
