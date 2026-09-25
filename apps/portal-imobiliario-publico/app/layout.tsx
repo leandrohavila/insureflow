@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { companyName } from "@/lib/commercial";
+import { portalOrigin } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { getPortalHome } from "@/services/catalog";
 
@@ -34,10 +35,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const portal = await getPortalHome();
   const name = companyName(portal.data.config);
   const description = portal.data.config?.heroSubtitle?.trim() || `Portal de imóveis ${name}.`;
+  const origin = portalOrigin();
   return {
+    metadataBase: new URL(origin),
+    alternates: { canonical: "/" },
     title: { default: name, template: `%s · ${name}` },
     description,
     openGraph: {
+      url: origin,
       title: name,
       description,
       locale: "pt_BR",

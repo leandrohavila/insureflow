@@ -2,6 +2,14 @@ import { resolveRealEstateBusinessUnitId } from "@/lib/business-units/nav-contex
 import type { BusinessUnitContext } from "@/lib/data-access/modules/business-units/types"
 
 export const LOCAL_PORTAL_ORIGIN = "http://localhost:3002"
+export const OFFICIAL_PORTAL_ORIGIN = "https://grupoavilaimoveis.com.br"
+
+const LEGACY_PORTAL_HOSTS = [
+  "insureflow-portal-imobiliario-publico.vercel.app",
+  "insureflow-portal-imobiliario-publi.vercel.app",
+  "insureflow-portal-imobiliario-publico-leandro-avila-s-projects.vercel.app",
+  "portal-imobiliario-publico.vercel.app",
+]
 
 export function normalizePortalOrigin(value?: string | null) {
   const trimmed = value?.trim()
@@ -9,15 +17,23 @@ export function normalizePortalOrigin(value?: string | null) {
   return trimmed.replace(/\/$/, "")
 }
 
+function isLegacyPortalOrigin(value: string) {
+  try {
+    return LEGACY_PORTAL_HOSTS.includes(new URL(value).hostname.toLowerCase())
+  } catch {
+    return false
+  }
+}
+
 export function resolvePortalOrigin(
   portalPublicUrl?: string | null,
   legacyPublicUrl?: string | null,
 ) {
-  return (
-    normalizePortalOrigin(portalPublicUrl) ||
-    normalizePortalOrigin(legacyPublicUrl) ||
-    LOCAL_PORTAL_ORIGIN
-  )
+  const configured =
+    normalizePortalOrigin(portalPublicUrl) || normalizePortalOrigin(legacyPublicUrl)
+  if (configured && !isLegacyPortalOrigin(configured)) return configured
+  if (process.env.NODE_ENV === "production") return OFFICIAL_PORTAL_ORIGIN
+  return configured || LOCAL_PORTAL_ORIGIN
 }
 
 export function getPortalSitemapUrl(origin: string) {

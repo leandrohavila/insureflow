@@ -15,6 +15,7 @@ import {
   portalDifferentials,
   whatsappHref,
 } from "@/lib/commercial";
+import { portalOrigin } from "@/lib/site";
 import { getFacets, getPortalHome, listHighlights, listLaunches } from "@/services/catalog";
 import type { PortalConfig } from "@/types/property";
 
@@ -26,10 +27,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = portal.data.config?.heroTitle?.trim() || name;
   const description = portal.data.config?.heroSubtitle?.trim() || `Imóveis publicados por ${name}.`;
   const image = portal.data.config?.heroImage || undefined;
+  const origin = portalOrigin();
   return {
     title,
     description,
+    alternates: { canonical: "/" },
     openGraph: {
+      url: origin,
       title,
       description,
       locale: "pt_BR",
@@ -37,6 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: name,
       images: image ? [{ url: image }] : undefined,
     },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 

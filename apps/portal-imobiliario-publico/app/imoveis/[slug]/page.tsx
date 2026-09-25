@@ -47,6 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       alternates: { canonical: `/imoveis/${property.slug}` },
       openGraph: {
+        url: toAbsoluteUrl(`/imoveis/${property.slug}`),
         title,
         description,
         type: "website",

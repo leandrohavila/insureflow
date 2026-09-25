@@ -20,7 +20,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
+    alternates: { canonical: `/imoveis/bairros/${slug}` },
     openGraph: { title, description, locale: "pt_BR", type: "website" },
+    twitter: { card: "summary_large_image", title, description },
   };
 }
 
