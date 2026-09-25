@@ -24,7 +24,10 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
             <img
               src={current.url}
               alt={current.alt ?? property.title}
+              width={960}
+              height={600}
               className="h-full w-full object-cover"
+              decoding="async"
             />
           ) : (
             <div className="flex h-full min-h-56 items-center justify-center text-sm text-stone-500">
@@ -43,13 +46,13 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
                 aria-label={`Foto ${index + 1} de ${property.title}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image.url} alt="" className="h-full w-full object-cover" />
+                <img src={image.url} alt="" width={160} height={128} className="h-full w-full object-cover" loading="lazy" decoding="async" />
               </button>
             ))}
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-4 p-6 md:p-10">
+      <div className="flex flex-col gap-3 p-4 md:gap-4 md:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8a6a2f]">Lançamento</p>
         <h3 className="text-2xl font-semibold tracking-tight md:text-3xl">{property.title}</h3>
         {property.description && (
@@ -58,7 +61,7 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
         <p className="text-lg font-semibold text-[#000C24]">A partir de {formatPrice(property.price)}</p>
         <Link
           href={`/imoveis/${property.slug}`}
-          className="mt-auto inline-flex h-11 w-fit items-center rounded-lg bg-[#C09048] px-5 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+          className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-[#C09048] px-5 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D] sm:w-fit"
         >
           Conheça
         </Link>

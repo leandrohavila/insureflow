@@ -19,11 +19,83 @@ body {
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    "Noto Sans",
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 img {
   max-width: 100%;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 1.75rem;
+  max-width: 9.5rem;
+  flex-shrink: 0;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.whatsapp-float {
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 767px) {
+  .whatsapp-float-detail {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+  }
+}
+
+button,
+a,
+input,
+select,
+textarea,
+summary {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid #deae5d;
+  outline-offset: 2px;
+}
+
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 32rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

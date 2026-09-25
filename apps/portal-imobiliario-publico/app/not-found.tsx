@@ -7,7 +7,7 @@ export default function NotFound() {
       <p className="text-sm text-muted-foreground">
         Só imóveis publicados no CRM aparecem neste portal.
       </p>
-      <Link href="/imoveis" className="text-sm text-primary underline">
+      <Link href="/imoveis" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#8a6a2f] underline">
         Ver listagem
       </Link>
     </div>
