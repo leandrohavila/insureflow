@@ -3,7 +3,7 @@ import type { BusinessUnitContext } from "@/lib/data-access/modules/business-uni
 export function isRealEstateContext(
   context: BusinessUnitContext | null | undefined,
 ): boolean {
-  if (!context?.units.length) return false
+  if (!context?.units?.length) return false
 
   const currentId = context.currentBusinessUnitId
   if (currentId) {
@@ -22,7 +22,7 @@ function resolveBusinessUnitIdByType(
   context: BusinessUnitContext | null | undefined,
   type: "INSURANCE" | "REAL_ESTATE",
 ): string | null {
-  if (!context?.units.length) return null
+  if (!context?.units?.length) return null
   const currentId = context.currentBusinessUnitId
   if (currentId) {
     const current = context.units.find((unit) => unit.id === currentId)

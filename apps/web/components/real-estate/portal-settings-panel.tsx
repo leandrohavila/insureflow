@@ -1,31 +1,29 @@
 "use client"
 
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 
 import { AppCard, Section, Stack } from "@/components/design-system"
+import { ActionToast } from "@/components/shared/action-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  EMPTY_PORTAL_CONFIG,
+  PORTAL_DIFFERENTIAL_LIMIT,
+  PORTAL_TEXT_LIMITS,
+  assessDifferentials,
+  assessImageField,
+  assessTextField,
+  characterCounter,
+  longestDifferentialLength,
+  portalConfigFromApi,
+  portalConfigToPayload,
+  portalFormIsValid,
+  type PortalConfigForm,
+  type PortalImageKey,
+  type PortalTextKey,
+} from "@/lib/real-estate/portal-config-form"
 import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-business-unit"
-
-type PortalConfigForm = {
-  companyName: string
-  heroTitle: string
-  heroSubtitle: string
-  heroImage: string
-  logoUrl: string
-  aboutTitle: string
-  aboutText: string
-  aboutImage: string
-  differentials: string
-  whatsapp: string
-  phone: string
-  email: string
-  instagram: string
-  facebook: string
-  youtube: string
-  creci: string
-  address: string
-}
+import { cn } from "@/lib/utils"
 
 type Banner = {
   id: string
@@ -37,29 +35,7 @@ type Banner = {
   order: number
 }
 
-type ImageKey = "logoUrl" | "heroImage" | "aboutImage"
-
-const EMPTY: PortalConfigForm = {
-  companyName: "",
-  heroTitle: "",
-  heroSubtitle: "",
-  heroImage: "",
-  logoUrl: "",
-  aboutTitle: "",
-  aboutText: "",
-  aboutImage: "",
-  differentials: "",
-  whatsapp: "",
-  phone: "",
-  email: "",
-  instagram: "",
-  facebook: "",
-  youtube: "",
-  creci: "",
-  address: "",
-}
-
-const IMAGE_FIELDS: { key: ImageKey; label: string }[] = [
+const IMAGE_FIELDS: { key: PortalImageKey; label: string }[] = [
   { key: "logoUrl", label: "Logo" },
   { key: "heroImage", label: "Hero" },
   { key: "aboutImage", label: "Imagem institucional" },
@@ -99,7 +75,7 @@ function ImagePreview({ url, alt }: { url: string; alt: string }) {
 
 export function PortalSettingsPanel() {
   const businessUnitId = useRealEstateBusinessUnitId()
-  const [form, setForm] = useState<PortalConfigForm>(EMPTY)
+  const [form, setForm] = useState<PortalConfigForm>(EMPTY_PORTAL_CONFIG)
   const [banners, setBanners] = useState<Banner[]>([])
   const [banner, setBanner] = useState({
     title: "",
@@ -111,24 +87,25 @@ export function PortalSettingsPanel() {
   const [status, setStatus] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ message: string; tone: "success" | "danger" } | null>(null)
+  const formIsValid = useMemo(() => portalFormIsValid(form), [form])
+
+  const loadConfig = useCallback(async (unitId: string) => {
+    const query = `?businessUnitId=${encodeURIComponent(unitId)}`
+    const response = await fetch(`/api/portal-config${query}`)
+    if (!response.ok) return
+    const data: unknown = await response.json()
+    setForm(portalConfigFromApi(data))
+  }, [])
 
   useEffect(() => {
     if (!businessUnitId) return
     const query = `?businessUnitId=${encodeURIComponent(businessUnitId)}`
-    void fetch(`/api/portal-config${query}`)
-      .then(async (response) => (response.ok ? response.json() : null))
-      .then((data: (PortalConfigForm & { differentials?: string[] }) | null) => {
-        if (!data) return
-        setForm({
-          ...EMPTY,
-          ...data,
-          differentials: Array.isArray(data.differentials) ? data.differentials.join("\n") : "",
-        })
-      })
+    void loadConfig(businessUnitId)
     void fetch(`/api/portal-banners${query}`)
       .then(async (response) => (response.ok ? response.json() : []))
       .then((data: Banner[]) => setBanners(Array.isArray(data) ? data : []))
-  }, [businessUnitId])
+  }, [businessUnitId, loadConfig])
 
   function update(key: keyof PortalConfigForm, value: string) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -136,26 +113,31 @@ export function PortalSettingsPanel() {
 
   async function saveConfig(event: FormEvent) {
     event.preventDefault()
-    if (!businessUnitId) return
+    if (!businessUnitId || !portalFormIsValid(form)) return
     setSaving(true)
     setStatus(null)
+    const payload = portalConfigToPayload(form, businessUnitId)
     const response = await fetch("/api/portal-config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        businessUnitId,
-        ...form,
-        differentials: form.differentials
-          .split("\n")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      }),
+      body: JSON.stringify(payload),
     })
     setSaving(false)
-    setStatus(response.ok ? "Configuração salva." : "Não foi possível salvar.")
+    if (!response.ok) {
+      setToast({
+        message: "Não foi possível salvar. Verifique os campos destacados.",
+        tone: "danger",
+      })
+      return
+    }
+    await loadConfig(businessUnitId)
+    setToast({
+      message: "Configuração do portal salva com sucesso.",
+      tone: "success",
+    })
   }
 
-  async function onConfigImage(key: ImageKey, file: File | undefined) {
+  async function onConfigImage(key: PortalImageKey, file: File | undefined) {
     if (!businessUnitId || !file) return
     setUploading(key)
     setStatus(null)
@@ -238,10 +220,10 @@ export function PortalSettingsPanel() {
     if (response.ok) setBanners((current) => current.filter((item) => item.id !== id))
   }
 
-  const fields: { key: keyof PortalConfigForm; label: string }[] = [
+  const fields: { key: PortalTextKey; label: string }[] = [
     { key: "companyName", label: "Nome da imobiliária" },
-    { key: "heroTitle", label: "Hero — título" },
-    { key: "heroSubtitle", label: "Hero — subtítulo" },
+    { key: "heroTitle", label: "Título Hero" },
+    { key: "heroSubtitle", label: "Subtítulo Hero" },
     { key: "whatsapp", label: "WhatsApp" },
     { key: "phone", label: "Telefone" },
     { key: "email", label: "E-mail" },
@@ -252,6 +234,7 @@ export function PortalSettingsPanel() {
     { key: "address", label: "Endereço" },
     { key: "aboutTitle", label: "Título institucional" },
   ]
+  const saveDisabled = saving || !businessUnitId || !formIsValid
 
   return (
     <Section>
@@ -260,43 +243,50 @@ export function PortalSettingsPanel() {
           <p className="text-sm font-medium">Configuração Portal Comercial</p>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={saveConfig}>
             {fields.map((field) => (
-              <label key={field.key} className="space-y-1 text-xs text-muted-foreground">
-                {field.label}
-                <Input
-                  value={form[field.key]}
-                  onChange={(event) => update(field.key, event.target.value)}
-                  required={field.key === "companyName"}
-                />
-              </label>
-            ))}
-            {IMAGE_FIELDS.map((field) => (
-              <PortalImageField
+              <TextField
                 key={field.key}
                 label={field.label}
-                url={form[field.key]}
-                busy={uploading === field.key}
-                onSelect={(file) => void onConfigImage(field.key, file)}
-                onRemove={() => update(field.key, "")}
+                value={form[field.key]}
+                max={PORTAL_TEXT_LIMITS[field.key]}
+                feedback={assessTextField(field.key, form[field.key])}
+                onChange={(value) => update(field.key, value)}
               />
             ))}
-            <label className="space-y-1 text-xs text-muted-foreground md:col-span-2">
-              Institucional
-              <textarea
-                className="min-h-28 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.aboutText}
-                onChange={(event) => update("aboutText", event.target.value)}
-              />
-            </label>
-            <label className="space-y-1 text-xs text-muted-foreground md:col-span-2">
-              Diferenciais
-              <textarea
-                className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={form.differentials}
-                onChange={(event) => update("differentials", event.target.value)}
-              />
-            </label>
+            {IMAGE_FIELDS.map((field) => {
+              const feedback = assessImageField(form[field.key])
+              return (
+                <div key={field.key} className="space-y-1">
+                  <PortalImageField
+                    label={field.label}
+                    url={form[field.key]}
+                    busy={uploading === field.key}
+                    invalid={Boolean(feedback.error)}
+                    onSelect={(file) => void onConfigImage(field.key, file)}
+                    onRemove={() => update(field.key, "")}
+                  />
+                  {feedback.error ? <FieldMessage>{feedback.error}</FieldMessage> : null}
+                </div>
+              )
+            })}
+            <CountedTextarea
+              className="md:col-span-2"
+              label="Institucional"
+              value={form.aboutText}
+              max={PORTAL_TEXT_LIMITS.aboutText}
+              feedback={assessTextField("aboutText", form.aboutText)}
+              onChange={(value) => update("aboutText", value)}
+            />
+            <CountedTextarea
+              className="md:col-span-2"
+              label="Diferenciais"
+              value={form.differentials}
+              max={PORTAL_DIFFERENTIAL_LIMIT}
+              length={longestDifferentialLength(form.differentials)}
+              feedback={assessDifferentials(form.differentials)}
+              onChange={(value) => update("differentials", value)}
+            />
             <div className="md:col-span-2">
-              <Button type="submit" disabled={saving || !businessUnitId}>
+              <Button type="submit" disabled={saveDisabled}>
                 {saving ? "Salvando…" : "Salvar portal"}
               </Button>
             </div>
@@ -358,7 +348,102 @@ export function PortalSettingsPanel() {
           </form>
         </AppCard>
       </Stack>
+      <ActionToast
+        open={Boolean(toast)}
+        message={toast?.message ?? ""}
+        tone={toast?.tone ?? "neutral"}
+        onDismiss={() => setToast(null)}
+      />
     </Section>
+  )
+}
+
+function FieldMessage({ children }: { children: string }) {
+  return <p className="text-xs text-destructive">{children}</p>
+}
+
+function CharacterCount({
+  length,
+  max,
+  atLimit,
+  invalid,
+}: {
+  length: number
+  max: number
+  atLimit: boolean
+  invalid: boolean
+}) {
+  const counter = characterCounter(length, max)
+  return (
+    <p className={cn("text-xs", invalid || atLimit ? "text-destructive" : "text-muted-foreground")}>
+      {counter.label}
+      {atLimit ? ` Limite máximo de ${max} caracteres atingido.` : null}
+    </p>
+  )
+}
+
+function TextField({
+  label,
+  value,
+  max,
+  feedback,
+  onChange,
+}: {
+  label: string
+  value: string
+  max: number
+  feedback: { error: string | null; atLimit: boolean }
+  onChange: (value: string) => void
+}) {
+  const invalid = Boolean(feedback.error) || feedback.atLimit
+  return (
+    <label className="space-y-1 text-xs text-muted-foreground">
+      {label}
+      <Input
+        value={value}
+        aria-invalid={invalid}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <CharacterCount length={value.length} max={max} atLimit={feedback.atLimit} invalid={Boolean(feedback.error)} />
+      {feedback.error ? <FieldMessage>{feedback.error}</FieldMessage> : null}
+    </label>
+  )
+}
+
+function CountedTextarea({
+  label,
+  value,
+  max,
+  length,
+  feedback,
+  onChange,
+  className,
+}: {
+  label: string
+  value: string
+  max: number
+  length?: number
+  feedback: { error: string | null; atLimit: boolean }
+  onChange: (value: string) => void
+  className?: string
+}) {
+  const invalid = Boolean(feedback.error) || feedback.atLimit
+  const counted = length ?? value.length
+  return (
+    <label className={cn("space-y-1 text-xs text-muted-foreground", className)}>
+      {label}
+      <textarea
+        aria-invalid={invalid}
+        className={cn(
+          "min-h-28 w-full rounded-md border bg-background px-3 py-2 text-sm",
+          invalid ? "border-destructive" : "border-input",
+        )}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <CharacterCount length={counted} max={max} atLimit={feedback.atLimit} invalid={Boolean(feedback.error)} />
+      {feedback.error ? <FieldMessage>{feedback.error}</FieldMessage> : null}
+    </label>
   )
 }
 
@@ -395,17 +480,19 @@ function PortalImageField({
   label,
   url,
   busy,
+  invalid,
   onSelect,
   onRemove,
 }: {
   label: string
   url: string
   busy: boolean
+  invalid?: boolean
   onSelect: (file: File | undefined) => void
   onRemove: () => void
 }) {
   return (
-    <div className="space-y-2 text-xs text-muted-foreground">
+    <div className={cn("space-y-2 text-xs text-muted-foreground", invalid && "text-destructive")}>
       <p>{label}</p>
       {url ? <ImagePreview url={url} alt={label} /> : null}
       <div className="flex flex-wrap gap-2">
