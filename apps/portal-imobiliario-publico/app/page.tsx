@@ -12,6 +12,7 @@ import {
   CATEGORY_LINKS,
   companyName,
   portalDifferentials,
+  whatsappHref,
 } from "@/lib/commercial";
 import { getFacets, getPortalHome, listHighlights, listLaunches } from "@/services/catalog";
 import type { PortalConfig } from "@/types/property";
