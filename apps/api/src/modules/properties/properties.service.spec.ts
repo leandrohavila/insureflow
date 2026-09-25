@@ -83,6 +83,26 @@ describe('PropertiesService publication', () => {
     expect(result.publishedAt).toBeInstanceOf(Date);
   });
 
+  it('publicação em lote publica cada imóvel informado', async () => {
+    const { service, repo } = createService();
+    const result = await service.setPublication(user, {
+      ids: ['p1', 'p1'],
+      published: true,
+    });
+    expect(repo.update).toHaveBeenCalledTimes(1);
+    expect(result.total).toBe(1);
+    expect(result.data[0]?.published).toBe(true);
+  });
+
+  it('atualizar o título não troca a URL amigável', async () => {
+    const { service, repo } = createService();
+    await service.update(user, 'p1', { title: 'Novo título' });
+    expect(repo.update).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ slug: 'apto', title: 'Novo título' }),
+    );
+  });
+
   it('unpublish zera published e preserva o registro', async () => {
     const { service, repo } = createService();
     await service.unpublish(user, 'p1');

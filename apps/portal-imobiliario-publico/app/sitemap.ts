@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
 
 import { CATEGORY_LINKS } from "@/lib/commercial";
+import { getCatalogConfig } from "@/lib/config";
 import { CatalogUnavailableError } from "@/lib/errors";
 import { portalOrigin } from "@/lib/site";
+import { listProperties } from "@/services/catalog";
 import { apiFacets, apiList } from "@/services/catalog-api";
 
 export const dynamic = "force-dynamic";
@@ -46,13 +48,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let page = 1;
     const limit = 50;
     for (;;) {
-      const result = await apiList({ page, limit });
+      const result = getCatalogConfig().forceMock
+        ? (await listProperties({ page, limit })).data
+        : await apiList({ page, limit });
       for (const property of result.data) {
         entries.push({
           url: `${origin}/imoveis/${property.slug}`,
-          lastModified: property.publishedAt
-            ? new Date(property.publishedAt)
-            : new Date(),
+          lastModified: property.updatedAt
+            ? new Date(property.updatedAt)
+            : property.publishedAt
+              ? new Date(property.publishedAt)
+              : new Date(),
           changeFrequency: "weekly",
           priority: property.featured ? 0.8 : 0.6,
         });

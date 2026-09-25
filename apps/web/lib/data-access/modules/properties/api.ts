@@ -63,6 +63,13 @@ export async function unpublishProperty(id: string) {
   return apiClient.post<Property>(`${PROPERTIES_PATH}/${id}/unpublish`, {})
 }
 
+export async function setPropertiesPublication(ids: string[], published: boolean) {
+  return apiClient.post<{ data: Property[]; total: number }>(
+    `${PROPERTIES_PATH}/publication`,
+    { ids, published },
+  )
+}
+
 export async function fetchPropertyLeads(propertyId: string) {
   return apiClient.get<PropertyLead[]>(`${PROPERTIES_PATH}/${propertyId}/leads`)
 }

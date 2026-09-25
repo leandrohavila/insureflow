@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { PropertyGallery } from "@/components/property-gallery";
 import { RealEstateListingJsonLd } from "@/components/listing-jsonld";
 import { SiteHeader } from "@/components/site-header";
 import { SourceBanner } from "@/components/source-banner";
@@ -20,14 +21,17 @@ type PageProps = {
 
 function descriptionOf(property: {
   description: string | null;
+  metaDescription?: string | null;
   city: string;
   neighborhood: string | null;
   title: string;
 }) {
+  const custom = property.metaDescription?.trim();
+  if (custom) return custom.slice(0, 160);
   const fromBody = property.description?.trim();
-  if (fromBody) return fromBody.slice(0, 180);
+  if (fromBody) return fromBody.slice(0, 160);
   const place = [property.neighborhood, property.city].filter(Boolean).join(", ");
-  return `${property.title}${place ? ` em ${place}` : ""}`.slice(0, 180);
+  return `${property.title}${place ? ` em ${place}` : ""}`.slice(0, 160);
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -36,11 +40,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const { data: property } = await getPropertyBySlug(slug);
     const cover = resolveCover(property);
     const description = descriptionOf(property);
+    const title = property.metaTitle?.trim() || property.title;
     return {
-      title: property.title,
+      title,
       description,
+      alternates: { canonical: `/imoveis/${property.slug}` },
       openGraph: {
-        title: property.title,
+        title,
         description,
         type: "website",
         locale: "pt_BR",
@@ -55,7 +61,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
       twitter: {
         card: "summary_large_image",
-        title: property.title,
+        title,
         description,
         images: cover ? [toAbsoluteUrl(cover.url)] : undefined,
       },
@@ -75,7 +81,6 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const { slug } = await params;
   try {
     const { data: property, source } = await getPropertyBySlug(slug);
-    const cover = resolveCover(property);
     const location = [property.address, property.neighborhood, property.city, property.state]
       .filter(Boolean)
       .join(" · ");
@@ -92,20 +97,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         <Link href="/imoveis" className="text-sm text-muted-foreground">
           ← Voltar à listagem
         </Link>
-        <div className="aspect-[16/10] overflow-hidden rounded-xl bg-muted">
-          {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={cover.url}
-              alt={cover.alt ?? property.title}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Sem foto
-            </div>
-          )}
-        </div>
+        <PropertyGallery images={property.images ?? []} title={property.title} />
         <div className="flex flex-wrap gap-1">
           <Badge>{purposeLabel(property.purpose)}</Badge>
           <Badge>{typeLabel(property.type)}</Badge>

@@ -58,6 +58,10 @@ export type PublicProperty = {
   isFeatured?: boolean;
   isLaunch?: boolean;
   featuredUntil?: string | null;
+  portalOrder?: number;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  updatedAt?: string | null;
   published: boolean;
   publishedAt: string | null;
   images: PropertyImage[];
@@ -98,6 +102,7 @@ export type CreatePropertyLeadInput = {
   email?: string;
   phone?: string;
   message?: string;
+  metadata?: Record<string, string>;
 };
 
 export type PropertyLead = {
