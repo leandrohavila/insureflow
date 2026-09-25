@@ -38,14 +38,14 @@ export default async function NeighborhoodPage({ params }: PageProps) {
   return (
     <>
       <SiteHeader config={portal.data.config} />
-      <main className="mx-auto w-full max-w-[90rem] px-4 py-8 md:px-8 2xl:max-w-[110rem]">
-        <h1 className="text-3xl font-semibold tracking-tight">Imóveis no {match.name}</h1>
-        <p className="mt-2 text-sm text-stone-500">
+      <main className="mx-auto w-full max-w-[90rem] px-4 py-4 md:px-8 md:py-8 2xl:max-w-[110rem]">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Imóveis no {match.name}</h1>
+        <p className="mt-2 text-sm text-[#10294B]">
           {match.city} · {listing.data.total} publicados no CRM
         </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {listing.data.data.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+        <div className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+          {listing.data.data.map((property, index) => (
+            <PropertyCard key={property.id} property={property} priority={index < 2} />
           ))}
         </div>
         {listing.data.data.length === 0 && (

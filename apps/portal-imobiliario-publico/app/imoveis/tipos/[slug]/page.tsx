@@ -37,11 +37,11 @@ export default async function CategoryPage({ params }: PageProps) {
   return (
     <>
       <SiteHeader config={portal.data.config} />
-      <main className="mx-auto w-full max-w-[90rem] px-4 py-8 md:px-8 2xl:max-w-[110rem]">
-        <h1 className="text-3xl font-semibold tracking-tight">{category.label}</h1>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {listing.data.data.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+      <main className="mx-auto w-full max-w-[90rem] px-4 py-4 md:px-8 md:py-8 2xl:max-w-[110rem]">
+        <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{category.label}</h1>
+        <div className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+          {listing.data.data.map((property, index) => (
+            <PropertyCard key={property.id} property={property} priority={index < 2} />
           ))}
         </div>
         {listing.data.data.length === 0 && (

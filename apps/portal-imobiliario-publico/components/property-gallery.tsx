@@ -49,14 +49,14 @@ export function PropertyGallery({
           <div className="absolute inset-x-0 bottom-3 flex justify-center gap-2">
             <button
               type="button"
-              className="rounded-full bg-white/90 px-3 py-1 text-sm"
+              className="inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-[#000C24]"
               onClick={() => setActive((index) => (index === 0 ? gallery.length - 1 : index - 1))}
             >
               Anterior
             </button>
             <button
               type="button"
-              className="rounded-full bg-white/90 px-3 py-1 text-sm"
+              className="inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-[#000C24]"
               onClick={() => setActive((index) => (index + 1) % gallery.length)}
             >
               Próxima
