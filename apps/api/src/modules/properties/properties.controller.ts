@@ -26,6 +26,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
 import {
+  BatchPropertyPublicationDto,
   CreatePropertyDto,
   ListPropertiesQueryDto,
   PropertyImageInputDto,
@@ -122,6 +123,16 @@ export class PropertiesController {
     @Body() dto: UpdatePropertyDto,
   ) {
     return this.properties.update(user, id, dto);
+  }
+
+  @Post('publication')
+  @RequirePermissions('properties:manage')
+  @ApiOperation({ summary: 'Publicar ou despublicar imóveis em lote' })
+  setPublication(
+    @CurrentUser() user: JwtAccessPayload,
+    @Body() dto: BatchPropertyPublicationDto,
+  ) {
+    return this.properties.setPublication(user, dto);
   }
 
   @Post(':id/publish')

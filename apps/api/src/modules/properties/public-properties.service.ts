@@ -48,7 +48,7 @@ export class PublicPropertiesService {
     const limit = query.limit ?? 12;
     const filters = this.filters(ctx, query);
     const [rows, total] = await Promise.all([
-      this.properties.findMany(filters, (page - 1) * limit, limit),
+      this.properties.findMany(filters, (page - 1) * limit, limit, 'catalog'),
       this.properties.count(filters),
     ]);
     return {
@@ -67,7 +67,7 @@ export class PublicPropertiesService {
     const ctx = await this.context.resolve(query);
     const limit = query.limit ?? 6;
     const filters = this.filters(ctx, query, { isLaunch: true });
-    const rows = await this.properties.findMany(filters, 0, limit);
+    const rows = await this.properties.findMany(filters, 0, limit, 'catalog');
     return { data: rows.map((row) => serializePublicProperty(row)) };
   }
 
@@ -87,7 +87,7 @@ export class PublicPropertiesService {
       featured: true,
       featuredActiveOnly: true,
     });
-    const rows = await this.properties.findMany(filters, 0, limit);
+    const rows = await this.properties.findMany(filters, 0, limit, 'catalog');
     return { data: rows.map((row) => serializePublicProperty(row)) };
   }
 

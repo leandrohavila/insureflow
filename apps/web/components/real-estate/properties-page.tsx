@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Building2, Edit3, Globe, Globe2, Plus } from "lucide-react"
+import { useState } from "react"
+import { Building2, Edit3, Eye, Globe, Globe2, Plus } from "lucide-react"
 
 import {
   ContentContainer,
@@ -14,12 +15,14 @@ import {
   type DataTableColumn,
   type DataTableRowAction,
 } from "@/components/design-system"
+import { PropertyPreviewDialog } from "@/components/real-estate/property-preview"
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { useCanManage } from "@/components/auth/session-provider"
 import {
   useProperties,
   usePublishProperty,
+  useSetPropertiesPublication,
   useUnpublishProperty,
 } from "@/lib/data-access/modules/properties"
 import type { Property } from "@/lib/data-access/modules/properties"
@@ -41,10 +44,46 @@ export function PropertiesPage() {
   })
   const publish = usePublishProperty()
   const unpublish = useUnpublishProperty()
+  const batch = useSetPropertiesPublication()
+  const [selected, setSelected] = useState<string[]>([])
+  const [preview, setPreview] = useState<Property | null>(null)
 
   const rows = data?.data ?? []
+  const selectedRows = rows.filter((row) => selected.includes(row.id))
+  const allSelected = rows.length > 0 && selectedRows.length === rows.length
+
+  function toggle(id: string) {
+    setSelected((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+    )
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? [] : rows.map((row) => row.id))
+  }
 
   const columns: DataTableColumn<Property>[] = [
+    {
+      key: "select",
+      header: (
+        <input
+          type="checkbox"
+          aria-label="Selecionar todos"
+          checked={allSelected}
+          onChange={toggleAll}
+          onClick={(event) => event.stopPropagation()}
+        />
+      ),
+      render: (row) => (
+        <input
+          type="checkbox"
+          aria-label={`Selecionar ${row.title}`}
+          checked={selected.includes(row.id)}
+          onChange={() => toggle(row.id)}
+          onClick={(event) => event.stopPropagation()}
+        />
+      ),
+    },
     {
       key: "title",
       header: "Título",
@@ -74,12 +113,18 @@ export function PropertiesPage() {
     },
     {
       key: "published",
-      header: "Publicado",
+      header: "Publicado no Portal",
       render: (row) => (
         <Badge variant={row.published ? "default" : "secondary"}>
-          {row.published ? "Sim" : "Não"}
+          {row.published ? "Publicado" : "Não publicado"}
         </Badge>
       ),
+    },
+    {
+      key: "portalOrder",
+      header: "Ordem",
+      hideOnMobile: true,
+      render: (row) => row.portalOrder ?? 0,
     },
     {
       key: "launch",
@@ -104,6 +149,12 @@ export function PropertiesPage() {
   ]
 
   const rowActions: DataTableRowAction<Property>[] = [
+    {
+      key: "preview",
+      label: "Pré-visualizar",
+      icon: Eye,
+      onSelect: (row) => setPreview(row),
+    },
     {
       key: "edit",
       label: "Editar",
@@ -138,7 +189,7 @@ export function PropertiesPage() {
               <Badge variant="secondary">{rows.length}</Badge>
             </span>
           }
-          description="Gerencie o catálogo imobiliário da unidade selecionada."
+          description="Publique o catálogo no portal, defina destaques e a ordem de exibição."
           actions={
             canManage ? (
               <PageActions>
@@ -155,6 +206,41 @@ export function PropertiesPage() {
             ) : undefined
           }
         />
+
+        {canManage && selectedRows.length > 0 ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {selectedRows.length} selecionado(s)
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              disabled={batch.isPending}
+              onClick={() => {
+                batch.mutate(
+                  { ids: selectedRows.map((row) => row.id), published: true },
+                  { onSuccess: () => setSelected([]) },
+                )
+              }}
+            >
+              Publicar no portal
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={batch.isPending}
+              onClick={() => {
+                batch.mutate(
+                  { ids: selectedRows.map((row) => row.id), published: false },
+                  { onSuccess: () => setSelected([]) },
+                )
+              }}
+            >
+              Despublicar
+            </Button>
+          </div>
+        ) : null}
 
         <DataTable
           data={rows}
@@ -179,6 +265,13 @@ export function PropertiesPage() {
               </Link>
             ) : null
           }
+        />
+        <PropertyPreviewDialog
+          property={preview}
+          open={preview != null}
+          onOpenChange={(open) => {
+            if (!open) setPreview(null)
+          }}
         />
       </ContentContainer>
     </PageContainer>

@@ -41,6 +41,10 @@ export function InterestForm({
       email: email || undefined,
       phone: phone || undefined,
       message: message || undefined,
+      metadata: {
+        landingPage: `/imoveis/${propertySlug}/interesse`,
+        placement: "property",
+      },
     }).catch(() => undefined);
   }
 
@@ -51,7 +55,7 @@ export function InterestForm({
         <p className="mt-1 text-sm text-muted-foreground">
           {source === "mock"
             ? "Modo mock: o CRM não recebeu este lead."
-            : "O time comercial recebe este contato no CRM (PropertyLead)."}
+            : "O time comercial recebe este contato no CRM."}
         </p>
       </div>
     );

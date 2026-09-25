@@ -17,6 +17,13 @@ export class PropertyLeadsRepository {
     return this.prisma.propertyLead.create({ data });
   }
 
+  linkCrmLead(id: string, crmLeadId: string) {
+    return this.prisma.propertyLead.update({
+      where: { id },
+      data: { crmLeadId },
+    });
+  }
+
   findByProperty(tenantId: string, propertyId: string) {
     return this.prisma.propertyLead.findMany({
       where: { tenantId, propertyId },

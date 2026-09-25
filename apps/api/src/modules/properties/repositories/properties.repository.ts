@@ -62,10 +62,7 @@ export class PropertiesRepository {
     if (filters.code?.trim()) {
       const code = filters.code.trim();
       and.push({
-        OR: [
-          { slug: { equals: code, mode: 'insensitive' } },
-          { id: code },
-        ],
+        OR: [{ slug: { equals: code, mode: 'insensitive' } }, { id: code }],
       });
     }
     if (filters.priceMin != null || filters.priceMax != null) {
@@ -103,11 +100,24 @@ export class PropertiesRepository {
     return { AND: and };
   }
 
-  findMany(filters: PropertyListFilters, skip: number, take: number) {
+  findMany(
+    filters: PropertyListFilters,
+    skip: number,
+    take: number,
+    order: 'admin' | 'catalog' = 'admin',
+  ) {
     return this.prisma.property.findMany({
       where: this.where(filters),
       include: PROPERTY_DETAIL_INCLUDE,
-      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy:
+        order === 'catalog'
+          ? [
+              { featured: 'desc' },
+              { portalOrder: 'asc' },
+              { publishedAt: 'desc' },
+              { createdAt: 'desc' },
+            ]
+          : [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       skip,
       take,
     });
@@ -166,7 +176,12 @@ export class PropertiesRepository {
     return this.prisma.property.delete({ where: { id } });
   }
 
-  async facets(filters: Pick<PropertyListFilters, 'tenantId' | 'businessUnitIds' | 'published'>) {
+  async facets(
+    filters: Pick<
+      PropertyListFilters,
+      'tenantId' | 'businessUnitIds' | 'published'
+    >,
+  ) {
     const rows = await this.prisma.property.groupBy({
       by: ['neighborhood', 'city', 'type'],
       where: this.where({ ...filters }),
