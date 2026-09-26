@@ -11,11 +11,14 @@ import {
   storageDriverFromEnv,
 } from './storage-provider.factory';
 import {
+  deleteLocalPortalFile,
   deleteLocalPropertyFile,
   publicImageUrl,
   resolveLocalPropertyFile,
   resolveStoredPropertyImageUrl,
+  savePortalImage,
   savePropertyImage,
+  StorageUnavailableError,
 } from '../property-storage';
 
 describe('storage providers', () => {
@@ -202,5 +205,75 @@ describe('storage providers', () => {
   it('s3 sem bucket configurado falha ao criar o provider', () => {
     process.env.STORAGE_DRIVER = 's3';
     expect(() => createS3StorageProvider()).toThrow(/STORAGE_BUCKET/);
+  });
+
+  it('portal grava no S3 e apaga pela URL pública', async () => {
+    const objects = new Map<string, Buffer>();
+    process.env.STORAGE_PUBLIC_URL = 'https://cdn.example';
+    setStorageProviderForTests(
+      new S3StorageProvider(
+        {
+          putObject(input) {
+            objects.set(input.Key, input.Body);
+            return Promise.resolve();
+          },
+          deleteObject(input) {
+            objects.delete(input.Key);
+            return Promise.resolve();
+          },
+          headObject(input) {
+            return Promise.resolve(objects.has(input.Key));
+          },
+        },
+        'imoveis',
+        'https://cdn.example',
+      ),
+    );
+    const saved = await savePortalImage(
+      {
+        originalname: 'logo.png',
+        mimetype: 'image/png',
+        size: 4,
+        buffer: Buffer.from('logo'),
+      },
+      'bu1',
+    );
+    expect(saved.storageDriver).toBe('s3');
+    expect(saved.url).toBe(`https://cdn.example/${saved.storageKey}`);
+    expect(saved.storageKey.startsWith('portal/bu1/')).toBe(true);
+    await deleteLocalPortalFile('bu1', saved.url);
+    expect(objects.has(saved.storageKey)).toBe(false);
+  });
+
+  it('falha do S3 no delete não é engolida', async () => {
+    setStorageProviderForTests(
+      new S3StorageProvider(
+        {
+          putObject() {
+            return Promise.resolve();
+          },
+          deleteObject() {
+            return Promise.reject(new Error('AccessDenied'));
+          },
+          headObject() {
+            return Promise.resolve(true);
+          },
+        },
+        'imoveis',
+        'https://cdn.example',
+      ),
+    );
+    await expect(
+      deleteLocalPropertyFile('prop1', 'properties/prop1/a.jpg', {
+        storageKey: 'properties/prop1/a.jpg',
+        storageDriver: 's3',
+      }),
+    ).rejects.toBeInstanceOf(StorageUnavailableError);
+  });
+
+  it('URL externa de portal não tenta apagar storage', async () => {
+    await expect(
+      deleteLocalPortalFile('bu1', 'https://outro.cdn/logo.png'),
+    ).resolves.toBeUndefined();
   });
 });

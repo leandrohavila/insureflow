@@ -83,6 +83,8 @@ Imagens de imóveis. `local` grava em `uploads/` e serve pela API. `s3` envia o 
 | `STORAGE_PUBLIC_URL` | Base pública do bucket, sem barra final |
 | `STORAGE_ENDPOINT` | Endpoint alternativo (opcional) |
 
+Operação do bucket, IAM e checagem depois do deploy: [storage-s3-imoveis.md](./storage-s3-imoveis.md).
+
 ### CORS (API)
 
 | Variável | Descrição |

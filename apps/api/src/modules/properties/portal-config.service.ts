@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
@@ -20,6 +21,7 @@ import {
   isAllowedImageMime,
   MAX_IMAGE_BYTES,
   savePortalImage,
+  StorageUnavailableError,
   type MemoryUpload,
 } from './property-storage';
 
@@ -94,6 +96,12 @@ export class PortalConfigService {
       creci: emptyToNull(dto.creci),
       address: emptyToNull(dto.address),
     };
+    const current = await this.prisma.portalConfig.findFirst({
+      where: {
+        tenantId: user.tenantId,
+        businessUnitId: dto.businessUnitId,
+      },
+    });
     const row = await this.prisma.portalConfig.upsert({
       where: { businessUnitId: dto.businessUnitId },
       create: {
@@ -103,7 +111,35 @@ export class PortalConfigService {
       },
       update: data,
     });
+    if (current) {
+      await this.forgetReplacedMedia(dto.businessUnitId, current, data);
+    }
     return serializeConfig(row);
+  }
+
+  private async forgetReplacedMedia(
+    businessUnitId: string,
+    current: {
+      heroImage: string | null;
+      logoUrl: string | null;
+      aboutImage: string | null;
+    },
+    next: {
+      heroImage: string | null;
+      logoUrl: string | null;
+      aboutImage: string | null;
+    },
+  ) {
+    const previous = [current.heroImage, current.logoUrl, current.aboutImage];
+    const kept = new Set(
+      [next.heroImage, next.logoUrl, next.aboutImage].filter(
+        (url): url is string => Boolean(url),
+      ),
+    );
+    for (const url of previous) {
+      if (!url || kept.has(url)) continue;
+      await this.removePortalObject(businessUnitId, url);
+    }
   }
 
   async listBanners(user: JwtAccessPayload, businessUnitId: string) {
@@ -161,6 +197,7 @@ export class PortalConfigService {
     });
     if (!current) throw new NotFoundException('Banner não encontrado');
     await this.assertUnit(user, current.businessUnitId);
+    await this.removePortalObject(current.businessUnitId, current.image);
     await this.prisma.portalBanner.delete({ where: { id } });
     return { ok: true };
   }
@@ -178,11 +215,37 @@ export class PortalConfigService {
     if (!isAllowedImageMime(file.mimetype) || file.size > MAX_IMAGE_BYTES) {
       throw new BadRequestException('Use JPEG, PNG, WebP ou GIF de até 8 MB');
     }
-    const saved = await savePortalImage(file, businessUnitId);
+    let saved: Awaited<ReturnType<typeof savePortalImage>>;
+    try {
+      saved = await savePortalImage(file, businessUnitId);
+    } catch (error) {
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
+    }
     if (previousUrl?.trim()) {
-      await deleteLocalPortalFile(businessUnitId, previousUrl);
+      try {
+        await this.removePortalObject(businessUnitId, previousUrl);
+      } catch (error) {
+        await deleteLocalPortalFile(businessUnitId, saved.url).catch(
+          () => undefined,
+        );
+        throw error;
+      }
     }
     return { url: saved.url };
+  }
+
+  private async removePortalObject(businessUnitId: string, url: string) {
+    try {
+      await deleteLocalPortalFile(businessUnitId, url);
+    } catch (error) {
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
+    }
   }
 
   async publicPortal(params: {

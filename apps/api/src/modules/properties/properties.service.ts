@@ -471,22 +471,21 @@ export class PropertiesService {
     const startOrder = await this.images.nextSortOrder(property.id);
     const existingCount = await this.images.countByProperty(property.id);
     const created = [];
-    for (let index = 0; index < files.length; index += 1) {
-      let saved: Awaited<ReturnType<typeof savePropertyImage>>;
-      try {
-        saved = await savePropertyImage(files[index], property.id);
-      } catch (error) {
-        if (error instanceof StorageUnavailableError) {
-          throw new ServiceUnavailableException(error.message);
+    const uploaded: Array<{
+      url: string;
+      storageKey: string;
+      storageDriver: string;
+    }> = [];
+    const createdIds: string[] = [];
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const saved = await savePropertyImage(files[index], property.id);
+        uploaded.push(saved);
+        const isCover = existingCount === 0 && index === 0;
+        if (isCover) {
+          await this.images.clearCover(property.id);
         }
-        throw error;
-      }
-      const isCover = existingCount === 0 && index === 0;
-      if (isCover) {
-        await this.images.clearCover(property.id);
-      }
-      created.push(
-        await this.images.create({
+        const image = await this.images.create({
           tenantId: user.tenantId,
           propertyId: property.id,
           url: saved.url,
@@ -495,10 +494,49 @@ export class PropertiesService {
           alt: files[index].originalname?.slice(0, 160),
           sortOrder: startOrder + index,
           isCover,
-        }),
+        });
+        createdIds.push(image.id);
+        created.push(image);
+      }
+    } catch (error) {
+      await this.rollbackImageUpload(
+        user.tenantId,
+        property.id,
+        createdIds,
+        uploaded,
       );
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
     }
     return created.map((image) => presentImage(image));
+  }
+
+  private async rollbackImageUpload(
+    tenantId: string,
+    propertyId: string,
+    createdIds: string[],
+    uploaded: Array<{
+      url: string;
+      storageKey: string;
+      storageDriver: string;
+    }>,
+  ) {
+    for (const imageId of [...createdIds].reverse()) {
+      try {
+        await this.images.deleteOwned(tenantId, propertyId, imageId);
+      } catch {
+        /* compensação: a linha pode já ter sido removida */
+      }
+    }
+    for (const saved of uploaded) {
+      try {
+        await deleteLocalPropertyFile(propertyId, saved.url, saved);
+      } catch {
+        /* compensação: o objeto pode já estar ausente */
+      }
+    }
   }
 
   async setCoverImage(user: JwtAccessPayload, id: string, imageId: string) {
@@ -519,19 +557,42 @@ export class PropertiesService {
 
   async removeImage(user: JwtAccessPayload, id: string, imageId: string) {
     await this.findOne(user, id);
-    const deleted = await this.images.deleteOwned(user.tenantId, id, imageId);
-    if (!deleted) throw new NotFoundException('Imagem não encontrada');
-    await deleteLocalPropertyFile(id, deleted.url, {
-      storageKey: deleted.storageKey,
-      storageDriver: deleted.storageDriver,
-    });
+    const image = await this.images.findOwned(user.tenantId, id, imageId);
+    if (!image) throw new NotFoundException('Imagem não encontrada');
+    await this.deleteStoredImage(id, image);
+    await this.images.deleteOwned(user.tenantId, id, imageId);
     return { ok: true };
   }
 
   async remove(user: JwtAccessPayload, id: string) {
     await this.findOne(user, id);
+    const images = await this.images.findByProperty(id);
+    for (const image of images) {
+      await this.deleteStoredImage(id, image);
+    }
     await this.properties.delete(id);
     return { ok: true };
+  }
+
+  private async deleteStoredImage(
+    propertyId: string,
+    image: {
+      url: string;
+      storageKey?: string | null;
+      storageDriver?: string | null;
+    },
+  ) {
+    try {
+      await deleteLocalPropertyFile(propertyId, image.url, {
+        storageKey: image.storageKey,
+        storageDriver: image.storageDriver,
+      });
+    } catch (error) {
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
+    }
   }
 
   async listLeads(user: JwtAccessPayload, id: string) {
