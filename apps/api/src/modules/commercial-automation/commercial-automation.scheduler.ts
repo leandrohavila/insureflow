@@ -23,40 +23,58 @@ export class CommercialAutomationScheduler implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    try {
-      const existing = await this.queue.getRepeatableJobs();
-      for (const job of existing) {
-        if (job.name === COMMERCIAL_AUTOMATION_JOB) {
-          await this.queue.removeRepeatableByKey(job.key);
-        }
-      }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        this.log.warn(
+          'Redis indisponível ao agendar CommercialAutomationJob (8s). A API segue sem a fila.',
+        );
+        resolve();
+      }, 8000);
+    });
 
-      const legacy = await this.reactivationQueue.getRepeatableJobs();
-      for (const job of legacy) {
-        if (job.name === LEAD_REACTIVATION_JOB) {
-          await this.reactivationQueue.removeRepeatableByKey(job.key);
-        }
-      }
+    const finished = this.schedule()
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        this.log.warn(
+          `Não foi possível agendar CommercialAutomationJob: ${message}`,
+        );
+      })
+      .finally(() => {
+        if (timer) clearTimeout(timer);
+      });
 
-      await this.queue.add(
-        COMMERCIAL_AUTOMATION_JOB,
-        {},
-        {
-          repeat: {
-            pattern: '0 7 * * *',
-            tz: 'America/Sao_Paulo',
-          },
-          jobId: 'commercial-automation-daily',
-        },
-      );
-      this.log.log(
-        'CommercialAutomationJob agendado diariamente às 07:00 (America/Sao_Paulo)',
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.log.error(
-        `Não foi possível agendar CommercialAutomationJob: ${message}`,
-      );
+    await Promise.race([finished, timeout]);
+  }
+
+  private async schedule(): Promise<void> {
+    const existing = await this.queue.getRepeatableJobs();
+    for (const job of existing) {
+      if (job.name === COMMERCIAL_AUTOMATION_JOB) {
+        await this.queue.removeRepeatableByKey(job.key);
+      }
     }
+
+    const legacy = await this.reactivationQueue.getRepeatableJobs();
+    for (const job of legacy) {
+      if (job.name === LEAD_REACTIVATION_JOB) {
+        await this.reactivationQueue.removeRepeatableByKey(job.key);
+      }
+    }
+
+    await this.queue.add(
+      COMMERCIAL_AUTOMATION_JOB,
+      {},
+      {
+        repeat: {
+          pattern: '0 7 * * *',
+          tz: 'America/Sao_Paulo',
+        },
+        jobId: 'commercial-automation-daily',
+      },
+    );
+    this.log.log(
+      'CommercialAutomationJob agendado diariamente às 07:00 (America/Sao_Paulo)',
+    );
   }
 }

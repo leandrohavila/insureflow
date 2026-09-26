@@ -50,9 +50,9 @@ export class RedisBootstrapService implements OnModuleInit, OnModuleDestroy {
     };
 
     if (parsed.isLocalhost && process.env.NODE_ENV === 'production') {
-      this.log.error(
-        `[redis] REDIS aponta para localhost (${parsed.label}) em produção — BullMQ falhará com ECONNREFUSED. ` +
-          'No Railway: Variables → REDIS_URL = ${{Redis.REDIS_URL}} (serviço Redis do projeto).',
+      this.log.warn(
+        `[redis] REDIS_URL aponta para localhost (${parsed.label}). ` +
+          'A API sobe mesmo assim. No Railway use a referência do serviço Redis, não localhost.',
       );
     }
 
@@ -65,6 +65,10 @@ export class RedisBootstrapService implements OnModuleInit, OnModuleDestroy {
       maxRetriesPerRequest: 1,
       connectTimeout: 8000,
       lazyConnect: true,
+      retryStrategy: () => null,
+    });
+    this.client.on('error', (err: Error) => {
+      this.log.warn(`[redis] ${parsed.label}: ${err.message}`);
     });
 
     try {
@@ -94,9 +98,9 @@ export class RedisBootstrapService implements OnModuleInit, OnModuleDestroy {
         error: code ? `${code}: ${message}` : message,
         checkedAt: new Date().toISOString(),
       };
-      this.log.error(
+      this.log.warn(
         `[redis] Falha na conexão (${parsed.label}): ${this.status.error}. ` +
-          'Auditoria em fila pode falhar até REDIS_URL ser corrigida.',
+          'A API continua sem filas até REDIS_URL apontar para o Redis do projeto.',
       );
     }
   }
