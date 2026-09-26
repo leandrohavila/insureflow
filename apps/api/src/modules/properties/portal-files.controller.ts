@@ -23,11 +23,11 @@ export class PortalFilesController {
   @Header('Cross-Origin-Resource-Policy', 'cross-origin')
   @Header('Cache-Control', 'public, max-age=86400')
   @ApiOperation({ summary: 'Arquivo de imagem do portal (upload local)' })
-  serve(
+  async serve(
     @Param('businessUnitId') businessUnitId: string,
     @Param('filename') filename: string,
   ) {
-    const absolute = resolveLocalPortalFile(businessUnitId, filename);
+    const absolute = await resolveLocalPortalFile(businessUnitId, filename);
     if (!absolute) throw new NotFoundException('Arquivo não encontrado');
     return new StreamableFile(openLocalPropertyFile(absolute), {
       type: mimeFromFilename(filename),

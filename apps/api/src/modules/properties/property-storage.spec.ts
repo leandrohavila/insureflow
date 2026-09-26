@@ -32,9 +32,13 @@ describe('property-storage', () => {
     expect(safeFilename('ok-file.webp')).toBe('ok-file.webp');
   });
 
-  it('resolveLocalPropertyFile não sai do diretório do imóvel', () => {
-    expect(resolveLocalPropertyFile('p1', '..%2fetc%2fpasswd')).toBeNull();
-    expect(resolveLocalPropertyFile('p1', '../other.jpg')).toBeNull();
+  it('resolveLocalPropertyFile não sai do diretório do imóvel', async () => {
+    await expect(
+      resolveLocalPropertyFile('p1', '..%2fetc%2fpasswd'),
+    ).resolves.toBeNull();
+    await expect(
+      resolveLocalPropertyFile('p1', '../other.jpg'),
+    ).resolves.toBeNull();
   });
 
   it('publicImageUrl é absoluta com API_PUBLIC_URL', () => {
@@ -60,7 +64,7 @@ describe('property-storage', () => {
     );
   });
 
-  it('portal image url fica no storage local e rejeita path traversal', () => {
+  it('portal image url fica no storage local e rejeita path traversal', async () => {
     process.env.API_PUBLIC_URL = 'https://api.example.com';
     expect(portalImagePath('bu1', 'a.jpg')).toBe(
       '/api/v1/files/portal/bu1/a.jpg',
@@ -77,8 +81,12 @@ describe('property-storage', () => {
     expect(
       filenameFromPortalUrl('https://cdn.example/x.jpg', 'bu1'),
     ).toBeNull();
-    expect(resolveLocalPortalFile('../etc', 'passwd')).toBeNull();
-    expect(resolveLocalPortalFile('bu1', '../secret.jpg')).toBeNull();
+    await expect(
+      resolveLocalPortalFile('../etc', 'passwd'),
+    ).resolves.toBeNull();
+    await expect(
+      resolveLocalPortalFile('bu1', '../secret.jpg'),
+    ).resolves.toBeNull();
   });
 
   it('isLocalPropertyUrl / filenameFromLocalUrl aceitam relativo e absoluto', () => {

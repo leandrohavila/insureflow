@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
@@ -20,8 +21,9 @@ import {
   isAllowedImageMime,
   MAX_IMAGE_BYTES,
   MAX_UPLOAD_FILES,
+  resolveStoredPropertyImageUrl,
   savePropertyImage,
-  toAbsolutePropertyMediaUrl,
+  StorageUnavailableError,
   type MemoryUpload,
 } from './property-storage';
 import { PropertiesRepository } from './repositories/properties.repository';
@@ -33,6 +35,24 @@ import {
 } from './property-slug';
 import { serializeProperty, slugifyTitle } from './properties.util';
 import { serializePropertyLead } from './property-leads.util';
+
+function presentImage<
+  T extends {
+    url: string;
+    storageKey?: string | null;
+    storageDriver?: string | null;
+  },
+>(image: T) {
+  const { storageKey, storageDriver, ...rest } = image;
+  return {
+    ...rest,
+    url: resolveStoredPropertyImageUrl({
+      url: image.url,
+      storageKey,
+      storageDriver,
+    }),
+  };
+}
 
 function parseFeaturedUntil(value?: string | null) {
   if (value == null || value === '') return null;
@@ -106,7 +126,9 @@ export class PropertiesService {
   private async uniquePublicCode(tenantId: string, excludeId?: string) {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const code = String(1000 + Math.floor(Math.random() * 9000));
-      if (!(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))) {
+      if (
+        !(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))
+      ) {
         return code;
       }
     }
@@ -135,7 +157,10 @@ export class PropertiesService {
     return slug;
   }
 
-  private needsFriendlySlug(row: { slug?: string | null; publicCode?: string | null }) {
+  private needsFriendlySlug(row: {
+    slug?: string | null;
+    publicCode?: string | null;
+  }) {
     return !row.publicCode || !/-cod-\d+/i.test(row.slug ?? '');
   }
 
@@ -196,7 +221,11 @@ export class PropertiesService {
     });
     const legacySlugs: string[] = [];
     if (dto.slug?.trim()) {
-      const requested = await this.uniqueSlug(user.tenantId, dto.title, dto.slug);
+      const requested = await this.uniqueSlug(
+        user.tenantId,
+        dto.title,
+        dto.slug,
+      );
       if (requested !== slug) legacySlugs.push(requested);
     }
     const images = dto.images ?? [];
@@ -413,10 +442,7 @@ export class PropertiesService {
       sortOrder: input.sortOrder ?? 0,
       isCover: input.isCover ?? false,
     });
-    return {
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    };
+    return presentImage(image);
   }
 
   async uploadImages(
@@ -445,37 +471,79 @@ export class PropertiesService {
     const startOrder = await this.images.nextSortOrder(property.id);
     const existingCount = await this.images.countByProperty(property.id);
     const created = [];
-    for (let index = 0; index < files.length; index += 1) {
-      const saved = await savePropertyImage(files[index], property.id);
-      const isCover = existingCount === 0 && index === 0;
-      if (isCover) {
-        await this.images.clearCover(property.id);
-      }
-      created.push(
-        await this.images.create({
+    const uploaded: Array<{
+      url: string;
+      storageKey: string;
+      storageDriver: string;
+    }> = [];
+    const createdIds: string[] = [];
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        const saved = await savePropertyImage(files[index], property.id);
+        uploaded.push(saved);
+        const isCover = existingCount === 0 && index === 0;
+        if (isCover) {
+          await this.images.clearCover(property.id);
+        }
+        const image = await this.images.create({
           tenantId: user.tenantId,
           propertyId: property.id,
           url: saved.url,
+          storageKey: saved.storageKey,
+          storageDriver: saved.storageDriver,
           alt: files[index].originalname?.slice(0, 160),
           sortOrder: startOrder + index,
           isCover,
-        }),
+        });
+        createdIds.push(image.id);
+        created.push(image);
+      }
+    } catch (error) {
+      await this.rollbackImageUpload(
+        user.tenantId,
+        property.id,
+        createdIds,
+        uploaded,
       );
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
     }
-    return created.map((image) => ({
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    }));
+    return created.map((image) => presentImage(image));
+  }
+
+  private async rollbackImageUpload(
+    tenantId: string,
+    propertyId: string,
+    createdIds: string[],
+    uploaded: Array<{
+      url: string;
+      storageKey: string;
+      storageDriver: string;
+    }>,
+  ) {
+    for (const imageId of [...createdIds].reverse()) {
+      try {
+        await this.images.deleteOwned(tenantId, propertyId, imageId);
+      } catch {
+        /* compensação: a linha pode já ter sido removida */
+      }
+    }
+    for (const saved of uploaded) {
+      try {
+        await deleteLocalPropertyFile(propertyId, saved.url, saved);
+      } catch {
+        /* compensação: o objeto pode já estar ausente */
+      }
+    }
   }
 
   async setCoverImage(user: JwtAccessPayload, id: string, imageId: string) {
     await this.findOne(user, id);
     const image = await this.images.setCover(user.tenantId, id, imageId);
     if (!image) throw new NotFoundException('Imagem não encontrada');
-    return {
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    };
+    return presentImage(image);
   }
 
   async reorderImages(user: JwtAccessPayload, id: string, imageIds: string[]) {
@@ -489,16 +557,42 @@ export class PropertiesService {
 
   async removeImage(user: JwtAccessPayload, id: string, imageId: string) {
     await this.findOne(user, id);
-    const deleted = await this.images.deleteOwned(user.tenantId, id, imageId);
-    if (!deleted) throw new NotFoundException('Imagem não encontrada');
-    await deleteLocalPropertyFile(id, deleted.url);
+    const image = await this.images.findOwned(user.tenantId, id, imageId);
+    if (!image) throw new NotFoundException('Imagem não encontrada');
+    await this.deleteStoredImage(id, image);
+    await this.images.deleteOwned(user.tenantId, id, imageId);
     return { ok: true };
   }
 
   async remove(user: JwtAccessPayload, id: string) {
     await this.findOne(user, id);
+    const images = await this.images.findByProperty(id);
+    for (const image of images) {
+      await this.deleteStoredImage(id, image);
+    }
     await this.properties.delete(id);
     return { ok: true };
+  }
+
+  private async deleteStoredImage(
+    propertyId: string,
+    image: {
+      url: string;
+      storageKey?: string | null;
+      storageDriver?: string | null;
+    },
+  ) {
+    try {
+      await deleteLocalPropertyFile(propertyId, image.url, {
+        storageKey: image.storageKey,
+        storageDriver: image.storageDriver,
+      });
+    } catch (error) {
+      if (error instanceof StorageUnavailableError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
+    }
   }
 
   async listLeads(user: JwtAccessPayload, id: string) {

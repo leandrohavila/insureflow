@@ -1,7 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { createReadStream, existsSync } from 'node:fs';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
+
+import { LocalStorageProvider } from './storage/local-storage.provider';
+import { apiPublicBaseUrl, uploadsRoot } from './storage/media-base';
+import { isMissingS3Object } from './storage/s3-storage.provider';
+import {
+  getStorageProvider,
+  providerFor,
+  StorageUnavailableError,
+} from './storage/storage-provider.factory';
+import type { StorageDriver } from './storage/storage-provider';
+
+export { apiPublicBaseUrl, uploadsRoot, StorageUnavailableError };
+export type { StorageDriver };
 
 const MIME_TO_EXT = new Map([
   ['image/jpeg', '.jpg'],
@@ -28,24 +40,6 @@ export type MemoryUpload = {
   buffer: Buffer;
 };
 
-/** Base pública da API (CRM/Portal/img src). Preferir API_PUBLIC_URL. */
-export function apiPublicBaseUrl() {
-  const fromEnv =
-    process.env.API_PUBLIC_URL?.trim() ||
-    process.env.API_BASE_URL?.trim() ||
-    process.env.API_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
-  const port = process.env.PORT?.trim() || '4000';
-  return `http://localhost:${port}`;
-}
-
-export function uploadsRoot() {
-  return (
-    process.env.PROPERTY_UPLOADS_DIR?.trim() ||
-    path.resolve(process.cwd(), 'uploads')
-  );
-}
-
 export function propertyUploadDir(propertyId: string) {
   return path.join(uploadsRoot(), 'properties', propertyId);
 }
@@ -63,9 +57,32 @@ export function propertyImagePath(propertyId: string, filename: string) {
   return `/api/v1/files/properties/${propertyId}/${filename}`;
 }
 
-/** URL absoluta para resposta HTTP / <img src>. */
+export function propertyStorageKey(propertyId: string, filename: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(propertyId)) return null;
+  const safe = safeFilename(filename);
+  if (!safe) return null;
+  return `properties/${propertyId}/${safe}`;
+}
+
+/** URL absoluta para resposta HTTP / <img src>, conforme STORAGE_DRIVER. */
 export function publicImageUrl(propertyId: string, filename: string) {
-  return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+  const key = propertyStorageKey(propertyId, filename);
+  if (!key) {
+    return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+  }
+  return getStorageProvider().getPublicUrl(key);
+}
+
+export function resolveStoredPropertyImageUrl(image: {
+  url: string;
+  storageKey?: string | null;
+  storageDriver?: string | null;
+}) {
+  if (image.storageDriver === 's3') {
+    const key = image.storageKey?.trim() || image.url;
+    return providerFor('s3').getPublicUrl(key);
+  }
+  return toAbsolutePropertyMediaUrl(image.url);
 }
 
 export function portalImagePath(businessUnitId: string, filename: string) {
@@ -126,6 +143,16 @@ export function mimeFromFilename(filename: string) {
   return EXT_TO_MIME[ext] ?? 'application/octet-stream';
 }
 
+export function storageKeyFromPropertyUrl(url: string, propertyId: string) {
+  const filename = filenameFromLocalUrl(url, propertyId);
+  if (filename) return propertyStorageKey(propertyId, filename);
+  const marker = `properties/${propertyId}/`;
+  const idx = url.indexOf(marker);
+  if (idx < 0) return null;
+  const key = (url.slice(idx).split(/[?#]/)[0] ?? '').replace(/\/$/, '');
+  return propertyStorageKey(propertyId, key.slice(marker.length));
+}
+
 export async function savePropertyImage(
   file: MemoryUpload,
   propertyId: string,
@@ -138,21 +165,62 @@ export async function savePropertyImage(
     throw new Error('IMAGE_TOO_LARGE');
   }
   const filename = `${randomUUID()}${ext}`;
-  const dir = propertyUploadDir(propertyId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), file.buffer);
-  // Persiste path relativo; serialização HTTP expõe URL absoluta.
-  return { filename, url: propertyImagePath(propertyId, filename) };
+  const storageKey = propertyStorageKey(propertyId, filename);
+  if (!storageKey) throw new Error('INVALID_IMAGE');
+
+  const provider = getStorageProvider();
+  try {
+    await provider.upload(
+      {
+        buffer: file.buffer,
+        contentType: file.mimetype,
+        size: file.size,
+      },
+      storageKey,
+    );
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw error;
+    if (provider.driver === 's3') throw new StorageUnavailableError();
+    throw error;
+  }
+
+  return {
+    filename,
+    storageKey,
+    storageDriver: provider.driver,
+    // Local: path da API. S3: só a key; a URL pública sai na serialização.
+    url:
+      provider.driver === 's3'
+        ? storageKey
+        : propertyImagePath(propertyId, filename),
+  };
 }
 
-export async function deleteLocalPropertyFile(propertyId: string, url: string) {
-  const filename = filenameFromLocalUrl(url, propertyId);
-  if (!filename) return;
-  const dest = path.join(propertyUploadDir(propertyId), filename);
+function isMissingStorageError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  if ('code' in error && (error as { code?: string }).code === 'ENOENT') {
+    return true;
+  }
+  return isMissingS3Object(error);
+}
+
+export async function deleteLocalPropertyFile(
+  propertyId: string,
+  url: string,
+  stored?: { storageKey?: string | null; storageDriver?: string | null },
+) {
+  const driver: StorageDriver = stored?.storageDriver === 's3' ? 's3' : 'local';
+  const key =
+    stored?.storageKey?.trim() || storageKeyFromPropertyUrl(url, propertyId);
+  if (!key) return;
   try {
-    await unlink(dest);
-  } catch {
-    /* arquivo já ausente */
+    await providerFor(driver).delete(key);
+  } catch (error) {
+    if (isMissingStorageError(error)) return;
+    if (error instanceof StorageUnavailableError) throw error;
+    throw new StorageUnavailableError(
+      error instanceof Error ? error.message : 'Falha ao apagar a imagem',
+    );
   }
 }
 
@@ -161,25 +229,69 @@ function safeStorageId(id: string) {
   return id;
 }
 
+export function portalStorageKey(businessUnitId: string, filename: string) {
+  const unitId = safeStorageId(businessUnitId);
+  const safe = safeFilename(filename);
+  if (!unitId || !safe) return null;
+  return `portal/${unitId}/${safe}`;
+}
+
+export function storageKeyFromPortalUrl(url: string, businessUnitId: string) {
+  const filename = filenameFromPortalUrl(url, businessUnitId);
+  if (filename) return portalStorageKey(businessUnitId, filename);
+  const base = process.env.STORAGE_PUBLIC_URL?.trim().replace(/\/$/, '');
+  if (!base || !url.startsWith(`${base}/`)) return null;
+  const raw = url.slice(base.length + 1).split(/[?#]/)[0] ?? '';
+  let key = raw;
+  try {
+    key = raw
+      .split('/')
+      .map((part) => decodeURIComponent(part))
+      .join('/');
+  } catch {
+    return null;
+  }
+  const prefix = `portal/${businessUnitId}/`;
+  if (!key.startsWith(prefix)) return null;
+  return portalStorageKey(businessUnitId, key.slice(prefix.length));
+}
+
 export async function savePortalImage(
   file: MemoryUpload,
   businessUnitId: string,
 ) {
-  const unitId = safeStorageId(businessUnitId);
   const ext = MIME_TO_EXT.get(file.mimetype);
-  if (!unitId || !ext || !file.buffer?.length) {
+  if (!ext || !file.buffer?.length) {
     throw new Error('INVALID_IMAGE');
   }
   if (file.size > MAX_IMAGE_BYTES) {
     throw new Error('IMAGE_TOO_LARGE');
   }
   const filename = `${randomUUID()}${ext}`;
-  const dir = portalUploadDir(unitId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), file.buffer);
+  const storageKey = portalStorageKey(businessUnitId, filename);
+  if (!storageKey) throw new Error('INVALID_IMAGE');
+
+  const provider = getStorageProvider();
+  try {
+    await provider.upload(
+      {
+        buffer: file.buffer,
+        contentType: file.mimetype,
+        size: file.size,
+      },
+      storageKey,
+    );
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw error;
+    if (provider.driver === 's3') throw new StorageUnavailableError();
+    throw error;
+  }
+
   return {
     filename,
-    url: publicPortalImageUrl(unitId, filename),
+    storageKey,
+    storageDriver: provider.driver,
+    url: provider.getPublicUrl(storageKey),
   };
 }
 
@@ -199,38 +311,44 @@ export async function deleteLocalPortalFile(
   businessUnitId: string,
   url: string,
 ) {
-  const unitId = safeStorageId(businessUnitId);
-  const filename = unitId ? filenameFromPortalUrl(url, unitId) : null;
-  if (!unitId || !filename) return;
+  const localName = filenameFromPortalUrl(url, businessUnitId);
+  const key = storageKeyFromPortalUrl(url, businessUnitId);
+  if (!key) return;
+  const driver: StorageDriver =
+    localName == null && process.env.STORAGE_PUBLIC_URL ? 's3' : 'local';
   try {
-    await unlink(path.join(portalUploadDir(unitId), filename));
-  } catch {
-    /* arquivo já ausente */
+    await providerFor(driver).delete(key);
+  } catch (error) {
+    if (isMissingStorageError(error)) return;
+    if (error instanceof StorageUnavailableError) throw error;
+    throw new StorageUnavailableError(
+      error instanceof Error ? error.message : 'Falha ao apagar a imagem',
+    );
   }
 }
 
-export function resolveLocalPortalFile(
+export async function resolveLocalPortalFile(
   businessUnitId: string,
   filename: string,
 ) {
-  const unitId = safeStorageId(businessUnitId);
-  const safe = safeFilename(filename);
-  if (!unitId || !safe) return null;
-  const root = path.resolve(portalUploadDir(unitId));
-  const dest = path.resolve(root, safe);
-  if (dest !== root && !dest.startsWith(root + path.sep)) return null;
-  if (!existsSync(dest)) return null;
-  return dest;
+  const key = portalStorageKey(businessUnitId, filename);
+  if (!key) return null;
+  const local = providerFor('local');
+  if (!(local instanceof LocalStorageProvider)) return null;
+  if (!(await local.exists(key))) return null;
+  return local.absolutePath(key);
 }
 
-export function resolveLocalPropertyFile(propertyId: string, filename: string) {
-  const safe = safeFilename(filename);
-  if (!safe) return null;
-  const root = path.resolve(propertyUploadDir(propertyId));
-  const dest = path.resolve(root, safe);
-  if (dest !== root && !dest.startsWith(root + path.sep)) return null;
-  if (!existsSync(dest)) return null;
-  return dest;
+export async function resolveLocalPropertyFile(
+  propertyId: string,
+  filename: string,
+) {
+  const key = propertyStorageKey(propertyId, filename);
+  if (!key) return null;
+  const local = providerFor('local');
+  if (!(local instanceof LocalStorageProvider)) return null;
+  if (!(await local.exists(key))) return null;
+  return local.absolutePath(key);
 }
 
 export function openLocalPropertyFile(absolutePath: string) {

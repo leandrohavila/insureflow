@@ -17,6 +17,13 @@ export class PropertyImagesRepository {
     });
   }
 
+  findByProperty(propertyId: string) {
+    return this.prisma.propertyImage.findMany({
+      where: { propertyId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
   async deleteOwned(tenantId: string, propertyId: string, imageId: string) {
     const row = await this.findOwned(tenantId, propertyId, imageId);
     if (!row) return null;

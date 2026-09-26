@@ -1644,11 +1644,15 @@ model PropertyImage {
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   propertyId String   @map("property_id")
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  url        String
-  alt        String?
-  sortOrder  Int      @default(0) @map("sort_order")
-  isCover    Boolean  @default(false) @map("is_cover")
-  createdAt  DateTime @default(now()) @map("created_at")
+  url           String
+  /// Key no storage (`properties/{id}/{arquivo}`). Nulo em imagens antigas.
+  storageKey    String?  @map("storage_key")
+  /// `local` ou `s3`. Nulo = arquivo legado servido pela API.
+  storageDriver String?  @map("storage_driver")
+  alt           String?
+  sortOrder     Int      @default(0) @map("sort_order")
+  isCover       Boolean  @default(false) @map("is_cover")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@index([propertyId, sortOrder])
   @@index([tenantId])
