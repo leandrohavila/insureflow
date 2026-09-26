@@ -113,6 +113,7 @@ export function r2ClientOptions(config: R2Config) {
   return {
     region: 'auto' as const,
     endpoint: config.endpoint,
+    forcePathStyle: true,
     credentials: {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,

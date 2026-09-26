@@ -73,6 +73,7 @@ describe('r2-storage.service', () => {
     });
     expect(options.region).toBe('auto');
     expect(options.endpoint).toBe('https://acct.r2.cloudflarestorage.com');
+    expect(options.forcePathStyle).toBe(true);
     expect(options.credentials).toEqual({
       accessKeyId: 'key',
       secretAccessKey: 'secret',
