@@ -19,6 +19,9 @@ export const STAGE_ACCENT_VAR: Record<CrmStageId, string> = {
   proposta: "var(--crm-stage-proposta)",
   negociacao: "var(--crm-stage-negociacao)",
   contrato: "var(--crm-stage-negociacao)",
+  "primeiro-contato": "var(--crm-stage-qualificacao)",
+  "visita-agendada": "var(--crm-stage-proposta)",
   fechamento: "var(--crm-stage-fechado)",
   fechado: "var(--crm-stage-fechado)",
+  perdido: "var(--crm-tone-neutral)",
 }

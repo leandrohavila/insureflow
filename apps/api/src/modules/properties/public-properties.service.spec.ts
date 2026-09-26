@@ -238,7 +238,7 @@ describe('PropertyLeadsService.createPublic', () => {
         performedById: 'user-1',
         operationalEventKind: 'portal_lead_received',
         leadId: 'lead1',
-        subject: 'Interesse no portal — Maria',
+        subject: 'Lead interessado no imóvel Apto Centro',
         description: 'Imóvel: Apto Centro\nURL: /imoveis/apto-centro',
         idempotencyKey: {
           operationalEventKind: 'portal_lead_received',

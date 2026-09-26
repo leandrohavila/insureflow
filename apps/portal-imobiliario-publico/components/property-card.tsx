@@ -44,13 +44,13 @@ export function PropertyCard({
               Sem foto
             </div>
           )}
-          <p className="absolute bottom-2 left-2 hidden rounded-full bg-white px-2.5 py-1 text-sm font-bold text-[#000C24] sm:inline-flex">
+          <p className="absolute bottom-2 left-2 hidden rounded-full bg-white px-2.5 py-1 text-lg font-bold text-[#000C24] sm:inline-flex">
             {price}
           </p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:p-4">
-          <p className="text-base font-bold leading-none text-[#000C24] sm:hidden">{price}</p>
-          <p className="truncate text-sm font-medium text-[#10294B]">{place}</p>
+          <p className="text-lg font-bold leading-none text-[#000C24] sm:hidden">{price}</p>
+          <p className="truncate text-sm font-semibold text-[#000C24]">{place}</p>
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[#000C24] sm:text-base">
             {property.title}
           </h3>
@@ -58,8 +58,8 @@ export function PropertyCard({
             {typeLabel(property.type)} · {purposeLabel(property.purpose)}
           </p>
           {specs.length > 0 && <p className="truncate text-xs text-[#10294B]">{specs.join(" · ")}</p>}
-          <p className="truncate text-xs text-[#3d4d66]">Cód. {property.slug}</p>
-          <span className="mt-auto inline-flex min-h-11 items-center justify-center rounded-lg bg-[#C09048] text-sm font-semibold text-[#000C24]">
+          <p className="truncate text-xs text-[#3d4d66]">Cód. {property.publicCode || property.slug}</p>
+          <span className="mt-auto inline-flex min-h-12 items-center justify-center rounded-lg bg-[#C09048] text-sm font-semibold text-[#000C24]">
             Ver imóvel
           </span>
         </div>

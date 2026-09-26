@@ -15,6 +15,11 @@ export const PROPERTY_LEAD_METADATA_KEYS = [
   'placement',
   'filters',
   'event_id',
+  'propertyCode',
+  'propertyUrl',
+  'purpose',
+  'intent',
+  'propertyTitle',
 ] as const;
 
 const METADATA_KEY_SET = new Set<string>(PROPERTY_LEAD_METADATA_KEYS);

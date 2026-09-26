@@ -11,9 +11,17 @@ import { useSubmitLead } from "@/hooks/use-submit-lead";
 export function InterestForm({
   propertySlug,
   propertyId,
+  propertyCode,
+  propertyTitle,
+  purpose,
+  intent = "interesse",
 }: {
   propertySlug: string;
   propertyId: string;
+  propertyCode?: string | null;
+  propertyTitle?: string;
+  purpose?: string;
+  intent?: string;
 }) {
   const { submit, loading, error, result, source } = useSubmitLead();
   const [localError, setLocalError] = useState<string | null>(null);
@@ -23,7 +31,9 @@ export function InterestForm({
     const name = String(formData.get("name") ?? "").trim();
     const email = String(formData.get("email") ?? "").trim();
     const phone = String(formData.get("phone") ?? "").trim();
-    const message = String(formData.get("message") ?? "").trim();
+    const message =
+      String(formData.get("message") ?? "").trim() ||
+      (intent === "visita" ? "Gostaria de agendar uma visita." : "");
 
     if (!name) {
       setLocalError("Informe seu nome");
@@ -34,6 +44,7 @@ export function InterestForm({
       return;
     }
 
+    const propertyUrl = `/imoveis/${propertySlug}`;
     await submit({
       propertyId,
       propertySlug,
@@ -41,9 +52,15 @@ export function InterestForm({
       email: email || undefined,
       phone: phone || undefined,
       message: message || undefined,
+      source: "portal_imobiliario",
       metadata: {
-        landingPage: `/imoveis/${propertySlug}/interesse`,
+        landingPage: `${propertyUrl}/interesse`,
         placement: "property",
+        propertyCode: propertyCode || "",
+        propertyUrl,
+        purpose: purpose || "",
+        intent,
+        propertyTitle: propertyTitle || "",
       },
     }).catch(() => undefined);
   }
@@ -77,7 +94,12 @@ export function InterestForm({
       </div>
       <div>
         <Label htmlFor="message">Mensagem</Label>
-        <Textarea id="message" name="message" maxLength={2000} />
+        <Textarea
+          id="message"
+          name="message"
+          maxLength={2000}
+          defaultValue={intent === "visita" ? "Gostaria de agendar uma visita." : ""}
+        />
       </div>
       {(localError || error) && (
         <p className="text-sm text-red-700">{localError || error}</p>

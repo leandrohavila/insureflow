@@ -4,6 +4,7 @@ import { CATEGORY_LINKS } from "@/lib/commercial";
 import { getCatalogConfig } from "@/lib/config";
 import { CatalogUnavailableError } from "@/lib/errors";
 import { portalOrigin } from "@/lib/site";
+import { UBERABA_LANDINGS, UBERABA_NEIGHBORHOODS } from "@/lib/uberaba";
 import { listProperties } from "@/services/catalog";
 import { apiFacets, apiList } from "@/services/catalog-api";
 
@@ -19,7 +20,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    { url: `${origin}/comprar`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${origin}/alugar`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${origin}/imoveis/uberaba`, changeFrequency: "daily", priority: 0.8 },
   ];
+
+  for (const slug of Object.keys(UBERABA_NEIGHBORHOODS)) {
+    entries.push({
+      url: `${origin}/imoveis/uberaba/${slug}`,
+      changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
+
+  for (const landing of UBERABA_LANDINGS) {
+    entries.push({
+      url: `${origin}${landing.path}`,
+      changeFrequency: "daily",
+      priority: 0.7,
+    });
+  }
 
   for (const category of CATEGORY_LINKS) {
     entries.push({

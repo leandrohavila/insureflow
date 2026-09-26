@@ -1,4 +1,4 @@
-export type PropertyPurpose = "SALE" | "RENT" | "SALE_AND_RENT"
+export type PropertyPurpose = "SALE" | "RENT" | "SALE_AND_RENT" | "SEASONAL"
 export type PropertyType =
   | "APARTMENT"
   | "HOUSE"

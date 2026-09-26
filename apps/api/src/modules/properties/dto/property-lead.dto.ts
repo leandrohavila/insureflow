@@ -17,6 +17,7 @@ export const PUBLIC_PROPERTY_LEAD_SOURCES = [
   'public_portal_home',
   'public_portal_listing',
   'public_portal_card',
+  'portal_imobiliario',
 ] as const;
 
 export type PublicPropertyLeadSource =
@@ -69,7 +70,7 @@ export class CreatePublicPropertyLeadDto {
   @ApiPropertyOptional({ description: 'Slug do imóvel publicado' })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
+  @MaxLength(180)
   propertySlug?: string;
 
   @ApiProperty({ example: 'Maria Silva' })

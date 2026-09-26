@@ -35,7 +35,7 @@ export function SiteHeader({
         overlay ? "absolute inset-x-0 top-0" : "sticky top-0 border-b border-white/10 bg-[#000C24]",
       )}
     >
-      <div className="mx-auto flex h-12 w-full max-w-[90rem] items-center justify-between gap-3 px-4 md:h-16 md:px-8 2xl:max-w-[110rem]">
+      <div className="mx-auto flex h-14 w-full max-w-[90rem] items-center justify-between gap-3 px-4 md:h-16 md:px-8 2xl:max-w-[110rem]">
         <Link href="/" className="flex min-w-0 items-center gap-2 text-white">
           <BrandLogo src={config?.logoUrl} name={name} plate />
           {creci && (

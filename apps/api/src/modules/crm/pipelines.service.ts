@@ -4,6 +4,7 @@ import { defaultStagesForUnitType } from '../../common/utils/deal-pipeline.util'
 import type { BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
+import { ensureRealEstatePipeline } from './ensure-real-estate-pipeline';
 
 @Injectable()
 export class PipelinesService {
@@ -41,6 +42,9 @@ export class PipelinesService {
     tenantId: string,
     unit: { id: string; type: 'INSURANCE' | 'REAL_ESTATE'; name?: string },
   ) {
+    if (unit.type === 'REAL_ESTATE') {
+      await ensureRealEstatePipeline(this.prisma, tenantId, unit.id);
+    }
     const existing = await this.prisma.businessUnitPipeline.findUnique({
       where: { businessUnitId: unit.id },
       include: pipelineInclude,

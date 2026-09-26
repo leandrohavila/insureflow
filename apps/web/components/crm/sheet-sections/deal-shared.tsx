@@ -22,8 +22,11 @@ export const STAGE_TONE: Record<CrmStageId, StatusPillTone> = {
   proposta: "brand",
   negociacao: "warn",
   contrato: "brand",
+  "primeiro-contato": "violet",
+  "visita-agendada": "brand",
   fechamento: "success",
   fechado: "success",
+  perdido: "neutral",
 }
 
 /**
@@ -39,8 +42,11 @@ export const STAGE_ACCENT: Record<CrmStageId, RecordRowAccent> = {
   proposta: "primary",
   negociacao: "amber",
   contrato: "primary",
+  "primeiro-contato": "violet",
+  "visita-agendada": "primary",
   fechamento: "emerald",
   fechado: "emerald",
+  perdido: "neutral",
 }
 
 export type DealPriority = "alta" | "media" | "baixa"

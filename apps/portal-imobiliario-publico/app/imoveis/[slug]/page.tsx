@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { PropertyGallery } from "@/components/property-gallery";
 import { RealEstateListingJsonLd } from "@/components/listing-jsonld";
@@ -82,6 +82,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const { slug } = await params;
   try {
     const { data: property, source } = await getPropertyBySlug(slug);
+    if (decodeURIComponent(slug) !== property.slug) {
+      permanentRedirect(`/imoveis/${property.slug}`);
+    }
     const location = [property.address, property.neighborhood, property.city, property.state]
       .filter(Boolean)
       .join(" · ");
@@ -91,7 +94,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     const whatsapp = portal.data.config?.whatsapp
       ? whatsappHref(
           portal.data.config.whatsapp,
-          `Olá, tenho interesse no imóvel ${property.title} (${property.slug}).`,
+          `Olá, tenho interesse no imóvel ${property.title} (cód. ${property.publicCode || property.slug}).`,
         )
       : null;
 
@@ -111,6 +114,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         </div>
         <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{property.title}</h1>
         <p className="text-2xl font-bold text-[#000C24]">{formatPrice(property.price)}</p>
+        {property.publicCode && (
+          <p className="text-sm font-semibold text-[#10294B]">Cód. {property.publicCode}</p>
+        )}
         <p className="text-sm font-medium text-[#10294B]">{location}</p>
         <p className="text-sm text-muted-foreground">
           {[
@@ -142,7 +148,10 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         )}
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#E6E8EC] bg-white/95 p-3 backdrop-blur md:static md:border-0 md:bg-transparent md:p-0">
           <div
-            className={cn("mx-auto flex w-full max-w-5xl gap-2", whatsapp && "pr-16 md:pr-0")}
+            className={cn(
+              "mx-auto grid w-full max-w-5xl grid-cols-2 gap-2 sm:grid-cols-3",
+              whatsapp && "pr-16 md:pr-0",
+            )}
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {whatsapp && (
@@ -150,16 +159,22 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 href={whatsapp}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-[#075E54] px-4 text-sm font-semibold text-white"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#075E54] px-2 text-sm font-semibold text-white"
               >
                 WhatsApp
               </a>
             )}
             <Link
               href={`/imoveis/${property.slug}/interesse`}
-              className={cn(buttonVariants(), "inline-flex min-h-12 flex-1")}
+              className={cn(buttonVariants(), "inline-flex min-h-12 px-2 text-sm")}
             >
               Tenho interesse
+            </Link>
+            <Link
+              href={`/imoveis/${property.slug}/interesse?intent=visita`}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#000C24] px-2 text-sm font-semibold text-[#000C24]"
+            >
+              Agendar visita
             </Link>
           </div>
         </div>

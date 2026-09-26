@@ -32,6 +32,7 @@ describe('PropertiesService publication', () => {
           Promise.resolve({ ...row, ...data, price: 100, images: [] }),
         ),
       isSlugTaken: jest.fn().mockResolvedValue(false),
+      isPublicCodeTaken: jest.fn().mockResolvedValue(false),
       create: jest.fn().mockImplementation((data) =>
         Promise.resolve({
           ...row,

@@ -5,6 +5,7 @@ import {
 } from "@/lib/errors";
 import {
   apiCreateLead,
+  apiFindByCode,
   apiFindBySlug,
   apiFacets,
   apiHighlights,
@@ -15,6 +16,7 @@ import {
 } from "@/services/catalog-api";
 import {
   mockCreateLead,
+  mockFindByCode,
   mockFindBySlug,
   mockHighlights,
   mockList,
@@ -108,6 +110,19 @@ export async function getFacets(): Promise<CatalogResult<CatalogFacets>> {
     }
     throw error;
   }
+}
+
+export async function getPropertyByCode(
+  code: string,
+): Promise<CatalogResult<PublicProperty>> {
+  return withFallback(
+    () => apiFindByCode(code),
+    () => {
+      const row = mockFindByCode(code);
+      if (!row) throw new CatalogNotFoundError();
+      return row;
+    },
+  );
 }
 
 export async function getPropertyBySlug(

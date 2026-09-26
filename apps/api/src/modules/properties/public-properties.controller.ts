@@ -44,6 +44,15 @@ export class PublicPropertiesController {
     return this.catalog.search(query);
   }
 
+  @Get('code/:code')
+  @ApiOperation({ summary: 'Imóvel publicado pelo código público' })
+  findByCode(
+    @Param('code') code: string,
+    @Query() query: PublicPropertyQueryDto,
+  ) {
+    return this.catalog.findByCode(code, query);
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Detalhe de imóvel publicado' })
   findBySlug(

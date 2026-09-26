@@ -2,6 +2,7 @@ export const PROPERTY_PURPOSE_LABELS: Record<string, string> = {
   SALE: "Venda",
   RENT: "Locação",
   SALE_AND_RENT: "Venda e Locação",
+  SEASONAL: "Temporada",
 }
 
 export const PROPERTY_TYPE_LABELS: Record<string, string> = {
@@ -19,7 +20,7 @@ export function formatPropertyPrice(value: number, purpose?: string) {
     currency: "BRL",
     maximumFractionDigits: 0,
   }).format(value)
-  return purpose === "RENT" ? `${formatted}/mês` : formatted
+  return purpose === "RENT" || purpose === "SEASONAL" ? `${formatted}/mês` : formatted
 }
 
 export function formatPropertyDate(value: string) {

@@ -97,36 +97,45 @@ export default async function HomePage() {
           />
         </div>
         <SiteHeader config={config} overlay />
-        <div className="relative mx-auto flex w-full max-w-[90rem] flex-col justify-end px-4 pb-5 pt-16 text-left md:px-8 md:pb-8 md:pt-24 2xl:max-w-[110rem]">
+        <div className="relative mx-auto flex w-full max-w-[90rem] flex-col justify-end px-4 pb-3 pt-14 text-left md:px-8 md:pb-8 md:pt-24 2xl:max-w-[110rem]">
           {creci && (
-            <p className="mb-2 inline-flex w-fit rounded-full bg-[#C09048] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#000C24] md:mb-4 md:text-xs">
+            <p className="mb-1.5 inline-flex w-fit rounded-full bg-[#C09048] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#000C24] md:mb-4 md:text-xs">
               CRECI {creci}
             </p>
           )}
-          <h1 className="max-w-4xl text-[1.65rem] font-bold leading-[1.12] tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+          <h1 className="line-clamp-2 max-w-4xl text-[1.35rem] font-bold leading-tight tracking-tight sm:text-4xl md:line-clamp-none md:text-5xl lg:text-6xl">
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-2 line-clamp-3 max-w-2xl text-sm leading-relaxed text-white/90 md:mt-4 md:line-clamp-none md:text-lg">
+            <p className="mt-1.5 line-clamp-2 max-w-2xl text-sm leading-snug text-white/90 md:mt-4 md:line-clamp-none md:text-lg">
               {subtitle}
             </p>
           )}
-          <div className="mt-4 flex flex-col gap-2 min-[380px]:flex-row min-[380px]:flex-wrap">
-            <a
-              href="#imoveis-destaque"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#C09048] px-5 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+          <div className="mt-3 flex gap-2">
+            <Link
+              href="/comprar"
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#C09048] px-3 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D] sm:flex-none sm:px-5"
             >
-              Ver imóveis
-            </a>
+              🏠 Comprar
+            </Link>
+            <Link
+              href="/alugar"
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white px-3 text-sm font-semibold text-white hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:flex-none sm:px-5"
+            >
+              🔑 Alugar
+            </Link>
             {contactHref && (
               <a
                 href={contactHref}
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white px-5 text-sm font-semibold text-white hover:border-[#DEAE5D] hover:text-[#DEAE5D]"
+                className="hidden min-h-11 items-center justify-center rounded-xl border border-white px-5 text-sm font-semibold text-white hover:border-[#DEAE5D] hover:text-[#DEAE5D] md:inline-flex"
               >
                 {contactLabel}
               </a>
             )}
           </div>
+          <a href="#imoveis-destaque" className="mt-2 inline-flex min-h-8 items-center text-sm font-semibold text-[#DEAE5D] md:hidden">
+            Ver imóveis
+          </a>
           <div className="mt-3 md:mt-6">
             <HeroSearch facets={facets.data} />
           </div>
