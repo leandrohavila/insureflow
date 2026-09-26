@@ -33,7 +33,8 @@
     "prod:seed:clean": "node scripts/seed-prod-clean.cjs",
     "dev:local:smoke": "node scripts/local-auth-smoke.cjs",
     "dev:local:check": "node scripts/check-local-runtime.cjs",
-    "dev:local:validate": "node scripts/check-local-runtime.cjs"
+    "dev:local:validate": "node scripts/check-local-runtime.cjs",
+    "images:migrate-r2": "npm run images:migrate-r2 -w api"
   },
   "devDependencies": {
     "prettier": "^3.7.4",

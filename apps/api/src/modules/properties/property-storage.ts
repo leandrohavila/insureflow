@@ -3,6 +3,13 @@ import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import {
+  getR2Storage,
+  isManagedObjectKey,
+  isR2Enabled,
+  keyFromPublicUrl,
+} from '../../common/storage/r2-storage.service';
+
 const MIME_TO_EXT = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -138,14 +145,22 @@ export async function savePropertyImage(
     throw new Error('IMAGE_TOO_LARGE');
   }
   const filename = `${randomUUID()}${ext}`;
-  const dir = propertyUploadDir(propertyId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), file.buffer);
-  // Persiste path relativo; serialização HTTP expõe URL absoluta.
-  return { filename, url: propertyImagePath(propertyId, filename) };
+  const key = `properties/${propertyId}/${filename}`;
+  const url = await persistImage({
+    buffer: file.buffer,
+    contentType: file.mimetype,
+    key,
+    localDir: propertyUploadDir(propertyId),
+    filename,
+    localUrl: propertyImagePath(propertyId, filename),
+  });
+  return { filename, url };
 }
 
 export async function deleteLocalPropertyFile(propertyId: string, url: string) {
+  if (await deleteRemoteObjectIfManaged(url, `properties/${propertyId}/`)) {
+    return;
+  }
   const filename = filenameFromLocalUrl(url, propertyId);
   if (!filename) return;
   const dest = path.join(propertyUploadDir(propertyId), filename);
@@ -174,13 +189,16 @@ export async function savePortalImage(
     throw new Error('IMAGE_TOO_LARGE');
   }
   const filename = `${randomUUID()}${ext}`;
-  const dir = portalUploadDir(unitId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), file.buffer);
-  return {
+  const key = `portal/${unitId}/${filename}`;
+  const url = await persistImage({
+    buffer: file.buffer,
+    contentType: file.mimetype,
+    key,
+    localDir: portalUploadDir(unitId),
     filename,
-    url: publicPortalImageUrl(unitId, filename),
-  };
+    localUrl: publicPortalImageUrl(unitId, filename),
+  });
+  return { filename, url };
 }
 
 function localPortalPathPrefix(businessUnitId: string) {
@@ -200,13 +218,58 @@ export async function deleteLocalPortalFile(
   url: string,
 ) {
   const unitId = safeStorageId(businessUnitId);
-  const filename = unitId ? filenameFromPortalUrl(url, unitId) : null;
-  if (!unitId || !filename) return;
+  if (!unitId) return;
+  if (await deleteRemoteObjectIfManaged(url, `portal/${unitId}/`)) return;
+  const filename = filenameFromPortalUrl(url, unitId);
+  if (!filename) return;
   try {
     await unlink(path.join(portalUploadDir(unitId), filename));
   } catch {
     /* arquivo já ausente */
   }
+}
+
+/**
+ * R2_ENABLED=true envia o buffer ao Cloudflare R2 e devolve a URL pública.
+ * Caso contrário grava em disco e devolve a URL local já usada pela API.
+ */
+async function persistImage(input: {
+  buffer: Buffer;
+  contentType: string;
+  key: string;
+  localDir: string;
+  filename: string;
+  localUrl: string;
+}) {
+  if (!isR2Enabled()) {
+    await mkdir(input.localDir, { recursive: true });
+    await writeFile(path.join(input.localDir, input.filename), input.buffer);
+    return input.localUrl;
+  }
+  const stored = await getR2Storage().uploadFile(
+    input.buffer,
+    input.key,
+    input.contentType,
+  );
+  return stored.url;
+}
+
+/**
+ * Apaga objeto R2 quando a URL salva é a URL pública do bucket.
+ * URLs locais legadas retornam false para o unlink em disco continuar.
+ * Falha de rede não propaga: o registro no banco já foi removido.
+ */
+async function deleteRemoteObjectIfManaged(url: string, keyPrefix: string) {
+  const key = keyFromPublicUrl(url);
+  if (!key || !isManagedObjectKey(key) || !key.startsWith(keyPrefix)) {
+    return false;
+  }
+  try {
+    await getR2Storage().deleteFile(key);
+  } catch {
+    /* objeto já ausente ou R2 indisponível */
+  }
+  return true;
 }
 
 export function resolveLocalPortalFile(

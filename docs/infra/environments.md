@@ -71,18 +71,39 @@ InsureFlow usa sessão custom (`AUTH_SECRET` + cookies httpOnly para tokens da A
 
 ### STORAGE
 
-Reservado para uploads futuros (S3, R2, Supabase Storage).
+Imagens de imóveis e do portal ficam em disco quando `R2_ENABLED` não é `true` (`apps/api/uploads/properties` e `apps/api/uploads/portal`, ou `PROPERTY_UPLOADS_DIR`). Com `R2_ENABLED=true`, uploads novos vão para Cloudflare R2 (API compatível com S3, `region=auto`). A resposta da API continua sendo `{ url }`; URLs `http(s)` já gravadas não são reescritas na leitura.
 
 | Variável | Descrição |
 |----------|-----------|
-| `STORAGE_PROVIDER` | `local` \| `s3` \| `r2` (futuro) |
-| `STORAGE_BUCKET` | Nome do bucket |
-| `STORAGE_REGION` | Região cloud |
-| `STORAGE_ACCESS_KEY` | Access key |
-| `STORAGE_SECRET_KEY` | Secret key |
-| `STORAGE_PUBLIC_URL` | Base URL pública dos arquivos |
+| `R2_ENABLED` | `true` envia novos uploads ao R2. Qualquer outro valor mantém o disco local |
+| `R2_BUCKET` | Nome do bucket |
+| `R2_ENDPOINT` | Endpoint S3, ex.: `https://<account_id>.r2.cloudflarestorage.com` |
+| `R2_ACCESS_KEY_ID` | Access key do token R2 |
+| `R2_SECRET_ACCESS_KEY` | Secret do token R2 |
+| `R2_PUBLIC_URL` | Base pública (domínio customizado ou `r2.dev`), sem barra final |
+| `PROPERTY_UPLOADS_DIR` | Pasta local. Default: `uploads` no cwd da API |
 
-Atualmente não obrigatório — documentado para Fase 2.
+Chaves novas: `properties/{propertyId}/{uuid}.ext` e `portal/{businessUnitId}/{uuid}.ext`.
+
+Arquivos já servidos em `GET /api/v1/files/properties/...` e `GET /api/v1/files/portal/...` permanecem no disco. O script `scripts/migrate-local-images-to-r2.ts` (`npm run images:migrate-r2`) copia esses arquivos, atualiza as URLs no banco e **não** apaga o disco.
+
+Rollback:
+
+1. `R2_ENABLED=false` e reiniciar a API. Uploads novos voltam ao disco.
+2. Imagens cuja URL no banco já é `R2_PUBLIC_URL` continuam acessíveis enquanto o bucket existir.
+3. Para voltar uma imagem ao disco, restaure a URL antiga (`/api/v1/files/...` ou a URL absoluta da API) a partir do relatório do script e mantenha o arquivo local. O script não remove `uploads/`.
+4. Remover as credenciais R2 só depois que nenhuma URL pública do bucket estiver em uso.
+
+As variáveis `STORAGE_*` abaixo não são lidas pelo runtime.
+
+| Variável | Descrição |
+|----------|-----------|
+| `STORAGE_PROVIDER` | Reservado (`local` \| `s3` \| `r2`) |
+| `STORAGE_BUCKET` | Reservado |
+| `STORAGE_REGION` | Reservado |
+| `STORAGE_ACCESS_KEY` | Reservado |
+| `STORAGE_SECRET_KEY` | Reservado |
+| `STORAGE_PUBLIC_URL` | Reservado |
 
 ### CORS (API)
 
