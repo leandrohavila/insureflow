@@ -32,9 +32,11 @@ describe('property-storage', () => {
     expect(safeFilename('ok-file.webp')).toBe('ok-file.webp');
   });
 
-  it('resolveLocalPropertyFile não sai do diretório do imóvel', () => {
-    expect(resolveLocalPropertyFile('p1', '..%2fetc%2fpasswd')).toBeNull();
-    expect(resolveLocalPropertyFile('p1', '../other.jpg')).toBeNull();
+  it('resolveLocalPropertyFile não sai do diretório do imóvel', async () => {
+    await expect(
+      resolveLocalPropertyFile('p1', '..%2fetc%2fpasswd'),
+    ).resolves.toBeNull();
+    await expect(resolveLocalPropertyFile('p1', '../other.jpg')).resolves.toBeNull();
   });
 
   it('publicImageUrl é absoluta com API_PUBLIC_URL', () => {

@@ -23,11 +23,11 @@ export class PropertyFilesController {
   @Header('Cross-Origin-Resource-Policy', 'cross-origin')
   @Header('Cache-Control', 'public, max-age=86400')
   @ApiOperation({ summary: 'Arquivo de imagem do imóvel (upload local)' })
-  serve(
+  async serve(
     @Param('propertyId') propertyId: string,
     @Param('filename') filename: string,
   ) {
-    const absolute = resolveLocalPropertyFile(propertyId, filename);
+    const absolute = await resolveLocalPropertyFile(propertyId, filename);
     if (!absolute) throw new NotFoundException('Arquivo não encontrado');
     return new StreamableFile(openLocalPropertyFile(absolute), {
       type: mimeFromFilename(filename),

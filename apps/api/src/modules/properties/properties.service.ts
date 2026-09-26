@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
@@ -20,8 +21,9 @@ import {
   isAllowedImageMime,
   MAX_IMAGE_BYTES,
   MAX_UPLOAD_FILES,
+  resolveStoredPropertyImageUrl,
   savePropertyImage,
-  toAbsolutePropertyMediaUrl,
+  StorageUnavailableError,
   type MemoryUpload,
 } from './property-storage';
 import { PropertiesRepository } from './repositories/properties.repository';
@@ -33,6 +35,24 @@ import {
 } from './property-slug';
 import { serializeProperty, slugifyTitle } from './properties.util';
 import { serializePropertyLead } from './property-leads.util';
+
+function presentImage<
+  T extends {
+    url: string;
+    storageKey?: string | null;
+    storageDriver?: string | null;
+  },
+>(image: T) {
+  const { storageKey, storageDriver, ...rest } = image;
+  return {
+    ...rest,
+    url: resolveStoredPropertyImageUrl({
+      url: image.url,
+      storageKey,
+      storageDriver,
+    }),
+  };
+}
 
 function parseFeaturedUntil(value?: string | null) {
   if (value == null || value === '') return null;
@@ -106,7 +126,9 @@ export class PropertiesService {
   private async uniquePublicCode(tenantId: string, excludeId?: string) {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const code = String(1000 + Math.floor(Math.random() * 9000));
-      if (!(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))) {
+      if (
+        !(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))
+      ) {
         return code;
       }
     }
@@ -135,7 +157,10 @@ export class PropertiesService {
     return slug;
   }
 
-  private needsFriendlySlug(row: { slug?: string | null; publicCode?: string | null }) {
+  private needsFriendlySlug(row: {
+    slug?: string | null;
+    publicCode?: string | null;
+  }) {
     return !row.publicCode || !/-cod-\d+/i.test(row.slug ?? '');
   }
 
@@ -196,7 +221,11 @@ export class PropertiesService {
     });
     const legacySlugs: string[] = [];
     if (dto.slug?.trim()) {
-      const requested = await this.uniqueSlug(user.tenantId, dto.title, dto.slug);
+      const requested = await this.uniqueSlug(
+        user.tenantId,
+        dto.title,
+        dto.slug,
+      );
       if (requested !== slug) legacySlugs.push(requested);
     }
     const images = dto.images ?? [];
@@ -413,10 +442,7 @@ export class PropertiesService {
       sortOrder: input.sortOrder ?? 0,
       isCover: input.isCover ?? false,
     });
-    return {
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    };
+    return presentImage(image);
   }
 
   async uploadImages(
@@ -446,7 +472,15 @@ export class PropertiesService {
     const existingCount = await this.images.countByProperty(property.id);
     const created = [];
     for (let index = 0; index < files.length; index += 1) {
-      const saved = await savePropertyImage(files[index], property.id);
+      let saved: Awaited<ReturnType<typeof savePropertyImage>>;
+      try {
+        saved = await savePropertyImage(files[index], property.id);
+      } catch (error) {
+        if (error instanceof StorageUnavailableError) {
+          throw new ServiceUnavailableException(error.message);
+        }
+        throw error;
+      }
       const isCover = existingCount === 0 && index === 0;
       if (isCover) {
         await this.images.clearCover(property.id);
@@ -456,26 +490,22 @@ export class PropertiesService {
           tenantId: user.tenantId,
           propertyId: property.id,
           url: saved.url,
+          storageKey: saved.storageKey,
+          storageDriver: saved.storageDriver,
           alt: files[index].originalname?.slice(0, 160),
           sortOrder: startOrder + index,
           isCover,
         }),
       );
     }
-    return created.map((image) => ({
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    }));
+    return created.map((image) => presentImage(image));
   }
 
   async setCoverImage(user: JwtAccessPayload, id: string, imageId: string) {
     await this.findOne(user, id);
     const image = await this.images.setCover(user.tenantId, id, imageId);
     if (!image) throw new NotFoundException('Imagem não encontrada');
-    return {
-      ...image,
-      url: toAbsolutePropertyMediaUrl(image.url),
-    };
+    return presentImage(image);
   }
 
   async reorderImages(user: JwtAccessPayload, id: string, imageIds: string[]) {
@@ -491,7 +521,10 @@ export class PropertiesService {
     await this.findOne(user, id);
     const deleted = await this.images.deleteOwned(user.tenantId, id, imageId);
     if (!deleted) throw new NotFoundException('Imagem não encontrada');
-    await deleteLocalPropertyFile(id, deleted.url);
+    await deleteLocalPropertyFile(id, deleted.url, {
+      storageKey: deleted.storageKey,
+      storageDriver: deleted.storageDriver,
+    });
     return { ok: true };
   }
 

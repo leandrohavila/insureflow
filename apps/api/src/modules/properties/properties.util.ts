@@ -1,4 +1,4 @@
-import { toAbsolutePropertyMediaUrl } from './property-storage';
+import { resolveStoredPropertyImageUrl } from './property-storage';
 
 export const PROPERTY_DETAIL_INCLUDE = {
   images: { orderBy: { sortOrder: 'asc' as const } },
@@ -65,6 +65,8 @@ type ImageRow = {
   alt?: string | null;
   sortOrder?: number;
   isCover?: boolean;
+  storageKey?: string | null;
+  storageDriver?: string | null;
 };
 
 type FeatureRow = {
@@ -105,10 +107,17 @@ export function pickCoverImage(images: ImageRow[] | undefined) {
 
 function withAbsoluteImageUrls(images: ImageRow[] | undefined) {
   if (!images?.length) return images;
-  return images.map((image) => ({
-    ...image,
-    url: toAbsolutePropertyMediaUrl(image.url),
-  }));
+  return images.map((image) => {
+    const { storageKey, storageDriver, ...rest } = image;
+    return {
+      ...rest,
+      url: resolveStoredPropertyImageUrl({
+        url: image.url,
+        storageKey,
+        storageDriver,
+      }),
+    };
+  });
 }
 
 export function serializeFeatureValue(row: FeatureRow) {

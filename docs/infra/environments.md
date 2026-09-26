@@ -71,18 +71,17 @@ InsureFlow usa sessão custom (`AUTH_SECRET` + cookies httpOnly para tokens da A
 
 ### STORAGE
 
-Reservado para uploads futuros (S3, R2, Supabase Storage).
+Imagens de imóveis. `local` grava em `uploads/` e serve pela API. `s3` envia o arquivo ao bucket, grava só a key e responde a URL pública. Imagens antigas, sem `storage_driver`, continuam no path já salvo.
 
 | Variável | Descrição |
 |----------|-----------|
-| `STORAGE_PROVIDER` | `local` \| `s3` \| `r2` (futuro) |
-| `STORAGE_BUCKET` | Nome do bucket |
-| `STORAGE_REGION` | Região cloud |
-| `STORAGE_ACCESS_KEY` | Access key |
+| `STORAGE_DRIVER` | `local` (padrão) ou `s3`. `STORAGE_PROVIDER` vale como fallback |
+| `STORAGE_BUCKET` | Nome do bucket (obrigatório em `s3`) |
+| `STORAGE_REGION` | Região cloud (obrigatório em `s3`) |
+| `STORAGE_ACCESS_KEY` | Access key. Sem ela, o SDK usa a cadeia padrão de credenciais |
 | `STORAGE_SECRET_KEY` | Secret key |
-| `STORAGE_PUBLIC_URL` | Base URL pública dos arquivos |
-
-Atualmente não obrigatório — documentado para Fase 2.
+| `STORAGE_PUBLIC_URL` | Base pública do bucket, sem barra final |
+| `STORAGE_ENDPOINT` | Endpoint alternativo (opcional) |
 
 ### CORS (API)
 

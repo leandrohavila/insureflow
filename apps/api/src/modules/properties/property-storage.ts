@@ -3,6 +3,18 @@ import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { LocalStorageProvider } from './storage/local-storage.provider';
+import { apiPublicBaseUrl, uploadsRoot } from './storage/media-base';
+import {
+  getStorageProvider,
+  providerFor,
+  StorageUnavailableError,
+} from './storage/storage-provider.factory';
+import type { StorageDriver } from './storage/storage-provider';
+
+export { apiPublicBaseUrl, uploadsRoot, StorageUnavailableError };
+export type { StorageDriver };
+
 const MIME_TO_EXT = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
@@ -28,24 +40,6 @@ export type MemoryUpload = {
   buffer: Buffer;
 };
 
-/** Base pública da API (CRM/Portal/img src). Preferir API_PUBLIC_URL. */
-export function apiPublicBaseUrl() {
-  const fromEnv =
-    process.env.API_PUBLIC_URL?.trim() ||
-    process.env.API_BASE_URL?.trim() ||
-    process.env.API_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
-  const port = process.env.PORT?.trim() || '4000';
-  return `http://localhost:${port}`;
-}
-
-export function uploadsRoot() {
-  return (
-    process.env.PROPERTY_UPLOADS_DIR?.trim() ||
-    path.resolve(process.cwd(), 'uploads')
-  );
-}
-
 export function propertyUploadDir(propertyId: string) {
   return path.join(uploadsRoot(), 'properties', propertyId);
 }
@@ -63,9 +57,32 @@ export function propertyImagePath(propertyId: string, filename: string) {
   return `/api/v1/files/properties/${propertyId}/${filename}`;
 }
 
-/** URL absoluta para resposta HTTP / <img src>. */
+export function propertyStorageKey(propertyId: string, filename: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(propertyId)) return null;
+  const safe = safeFilename(filename);
+  if (!safe) return null;
+  return `properties/${propertyId}/${safe}`;
+}
+
+/** URL absoluta para resposta HTTP / <img src>, conforme STORAGE_DRIVER. */
 export function publicImageUrl(propertyId: string, filename: string) {
-  return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+  const key = propertyStorageKey(propertyId, filename);
+  if (!key) {
+    return `${apiPublicBaseUrl()}${propertyImagePath(propertyId, filename)}`;
+  }
+  return getStorageProvider().getPublicUrl(key);
+}
+
+export function resolveStoredPropertyImageUrl(image: {
+  url: string;
+  storageKey?: string | null;
+  storageDriver?: string | null;
+}) {
+  if (image.storageDriver === 's3') {
+    const key = image.storageKey?.trim() || image.url;
+    return providerFor('s3').getPublicUrl(key);
+  }
+  return toAbsolutePropertyMediaUrl(image.url);
 }
 
 export function portalImagePath(businessUnitId: string, filename: string) {
@@ -126,6 +143,16 @@ export function mimeFromFilename(filename: string) {
   return EXT_TO_MIME[ext] ?? 'application/octet-stream';
 }
 
+export function storageKeyFromPropertyUrl(url: string, propertyId: string) {
+  const filename = filenameFromLocalUrl(url, propertyId);
+  if (filename) return propertyStorageKey(propertyId, filename);
+  const marker = `properties/${propertyId}/`;
+  const idx = url.indexOf(marker);
+  if (idx < 0) return null;
+  const key = (url.slice(idx).split(/[?#]/)[0] ?? '').replace(/\/$/, '');
+  return propertyStorageKey(propertyId, key.slice(marker.length));
+}
+
 export async function savePropertyImage(
   file: MemoryUpload,
   propertyId: string,
@@ -138,21 +165,51 @@ export async function savePropertyImage(
     throw new Error('IMAGE_TOO_LARGE');
   }
   const filename = `${randomUUID()}${ext}`;
-  const dir = propertyUploadDir(propertyId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), file.buffer);
-  // Persiste path relativo; serialização HTTP expõe URL absoluta.
-  return { filename, url: propertyImagePath(propertyId, filename) };
+  const storageKey = propertyStorageKey(propertyId, filename);
+  if (!storageKey) throw new Error('INVALID_IMAGE');
+
+  const provider = getStorageProvider();
+  try {
+    await provider.upload(
+      {
+        buffer: file.buffer,
+        contentType: file.mimetype,
+        size: file.size,
+      },
+      storageKey,
+    );
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) throw error;
+    if (provider.driver === 's3') throw new StorageUnavailableError();
+    throw error;
+  }
+
+  return {
+    filename,
+    storageKey,
+    storageDriver: provider.driver,
+    // Local: path da API. S3: só a key; a URL pública sai na serialização.
+    url:
+      provider.driver === 's3'
+        ? storageKey
+        : propertyImagePath(propertyId, filename),
+  };
 }
 
-export async function deleteLocalPropertyFile(propertyId: string, url: string) {
-  const filename = filenameFromLocalUrl(url, propertyId);
-  if (!filename) return;
-  const dest = path.join(propertyUploadDir(propertyId), filename);
+export async function deleteLocalPropertyFile(
+  propertyId: string,
+  url: string,
+  stored?: { storageKey?: string | null; storageDriver?: string | null },
+) {
+  const driver: StorageDriver = stored?.storageDriver === 's3' ? 's3' : 'local';
+  const key =
+    stored?.storageKey?.trim() || storageKeyFromPropertyUrl(url, propertyId);
+  if (!key) return;
   try {
-    await unlink(dest);
-  } catch {
-    /* arquivo já ausente */
+    await providerFor(driver).delete(key);
+  } catch (error) {
+    if (error instanceof StorageUnavailableError) return;
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
   }
 }
 
@@ -223,14 +280,16 @@ export function resolveLocalPortalFile(
   return dest;
 }
 
-export function resolveLocalPropertyFile(propertyId: string, filename: string) {
-  const safe = safeFilename(filename);
-  if (!safe) return null;
-  const root = path.resolve(propertyUploadDir(propertyId));
-  const dest = path.resolve(root, safe);
-  if (dest !== root && !dest.startsWith(root + path.sep)) return null;
-  if (!existsSync(dest)) return null;
-  return dest;
+export async function resolveLocalPropertyFile(
+  propertyId: string,
+  filename: string,
+) {
+  const key = propertyStorageKey(propertyId, filename);
+  if (!key) return null;
+  const local = providerFor('local');
+  if (!(local instanceof LocalStorageProvider)) return null;
+  if (!(await local.exists(key))) return null;
+  return local.absolutePath(key);
 }
 
 export function openLocalPropertyFile(absolutePath: string) {
