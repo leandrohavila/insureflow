@@ -101,7 +101,7 @@ Sem login, sem mudar o formulário de interesse.
 
 ## 5. Storage
 
-`STORAGE_PROVIDER=local` (default). Pasta `apps/api/uploads/` (gitignored). S3/R2 continua fora desta sprint.
+Disco local em `apps/api/uploads/` (gitignored) quando `R2_ENABLED` não é `true`. Uploads novos podem ir para Cloudflare R2; ver `docs/infra/environments.md`. `GET /api/v1/files/...` continua servindo arquivos locais.
 
 ---
 
