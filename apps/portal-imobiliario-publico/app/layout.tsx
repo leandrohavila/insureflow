@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { SplashScreen } from "@/components/layout/SplashScreen";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { companyName } from "@/lib/commercial";
 import { portalOrigin } from "@/lib/site";
+import { splashBootScript } from "@/lib/splash";
 import { cn } from "@/lib/utils";
 import { getPortalHome } from "@/services/catalog";
 
@@ -59,13 +61,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     .filter((origin, index, all): origin is string => Boolean(origin) && all.indexOf(origin) === index);
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={cn(
           "min-h-svh bg-[#F8F9FA] text-[#000C24] antialiased",
           config?.whatsapp && "pb-20",
         )}
       >
+        <script dangerouslySetInnerHTML={{ __html: splashBootScript }} />
+        <SplashScreen logoUrl={config?.logoUrl} name={name} />
         {origins.map((origin) => (
           <link key={origin} rel="preconnect" href={origin} />
         ))}
