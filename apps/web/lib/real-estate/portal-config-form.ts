@@ -1,3 +1,9 @@
+import {
+  buildPortalPublicUrl,
+  isValidPortalUrl,
+  isValidPublicSlug,
+} from "@/lib/real-estate/portal-url"
+
 export const PORTAL_UPDATE_KEYS = [
   "businessUnitId",
   "companyName",
@@ -17,6 +23,8 @@ export const PORTAL_UPDATE_KEYS = [
   "youtube",
   "creci",
   "address",
+  "portalUrl",
+  "publicSlug",
 ] as const
 
 export type PortalUpdateKey = (typeof PORTAL_UPDATE_KEYS)[number]
@@ -35,6 +43,8 @@ export const PORTAL_TEXT_LIMITS = {
   youtube: 240,
   creci: 40,
   address: 240,
+  portalUrl: 2048,
+  publicSlug: 80,
 } as const
 
 export const PORTAL_IMAGE_LIMIT = 2048
@@ -61,6 +71,8 @@ export type PortalConfigForm = {
   youtube: string
   creci: string
   address: string
+  portalUrl: string
+  publicSlug: string
 }
 
 export type PortalConfigPayload = {
@@ -82,6 +94,8 @@ export type PortalConfigPayload = {
   youtube: string | null
   creci: string | null
   address: string | null
+  portalUrl: string | null
+  publicSlug: string | null
 }
 
 export const EMPTY_PORTAL_CONFIG: PortalConfigForm = {
@@ -102,6 +116,8 @@ export const EMPTY_PORTAL_CONFIG: PortalConfigForm = {
   youtube: "",
   creci: "",
   address: "",
+  portalUrl: "",
+  publicSlug: "",
 }
 
 const TITLE_KEYS = new Set<PortalTextKey>(["heroTitle", "aboutTitle"])
@@ -147,6 +163,8 @@ export function portalConfigFromApi(data: unknown): PortalConfigForm {
     youtube: asString(row.youtube),
     creci: asString(row.creci),
     address: asString(row.address),
+    portalUrl: asString(row.portalUrl),
+    publicSlug: asString(row.publicSlug),
   }
 }
 
@@ -176,6 +194,8 @@ export function portalConfigToPayload(
     youtube: emptyToNull(form.youtube),
     creci: emptyToNull(form.creci),
     address: emptyToNull(form.address),
+    portalUrl: emptyToNull(form.portalUrl),
+    publicSlug: emptyToNull(form.publicSlug),
   }
 }
 
@@ -230,6 +250,15 @@ export function assessTextField(key: PortalTextKey, value: string): PortalFieldF
   if (key === "email" && !emailIsValid(value)) {
     return { error: "E-mail inválido.", atLimit: false }
   }
+  if (key === "portalUrl" && value.trim() && !isValidPortalUrl(value.trim())) {
+    return { error: "Informe uma URL completa, com http:// ou https://.", atLimit: false }
+  }
+  if (key === "publicSlug" && value.trim() && !isValidPublicSlug(value.trim())) {
+    return {
+      error: "Use apenas letras minúsculas, números e hífen (ex.: avila-imoveis).",
+      atLimit: false,
+    }
+  }
   if ((key === "phone" || key === "whatsapp") && !phoneIsValid(value)) {
     return { error: "Informe um telefone válido.", atLimit: false }
   }
@@ -282,6 +311,8 @@ export function portalFormFeedback(form: PortalConfigForm) {
     youtube: assessTextField("youtube", form.youtube),
     creci: assessTextField("creci", form.creci),
     address: assessTextField("address", form.address),
+    portalUrl: assessTextField("portalUrl", form.portalUrl),
+    publicSlug: assessTextField("publicSlug", form.publicSlug),
   }
 }
 
@@ -301,4 +332,33 @@ export function characterCounter(length: number, max: number) {
 
 export function longestDifferentialLength(value: string) {
   return value.split("\n").reduce((max, line) => Math.max(max, line.trim().length), 0)
+}
+
+type ValidationIssue = { constraints?: Record<string, string> }
+
+/** A API devolve `message` como string, lista de strings ou lista de ValidationError do class-validator. */
+export function messageFromPayload(payload: unknown, fallback: string) {
+  const message = (payload as { message?: unknown } | null)?.message
+  if (typeof message === "string" && message.trim()) return message
+  if (Array.isArray(message)) {
+    const parts = message.flatMap((item: string | ValidationIssue) =>
+      typeof item === "string" ? [item] : Object.values(item?.constraints ?? {}),
+    )
+    if (parts.length > 0) return parts.join(" ")
+  }
+  return fallback
+}
+
+export function resolvePortalPublicUrl(
+  form: Pick<PortalConfigForm, "portalUrl" | "publicSlug">,
+  fallbackOrigin: string,
+  fallbackSlug: string,
+) {
+  const origin = isValidPortalUrl(form.portalUrl.trim())
+    ? form.portalUrl.trim()
+    : fallbackOrigin
+  const slug = isValidPublicSlug(form.publicSlug.trim())
+    ? form.publicSlug.trim()
+    : fallbackSlug
+  return buildPortalPublicUrl(origin, slug)
 }

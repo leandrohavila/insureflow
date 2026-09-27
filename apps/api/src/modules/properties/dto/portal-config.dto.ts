@@ -5,12 +5,20 @@ import {
   IsBoolean,
   IsEmail,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
+
+export const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function blankToUndefined({ value }: { value: unknown }): unknown {
+  return typeof value === 'string' && value.trim() === '' ? undefined : value;
+}
 
 export class UpsertPortalConfigDto {
   @ApiProperty()
@@ -19,7 +27,11 @@ export class UpsertPortalConfigDto {
   businessUnitId!: string;
 
   @ApiProperty()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
+  @IsNotEmpty({ message: 'Informe o nome da imobiliária' })
   @MaxLength(120)
   companyName!: string;
 
@@ -86,7 +98,7 @@ export class UpsertPortalConfigDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
+  @IsEmail({}, { message: 'Informe um e-mail válido' })
   @MaxLength(160)
   email?: string;
 
@@ -119,6 +131,30 @@ export class UpsertPortalConfigDto {
   @IsString()
   @MaxLength(240)
   address?: string;
+
+  @ApiPropertyOptional({ example: 'https://imoveis.grupoavila.com.br' })
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsUrl(
+    {
+      require_tld: false,
+      require_protocol: true,
+      protocols: ['http', 'https'],
+    },
+    { message: 'Portal URL deve ser uma URL completa com http:// ou https://' },
+  )
+  @MaxLength(2048)
+  portalUrl?: string;
+
+  @ApiPropertyOptional({ example: 'avila-imoveis' })
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @Matches(PUBLIC_SLUG_PATTERN, {
+    message:
+      'Slug público deve conter apenas letras minúsculas, números e hífen',
+  })
+  @MaxLength(80)
+  publicSlug?: string;
 }
 
 export class CreatePortalBannerDto {

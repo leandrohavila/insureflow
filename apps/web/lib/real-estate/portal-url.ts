@@ -25,13 +25,38 @@ export function getPortalSitemapUrl(origin: string) {
   return `${base}/sitemap.xml`
 }
 
+export const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+export function isValidPublicSlug(value: string) {
+  return PUBLIC_SLUG_PATTERN.test(value)
+}
+
+export function isValidPortalUrl(value: string) {
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+export function getRealEstateUnitSlug(
+  context: BusinessUnitContext | null | undefined,
+) {
+  const unitId = resolveRealEstateBusinessUnitId(context)
+  return (
+    context?.units.find((unit) => unit.id === unitId)?.slug ?? "avila-imoveis"
+  )
+}
+
+export function buildPortalPublicUrl(origin: string, slug: string) {
+  const base = normalizePortalOrigin(origin) || LOCAL_PORTAL_ORIGIN
+  return `${base}/?businessUnitSlug=${encodeURIComponent(slug)}`
+}
+
 export function getPortalHomeUrl(
   context: BusinessUnitContext | null | undefined,
   origin: string,
 ) {
-  const base = normalizePortalOrigin(origin) || LOCAL_PORTAL_ORIGIN
-  const unitId = resolveRealEstateBusinessUnitId(context)
-  const slug =
-    context?.units.find((unit) => unit.id === unitId)?.slug ?? "avila-imoveis"
-  return `${base}/?businessUnitSlug=${encodeURIComponent(slug)}`
+  return buildPortalPublicUrl(origin, getRealEstateUnitSlug(context))
 }

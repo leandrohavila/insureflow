@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -63,6 +64,28 @@ export class PortalConfigService {
     }
   }
 
+  private async assertSlugAvailable(
+    tenantId: string,
+    businessUnitId: string,
+    slug: string,
+  ) {
+    const [config, unit] = await Promise.all([
+      this.prisma.portalConfig.findFirst({
+        where: { tenantId, publicSlug: slug, NOT: { businessUnitId } },
+        select: { id: true },
+      }),
+      this.prisma.businessUnit.findFirst({
+        where: { tenantId, slug, NOT: { id: businessUnitId } },
+        select: { id: true },
+      }),
+    ]);
+    if (config || unit) {
+      throw new ConflictException(
+        'Slug público já está em uso por outra unidade',
+      );
+    }
+  }
+
   async getForUser(user: JwtAccessPayload, businessUnitId: string) {
     await this.assertUnit(user, businessUnitId);
     const row = await this.prisma.portalConfig.findFirst({
@@ -93,7 +116,16 @@ export class PortalConfigService {
       youtube: emptyToNull(dto.youtube),
       creci: emptyToNull(dto.creci),
       address: emptyToNull(dto.address),
+      portalUrl: emptyToNull(dto.portalUrl)?.replace(/\/+$/, '') ?? null,
+      publicSlug: emptyToNull(dto.publicSlug),
     };
+    if (data.publicSlug) {
+      await this.assertSlugAvailable(
+        user.tenantId,
+        dto.businessUnitId,
+        data.publicSlug,
+      );
+    }
     const row = await this.prisma.portalConfig.upsert({
       where: { businessUnitId: dto.businessUnitId },
       create: {

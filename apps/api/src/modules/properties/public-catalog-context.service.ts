@@ -27,7 +27,12 @@ export class PublicCatalogContextService {
           isActive: true,
           ...(params.businessUnitId
             ? { id: params.businessUnitId }
-            : { slug: params.businessUnitSlug }),
+            : {
+                OR: [
+                  { slug: params.businessUnitSlug },
+                  { portalConfig: { publicSlug: params.businessUnitSlug } },
+                ],
+              }),
         },
         select: { id: true },
       });

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { ExternalLink, Globe, Star } from "lucide-react"
 
@@ -16,8 +17,14 @@ import {
 import { useBusinessUnitContext } from "@/lib/data-access/modules/business-units"
 import { useRealEstateDashboardStats } from "@/lib/data-access/modules/properties"
 import {
-  getPortalHomeUrl,
+  EMPTY_PORTAL_CONFIG,
+  resolvePortalPublicUrl,
+  type PortalConfigForm,
+} from "@/lib/real-estate/portal-config-form"
+import {
   getPortalSitemapUrl,
+  getRealEstateUnitSlug,
+  isValidPortalUrl,
 } from "@/lib/real-estate/portal-url"
 import { useRealEstateBusinessUnitId } from "@/lib/real-estate/use-real-estate-business-unit"
 import { PortalSettingsPanel } from "@/components/real-estate/portal-settings-panel"
@@ -32,8 +39,12 @@ export function PortalManagementPage({
   const context = useBusinessUnitContext()
   const statsQuery = useRealEstateDashboardStats(businessUnitId)
   const stats = statsQuery.data
-  const portalUrl = getPortalHomeUrl(context.data, portalOrigin)
-  const sitemapUrl = getPortalSitemapUrl(portalOrigin)
+  const [savedConfig, setSavedConfig] = useState<PortalConfigForm>(EMPTY_PORTAL_CONFIG)
+  const unitSlug = getRealEstateUnitSlug(context.data)
+  const portalUrl = resolvePortalPublicUrl(savedConfig, portalOrigin, unitSlug)
+  const sitemapUrl = getPortalSitemapUrl(
+    isValidPortalUrl(savedConfig.portalUrl) ? savedConfig.portalUrl : portalOrigin,
+  )
 
   return (
     <PageContainer className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-[var(--if-space-2)] md:py-[var(--if-space-3)]">
@@ -91,7 +102,11 @@ export function PortalManagementPage({
             </Grid>
           </Section>
 
-          <PortalSettingsPanel />
+          <PortalSettingsPanel
+            portalOrigin={portalOrigin}
+            unitSlug={unitSlug}
+            onSavedChange={setSavedConfig}
+          />
         </Stack>
       </ContentContainer>
     </PageContainer>

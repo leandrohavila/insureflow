@@ -1612,10 +1612,13 @@ model PortalConfig {
   youtube        String?
   creci          String?
   address        String?
+  portalUrl      String?      @map("portal_url")
+  publicSlug     String?      @map("public_slug")
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
   @@unique([tenantId, businessUnitId])
+  @@unique([tenantId, publicSlug])
   @@map("portal_configs")
 }
 
