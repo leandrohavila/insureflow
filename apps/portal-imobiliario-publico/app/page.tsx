@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, Home, Landmark, Store, Trees } from "lucide-react";
+import { Building2, Home, KeyRound, Landmark, MessageCircle, Store, Trees } from "lucide-react";
 
-import { HeroMedia } from "@/components/hero-media";
+import { HeroFeaturedCard } from "@/components/hero-featured-card";
 import { HeroSearch } from "@/components/hero-search";
 import { LaunchCard } from "@/components/launch-card";
 import { PropertyCard } from "@/components/property-card";
@@ -66,9 +66,10 @@ export default async function HomePage() {
     getFacets(),
   ]);
   const config = portal.data.config;
-  const heroImage = config?.heroImage?.trim() || null;
-  const title = config?.heroTitle?.trim() || companyName(config);
-  const subtitle = config?.heroSubtitle?.trim() || null;
+  const title = config?.heroTitle?.trim() || "Encontre o imóvel ideal para morar ou investir em Uberaba";
+  const subtitle =
+    config?.heroSubtitle?.trim() ||
+    "Casas, apartamentos, terrenos e imóveis comerciais com atendimento especializado e as melhores oportunidades da região.";
   const name = companyName(config);
   const contactHref = brokerHref(config, name);
   const contactLabel = config?.whatsapp ? "WhatsApp" : "Falar com um corretor";
@@ -85,58 +86,59 @@ export default async function HomePage() {
   return (
     <div>
       <SourceBanner source={source} />
-      <section className="relative bg-[#000C24] text-white md:min-h-[32rem]">
-        <div className="absolute inset-0" aria-hidden>
-          <HeroMedia src={heroImage} />
+      <section className="relative bg-[#000C24] text-white lg:min-h-[780px]">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(90deg, rgba(0,12,36,.92) 0%, rgba(0,12,36,.78) 46%, rgba(0,12,36,.55) 100%)",
+                "radial-gradient(ellipse 80% 70% at 75% 35%, #10294B 0%, rgba(16,41,75,.55) 45%, #000C24 80%)",
             }}
           />
+          <div className="absolute left-[-10%] top-[18%] aspect-square w-[80vw] max-w-[44rem] rounded-full bg-[rgba(222,174,93,0.15)] blur-[120px]" />
         </div>
         <SiteHeader config={config} overlay />
-        <div className="relative mx-auto flex w-full max-w-[90rem] flex-col justify-end px-4 pb-3 pt-14 text-left md:px-8 md:pb-8 md:pt-24 2xl:max-w-[110rem]">
-          {creci && (
-            <p className="mb-1.5 inline-flex w-fit rounded-full bg-[#C09048] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#000C24] md:mb-4 md:text-xs">
-              CRECI {creci}
-            </p>
-          )}
-          <h1 className="line-clamp-2 max-w-4xl text-[1.35rem] font-bold leading-tight tracking-tight sm:text-4xl md:line-clamp-none md:text-5xl lg:text-6xl">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="mt-1.5 line-clamp-2 max-w-2xl text-sm leading-snug text-white/90 md:mt-4 md:line-clamp-none md:text-lg">
-              {subtitle}
-            </p>
-          )}
-          <div className="mt-3 flex gap-2">
-            <Link
-              href="/comprar"
-              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[#C09048] px-3 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D] sm:flex-none sm:px-5"
-            >
-              🏠 Comprar
-            </Link>
-            <Link
-              href="/alugar"
-              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-white px-3 text-sm font-semibold text-white hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:flex-none sm:px-5"
-            >
-              🔑 Alugar
-            </Link>
-            {contactHref && (
-              <a
-                href={contactHref}
-                className="hidden min-h-11 items-center justify-center rounded-xl border border-white px-5 text-sm font-semibold text-white hover:border-[#DEAE5D] hover:text-[#DEAE5D] md:inline-flex"
-              >
-                {contactLabel}
-              </a>
+        <div className="relative mx-auto flex w-full max-w-[90rem] flex-col gap-8 px-4 pb-10 pt-24 md:px-8 md:pt-28 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-center lg:gap-x-16 lg:gap-y-14 lg:pb-0 lg:pt-36 2xl:max-w-[110rem]">
+          <div className="hero-fade-up max-w-[720px]">
+            {creci && (
+              <p className="mb-5 inline-flex w-fit rounded-full border border-[#DEAE5D]/40 bg-[#DEAE5D]/10 px-3 py-1 text-xs font-semibold tracking-wide text-[#DEAE5D]">
+                CRECI {creci}
+              </p>
             )}
+            <h1 className="text-[clamp(2.25rem,6vw,4.25rem)] font-extrabold leading-[1.05] tracking-tight">{title}</h1>
+            {subtitle && (
+              <p className="mt-5 max-w-[36rem] text-base leading-relaxed text-white/80 md:mt-6 md:text-lg">{subtitle}</p>
+            )}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/comprar"
+                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] shadow-[0_12px_30px_-10px_rgba(222,174,93,.6)] transition-colors hover:bg-[#DEAE5D] sm:flex-none"
+              >
+                <Home className="size-4" aria-hidden />
+                Comprar
+              </Link>
+              <Link
+                href="/alugar"
+                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:flex-none"
+              >
+                <KeyRound className="size-4" aria-hidden />
+                Alugar
+              </Link>
+              {contactHref && (
+                <a
+                  href={contactHref}
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:w-auto"
+                >
+                  <MessageCircle className="size-4" aria-hidden />
+                  {contactLabel}
+                </a>
+              )}
+            </div>
           </div>
-          <a href="#imoveis-destaque" className="mt-2 inline-flex min-h-8 items-center text-sm font-semibold text-[#DEAE5D] md:hidden">
-            Ver imóveis
-          </a>
-          <div className="mt-3 md:mt-6">
+          <div className="hero-fade-up hero-fade-up-delay-2 order-last mx-auto w-full max-w-md lg:order-none lg:mx-0 lg:max-w-[30rem] lg:justify-self-end">
+            <HeroFeaturedCard property={featured[0] ?? null} />
+          </div>
+          <div className="hero-fade-up hero-fade-up-delay-1 relative z-10 lg:col-span-2 lg:-mb-16">
             <HeroSearch facets={facets.data} />
           </div>
         </div>
@@ -144,7 +146,7 @@ export default async function HomePage() {
 
       <section
         id="imoveis-destaque"
-        className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-6 md:px-8 md:py-14 2xl:max-w-[110rem]"
+        className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-8 md:px-8 md:py-14 lg:pt-32 2xl:max-w-[110rem]"
       >
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-2xl font-bold tracking-tight text-[#000C24] md:text-3xl">Imóveis em destaque</h2>

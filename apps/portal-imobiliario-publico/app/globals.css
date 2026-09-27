@@ -85,6 +85,30 @@ summary {
   contain-intrinsic-size: auto 32rem;
 }
 
+/* opacity parte de 0.01 (não 0) para o título continuar elegível como LCP. */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 24px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-fade-up {
+  animation: hero-fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-fade-up-delay-1 {
+  animation-delay: 0.12s;
+}
+
+.hero-fade-up-delay-2 {
+  animation-delay: 0.24s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
