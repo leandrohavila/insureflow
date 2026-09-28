@@ -4,6 +4,7 @@ import { Building2, Home, KeyRound, Landmark, MessageCircle, Store, Trees } from
 
 import { HeroFeaturedCard } from "@/components/hero-featured-card";
 import { HeroSearch } from "@/components/hero-search";
+import { InstitutionalStats } from "@/components/institutional-stats";
 import { LaunchCard } from "@/components/launch-card";
 import { PropertyCard } from "@/components/property-card";
 import { SiteHeader } from "@/components/site-header";
@@ -144,9 +145,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <InstitutionalStats />
+
       <section
         id="imoveis-destaque"
-        className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-8 md:px-8 md:py-14 lg:pt-32 2xl:max-w-[110rem]"
+        className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-8 md:px-8 md:py-14 2xl:max-w-[110rem]"
       >
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-2xl font-bold tracking-tight text-[#000C24] md:text-3xl">Imóveis em destaque</h2>
@@ -174,7 +177,7 @@ export default async function HomePage() {
             )}
           </div>
         ) : (
-          <div className="mt-4 grid min-w-0 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="mt-4 grid min-w-0 grid-cols-1 gap-6 sm:mt-8 md:grid-cols-2 lg:grid-cols-4">
             {featured.map((property, index) => (
               <PropertyCard key={property.id} property={property} priority={index < 2} />
             ))}

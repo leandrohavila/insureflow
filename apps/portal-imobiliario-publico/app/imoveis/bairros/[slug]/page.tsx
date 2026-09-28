@@ -43,7 +43,7 @@ export default async function NeighborhoodPage({ params }: PageProps) {
         <p className="mt-2 text-sm text-[#10294B]">
           {match.city} · {listing.data.total} publicados no CRM
         </p>
-        <div className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 gap-6 sm:mt-6 md:grid-cols-2 lg:grid-cols-4">
           {listing.data.data.map((property, index) => (
             <PropertyCard key={property.id} property={property} priority={index < 2} />
           ))}

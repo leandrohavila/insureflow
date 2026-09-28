@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { parseListQuery, PropertyFilters } from "@/components/property-filters";
-import { PropertyCard } from "@/components/property-card";
+import { PropertyCard, PropertyCardSkeleton } from "@/components/property-card";
 import { SourceBanner } from "@/components/source-banner";
 import { useProperties } from "@/hooks/use-properties";
 import type { PropertyListQuery } from "@/types/property";
@@ -46,15 +46,16 @@ export function PropertyListing({
         </div>
       </div>
       <PropertyFilters query={query} />
-      {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {!loading && data && data.data.length === 0 && (
         <p className="text-sm text-muted-foreground">Nenhum imóvel publicado com esses filtros.</p>
       )}
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3 2xl:grid-cols-4">
-        {data?.data.map((property, index) => (
-          <PropertyCard key={property.id} property={property} priority={index < 2} />
-        ))}
+      <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {!data && loading
+          ? Array.from({ length: 4 }, (_, index) => <PropertyCardSkeleton key={index} />)
+          : data?.data.map((property, index) => (
+              <PropertyCard key={property.id} property={property} priority={index < 2} />
+            ))}
       </div>
       {data && total > limit && (
         <div className="flex items-center justify-between gap-2 text-sm">
