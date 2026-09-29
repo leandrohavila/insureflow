@@ -46,6 +46,7 @@ import {
   FilterBar,
   FilterSearch,
   FilterSelect,
+  FilterText,
   OperationalPageLayout,
   OperationalWorkspace,
   OperationalWorkspaceMain,
@@ -873,10 +874,8 @@ export function LeadsPage() {
                   { value: "mine", label: "Meus leads" },
                 ]}
               />
-              <FilterSearch
+              <FilterText
                 label="Origem"
-                grow={false}
-                containerClassName="w-28"
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder="Origem"
