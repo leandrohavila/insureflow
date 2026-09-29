@@ -146,6 +146,38 @@ describe('LeadsService.createLead', () => {
     expect(result.status).toBe('new');
   });
 
+  it('persists source=crm_manual when manual payload omits source', async () => {
+    const { service, leadCreate } = createService();
+
+    await service.createLead(
+      tenantId,
+      { name: 'Sem Origem', source: '  ' },
+      actor,
+    );
+
+    expect(leadCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ source: 'crm_manual' }),
+      }),
+    );
+  });
+
+  it('keeps informed source', async () => {
+    const { service, leadCreate } = createService();
+
+    await service.createLead(
+      tenantId,
+      { name: 'Com Origem', source: 'public_portal' },
+      actor,
+    );
+
+    expect(leadCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ source: 'public_portal' }),
+      }),
+    );
+  });
+
   it('resolves assignedTo display name to ownerUserId', async () => {
     const { service, leadCreate } = createService();
 

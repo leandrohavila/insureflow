@@ -24,6 +24,7 @@ import {
   formatCpfMask,
   stripDocumentDigits,
 } from "@/lib/documents/document"
+import { formatLeadSource } from "@/lib/leads/lead-source"
 import {
   useLeadDuplicates,
   type Lead,
@@ -102,7 +103,7 @@ export function LeadSourceSection({ lead }: LeadSourceSectionProps) {
           <PropertyCell
             icon={Compass}
             label="Origem"
-            value={lead.source || "Não informada"}
+            value={formatLeadSource(lead.source)}
             className="bg-[var(--crm-surface-panel)]"
           />
           <PropertyCell

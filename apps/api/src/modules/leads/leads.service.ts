@@ -31,6 +31,10 @@ import {
   syncLeadBusinessUnits,
 } from '../../common/utils/business-unit-membership.util';
 import { andWhere } from '../../common/utils/business-unit-acl.util';
+import {
+  buildLeadSourceWhere,
+  defaultManualLeadSource,
+} from '../../common/utils/lead-source.util';
 import { OwnershipService } from '../access/ownership.service';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import type { LeadAccessActor } from '../access/ownership.types';
@@ -558,7 +562,7 @@ export class LeadsService {
           email: dto.email,
           phone: dto.phone,
           company: dto.company,
-          source: dto.source,
+          source: defaultManualLeadSource(dto.source),
           status: dto.status ?? 'new',
           notes: dto.notes,
           assignedTo,
@@ -1122,7 +1126,6 @@ export class LeadsService {
     let legacyWhere: Prisma.LeadWhereInput = {
       tenantId,
       ...(query.status ? { status: query.status } : {}),
-      ...(query.source ? { source: query.source } : {}),
       ...(query.interestCategory
         ? { interestCategories: { has: query.interestCategory } }
         : {}),
@@ -1151,6 +1154,11 @@ export class LeadsService {
           }
         : {}),
     };
+
+    const sourceWhere = buildLeadSourceWhere(query.source);
+    if (sourceWhere) {
+      legacyWhere = andWhere(legacyWhere, sourceWhere);
+    }
 
     if (actor?.userId && actor.tenantId && this.buAccess) {
       const buWhere = await this.buAccess.leadWhere(

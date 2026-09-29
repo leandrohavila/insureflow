@@ -5,6 +5,7 @@ import {
   formatStoredPhone,
 } from "../../../documents/document"
 import type { InterestCategory } from "@/lib/business-units/constants"
+import { isManualLeadSource } from "../../../leads/lead-source"
 import type { Lead } from "./types"
 import { suggestRenewalReminderFields } from "./lead-next-contact-form"
 
@@ -104,7 +105,7 @@ export function buildLeadDialogFormState(
     email: lead.email ?? "",
     phone: formatStoredPhone(lead.phone),
     company: lead.company ?? "",
-    source: lead.source ?? "",
+    source: isManualLeadSource(lead.source) ? "" : (lead.source ?? ""),
     documentType: lead.documentType ?? "cpf",
     document: formatStoredDocument(lead.documentType, lead.document),
     notes: lead.notes ?? "",

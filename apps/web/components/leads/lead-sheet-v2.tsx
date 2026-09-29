@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import { leadOwnerDisplayName, leadOwnerInitials } from "@/lib/leads/lead-owner"
+import { formatLeadSource } from "@/lib/leads/lead-source"
 import { useActivityTimeline } from "@/lib/data-access/modules/activities"
 import { useCrmPersistedValue } from "@/lib/hooks/use-crm-workspace-preferences"
 import type { Lead } from "@/lib/data-access/modules/leads"
@@ -186,11 +187,9 @@ export function LeadSheetV2({
           <StatusPill tone={statusTone} variant="soft" size="sm" dot>
             {statusLabel}
           </StatusPill>
-          {lead.source ? (
-            <StatusPill tone="neutral" variant="outline" size="xs">
-              {lead.source}
-            </StatusPill>
-          ) : null}
+          <StatusPill tone="neutral" variant="outline" size="xs">
+            {formatLeadSource(lead.source)}
+          </StatusPill>
         </div>
 
         {/* Zona 2 — identidade + ação hero */}

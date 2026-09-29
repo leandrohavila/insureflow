@@ -24,6 +24,7 @@ import {
 } from "@/lib/documents/document"
 import type { Lead } from "@/lib/data-access/modules/leads"
 import { leadOwnerDisplayName, leadOwnerInitials } from "@/lib/leads/lead-owner"
+import { formatLeadSource } from "@/lib/leads/lead-source"
 
 type LeadOverviewSectionProps = {
   lead: Lead
@@ -74,7 +75,7 @@ export function LeadOverviewSection({ lead }: LeadOverviewSectionProps) {
           <PropertyCell
             icon={Compass}
             label="Origem"
-            value={lead.source || "Não informada"}
+            value={formatLeadSource(lead.source)}
             className="bg-[var(--crm-surface-panel)]"
           />
         </PropertyGrid>

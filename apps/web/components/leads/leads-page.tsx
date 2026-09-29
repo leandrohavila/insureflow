@@ -97,6 +97,7 @@ import {
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { isLeadConverted, leadOwnerDisplayName } from "@/lib/leads/lead-owner"
+import { formatLeadSource, LEAD_SOURCE_LABELS } from "@/lib/leads/lead-source"
 import { leadPipelinePresentation } from "@/lib/leads/lead-pipeline-clarity"
 import { stageLabelMap, useCrmDeals } from "@/lib/data-access/modules/crm"
 import {
@@ -604,7 +605,7 @@ export function LeadsPage() {
         className: "min-w-[6rem]",
         render: (row) => (
           <span className="text-xs text-muted-foreground">
-            {row.source || "—"}
+            {formatLeadSource(row.source)}
           </span>
         ),
       },
@@ -879,7 +880,13 @@ export function LeadsPage() {
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder="Origem"
+                list="lead-source-options"
               />
+              <datalist id="lead-source-options">
+                {Object.values(LEAD_SOURCE_LABELS).map((label) => (
+                  <option key={label} value={label} />
+                ))}
+              </datalist>
               <FilterSelect
                 label="Tipo Seguro"
                 value={interestCategory}
