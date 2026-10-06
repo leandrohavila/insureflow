@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { TrackedAnchor } from "@/components/tracked-link";
 import { attendanceWhatsappHref, companyName, socialHref } from "@/lib/commercial";
+import { formatPhoneBR, formatWhatsAppDisplay } from "@/lib/utils";
 import { whatsappShareHref } from "@/lib/seo";
 import { LOCAL_SEO_PATHS, UBERABA_LANDINGS } from "@/lib/uberaba";
 import type { PortalConfig } from "@/types/property";
@@ -21,7 +22,9 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
   const instagram = socialHref(config?.instagram);
   const facebook = socialHref(config?.facebook);
   const youtube = socialHref(config?.youtube);
-  const phone = config?.phone?.trim() || null;
+  const phone = formatPhoneBR(config?.phone);
+  const phoneHref = config?.phone?.replace(/\D/g, "") || null;
+  const whatsappDisplay = formatWhatsAppDisplay(config?.whatsapp);
   const email = config?.email?.trim() || null;
   const address = config?.address?.trim() || "Uberaba, MG";
   const mapQuery = encodeURIComponent(address);
@@ -42,8 +45,8 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
         </div>
         <div className="space-y-2 text-sm">
           <p className="font-semibold text-[#DEAE5D]">Contato</p>
-          {phone && (
-            <a href={`tel:${phone.replace(/\s/g, "")}`} className="flex min-h-11 items-center hover:text-[#DEAE5D]">
+          {phone && phoneHref && (
+            <a href={`tel:${phoneHref}`} className="flex min-h-11 items-center hover:text-[#DEAE5D]">
               {phone}
             </a>
           )}
@@ -56,7 +59,7 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
               target="_blank"
               rel="noreferrer"
             >
-              WhatsApp
+              {whatsappDisplay ? `WhatsApp ${whatsappDisplay}` : "WhatsApp"}
             </TrackedAnchor>
           )}
           <TrackedAnchor

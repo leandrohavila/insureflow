@@ -1,9 +1,19 @@
 import Link from "next/link";
-import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2, MessageCircle } from "lucide-react";
+import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2, MessageCircle, Share2 } from "lucide-react";
 
 import { TrackedAnchor } from "@/components/tracked-link";
-import { propertyWhatsappHref } from "@/lib/commercial";
-import { formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
+import { propertyShareHref, propertyWhatsappHref } from "@/lib/commercial";
+import {
+  formatArea,
+  formatBathrooms,
+  formatParking,
+  formatPrice,
+  formatRooms,
+  isExclusiveListing,
+  purposeLabel,
+  resolveCover,
+  typeLabel,
+} from "@/lib/utils";
 import type { PublicProperty } from "@/types/property";
 
 export function PropertyCardSkeleton() {
@@ -40,16 +50,29 @@ export function PropertyCard({
 }) {
   const cover = resolveCover(property);
   const rooms = [
-    property.bedrooms != null ? { icon: BedDouble, value: property.bedrooms, label: "quartos" } : null,
-    property.bathrooms != null ? { icon: Bath, value: property.bathrooms, label: "banheiros" } : null,
-    property.parkingSpots != null ? { icon: Car, value: property.parkingSpots, label: "vagas" } : null,
+    property.bedrooms != null ? { icon: BedDouble, label: formatRooms(property.bedrooms) } : null,
+    property.bathrooms != null ? { icon: Bath, label: formatBathrooms(property.bathrooms) } : null,
+    property.parkingSpots != null ? { icon: Car, label: formatParking(property.parkingSpots) } : null,
   ].filter((spec) => spec != null);
   const place = [property.neighborhood, property.city].filter(Boolean).join(" • ");
   const price = formatPrice(property.price);
   const whatsapp = propertyWhatsappHref(whatsappPhone, property);
+  const exclusive = isExclusiveListing(property.features);
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none">
+      <TrackedAnchor
+        event="whatsapp_click"
+        eventLabel="compartilhar-card"
+        propertySlug={property.slug}
+        href={propertyShareHref(property)}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Compartilhar ${property.title}`}
+        className="absolute right-3 top-3 z-10 inline-flex size-11 items-center justify-center rounded-full bg-white text-[#000C24] shadow-md hover:bg-[#DEAE5D]"
+      >
+        <Share2 className="size-4" aria-hidden />
+      </TrackedAnchor>
       <Link
         href={`/imoveis/${property.slug}`}
         className="flex min-w-0 flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C09048] focus-visible:ring-offset-2"
@@ -76,10 +99,15 @@ export function PropertyCard({
           {cover && (
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#000C24]/40 to-transparent" />
           )}
-          <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+          <div className="absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-2">
             {property.featured === true && (
               <span className="rounded-full bg-[#DEAE5D] px-3 py-1 text-xs font-bold text-[#000C24] shadow-md">
                 Destaque
+              </span>
+            )}
+            {exclusive && (
+              <span className="rounded-full bg-[#000C24] px-3 py-1 text-xs font-bold text-[#DEAE5D] shadow-md ring-1 ring-[#DEAE5D]">
+                Exclusivo
               </span>
             )}
             <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#000C24] shadow-md">
@@ -88,9 +116,9 @@ export function PropertyCard({
           </div>
         </div>
         <div className="flex min-w-0 flex-1 flex-col p-5">
-          <p className="text-2xl font-extrabold leading-none tracking-tight text-[#000C24]">{price}</p>
+          <p className="text-[1.65rem] font-extrabold leading-none tracking-tight text-[#7F5209]">{price}</p>
           {place && (
-            <p className="mt-3 flex min-w-0 items-start gap-1.5 text-sm font-medium leading-5 text-[#10294B]">
+            <p className="mt-4 inline-flex w-fit max-w-full items-start gap-1.5 rounded-full bg-[#F6F1E8] px-3 py-1.5 text-sm font-semibold leading-5 text-[#000C24]">
               <MapPin className="mt-0.5 size-4 shrink-0 text-[#8a6a2f]" aria-hidden />
               <span className="min-w-0 break-words">{place}</span>
             </p>
@@ -105,11 +133,10 @@ export function PropertyCard({
             <div className="mt-4 space-y-2 border-t border-[#EEF0F3] pt-4 text-sm font-medium text-[#10294B]">
               {rooms.length > 0 && (
                 <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                  {rooms.map(({ icon: Icon, value, label }) => (
+                  {rooms.map(({ icon: Icon, label }) => (
                     <li key={label} className="inline-flex items-center gap-1.5">
                       <Icon className="size-4 text-[#8a6a2f]" aria-hidden />
-                      {value}
-                      <span className="sr-only">{label}</span>
+                      {label}
                     </li>
                   ))}
                 </ul>
@@ -117,7 +144,7 @@ export function PropertyCard({
               {property.areaM2 != null && (
                 <p className="inline-flex items-center gap-1.5">
                   <Maximize2 className="size-4 text-[#8a6a2f]" aria-hidden />
-                  {property.areaM2} m²
+                  {formatArea(property.areaM2)}
                 </p>
               )}
             </div>

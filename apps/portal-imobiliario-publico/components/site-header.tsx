@@ -31,6 +31,8 @@ export function SiteHeader({
   const whatsapp = attendanceWhatsappHref(config?.whatsapp, name);
   const linkClass = "inline-flex min-h-11 items-center hover:text-[#DEAE5D]";
   const menuLinkClass = "flex min-h-11 items-center text-sm text-white hover:text-[#DEAE5D]";
+  const whatsappClass =
+    "inline-flex min-h-11 items-center rounded-full bg-[#075E54] px-4 text-sm font-semibold text-white hover:bg-[#0b7a6e]";
 
   return (
     <header
@@ -61,7 +63,7 @@ export function SiteHeader({
               href={whatsapp}
               target="_blank"
               rel="noreferrer"
-              className={linkClass}
+              className={whatsappClass}
             >
               WhatsApp
             </TrackedAnchor>
@@ -102,7 +104,7 @@ export function SiteHeader({
               href={whatsapp}
               target="_blank"
               rel="noreferrer"
-              className={menuLinkClass}
+              className={`${whatsappClass} mt-2 w-fit`}
               onClick={() => setOpen(false)}
             >
               WhatsApp

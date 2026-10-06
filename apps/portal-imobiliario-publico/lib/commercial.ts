@@ -1,3 +1,5 @@
+import { portalOrigin } from "@/lib/site";
+import { formatPrice } from "@/lib/utils";
 import type { PortalConfig } from "@/types/property";
 
 export const CATEGORY_LINKS = [
@@ -37,6 +39,12 @@ export function propertyWhatsappMessage(property: {
 }) {
   const code = property.publicCode?.trim() || property.slug;
   return `Olá, tenho interesse no imóvel ${property.title} (cód. ${code}).`;
+}
+
+export function propertyShareHref(property: { title: string; slug: string; price: number }) {
+  const url = `${portalOrigin()}/imoveis/${property.slug}`;
+  const text = `${property.title}\n${formatPrice(property.price)}\n${url}`;
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 
 export function propertyWhatsappHref(

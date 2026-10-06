@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Home, Landmark, MessageCircle, Rocket, Store, Trees } from "lucide-react";
 
+import { CategoryCard, type CategoryTone } from "@/components/category-card";
 import { HeroFeaturedCard } from "@/components/hero-featured-card";
 import { HeroSearch } from "@/components/hero-search";
 import { InstitutionalStats } from "@/components/institutional-stats";
@@ -94,14 +95,14 @@ export default async function HomePage() {
                 CRECI {creci}
               </p>
             )}
-            <h1 className="text-[clamp(2.25rem,6vw,4.25rem)] font-extrabold leading-[1.05] tracking-tight">{title}</h1>
-            <p className="mt-5 max-w-[36rem] text-base leading-relaxed text-white/80 md:mt-6 md:text-lg">{subtitle}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <h1 className="text-[clamp(2.75rem,7vw,5.25rem)] font-extrabold leading-[0.98] tracking-tight">{title}</h1>
+            <p className="mt-6 max-w-[38rem] text-lg leading-relaxed text-white/85 md:mt-7 md:text-xl">{subtitle}</p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/imoveis"
-                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] shadow-[0_12px_30px_-10px_rgba(222,174,93,.6)] transition-colors hover:bg-[#DEAE5D] sm:flex-none"
+                className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-[#C09048] px-7 text-base font-semibold text-[#000C24] shadow-[0_16px_36px_-12px_rgba(222,174,93,.75)] transition-colors hover:bg-[#DEAE5D] sm:flex-none"
               >
-                <Home className="size-4" aria-hidden />
+                <Home className="size-5" aria-hidden />
                 Ver imóveis
               </Link>
               {contactHref && (
@@ -111,10 +112,10 @@ export default async function HomePage() {
                   href={contactHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:flex-none"
+                  className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-7 text-base font-semibold text-white shadow-[0_16px_36px_-14px_rgba(7,94,84,.9)] transition-colors hover:bg-[#0b7a6e] sm:flex-none"
                 >
-                  <MessageCircle className="size-4" aria-hidden />
-                  WhatsApp
+                  <MessageCircle className="size-5" aria-hidden />
+                  Falar no WhatsApp
                 </TrackedAnchor>
               )}
             </div>
@@ -140,21 +141,21 @@ export default async function HomePage() {
 
       <InstitutionalStats available={available} creci={creci} />
 
-      <section id="categorias" className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-6 md:px-8 md:py-4 2xl:max-w-[110rem]">
-        <h2 className="text-2xl font-bold tracking-tight text-[#000C24] md:text-3xl">Categorias de imóveis</h2>
+      <section id="categorias" className="scroll-mt-16 mx-auto w-full max-w-[90rem] px-4 py-10 md:px-8 md:py-16 2xl:max-w-[110rem]">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a2f]">Explore o catálogo</p>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#000C24] md:text-3xl">Categorias de imóveis</h2>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {HOME_CATEGORIES.map((category) => {
             const Icon = CATEGORY_ICONS[category.slug];
             const href = "href" in category ? category.href : `/imoveis/tipos/${category.slug}`;
             return (
-              <Link
+              <CategoryCard
                 key={category.slug}
                 href={href}
-                className="flex min-h-36 flex-col justify-between rounded-2xl bg-[#10294B] p-5 text-lg font-semibold text-white hover:bg-[#C09048] hover:text-[#000C24]"
-              >
-                <Icon className="size-7" aria-hidden />
-                {category.label}
-              </Link>
+                label={category.label}
+                icon={Icon}
+                tone={category.slug as CategoryTone}
+              />
             );
           })}
         </div>
@@ -179,9 +180,10 @@ export default async function HomePage() {
                 event="whatsapp_click"
                 eventLabel="destaque-vazio"
                 href={contactHref}
-                className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+                className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#075E54] px-6 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
               >
-                WhatsApp
+                <MessageCircle className="size-4" aria-hidden />
+                Falar no WhatsApp
               </TrackedAnchor>
             )}
           </div>
@@ -213,27 +215,34 @@ export default async function HomePage() {
       <SocialProof />
 
       <section id="sobre" className="scroll-mt-16 bg-white">
-        <div className="mx-auto grid w-full max-w-[90rem] items-center gap-6 px-4 py-8 md:gap-10 md:px-8 md:py-16 lg:grid-cols-2 2xl:max-w-[110rem]">
-          {aboutImage && (
-            <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-[#10294B]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+        <div className="mx-auto grid w-full max-w-[90rem] items-center gap-8 px-4 py-12 md:gap-12 md:px-8 md:py-20 lg:grid-cols-2 2xl:max-w-[110rem]">
+          <div className="relative min-h-72 overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)]">
+            {aboutImage && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={aboutImage}
                 alt=""
                 width={960}
                 height={720}
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover opacity-45"
                 loading="lazy"
                 decoding="async"
               />
+            )}
+            <div className="relative flex h-full min-h-72 flex-col justify-end p-8 md:p-10">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#DEAE5D]">{name}</p>
+              <p className="mt-4 max-w-md text-3xl font-extrabold leading-[1.05] tracking-tight text-white md:text-5xl">
+                Mais que imóveis. Realizamos histórias.
+              </p>
             </div>
-          )}
+          </div>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[#000C24] md:text-4xl">{aboutTitle}</h2>
-            <p className="mt-4 whitespace-pre-wrap text-base leading-relaxed text-[#10294B]">{aboutText}</p>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a2f]">Posicionamento</p>
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#000C24] md:text-4xl">{aboutTitle}</h2>
+            <p className="mt-5 whitespace-pre-wrap text-base leading-relaxed text-[#10294B] md:text-lg">{aboutText}</p>
+            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
               {differentials.map((item) => (
-                <li key={item} className="rounded-2xl border-t-4 border-[#C09048] bg-[#F8F9FA] p-4 text-sm font-semibold text-[#000C24]">
+                <li key={item} className="rounded-2xl border-t-4 border-[#C09048] bg-[#F6F1E8] p-4 text-sm font-semibold text-[#000C24]">
                   {item}
                 </li>
               ))}
@@ -245,14 +254,15 @@ export default async function HomePage() {
                 href={contactHref}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+                className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#075E54] px-6 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
               >
-                Falar com a imobiliária
+                <MessageCircle className="size-4" aria-hidden />
+                Falar no WhatsApp
               </TrackedAnchor>
             ) : (
               <a
                 href="#whatsapp"
-                className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+                className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
               >
                 Falar com a imobiliária
               </a>

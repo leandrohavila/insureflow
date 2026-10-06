@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { MapPin, MessageCircle, Share2 } from "lucide-react";
 
 import { PropertyGallery } from "@/components/property-gallery";
 import { RealEstateListingJsonLd } from "@/components/listing-jsonld";
@@ -9,11 +10,22 @@ import { SourceBanner } from "@/components/source-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { TrackedAnchor, TrackedLink } from "@/components/tracked-link";
-import { propertyWhatsappHref } from "@/lib/commercial";
+import { propertyShareHref, propertyWhatsappHref } from "@/lib/commercial";
 import { CatalogNotFoundError } from "@/lib/errors";
 import { OG_IMAGE_PATH } from "@/lib/seo";
 import { toAbsoluteUrl } from "@/lib/site";
-import { cn, formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
+import {
+  cn,
+  formatArea,
+  formatBathrooms,
+  formatParking,
+  formatPrice,
+  formatRooms,
+  isExclusiveListing,
+  purposeLabel,
+  resolveCover,
+  typeLabel,
+} from "@/lib/utils";
 import { getPortalHome, getPropertyBySlug } from "@/services/catalog";
 
 export const dynamic = "force-dynamic";
@@ -102,26 +114,49 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           ← Voltar à listagem
         </Link>
         <PropertyGallery images={property.images ?? []} title={property.title} />
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
+          {property.featured === true && (
+            <Badge className="bg-[#DEAE5D] font-bold text-[#000C24]">Destaque</Badge>
+          )}
+          {isExclusiveListing(property.features) && (
+            <Badge className="bg-[#000C24] font-bold text-[#DEAE5D]">Exclusivo</Badge>
+          )}
           <Badge>{purposeLabel(property.purpose)}</Badge>
           <Badge>{typeLabel(property.type)}</Badge>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{property.title}</h1>
-        <p className="text-2xl font-bold text-[#000C24]">{formatPrice(property.price)}</p>
+        <h1 className="text-2xl font-semibold tracking-tight md:text-4xl">{property.title}</h1>
+        <p className="text-3xl font-extrabold tracking-tight text-[#7F5209] md:text-4xl">{formatPrice(property.price)}</p>
         {property.publicCode && (
           <p className="text-sm font-semibold text-[#10294B]">Cód. {property.publicCode}</p>
         )}
-        <p className="text-sm font-medium text-[#10294B]">{location}</p>
-        <p className="text-sm text-muted-foreground">
+        {location && (
+          <p className="inline-flex w-fit max-w-full items-start gap-2 rounded-full bg-[#F6F1E8] px-3 py-1.5 text-sm font-semibold text-[#000C24]">
+            <MapPin className="mt-0.5 size-4 shrink-0 text-[#8a6a2f]" aria-hidden />
+            {location}
+          </p>
+        )}
+        <p className="text-sm font-medium text-[#10294B]">
           {[
-            property.bedrooms != null ? `${property.bedrooms} quartos` : null,
-            property.bathrooms != null ? `${property.bathrooms} banheiros` : null,
-            property.parkingSpots != null ? `${property.parkingSpots} vagas` : null,
-            property.areaM2 != null ? `${property.areaM2} m²` : null,
+            property.bedrooms != null ? formatRooms(property.bedrooms) : null,
+            property.bathrooms != null ? formatBathrooms(property.bathrooms) : null,
+            property.parkingSpots != null ? formatParking(property.parkingSpots) : null,
+            property.areaM2 != null ? formatArea(property.areaM2) : null,
           ]
             .filter(Boolean)
             .join(" · ")}
         </p>
+        <TrackedAnchor
+          event="whatsapp_click"
+          eventLabel="compartilhar-detalhe"
+          propertySlug={property.slug}
+          href={propertyShareHref(property)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-[#E6E8EC] bg-white px-4 text-sm font-semibold text-[#000C24] hover:border-[#C09048]"
+        >
+          <Share2 className="size-4" aria-hidden />
+          Compartilhar imóvel
+        </TrackedAnchor>
         {property.primaryOwner?.name && (
           <p className="text-sm text-muted-foreground">
             Proprietário: {property.primaryOwner.name}
@@ -156,8 +191,9 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 href={whatsapp}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#075E54] px-2 text-sm font-semibold text-white"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-2 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
               >
+                <MessageCircle className="size-4" aria-hidden />
                 WhatsApp
               </TrackedAnchor>
             )}

@@ -2,13 +2,15 @@ import { MessageCircle, Share2 } from "lucide-react";
 
 import { TrackedAnchor } from "@/components/tracked-link";
 import { attendanceWhatsappHref, companyName } from "@/lib/commercial";
+import { formatPhoneBR, formatWhatsAppDisplay } from "@/lib/utils";
 import { whatsappShareHref } from "@/lib/seo";
 import type { PortalConfig } from "@/types/property";
 
 export function WhatsAppHighlight({ config }: { config: PortalConfig | null }) {
   const name = companyName(config);
   const direct = attendanceWhatsappHref(config?.whatsapp, name);
-  const phone = config?.phone?.trim() || null;
+  const phone = formatPhoneBR(config?.phone);
+  const whatsappNumber = formatWhatsAppDisplay(config?.whatsapp);
   const share = whatsappShareHref();
 
   return (
@@ -25,7 +27,12 @@ export function WhatsAppHighlight({ config }: { config: PortalConfig | null }) {
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/90 md:text-base">
           Envie o bairro, se quer comprar ou alugar, e o tipo de imóvel. A {name} responde com opções de Uberaba.
         </p>
-        {phone && <p className="mt-3 text-sm font-semibold text-[#DEAE5D]">{phone}</p>}
+        {(phone || whatsappNumber) && (
+          <div className="mt-4 space-y-1 text-sm font-semibold text-[#DEAE5D]">
+            {phone && <p>Telefone {phone}</p>}
+            {whatsappNumber && <p>WhatsApp {whatsappNumber}</p>}
+          </div>
+        )}
         <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
           {direct ? (
             <TrackedAnchor
@@ -34,7 +41,7 @@ export function WhatsAppHighlight({ config }: { config: PortalConfig | null }) {
               href={direct}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+              className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-7 text-base font-semibold text-white shadow-[0_16px_36px_-14px_rgba(7,94,84,.9)] hover:bg-[#0b7a6e]"
             >
               <MessageCircle className="size-4" aria-hidden />
               Chamar no WhatsApp
