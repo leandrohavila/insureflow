@@ -16,13 +16,13 @@ import { WhatsAppHighlight } from "@/components/whatsapp-highlight";
 import {
   ABOUT_TEXT_FALLBACK,
   CATEGORY_LINKS,
+  aboutSectionTitle,
+  attendanceWhatsappHref,
   companyName,
   portalDifferentials,
-  whatsappHref,
 } from "@/lib/commercial";
 import { SITE_DESCRIPTION, SITE_TITLE } from "@/lib/seo";
 import { getFacets, getPortalHome, listHighlights, listLaunches, listProperties } from "@/services/catalog";
-import type { PortalConfig } from "@/types/property";
 
 export const dynamic = "force-dynamic";
 
@@ -48,16 +48,6 @@ const HOME_CATEGORIES = [
   { slug: "lancamentos", type: "LAUNCH", label: "Lançamentos", href: "/#lancamentos" },
 ] as const;
 
-function brokerHref(config: PortalConfig | null, name: string) {
-  if (config?.whatsapp) {
-    return whatsappHref(config.whatsapp, `Olá, quero falar com a ${name}.`);
-  }
-  const phone = config?.phone?.replace(/\D/g, "");
-  if (phone) return `tel:${phone}`;
-  if (config?.email?.trim()) return `mailto:${config.email.trim()}`;
-  return null;
-}
-
 export default async function HomePage() {
   const [portal, highlights, launches, facets, catalog] = await Promise.all([
     getPortalHome(),
@@ -70,8 +60,8 @@ export default async function HomePage() {
   const title = config?.heroTitle?.trim() || "Encontre o imóvel certo em Uberaba";
   const subtitle = config?.heroSubtitle?.trim() || SITE_DESCRIPTION;
   const name = companyName(config);
-  const contactHref = brokerHref(config, name);
-  const aboutTitle = config?.aboutTitle?.trim() || `Sobre a ${name}`;
+  const contactHref = attendanceWhatsappHref(config?.whatsapp, name);
+  const aboutTitle = aboutSectionTitle(config, name);
   const creci = config?.creci?.trim() || null;
   const aboutText = config?.aboutText?.trim() || ABOUT_TEXT_FALLBACK;
   const aboutImage = config?.aboutImage?.trim() || config?.heroImage?.trim() || null;
@@ -119,8 +109,8 @@ export default async function HomePage() {
                   event="whatsapp_click"
                   eventLabel="hero"
                   href={contactHref}
-                  target={contactHref.startsWith("http") ? "_blank" : undefined}
-                  rel={contactHref.startsWith("http") ? "noreferrer" : undefined}
+                  target="_blank"
+                  rel="noreferrer"
                   className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:border-[#DEAE5D] hover:text-[#DEAE5D] sm:flex-none"
                 >
                   <MessageCircle className="size-4" aria-hidden />
@@ -248,12 +238,25 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
-            <a
-              href="#whatsapp"
-              className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
-            >
-              Falar com a imobiliária
-            </a>
+            {contactHref ? (
+              <TrackedAnchor
+                event="whatsapp_click"
+                eventLabel="sobre"
+                href={contactHref}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+              >
+                Falar com a imobiliária
+              </TrackedAnchor>
+            ) : (
+              <a
+                href="#whatsapp"
+                className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
+              >
+                Falar com a imobiliária
+              </a>
+            )}
           </div>
         </div>
       </section>

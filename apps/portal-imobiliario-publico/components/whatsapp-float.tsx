@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { TrackedAnchor } from "@/components/tracked-link";
-import { whatsappHref } from "@/lib/commercial";
+import { attendanceWhatsappHref } from "@/lib/commercial";
 
 function WhatsAppIcon() {
   return (
@@ -21,7 +21,7 @@ export function WhatsAppFloat({
   companyName: string;
 }) {
   const pathname = usePathname();
-  const href = phone ? whatsappHref(phone, `Olá, quero falar com a ${companyName}.`) : null;
+  const href = attendanceWhatsappHref(phone, companyName);
   if (!href) return null;
 
   const aboveDetailBar = /^\/imoveis\/[^/]+$/.test(pathname);

@@ -37,10 +37,10 @@ export function InstitutionalStats({
 
   if (compact) {
     return (
-      <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Resumo da imobiliária">
+      <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4" aria-label="Resumo da imobiliária">
         {items.map((item) => (
-          <li key={item.label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3">
-            <p className="text-lg font-extrabold leading-none text-white">{item.value}</p>
+          <li key={item.label} className="min-w-0 rounded-2xl border border-white/15 bg-white/10 px-3 py-3">
+            <p className="break-words text-base font-extrabold leading-tight text-white sm:text-lg">{item.value}</p>
             <p className="mt-1 text-xs font-medium text-white/75">{item.label}</p>
           </li>
         ))}

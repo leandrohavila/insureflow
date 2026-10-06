@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { TrackedAnchor } from "@/components/tracked-link";
-import { companyName, socialHref, whatsappHref } from "@/lib/commercial";
+import { attendanceWhatsappHref, companyName, socialHref } from "@/lib/commercial";
 import { whatsappShareHref } from "@/lib/seo";
 import { LOCAL_SEO_PATHS, UBERABA_LANDINGS } from "@/lib/uberaba";
 import type { PortalConfig } from "@/types/property";
@@ -17,7 +17,7 @@ const QUICK_LINKS = [
 
 export function SiteFooter({ config }: { config: PortalConfig | null }) {
   const name = companyName(config);
-  const whatsapp = config?.whatsapp ? whatsappHref(config.whatsapp, `Olá, quero falar com a ${name}.`) : null;
+  const whatsapp = attendanceWhatsappHref(config?.whatsapp, name);
   const instagram = socialHref(config?.instagram);
   const facebook = socialHref(config?.facebook);
   const youtube = socialHref(config?.youtube);

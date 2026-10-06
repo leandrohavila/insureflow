@@ -69,7 +69,7 @@ export function HeroFeaturedCard({ property }: { property: PublicProperty | null
             <span className="truncate">{place}</span>
           </p>
         )}
-        <h2 className="line-clamp-2 text-lg font-semibold leading-snug">{property.title}</h2>
+        <p className="line-clamp-2 text-lg font-semibold leading-snug">{property.title}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/75">
           <span className="font-medium uppercase tracking-wide">
             {typeLabel(property.type)} · {purposeLabel(property.purpose)}

@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand-logo";
-import { companyName } from "@/lib/commercial";
+import { TrackedAnchor } from "@/components/tracked-link";
+import { attendanceWhatsappHref, companyName } from "@/lib/commercial";
 import { cn } from "@/lib/utils";
 import type { PortalConfig } from "@/types/property";
 
@@ -15,8 +16,7 @@ const LINKS = [
   { href: "/comprar", label: "Comprar" },
   { href: "/alugar", label: "Alugar" },
   { href: "/#sobre", label: "Sobre" },
-  { href: "/#whatsapp", label: "WhatsApp" },
-];
+] as const;
 
 export function SiteHeader({
   config,
@@ -28,6 +28,9 @@ export function SiteHeader({
   const [open, setOpen] = useState(false);
   const name = companyName(config);
   const creci = config?.creci?.trim() || null;
+  const whatsapp = attendanceWhatsappHref(config?.whatsapp, name);
+  const linkClass = "inline-flex min-h-11 items-center hover:text-[#DEAE5D]";
+  const menuLinkClass = "flex min-h-11 items-center text-sm text-white hover:text-[#DEAE5D]";
 
   return (
     <header
@@ -47,10 +50,26 @@ export function SiteHeader({
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-white/90 lg:flex">
           {LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="inline-flex min-h-11 items-center hover:text-[#DEAE5D]">
+            <Link key={link.href} href={link.href} className={linkClass}>
               {link.label}
             </Link>
           ))}
+          {whatsapp ? (
+            <TrackedAnchor
+              event="whatsapp_click"
+              eventLabel="menu"
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className={linkClass}
+            >
+              WhatsApp
+            </TrackedAnchor>
+          ) : (
+            <Link href="/#whatsapp" className={linkClass}>
+              WhatsApp
+            </Link>
+          )}
         </nav>
         <button
           type="button"
@@ -70,12 +89,29 @@ export function SiteHeader({
             <Link
               key={link.href}
               href={link.href}
-              className="flex min-h-11 items-center text-sm text-white hover:text-[#DEAE5D]"
+              className={menuLinkClass}
               onClick={() => setOpen(false)}
             >
               {link.label}
             </Link>
           ))}
+          {whatsapp ? (
+            <TrackedAnchor
+              event="whatsapp_click"
+              eventLabel="menu"
+              href={whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className={menuLinkClass}
+              onClick={() => setOpen(false)}
+            >
+              WhatsApp
+            </TrackedAnchor>
+          ) : (
+            <Link href="/#whatsapp" className={menuLinkClass} onClick={() => setOpen(false)}>
+              WhatsApp
+            </Link>
+          )}
         </nav>
       )}
     </header>

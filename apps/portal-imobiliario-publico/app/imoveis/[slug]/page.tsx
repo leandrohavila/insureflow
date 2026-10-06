@@ -9,7 +9,7 @@ import { SourceBanner } from "@/components/source-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { TrackedAnchor, TrackedLink } from "@/components/tracked-link";
-import { whatsappHref } from "@/lib/commercial";
+import { propertyWhatsappHref } from "@/lib/commercial";
 import { CatalogNotFoundError } from "@/lib/errors";
 import { OG_IMAGE_PATH } from "@/lib/seo";
 import { toAbsoluteUrl } from "@/lib/site";
@@ -90,12 +90,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     const features = property.features ?? [];
 
     const portal = await getPortalHome();
-    const whatsapp = portal.data.config?.whatsapp
-      ? whatsappHref(
-          portal.data.config.whatsapp,
-          `Olá, tenho interesse no imóvel ${property.title} (cód. ${property.publicCode || property.slug}).`,
-        )
-      : null;
+    const whatsapp = propertyWhatsappHref(portal.data.config?.whatsapp, property);
 
     return (
       <>

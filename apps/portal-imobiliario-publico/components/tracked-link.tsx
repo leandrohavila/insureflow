@@ -20,6 +20,7 @@ export function TrackedLink({
   href,
   children,
   className,
+  onClick,
   ...props
 }: TrackProps & Omit<ComponentProps<typeof Link>, "href" | "className" | "children"> & { href: string }) {
   return (
@@ -28,14 +29,15 @@ export function TrackedLink({
       className={className}
       {...props}
       data-portal-event={event}
-      onClick={() =>
+      onClick={(clickEvent) => {
+        onClick?.(clickEvent);
         trackPortalEvent({
           event,
           label: eventLabel,
           href,
           propertySlug,
-        })
-      }
+        });
+      }}
     >
       {children}
     </Link>
@@ -49,6 +51,7 @@ export function TrackedAnchor({
   href,
   children,
   className,
+  onClick,
   ...props
 }: TrackProps & Omit<ComponentProps<"a">, "href" | "className" | "children"> & { href: string }) {
   return (
@@ -57,14 +60,15 @@ export function TrackedAnchor({
       className={className}
       {...props}
       data-portal-event={event}
-      onClick={() =>
+      onClick={(clickEvent) => {
+        onClick?.(clickEvent);
         trackPortalEvent({
           event,
           label: eventLabel,
           href,
           propertySlug,
-        })
-      }
+        });
+      }}
     >
       {children}
     </a>

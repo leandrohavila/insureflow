@@ -1,15 +1,13 @@
 import { MessageCircle, Share2 } from "lucide-react";
 
 import { TrackedAnchor } from "@/components/tracked-link";
-import { companyName, whatsappHref } from "@/lib/commercial";
+import { attendanceWhatsappHref, companyName } from "@/lib/commercial";
 import { whatsappShareHref } from "@/lib/seo";
 import type { PortalConfig } from "@/types/property";
 
 export function WhatsAppHighlight({ config }: { config: PortalConfig | null }) {
   const name = companyName(config);
-  const direct = config?.whatsapp
-    ? whatsappHref(config.whatsapp, `Olá, quero falar com a ${name} sobre um imóvel em Uberaba.`)
-    : null;
+  const direct = attendanceWhatsappHref(config?.whatsapp, name);
   const phone = config?.phone?.trim() || null;
   const share = whatsappShareHref();
 
