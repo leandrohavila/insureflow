@@ -1,25 +1,44 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand-logo";
+import { TrackedAnchor } from "@/components/tracked-link";
 import { companyName, socialHref, whatsappHref } from "@/lib/commercial";
+import { whatsappShareHref } from "@/lib/seo";
+import { LOCAL_SEO_PATHS, UBERABA_LANDINGS } from "@/lib/uberaba";
 import type { PortalConfig } from "@/types/property";
+
+const QUICK_LINKS = [
+  { href: "/imoveis", label: "Imóveis" },
+  { href: "/comprar", label: "Comprar" },
+  { href: "/alugar", label: "Alugar" },
+  { href: "/#sobre", label: "Sobre" },
+  { href: "/#whatsapp", label: "WhatsApp" },
+] as const;
 
 export function SiteFooter({ config }: { config: PortalConfig | null }) {
   const name = companyName(config);
-  const whatsapp = config?.whatsapp ? whatsappHref(config.whatsapp) : null;
+  const whatsapp = config?.whatsapp ? whatsappHref(config.whatsapp, `Olá, quero falar com a ${name}.`) : null;
   const instagram = socialHref(config?.instagram);
   const facebook = socialHref(config?.facebook);
   const youtube = socialHref(config?.youtube);
   const phone = config?.phone?.trim() || null;
   const email = config?.email?.trim() || null;
+  const address = config?.address?.trim() || "Uberaba, MG";
+  const mapQuery = encodeURIComponent(address);
+  const localLinks = UBERABA_LANDINGS.filter((item) =>
+    (LOCAL_SEO_PATHS as readonly string[]).includes(item.path),
+  );
 
   return (
     <footer className="bg-[#000C24] text-white">
-      <div className="mx-auto grid w-full max-w-[90rem] gap-8 px-4 py-10 md:grid-cols-3 md:gap-10 md:px-8 md:py-14 2xl:max-w-[110rem]">
-        <div className="space-y-3 md:col-span-3">
+      <div className="mx-auto grid w-full max-w-[90rem] gap-10 px-4 py-10 md:grid-cols-2 md:px-8 md:py-14 lg:grid-cols-4 2xl:max-w-[110rem]">
+        <div className="space-y-3">
           <BrandLogo src={config?.logoUrl} name={name} plate className="text-base" />
+          <p className="text-sm leading-relaxed text-white/85">
+            Imobiliária em Uberaba para compra, venda e aluguel.
+          </p>
           {config?.creci && <p className="text-sm text-white/90">CRECI {config.creci}</p>}
-          {config?.address && <p className="text-sm text-white/90">{config.address}</p>}
+          <p className="text-sm text-white/90">{address}</p>
         </div>
         <div className="space-y-2 text-sm">
           <p className="font-semibold text-[#DEAE5D]">Contato</p>
@@ -29,10 +48,27 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
             </a>
           )}
           {whatsapp && (
-            <a href={whatsapp} className="flex min-h-11 items-center hover:text-[#DEAE5D]" target="_blank" rel="noreferrer">
+            <TrackedAnchor
+              event="whatsapp_click"
+              eventLabel="rodape"
+              href={whatsapp}
+              className="flex min-h-11 items-center hover:text-[#DEAE5D]"
+              target="_blank"
+              rel="noreferrer"
+            >
               WhatsApp
-            </a>
+            </TrackedAnchor>
           )}
+          <TrackedAnchor
+            event="whatsapp_click"
+            eventLabel="compartilhar-rodape"
+            href={whatsappShareHref()}
+            className="flex min-h-11 items-center hover:text-[#DEAE5D]"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Compartilhar no WhatsApp
+          </TrackedAnchor>
           {email && (
             <a href={`mailto:${email}`} className="flex min-h-11 items-center break-all hover:text-[#DEAE5D]">
               {email}
@@ -40,7 +76,18 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
           )}
         </div>
         <div className="space-y-2 text-sm">
-          <p className="font-semibold text-[#DEAE5D]">Redes</p>
+          <p className="font-semibold text-[#DEAE5D]">Links rápidos</p>
+          {QUICK_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="flex min-h-11 items-center hover:text-[#DEAE5D]">
+              {link.label}
+            </Link>
+          ))}
+          {localLinks.map((link) => (
+            <Link key={link.path} href={link.path} className="flex min-h-11 items-center hover:text-[#DEAE5D]">
+              {link.title}
+            </Link>
+          ))}
+          <p className="pt-3 font-semibold text-[#DEAE5D]">Redes sociais</p>
           {instagram && (
             <a href={instagram} className="flex min-h-11 items-center hover:text-[#DEAE5D]" target="_blank" rel="noreferrer">
               Instagram
@@ -56,18 +103,29 @@ export function SiteFooter({ config }: { config: PortalConfig | null }) {
               YouTube
             </a>
           )}
+          {!instagram && !facebook && !youtube && (
+            <p className="text-white/70">As redes aparecem quando estiverem cadastradas no portal.</p>
+          )}
         </div>
-        <div className="space-y-2 text-sm">
-          <p className="font-semibold text-[#DEAE5D]">Institucional</p>
-          <Link href="/imoveis" className="flex min-h-11 items-center hover:text-[#DEAE5D]">
-            Imóveis
-          </Link>
-          <Link href="/#sobre" className="flex min-h-11 items-center hover:text-[#DEAE5D]">
-            Sobre
-          </Link>
-          <Link href="/#contato" className="flex min-h-11 items-center hover:text-[#DEAE5D]">
-            Falar com um corretor
-          </Link>
+        <div className="space-y-3 text-sm">
+          <p className="font-semibold text-[#DEAE5D]">Mapa</p>
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+            <iframe
+              title={`Mapa de ${name} em Uberaba`}
+              src={`https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`}
+              className="h-48 w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+            className="inline-flex min-h-11 items-center hover:text-[#DEAE5D]"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Abrir mapa
+          </a>
         </div>
       </div>
       <div className="border-t border-white/10">

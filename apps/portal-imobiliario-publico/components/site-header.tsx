@@ -12,9 +12,10 @@ import type { PortalConfig } from "@/types/property";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/imoveis", label: "Imóveis" },
-  { href: "/#lancamentos", label: "Lançamentos" },
+  { href: "/comprar", label: "Comprar" },
+  { href: "/alugar", label: "Alugar" },
   { href: "/#sobre", label: "Sobre" },
-  { href: "/#contato", label: "Contato" },
+  { href: "/#whatsapp", label: "WhatsApp" },
 ];
 
 export function SiteHeader({

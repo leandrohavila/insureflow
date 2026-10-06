@@ -8,8 +8,10 @@ import { SiteHeader } from "@/components/site-header";
 import { SourceBanner } from "@/components/source-banner";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { TrackedAnchor, TrackedLink } from "@/components/tracked-link";
 import { whatsappHref } from "@/lib/commercial";
 import { CatalogNotFoundError } from "@/lib/errors";
+import { OG_IMAGE_PATH } from "@/lib/seo";
 import { toAbsoluteUrl } from "@/lib/site";
 import { cn, formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
 import { getPortalHome, getPropertyBySlug } from "@/services/catalog";
@@ -51,20 +53,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description,
         type: "website",
         locale: "pt_BR",
-        images: cover
-          ? [
-              {
-                url: toAbsoluteUrl(cover.url),
-                alt: cover.alt ?? property.title,
-              },
-            ]
-          : undefined,
+        images: [
+          cover
+            ? { url: toAbsoluteUrl(cover.url), alt: cover.alt ?? property.title }
+            : { url: toAbsoluteUrl(OG_IMAGE_PATH), alt: "Grupo Ávila Imóveis" },
+        ],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images: cover ? [toAbsoluteUrl(cover.url)] : undefined,
+        images: [cover ? toAbsoluteUrl(cover.url) : toAbsoluteUrl(OG_IMAGE_PATH)],
       },
     };
   } catch {
@@ -155,27 +154,36 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
           >
             {whatsapp && (
-              <a
+              <TrackedAnchor
+                event="whatsapp_click"
+                eventLabel="detalhe-imovel"
+                propertySlug={property.slug}
                 href={whatsapp}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#075E54] px-2 text-sm font-semibold text-white"
               >
                 WhatsApp
-              </a>
+              </TrackedAnchor>
             )}
-            <Link
+            <TrackedLink
+              event="interest_click"
+              eventLabel="detalhe-imovel"
+              propertySlug={property.slug}
               href={`/imoveis/${property.slug}/interesse`}
               className={cn(buttonVariants(), "inline-flex min-h-12 px-2 text-sm")}
             >
               Tenho interesse
-            </Link>
-            <Link
+            </TrackedLink>
+            <TrackedLink
+              event="visit_click"
+              eventLabel="detalhe-imovel"
+              propertySlug={property.slug}
               href={`/imoveis/${property.slug}/interesse?intent=visita`}
               className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#000C24] px-2 text-sm font-semibold text-[#000C24]"
             >
               Agendar visita
-            </Link>
+            </TrackedLink>
           </div>
         </div>
       </div>

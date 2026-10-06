@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
+import { TrackedAnchor } from "@/components/tracked-link";
 import { whatsappHref } from "@/lib/commercial";
 
 function WhatsAppIcon() {
@@ -26,7 +27,9 @@ export function WhatsAppFloat({
   const aboveDetailBar = /^\/imoveis\/[^/]+$/.test(pathname);
 
   return (
-    <a
+    <TrackedAnchor
+      event="whatsapp_click"
+      eventLabel="botao-flutuante"
       href={href}
       target="_blank"
       rel="noreferrer"
@@ -34,6 +37,6 @@ export function WhatsAppFloat({
       className={`whatsapp-float fixed z-40 inline-flex size-14 items-center justify-center rounded-full bg-[#075E54] text-white shadow-[0_8px_24px_rgba(0,12,36,.28)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#DEAE5D] ${aboveDetailBar ? "whatsapp-float-detail" : ""}`}
     >
       <WhatsAppIcon />
-    </a>
+    </TrackedAnchor>
   );
 }

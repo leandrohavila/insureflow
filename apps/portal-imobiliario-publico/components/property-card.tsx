@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2 } from "lucide-react";
+import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2, MessageCircle } from "lucide-react";
 
+import { TrackedAnchor } from "@/components/tracked-link";
+import { whatsappHref } from "@/lib/commercial";
 import { formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
 import type { PublicProperty } from "@/types/property";
 
@@ -30,9 +32,11 @@ export function PropertyCardSkeleton() {
 export function PropertyCard({
   property,
   priority = false,
+  whatsappPhone,
 }: {
   property: PublicProperty;
   priority?: boolean;
+  whatsappPhone?: string | null;
 }) {
   const cover = resolveCover(property);
   const rooms = [
@@ -42,12 +46,18 @@ export function PropertyCard({
   ].filter((spec) => spec != null);
   const place = [property.neighborhood, property.city].filter(Boolean).join(" • ");
   const price = formatPrice(property.price);
+  const whatsapp = whatsappPhone
+    ? whatsappHref(
+        whatsappPhone,
+        `Olá, tenho interesse no imóvel ${property.title} (cód. ${property.publicCode || property.slug}).`,
+      )
+    : null;
 
   return (
-    <article className="h-full min-w-0">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none">
       <Link
         href={`/imoveis/${property.slug}`}
-        className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C09048] focus-visible:ring-offset-2 motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none"
+        className="flex min-w-0 flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C09048] focus-visible:ring-offset-2"
       >
         <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-[#E6E8EC]">
           {cover ? (
@@ -117,17 +127,31 @@ export function PropertyCard({
               )}
             </div>
           )}
-          <div className="mt-auto pt-5">
-            <span className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#000C24] text-sm font-semibold text-white transition-colors duration-[400ms] group-hover:bg-[#C09048] group-hover:text-[#000C24] motion-reduce:transition-none">
-              Ver imóvel
-              <ArrowRight
-                className="size-4 transition-transform duration-[400ms] motion-safe:group-hover:translate-x-1 motion-reduce:transition-none"
-                aria-hidden
-              />
-            </span>
-          </div>
         </div>
       </Link>
+      <div className={`grid gap-2 px-5 pb-5 ${whatsapp ? "grid-cols-2" : "grid-cols-1"}`}>
+        <Link
+          href={`/imoveis/${property.slug}`}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#000C24] px-3 text-sm font-semibold text-white transition-colors duration-[400ms] hover:bg-[#C09048] hover:text-[#000C24] motion-reduce:transition-none"
+        >
+          Ver detalhes
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
+        {whatsapp && (
+          <TrackedAnchor
+            event="whatsapp_click"
+            eventLabel="card-imovel"
+            propertySlug={property.slug}
+            href={whatsapp}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-3 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
+          >
+            <MessageCircle className="size-4" aria-hidden />
+            WhatsApp
+          </TrackedAnchor>
+        )}
+      </div>
     </article>
   );
 }

@@ -31,7 +31,7 @@ export const DIFFERENTIAL_FALLBACK = [
 ] as const;
 
 export function companyName(config: PortalConfig | null) {
-  return config?.companyName?.trim() || "Imobiliária";
+  return config?.companyName?.trim() || "Grupo Ávila Imóveis";
 }
 
 export function portalDifferentials(config: PortalConfig | null) {

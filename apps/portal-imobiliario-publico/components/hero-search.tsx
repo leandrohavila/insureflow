@@ -5,8 +5,8 @@ import { Search } from "lucide-react";
 
 import { SearchSheet } from "@/components/search-sheet";
 import { codeOnlyHref } from "@/lib/property-code";
-import { cn, purposeLabel, typeLabel } from "@/lib/utils";
-import { PROPERTY_PURPOSES, PROPERTY_TYPES, type CatalogFacets, type PropertyListQuery } from "@/types/property";
+import { cn, typeLabel } from "@/lib/utils";
+import { PROPERTY_TYPES, type CatalogFacets, type PropertyListQuery } from "@/types/property";
 
 const controlClass =
   "h-12 w-full rounded-xl border border-[#E6E8EC] bg-[#F8F9FA] px-3 text-base text-[#000C24] outline-none transition-colors focus-visible:border-[#DEAE5D] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-[#DEAE5D]/60 md:text-sm";
@@ -40,48 +40,17 @@ function SearchForm({
       }}
     >
       <label htmlFor={`${idPrefix}-purpose`} className={labelClass}>
-        Finalidade
+        Comprar ou alugar
         <select
           id={`${idPrefix}-purpose`}
           name="purpose"
           defaultValue={defaults?.purpose ?? ""}
           className={controlClass}
         >
-          <option value="">Todas</option>
-          {PROPERTY_PURPOSES.map((purpose) => (
-            <option key={purpose} value={purpose}>
-              {purposeLabel(purpose)}
-            </option>
-          ))}
+          <option value="">Comprar ou alugar</option>
+          <option value="SALE">Comprar</option>
+          <option value="RENT">Alugar</option>
         </select>
-      </label>
-      <label htmlFor={`${idPrefix}-type`} className={labelClass}>
-        Tipo
-        <select id={`${idPrefix}-type`} name="type" defaultValue={defaults?.type ?? ""} className={controlClass}>
-          <option value="">Todos</option>
-          {PROPERTY_TYPES.filter((type) => type !== "OTHER").map((type) => (
-            <option key={type} value={type}>
-              {typeLabel(type)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label htmlFor={`${idPrefix}-city`} className={labelClass}>
-        Cidade
-        <input
-          id={`${idPrefix}-city`}
-          name="city"
-          list={`${idPrefix}-cities`}
-          defaultValue={defaults?.city ?? ""}
-          enterKeyHint="search"
-          autoComplete="address-level2"
-          className={controlClass}
-        />
-        <datalist id={`${idPrefix}-cities`}>
-          {facets.cities.map((item) => (
-            <option key={item.name} value={item.name} />
-          ))}
-        </datalist>
       </label>
       <label htmlFor={`${idPrefix}-neighborhood`} className={labelClass}>
         Bairro
@@ -99,6 +68,17 @@ function SearchForm({
             <option key={item.slug} value={item.name} />
           ))}
         </datalist>
+      </label>
+      <label htmlFor={`${idPrefix}-type`} className={labelClass}>
+        Tipo
+        <select id={`${idPrefix}-type`} name="type" defaultValue={defaults?.type ?? ""} className={controlClass}>
+          <option value="">Todos</option>
+          {PROPERTY_TYPES.filter((type) => type !== "OTHER").map((type) => (
+            <option key={type} value={type}>
+              {typeLabel(type)}
+            </option>
+          ))}
+        </select>
       </label>
       <label htmlFor={`${idPrefix}-price-min`} className={labelClass}>
         Valor mínimo
@@ -176,7 +156,7 @@ export function HeroSearch({
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">Buscar imóveis</span>
             <span className="block truncate text-xs font-medium text-[#10294B]/80">
-              Finalidade, tipo, cidade, bairro ou código
+              Comprar, alugar, bairro, tipo ou valor
             </span>
           </span>
         </button>
@@ -187,11 +167,11 @@ export function HeroSearch({
           defaults={defaults}
           action={action}
           idPrefix="hero"
-          className="md:grid-cols-3 xl:grid-cols-7"
+          className="md:grid-cols-2 xl:grid-cols-7"
         />
       </div>
       <SearchSheet open={open} onClose={() => setOpen(false)} title="Buscar imóveis">
-        <SearchForm facets={facets} defaults={defaults} action={action} idPrefix="hero-sheet" showCode />
+        <SearchForm facets={facets} defaults={defaults} action={action} idPrefix="hero-sheet" />
       </SearchSheet>
     </>
   );
