@@ -51,7 +51,7 @@ Não.
 | `mergedAt` | vazio |
 | `mergeCommit` | vazio |
 | Base | `main` |
-| Head | `cursor/sprint-9-portal-conversao-f4ed` em `311ae25` |
+| Head | `cursor/sprint-9-portal-conversao-f4ed`, não está em `main`. O commit de código verificado neste relatório é `311ae25` |
 | URL | https://github.com/leandrohavila/insureflow/pull/28 |
 
 ## 5. Para qual commit a produção aponta?
