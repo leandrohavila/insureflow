@@ -9,7 +9,7 @@ import { codeOnlyHref } from "@/lib/property-code";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { purposeLabel, typeLabel } from "@/lib/utils";
+import { formatPrice, purposeLabel, typeLabel } from "@/lib/utils";
 import { PROPERTY_PURPOSES, PROPERTY_TYPES, type PropertyListQuery } from "@/types/property";
 
 const PURPOSE_OPTIONS = [
@@ -31,8 +31,8 @@ function activeFilterLabels(query: PropertyListQuery) {
   if (query.city) items.push(query.city);
   if (query.neighborhood) items.push(query.neighborhood);
   if (query.code) items.push(`Cód. ${query.code}`);
-  if (query.priceMin) items.push(`Mín. ${query.priceMin}`);
-  if (query.priceMax) items.push(`Máx. ${query.priceMax}`);
+  if (query.priceMin) items.push(`Mín. ${formatPrice(query.priceMin)}`);
+  if (query.priceMax) items.push(`Máx. ${formatPrice(query.priceMax)}`);
   return items;
 }
 

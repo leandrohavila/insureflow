@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PropertyCard } from "@/components/property-card";
 import { SiteHeader } from "@/components/site-header";
 import { categoryBySlug } from "@/lib/commercial";
+import { pageMetadata } from "@/lib/seo";
 import { getPortalHome, listProperties } from "@/services/catalog";
 import type { PropertyType } from "@/types/property";
 
@@ -16,13 +17,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const category = categoryBySlug(slug);
   if (!category) return { title: "Categoria" };
-  const title = category.label;
-  const description = `${category.label} publicados no portal.`;
-  return {
-    title,
-    description,
-    openGraph: { title, description, locale: "pt_BR", type: "website" },
-  };
+  const title = `${category.label} em Uberaba`;
+  const description = `${category.label} à venda e para alugar em Uberaba.`;
+  return pageMetadata(title, description, `/imoveis/tipos/${category.slug}`);
 }
 
 export default async function CategoryPage({ params }: PageProps) {

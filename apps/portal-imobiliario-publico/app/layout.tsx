@@ -5,7 +5,7 @@ import { SplashScreen } from "@/components/layout/SplashScreen";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 import { companyName } from "@/lib/commercial";
-import { portalOrigin } from "@/lib/site";
+import { brandMetadata } from "@/lib/seo";
 import { splashBootScript } from "@/lib/splash";
 import { cn } from "@/lib/utils";
 import { getPortalHome } from "@/services/catalog";
@@ -34,22 +34,7 @@ function resourceOrigin(url: string | null | undefined) {
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const portal = await getPortalHome();
-  const name = companyName(portal.data.config);
-  const description = portal.data.config?.heroSubtitle?.trim() || `Portal de imóveis ${name}.`;
-  return {
-    metadataBase: new URL(portalOrigin()),
-    title: { default: name, template: `%s · ${name}` },
-    description,
-    openGraph: {
-      title: name,
-      description,
-      locale: "pt_BR",
-      type: "website",
-      siteName: name,
-    },
-    twitter: { card: "summary_large_image", title: name, description },
-  };
+  return brandMetadata();
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

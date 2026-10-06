@@ -1,10 +1,17 @@
 import { Suspense } from "react";
 
 import { PropertyListing } from "@/components/property-listing";
+import { seoMetadata } from "@/components/seo-catalog";
 import { SiteHeader } from "@/components/site-header";
 import { getPortalHome } from "@/services/catalog";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = seoMetadata(
+  "Imóveis em Uberaba",
+  "Casas, apartamentos, terrenos e imóveis comerciais à venda e para alugar em Uberaba.",
+  "/imoveis",
+);
 
 export default async function ListingPage() {
   const portal = await getPortalHome();
