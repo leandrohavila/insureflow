@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PropertyCard } from "@/components/property-card";
 import { SiteHeader } from "@/components/site-header";
+import { pageMetadata } from "@/lib/seo";
 import { getFacets, getPortalHome, listProperties } from "@/services/catalog";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!match) return { title: "Bairro" };
   const title = `Imóveis no ${match.name}`;
   const description = `${match.count} imóveis publicados no ${match.name}, ${match.city}.`;
-  return {
-    title,
-    description,
-    openGraph: { title, description, locale: "pt_BR", type: "website" },
-  };
+  return pageMetadata(title, description, `/imoveis/bairros/${match.slug}`);
 }
 
 export default async function NeighborhoodPage({ params }: PageProps) {

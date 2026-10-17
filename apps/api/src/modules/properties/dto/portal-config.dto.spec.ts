@@ -36,6 +36,34 @@ describe('UpsertPortalConfigDto', () => {
     },
   );
 
+  it('accepts an MP4 institutional video and a YouTube link', () => {
+    expect(
+      errorsFor({
+        institutionalVideo: {
+          active: true,
+          url: 'https://cdn.example.com/avila/institucional.mp4',
+          title: 'Institucional',
+          posterUrl: 'https://cdn.example.com/capa.jpg',
+          captionsUrl: 'https://cdn.example.com/legenda.vtt',
+        },
+      }),
+    ).toEqual([]);
+    expect(
+      errorsFor({
+        institutionalVideo: { active: true, url: 'https://youtu.be/dQw4w9WgXcQ' },
+      }),
+    ).toEqual([]);
+  });
+
+  it('rejects an active video without an allowed URL and arbitrary iframe origins', () => {
+    expect(errorsFor({ institutionalVideo: { active: true, url: '' } })).toEqual(['institutionalVideo']);
+    expect(
+      errorsFor({
+        institutionalVideo: { active: true, url: 'https://player.vimeo.com/video/1' },
+      }),
+    ).toEqual(['institutionalVideo']);
+  });
+
   it('treats blank slug and URL as not informed', () => {
     expect(errorsFor({ publicSlug: '  ', portalUrl: '' })).toEqual([]);
   });

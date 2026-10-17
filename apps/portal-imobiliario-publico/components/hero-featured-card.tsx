@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, BedDouble, Building2, MapPin, Maximize2, Sparkles } from "lucide-react";
 
-import { formatPrice, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
+import { formatArea, formatPrice, formatRooms, isExclusiveListing, purposeLabel, resolveCover, typeLabel } from "@/lib/utils";
 import type { PublicProperty } from "@/types/property";
 
 const glassClass =
@@ -29,9 +29,10 @@ export function HeroFeaturedCard({ property }: { property: PublicProperty | null
 
   const cover = resolveCover(property);
   const place = [property.neighborhood, property.city].filter(Boolean).join(" · ");
+  const exclusive = isExclusiveListing(property.features);
   const specs = [
-    property.bedrooms != null ? { icon: BedDouble, label: `${property.bedrooms} quartos` } : null,
-    property.areaM2 != null ? { icon: Maximize2, label: `${property.areaM2} m²` } : null,
+    property.bedrooms != null ? { icon: BedDouble, label: formatRooms(property.bedrooms) } : null,
+    property.areaM2 != null ? { icon: Maximize2, label: formatArea(property.areaM2) } : null,
   ].filter((item): item is { icon: typeof BedDouble; label: string } => item !== null);
 
   return (
@@ -58,18 +59,23 @@ export function HeroFeaturedCard({ property }: { property: PublicProperty | null
           <Sparkles className="size-3.5" aria-hidden />
           Destaque
         </span>
+        {exclusive && (
+          <span className="absolute right-3 top-3 rounded-full bg-[#000C24] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#DEAE5D] shadow-lg ring-1 ring-[#DEAE5D]">
+            Exclusivo
+          </span>
+        )}
         <p className="absolute bottom-3 left-3 text-2xl font-bold text-white drop-shadow md:text-3xl">
           {formatPrice(property.price)}
         </p>
       </div>
       <div className="space-y-2 px-2 pb-2 pt-4 text-white">
         {place && (
-          <p className="flex items-center gap-1.5 text-sm text-white/80">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-white">
             <MapPin className="size-4 shrink-0 text-[#DEAE5D]" aria-hidden />
             <span className="truncate">{place}</span>
           </p>
         )}
-        <h2 className="line-clamp-2 text-lg font-semibold leading-snug">{property.title}</h2>
+        <p className="line-clamp-2 text-lg font-semibold leading-snug">{property.title}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/75">
           <span className="font-medium uppercase tracking-wide">
             {typeLabel(property.type)} · {purposeLabel(property.purpose)}

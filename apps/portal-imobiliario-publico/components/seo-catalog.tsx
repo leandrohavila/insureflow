@@ -3,17 +3,12 @@ import { Suspense } from "react";
 
 import { PropertyListing } from "@/components/property-listing";
 import { SiteHeader } from "@/components/site-header";
+import { pageMetadata } from "@/lib/seo";
 import { getPortalHome } from "@/services/catalog";
 import type { PropertyListQuery } from "@/types/property";
 
 export function seoMetadata(title: string, description: string, path: string): Metadata {
-  return {
-    title,
-    description,
-    alternates: { canonical: path },
-    openGraph: { title, description, locale: "pt_BR", type: "website" },
-    twitter: { card: "summary_large_image", title, description },
-  };
+  return pageMetadata(title, description, path);
 }
 
 export async function SeoCatalog({

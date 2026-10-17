@@ -60,6 +60,14 @@ img {
   bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
+/* Enquadra o lado fotográfico da arte institucional, fora dos textos gravados na peça. */
+.institutional-photo {
+  background-color: #000c24;
+  background-repeat: no-repeat;
+  background-size: 265% auto;
+  background-position: 100% 22%;
+}
+
 @media (max-width: 767px) {
   .whatsapp-float-detail {
     bottom: calc(5.25rem + env(safe-area-inset-bottom));

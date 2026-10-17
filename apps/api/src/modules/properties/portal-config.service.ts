@@ -5,16 +5,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import type {
   CreatePortalBannerDto,
+  InstitutionalVideoDto,
   UpdatePortalBannerDto,
   UpsertPortalConfigDto,
 } from './dto/portal-config.dto';
+import { institutionalVideoIssues } from './dto/portal-config.dto';
+import {
+  parseCaptionsUrl,
+  parseInstitutionalVideoUrl,
+  parsePosterUrl,
+} from './institutional-video.util';
 import { PublicCatalogContextService } from './public-catalog-context.service';
 import {
   deleteLocalPortalFile,
@@ -29,8 +36,55 @@ function emptyToNull(value?: string | null) {
   return trimmed ? trimmed : null;
 }
 
+function textOrNull(value: unknown, max: number) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().slice(0, max);
+  return trimmed || null;
+}
+
+function publicInstitutionalVideo(value: Prisma.JsonValue | null | undefined) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const rawUrl = typeof row.url === 'string' ? row.url.trim() : '';
+  const parsed = rawUrl ? parseInstitutionalVideoUrl(rawUrl) : null;
+  const poster =
+    typeof row.posterUrl === 'string' ? parsePosterUrl(row.posterUrl) : null;
+  const captions =
+    typeof row.captionsUrl === 'string'
+      ? parseCaptionsUrl(row.captionsUrl)
+      : null;
+  const title = textOrNull(row.title, 160);
+  const description = textOrNull(row.description, 500);
+  if (!parsed && !poster && !captions && !title && !description) return null;
+  return {
+    active: row.active === true && parsed !== null,
+    url: parsed ? rawUrl : null,
+    title,
+    description,
+    posterUrl: poster,
+    captionsUrl: captions,
+  };
+}
+
+function institutionalVideoData(dto: InstitutionalVideoDto | undefined) {
+  if (!dto) return undefined;
+  const issues = institutionalVideoIssues(dto);
+  if (issues.length > 0) throw new BadRequestException(issues.join(' '));
+  const url = emptyToNull(dto.url);
+  const title = emptyToNull(dto.title);
+  const description = emptyToNull(dto.description);
+  const posterUrl = emptyToNull(dto.posterUrl);
+  const captionsUrl = emptyToNull(dto.captionsUrl);
+  const active = dto.active === true && Boolean(url);
+  if (!url && !title && !description && !posterUrl && !captionsUrl && !active) {
+    return Prisma.DbNull;
+  }
+  return { active, url, title, description, posterUrl, captionsUrl };
+}
+
 function serializeConfig(row: {
   differentials: Prisma.JsonValue;
+  institutionalVideo?: Prisma.JsonValue | null;
   [key: string]: unknown;
 }) {
   const differentials = Array.isArray(row.differentials)
@@ -38,7 +92,11 @@ function serializeConfig(row: {
         (item): item is string => typeof item === 'string',
       )
     : [];
-  return { ...row, differentials };
+  return {
+    ...row,
+    differentials,
+    institutionalVideo: publicInstitutionalVideo(row.institutionalVideo),
+  };
 }
 
 @Injectable()
@@ -114,6 +172,9 @@ export class PortalConfigService {
       instagram: emptyToNull(dto.instagram),
       facebook: emptyToNull(dto.facebook),
       youtube: emptyToNull(dto.youtube),
+      ...(dto.institutionalVideo !== undefined
+        ? { institutionalVideo: institutionalVideoData(dto.institutionalVideo) }
+        : {}),
       creci: emptyToNull(dto.creci),
       address: emptyToNull(dto.address),
       portalUrl: emptyToNull(dto.portalUrl)?.replace(/\/+$/, '') ?? null,

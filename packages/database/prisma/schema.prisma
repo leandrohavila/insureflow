@@ -1610,6 +1610,8 @@ model PortalConfig {
   instagram      String?
   facebook       String?
   youtube        String?
+  /// Vídeo institucional: URL, título, descrição, capa, legendas e ativo. O arquivo não fica no banco.
+  institutionalVideo Json?    @map("institutional_video")
   creci          String?
   address        String?
   portalUrl      String?      @map("portal_url")

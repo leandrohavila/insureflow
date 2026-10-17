@@ -82,6 +82,9 @@ export function PortalLivePreview({
             {form.aboutText.trim() || "Texto institucional da imobiliária."}
           </p>
         </div>
+        {form.videoActive && form.videoUrl.trim() ? (
+          <p className="text-[0.65rem] text-slate-500">Vídeo institucional ativo</p>
+        ) : null}
         {differentials.length > 0 ? (
           <ul className="flex flex-wrap gap-1.5 pt-1">
             {differentials.map((item) => (

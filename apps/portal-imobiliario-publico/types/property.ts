@@ -138,6 +138,16 @@ export type PortalConfig = {
   youtube: string | null;
   creci: string | null;
   address: string | null;
+  institutionalVideo?: InstitutionalVideoConfig | null;
+};
+
+export type InstitutionalVideoConfig = {
+  active: boolean;
+  url: string | null;
+  title: string | null;
+  description: string | null;
+  posterUrl: string | null;
+  captionsUrl: string | null;
 };
 
 export type PortalBanner = {

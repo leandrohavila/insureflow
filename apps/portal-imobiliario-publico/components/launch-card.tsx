@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { formatPrice } from "@/lib/utils";
+import { formatArea, formatPrice, formatRooms } from "@/lib/utils";
 import type { PublicProperty } from "@/types/property";
 
 export function LaunchCard({ property }: { property: PublicProperty }) {
@@ -58,7 +58,12 @@ export function LaunchCard({ property }: { property: PublicProperty }) {
         {property.description && (
           <p className="line-clamp-5 text-sm leading-relaxed text-stone-600">{property.description}</p>
         )}
-        <p className="text-lg font-semibold text-[#000C24]">A partir de {formatPrice(property.price)}</p>
+        <p className="text-2xl font-extrabold tracking-tight text-[#7F5209]">A partir de {formatPrice(property.price)}</p>
+        <p className="text-sm font-medium text-[#10294B]">
+          {[property.neighborhood, property.city].filter(Boolean).join(" • ")}
+          {property.bedrooms != null ? ` · ${formatRooms(property.bedrooms)}` : ""}
+          {property.areaM2 != null ? ` · ${formatArea(property.areaM2)}` : ""}
+        </p>
         <Link
           href={`/imoveis/${property.slug}`}
           className="mt-auto inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-[#C09048] px-5 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D] sm:w-fit"
