@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -249,37 +250,38 @@ export function InstitutionalVideo({
 
   const vertical = source.kind === "youtube" && source.layout === "short";
   const hasCopy = Boolean(title || description);
-  const captionsNote =
-    source.kind === "youtube"
-      ? captions
-        ? "O arquivo WebVTT informado não entra no YouTube. As legendas desse formato valem para MP4; no YouTube aparecem só as legendas publicadas no próprio vídeo."
-        : "Legendas WebVTT ainda não foram fornecidas. No YouTube, só aparecem as legendas publicadas no próprio vídeo."
+  const embedRefused = embedError === 101 || embedError === 150;
+  const captionVisible = embedRefused || (source.kind === "file" && captionsState === "error");
+  const captionText = embedRefused
+    ? "O YouTube não permitiu exibir este vídeo aqui."
+    : source.kind === "youtube"
+      ? "Se o YouTube tiver legendas para este vídeo, elas aparecem no player."
       : captionsState === "error"
-        ? "Não foi possível carregar as legendas. O arquivo WebVTT precisa estar público em HTTPS."
+        ? "As legendas deste vídeo não puderam ser exibidas."
         : captions
-          ? null
-          : "Legendas ainda não foram fornecidas. Publique um arquivo WebVTT para sincronizar o texto com a fala.";
-
+          ? "Legendas em português sincronizadas com o vídeo."
+          : "Este vídeo não informa legendas.";
   const captionClass = vertical
-    ? "order-3 mt-3 text-sm leading-relaxed text-[#10294B] lg:order-none lg:mt-5"
-    : "mt-3 text-sm leading-relaxed text-[#10294B]";
-  const caption =
-    embedError === 101 || embedError === 150 ? (
-      <figcaption className={captionClass}>
-        O YouTube recusou a incorporação deste vídeo. No YouTube Studio, a opção de incorporar precisa estar permitida para ele tocar no portal.
-      </figcaption>
-    ) : captionsNote ? (
-      <figcaption className={captionClass}>{captionsNote}</figcaption>
-    ) : (
-      <figcaption className="sr-only">Legendas em português sincronizadas com o vídeo.</figcaption>
-    );
+    ? "order-3 mt-3 text-xs leading-relaxed text-[#5c6b82] lg:order-none lg:mt-4"
+    : "mt-3 text-xs leading-relaxed text-[#5c6b82]";
+  const caption = (
+    <figcaption className={captionVisible ? captionClass : "sr-only"}>{captionText}</figcaption>
+  );
+  const opportunity = (
+    <Link
+      href="/imoveis"
+      className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#C09048] px-6 text-base font-semibold text-[#000C24] transition-colors hover:bg-[#DEAE5D] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#000C24] lg:mt-6 lg:w-auto lg:px-7"
+    >
+      Encontre sua próxima oportunidade
+    </Link>
+  );
 
   const frame = (
     <div
-      className={`${hasCopy ? "mt-4 lg:mt-0" : ""} relative w-full overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)] ${
+      className={`relative w-full overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)] ${
         vertical
-          ? "order-2 aspect-[9/16] max-w-[min(100%,22rem)] lg:order-none lg:mt-0 lg:w-[22rem] lg:max-w-none lg:justify-self-end"
-          : "aspect-video"
+          ? "order-2 mt-4 aspect-[9/16] max-w-[min(100%,22rem)] lg:order-none lg:mt-0 lg:w-[22rem] lg:max-w-none lg:justify-self-end"
+          : `${hasCopy ? "mt-4" : ""} aspect-video`
       }`}
     >
         {source.kind === "file" ? (
@@ -356,27 +358,26 @@ export function InstitutionalVideo({
       ref={rootRef}
       className={
         vertical
-          ? "mx-auto flex w-full max-w-[min(100%,22rem)] flex-col lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-x-16"
+          ? "mx-auto flex w-full max-w-[min(100%,22rem)] flex-col lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-12"
           : "mx-auto w-full max-w-3xl"
       }
       aria-label={title || "Vídeo institucional"}
     >
       {vertical ? (
-        <div className="contents lg:flex lg:flex-col lg:justify-center">
-          {hasCopy ? (
-            <div className="min-w-0">
-              {title ? (
-                <h3 className="text-xl font-bold leading-tight tracking-tight text-[#000C24] md:text-2xl lg:text-4xl lg:font-extrabold lg:leading-[1.08]">
-                  {title}
-                </h3>
-              ) : null}
-              {description ? (
-                <p className={`${title ? "mt-2 lg:mt-4" : ""} text-sm leading-relaxed text-[#10294B] md:text-base lg:text-lg`}>
-                  {description}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
+        <div className="contents lg:flex lg:flex-col lg:justify-start">
+          <div className="min-w-0">
+            {title ? (
+              <h3 className="text-xl font-bold leading-tight tracking-tight text-[#000C24] md:text-2xl lg:text-4xl lg:font-extrabold lg:leading-[1.08]">
+                {title}
+              </h3>
+            ) : null}
+            {description ? (
+              <p className={`${title ? "mt-2 lg:mt-4" : ""} text-sm leading-relaxed text-[#10294B] md:text-base lg:text-lg`}>
+                {description}
+              </p>
+            ) : null}
+            {opportunity}
+          </div>
           {caption}
         </div>
       ) : (
@@ -385,6 +386,7 @@ export function InstitutionalVideo({
           {description ? (
             <p className={`${title ? "mt-2" : ""} text-sm leading-relaxed text-[#10294B] md:text-base`}>{description}</p>
           ) : null}
+          {opportunity}
         </>
       )}
       {frame}
