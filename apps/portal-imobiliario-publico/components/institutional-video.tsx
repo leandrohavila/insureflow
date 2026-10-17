@@ -248,6 +248,7 @@ export function InstitutionalVideo({
   }
 
   const vertical = source.kind === "youtube" && source.layout === "short";
+  const hasCopy = Boolean(title || description);
   const captionsNote =
     source.kind === "youtube"
       ? captions
@@ -259,13 +260,28 @@ export function InstitutionalVideo({
           ? null
           : "Legendas ainda não foram fornecidas. Publique um arquivo WebVTT para sincronizar o texto com a fala.";
 
-  return (
-    <figure ref={rootRef} className={`mx-auto w-full ${vertical ? "max-w-[22rem]" : "max-w-3xl"}`} aria-label={title || "Vídeo institucional"}>
-      {title ? <h3 className="text-xl font-bold tracking-tight text-[#000C24] md:text-2xl">{title}</h3> : null}
-      {description ? (
-        <p className={`${title ? "mt-2" : ""} text-sm leading-relaxed text-[#10294B] md:text-base`}>{description}</p>
-      ) : null}
-      <div className={`${title || description ? "mt-4" : ""} relative overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)] ${vertical ? "aspect-[9/16]" : "aspect-video"}`}>
+  const captionClass = vertical
+    ? "order-3 mt-3 text-sm leading-relaxed text-[#10294B] lg:order-none lg:mt-5"
+    : "mt-3 text-sm leading-relaxed text-[#10294B]";
+  const caption =
+    embedError === 101 || embedError === 150 ? (
+      <figcaption className={captionClass}>
+        O YouTube recusou a incorporação deste vídeo. No YouTube Studio, a opção de incorporar precisa estar permitida para ele tocar no portal.
+      </figcaption>
+    ) : captionsNote ? (
+      <figcaption className={captionClass}>{captionsNote}</figcaption>
+    ) : (
+      <figcaption className="sr-only">Legendas em português sincronizadas com o vídeo.</figcaption>
+    );
+
+  const frame = (
+    <div
+      className={`${hasCopy ? "mt-4 lg:mt-0" : ""} relative w-full overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)] ${
+        vertical
+          ? "order-2 aspect-[9/16] max-w-[min(100%,22rem)] lg:order-none lg:mt-0 lg:w-[22rem] lg:max-w-none lg:justify-self-end"
+          : "aspect-video"
+      }`}
+    >
         {source.kind === "file" ? (
           <video
             ref={videoRef}
@@ -333,15 +349,46 @@ export function InstitutionalVideo({
           </button>
         </div>
       </div>
-      {embedError === 101 || embedError === 150 ? (
-        <figcaption className="mt-3 text-sm leading-relaxed text-[#10294B]">
-          O YouTube recusou a incorporação deste vídeo. No YouTube Studio, a opção de incorporar precisa estar permitida para ele tocar no portal.
-        </figcaption>
-      ) : captionsNote ? (
-        <figcaption className="mt-3 text-sm leading-relaxed text-[#10294B]">{captionsNote}</figcaption>
+  );
+
+  return (
+    <figure
+      ref={rootRef}
+      className={
+        vertical
+          ? "mx-auto flex w-full max-w-[min(100%,22rem)] flex-col lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-center lg:gap-x-16"
+          : "mx-auto w-full max-w-3xl"
+      }
+      aria-label={title || "Vídeo institucional"}
+    >
+      {vertical ? (
+        <div className="contents lg:flex lg:flex-col lg:justify-center">
+          {hasCopy ? (
+            <div className="min-w-0">
+              {title ? (
+                <h3 className="text-xl font-bold leading-tight tracking-tight text-[#000C24] md:text-2xl lg:text-4xl lg:font-extrabold lg:leading-[1.08]">
+                  {title}
+                </h3>
+              ) : null}
+              {description ? (
+                <p className={`${title ? "mt-2 lg:mt-4" : ""} text-sm leading-relaxed text-[#10294B] md:text-base lg:text-lg`}>
+                  {description}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {caption}
+        </div>
       ) : (
-        <figcaption className="sr-only">Legendas em português sincronizadas com o vídeo.</figcaption>
+        <>
+          {title ? <h3 className="text-xl font-bold tracking-tight text-[#000C24] md:text-2xl">{title}</h3> : null}
+          {description ? (
+            <p className={`${title ? "mt-2" : ""} text-sm leading-relaxed text-[#10294B] md:text-base`}>{description}</p>
+          ) : null}
+        </>
       )}
+      {frame}
+      {vertical ? null : caption}
     </figure>
   );
 }
