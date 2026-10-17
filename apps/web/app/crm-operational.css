@@ -712,17 +712,14 @@
 
 .pipeline-lane {
   --crm-lane-accent: var(--crm-tone-brand);
-  flex: 0 0 auto;
-  min-width: 248px;
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
 }
 
-.pipeline-lane--compact {
-  min-width: 248px;
-}
-
+.pipeline-lane--compact,
 .pipeline-lane--comfortable {
-  min-width: 400px;
+  min-width: 0;
 }
 
 .pipeline-lane:not(.pipeline-lane--compact) {

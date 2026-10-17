@@ -15,10 +15,14 @@ export const dsPipeline = {
   /** Fileira de colunas — inline-flex + w-max evita compressão; stretch em altura. */
   columns: {
     className:
+      "pipeline-board-v2 flex h-full min-h-full w-full min-w-0 flex-nowrap items-stretch px-0.5",
+  },
+  columnsScroll: {
+    className:
       "pipeline-board-v2 inline-flex h-full min-h-full w-max flex-nowrap items-stretch px-0.5",
   },
-  laneWidthPx: 400,
-  laneMinWidthPx: 248,
-  laneCompactWidthPx: 248,
-  laneComfortableWidthPx: 400,
+  laneWidthPx: 320,
+  laneMinWidthPx: 148,
+  laneCompactWidthPx: 220,
+  laneComfortableWidthPx: 320,
 } as const

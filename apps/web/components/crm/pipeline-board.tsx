@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -45,7 +45,10 @@ import {
 import { reorderDeals, resolveDropStage } from "@/lib/pipeline-dnd"
 import { PipelineColumn } from "@/components/crm/pipeline-column"
 import { DealCard } from "@/components/crm/deal-card"
-import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
+import {
+  resolvePipelineDensity,
+  resolvePipelineLaneLayout,
+} from "@/lib/crm/pipeline-density"
 import {
   dsPipeline,
 } from "@/lib/design-system"
@@ -90,6 +93,18 @@ export function PipelineBoard({
   const lastCollisionIdsRef = useRef<string>("")
   const overStageIdRef = useRef<CrmStageId | null>(null)
   const dragOverRafRef = useRef<number | null>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  useLayoutEffect(() => {
+    const node = frameRef.current
+    if (!node) return
+    const measure = () => setContainerWidth(node.clientWidth)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
 
   dealsRef.current = deals
 
@@ -388,12 +403,22 @@ export function PipelineBoard({
   }, [revertDragState])
 
   const rootClass = dsPipeline.board.className
-  const density = resolvePipelineDensity(compact ? "compact" : "comfortable")
+  const densityMode = compact ? "compact" : "comfortable"
+  const density = resolvePipelineDensity(densityMode)
+  const laneLayout = resolvePipelineLaneLayout({
+    containerWidth: containerWidth,
+    stageCount: stages.length,
+    density: densityMode,
+  })
+  const fitted = containerWidth > 0 && laneLayout.fitsWithoutScroll
 
-  const scrollClass = dsPipeline.scroll.className
+  const scrollClass = cn(
+    dsPipeline.scroll.className,
+    fitted && "overflow-x-hidden",
+  )
 
   const columnsClass = cn(
-    dsPipeline.columns.className,
+    fitted ? dsPipeline.columns.className : dsPipeline.columnsScroll.className,
     activeId && "pipeline-board--dragging",
   )
 
@@ -407,6 +432,8 @@ export function PipelineBoard({
           accent={stage.accent}
           columnIndex={i}
           compact={compact}
+          fitted={fitted}
+          laneWidthPx={laneLayout.laneWidthPx}
           deals={getSortedStageDeals(deals, stage.id)}
           interactive={interactive}
           isDropTarget={overStageId === stage.id && activeId !== null}
@@ -417,6 +444,8 @@ export function PipelineBoard({
       )),
     [
       compact,
+      fitted,
+      laneLayout.laneWidthPx,
       deals,
       interactive,
       onDealDelete,
@@ -429,12 +458,13 @@ export function PipelineBoard({
   )
 
   const boardContent = (
-    <div className={rootClass}>
-      <div className={scrollClass}>
+      <div className={rootClass}>
+      <div ref={frameRef} className={scrollClass}>
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           className={columnsClass}
+          style={{ gap: density.boardGapPx }}
         >
           {columns}
         </motion.div>
@@ -456,8 +486,9 @@ export function PipelineBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={rootClass} data-crm-density={density.dataDensity}>
+      <div className={rootClass} data-crm-density={density.dataDensity} data-pipeline-fit={fitted ? "true" : "false"}>
         <div
+          ref={frameRef}
           className={scrollClass}
           role="region"
           aria-label="Pipeline Kanban com arrastar e soltar"
@@ -483,7 +514,7 @@ export function PipelineBoard({
         {activeDeal ? (
           <div
             className="pipeline-drag-overlay rotate-[1.25deg] scale-[1.02]"
-            style={{ width: density.laneWidthPx }}
+            style={{ width: fitted ? undefined : laneLayout.laneWidthPx, maxWidth: density.laneWidthPx }}
           >
             <DealCard deal={activeDeal} isOverlay compact={density.compact} />
           </div>

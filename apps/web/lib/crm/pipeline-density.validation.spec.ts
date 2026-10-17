@@ -25,6 +25,10 @@ import {
   readCrmWorkspacePreferences,
 } from "./crm-workspace-preferences.ts"
 import {
+  PIPELINE_STANDARD_STAGE_COUNT,
+  PIPELINE_WIDE_VIEWPORT_PX,
+  pipelineBoardWidthAtViewport,
+  resolvePipelineLaneLayout,
   runPipelineDensityManualValidation,
   resolvePipelineDensity,
 } from "./pipeline-density.ts"
@@ -91,6 +95,24 @@ describe("validação manual — densidade do pipeline", () => {
     assert.equal(comfortable.dataDensity, "comfortable")
     assert.ok(comfortable.cardMinHeightPx > compact.cardMinHeightPx)
     assert.ok(comfortable.laneWidthPx > compact.laneWidthPx)
+    assert.ok(compact.laneMinWidthPx < 200)
+    assert.ok(comfortable.laneMinWidthPx < 200)
+    assert.ok(comfortable.laneMinWidthPx < comfortable.laneWidthPx)
+  })
+
+  it("cabe as 5 etapas em viewport de 1600px com a timeline aberta", () => {
+    const board = pipelineBoardWidthAtViewport(PIPELINE_WIDE_VIEWPORT_PX, {
+      timelineOpen: true,
+      sidebarOpen: true,
+    })
+    for (const density of ["compact", "comfortable"] as const) {
+      const layout = resolvePipelineLaneLayout({
+        containerWidth: board,
+        stageCount: PIPELINE_STANDARD_STAGE_COUNT,
+        density,
+      })
+      assert.equal(layout.fitsWithoutScroll, true, density)
+    }
   })
 
   it("persiste Compacto e Confortável no localStorage", () => {
