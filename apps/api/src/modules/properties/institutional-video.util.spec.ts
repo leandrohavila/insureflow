@@ -14,13 +14,14 @@ describe('parseInstitutionalVideoUrl', () => {
   });
 
   it.each([
-    ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
-    ['https://youtu.be/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
-    ['https://www.youtube.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
-    ['https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
-    ['https://m.youtube.com/shorts/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
-  ])('accepts YouTube %s', (value, videoId) => {
-    expect(parseInstitutionalVideoUrl(value)).toEqual({ kind: 'youtube', videoId });
+    ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
+    ['https://youtu.be/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
+    ['https://www.youtube.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
+    ['https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
+    ['https://m.youtube.com/shorts/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'short'],
+    ['https://youtube.com/shorts/PepqDgdLHzA', 'PepqDgdLHzA', 'short'],
+  ])('accepts YouTube %s', (value, videoId, layout) => {
+    expect(parseInstitutionalVideoUrl(value)).toEqual({ kind: 'youtube', videoId, layout });
   });
 
   it.each([
@@ -57,5 +58,16 @@ describe('youtubeEmbedUrl', () => {
     expect(url.pathname).toBe('/embed/dQw4w9WgXcQ');
     expect(url.searchParams.get('mute')).toBe('1');
     expect(url.searchParams.get('autoplay')).toBe('1');
+    expect(url.searchParams.get('playsinline')).toBe('1');
+  });
+
+  it('keeps the official Ávila short on the nocookie embed path', () => {
+    const parsed = parseInstitutionalVideoUrl('https://youtube.com/shorts/PepqDgdLHzA');
+    expect(parsed).toEqual({ kind: 'youtube', videoId: 'PepqDgdLHzA', layout: 'short' });
+    if (parsed?.kind !== 'youtube') return;
+    const url = new URL(youtubeEmbedUrl(parsed.videoId, true));
+    expect(url.href).toBe(
+      'https://www.youtube-nocookie.com/embed/PepqDgdLHzA?rel=0&modestbranding=1&playsinline=1&enablejsapi=1&mute=1&autoplay=1',
+    );
   });
 });

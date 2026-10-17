@@ -17,6 +17,12 @@ function postYouTube(frame: HTMLIFrameElement | null, func: "playVideo" | "pause
   frame?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args: [] }), YOUTUBE_ORIGIN);
 }
 
+function embedSrc(videoId: string) {
+  const url = new URL(youtubeEmbedUrl(videoId, true));
+  url.searchParams.set("origin", window.location.origin);
+  return url.toString();
+}
+
 export function InstitutionalVideo({
   source,
   title,
@@ -45,6 +51,7 @@ export function InstitutionalVideo({
     source.kind === "youtube" ? "youtube" : captions ? "ready" : "missing",
   );
   const [frameSrc, setFrameSrc] = useState<string | null>(null);
+  const [embedError, setEmbedError] = useState<number | null>(null);
   const sourceKey = source.kind === "file" ? source.src : source.videoId;
 
   useEffect(() => {
@@ -53,6 +60,37 @@ export function InstitutionalVideo({
     if (!node) return;
     engagedRef.current = false;
     frameReadyRef.current = false;
+    setEmbedError(null);
+    const onYouTubeMessage = (event: MessageEvent) => {
+      if (source.kind !== "youtube" || event.origin !== YOUTUBE_ORIGIN) return;
+      if (event.source !== frameRef.current?.contentWindow) return;
+      let payload: unknown = event.data;
+      if (typeof payload === "string") {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          return;
+        }
+      }
+      if (!payload || typeof payload !== "object") return;
+      const data = payload as { event?: string; info?: unknown };
+      if (data.event === "onError") {
+        const code = typeof data.info === "number" ? data.info : Number(data.info);
+        setEmbedError(Number.isFinite(code) ? code : 0);
+        setPlaying(false);
+        return;
+      }
+      const info = data.info;
+      const state =
+        typeof info === "number"
+          ? info
+          : info && typeof info === "object" && "playerState" in info
+            ? Number((info as { playerState?: unknown }).playerState)
+            : null;
+      if (state === 1) setPlaying(true);
+      if (state === 0 || state === 2) setPlaying(false);
+    };
+    window.addEventListener("message", onYouTubeMessage);
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const syncMotion = () => {
       reducedRef.current = motion.matches;
@@ -94,7 +132,7 @@ export function InstitutionalVideo({
       }
       if (!frameReadyRef.current) {
         frameReadyRef.current = true;
-        setFrameSrc(youtubeEmbedUrl(source.videoId, true));
+        setFrameSrc(embedSrc(source.videoId));
         setStarted(true);
         setPlaying(true);
         return;
@@ -132,12 +170,14 @@ export function InstitutionalVideo({
       observer.disconnect();
       motion.removeEventListener("change", syncMotion);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("message", onYouTubeMessage);
       trackEl?.removeEventListener("error", onTrackError);
       if (source.kind === "file") video?.pause();
     };
   }, [source, sourceKey]);
 
   function playFromUser() {
+    if (embedError === 101 || embedError === 150) return;
     userPausedRef.current = false;
     reducedRef.current = false;
     if (source.kind === "file") {
@@ -161,7 +201,7 @@ export function InstitutionalVideo({
     }
     if (!frameReadyRef.current) {
       frameReadyRef.current = true;
-      setFrameSrc(youtubeEmbedUrl(source.videoId, true));
+      setFrameSrc(embedSrc(source.videoId));
     } else postYouTube(frameRef.current, "playVideo");
     setStarted(true);
     setPlaying(true);
@@ -175,6 +215,7 @@ export function InstitutionalVideo({
   }
 
   function toggleSound() {
+    if (embedError === 101 || embedError === 150) return;
     const next = !soundRef.current;
     soundRef.current = next;
     setSoundOn(next);
@@ -194,7 +235,7 @@ export function InstitutionalVideo({
     }
     if (!frameReadyRef.current) {
       frameReadyRef.current = true;
-      setFrameSrc(youtubeEmbedUrl(source.videoId, true));
+      setFrameSrc(embedSrc(source.videoId));
       setStarted(true);
       setPlaying(true);
     }
@@ -206,6 +247,7 @@ export function InstitutionalVideo({
     }
   }
 
+  const vertical = source.kind === "youtube" && source.layout === "short";
   const captionsNote =
     source.kind === "youtube"
       ? captions
@@ -218,12 +260,12 @@ export function InstitutionalVideo({
           : "Legendas ainda não foram fornecidas. Publique um arquivo WebVTT para sincronizar o texto com a fala.";
 
   return (
-    <figure ref={rootRef} className="mx-auto w-full max-w-3xl" aria-label={title || "Vídeo institucional"}>
+    <figure ref={rootRef} className={`mx-auto w-full ${vertical ? "max-w-[22rem]" : "max-w-3xl"}`} aria-label={title || "Vídeo institucional"}>
       {title ? <h3 className="text-xl font-bold tracking-tight text-[#000C24] md:text-2xl">{title}</h3> : null}
       {description ? (
         <p className={`${title ? "mt-2" : ""} text-sm leading-relaxed text-[#10294B] md:text-base`}>{description}</p>
       ) : null}
-      <div className={`${title || description ? "mt-4" : ""} relative aspect-video overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)]`}>
+      <div className={`${title || description ? "mt-4" : ""} relative overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)] ${vertical ? "aspect-[9/16]" : "aspect-video"}`}>
         {source.kind === "file" ? (
           <video
             ref={videoRef}
@@ -256,6 +298,10 @@ export function InstitutionalVideo({
             referrerPolicy="strict-origin-when-cross-origin"
             loading="lazy"
             onLoad={() => {
+              frameRef.current?.contentWindow?.postMessage(
+                JSON.stringify({ event: "listening", id: "widget", channel: "widget" }),
+                YOUTUBE_ORIGIN,
+              );
               postYouTube(frameRef.current, soundRef.current ? "unMute" : "mute");
               postYouTube(frameRef.current, userPausedRef.current ? "pauseVideo" : "playVideo");
             }}
@@ -287,7 +333,11 @@ export function InstitutionalVideo({
           </button>
         </div>
       </div>
-      {captionsNote ? (
+      {embedError === 101 || embedError === 150 ? (
+        <figcaption className="mt-3 text-sm leading-relaxed text-[#10294B]">
+          O YouTube recusou a incorporação deste vídeo. No YouTube Studio, a opção de incorporar precisa estar permitida para ele tocar no portal.
+        </figcaption>
+      ) : captionsNote ? (
         <figcaption className="mt-3 text-sm leading-relaxed text-[#10294B]">{captionsNote}</figcaption>
       ) : (
         <figcaption className="sr-only">Legendas em português sincronizadas com o vídeo.</figcaption>

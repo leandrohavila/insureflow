@@ -3,7 +3,7 @@ const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i;
 
 export type InstitutionalVideoSource =
   | { kind: "file"; src: string }
-  | { kind: "youtube"; videoId: string };
+  | { kind: "youtube"; videoId: string; layout: "short" | "wide" };
 
 function httpsUrl(value: string): URL | null {
   const trimmed = value.trim();
@@ -24,11 +24,12 @@ function httpsUrl(value: string): URL | null {
   return url;
 }
 
-function youtubeIdFrom(url: URL): string | null {
+function youtubeFrom(url: URL): { videoId: string; layout: "short" | "wide" } | null {
   const host = url.hostname.replace(/^www\./, "").toLowerCase();
+  const idOf = (value: string) => (YOUTUBE_ID.test(value) ? value : null);
   if (host === "youtu.be") {
-    const id = url.pathname.split("/").filter(Boolean)[0] ?? "";
-    return YOUTUBE_ID.test(id) ? id : null;
+    const videoId = idOf(url.pathname.split("/").filter(Boolean)[0] ?? "");
+    return videoId ? { videoId, layout: "wide" } : null;
   }
   if (host !== "youtube.com" && host !== "m.youtube.com" && host !== "youtube-nocookie.com") {
     return null;
@@ -36,12 +37,12 @@ function youtubeIdFrom(url: URL): string | null {
   const parts = url.pathname.split("/").filter(Boolean);
   const head = (parts[0] ?? "").toLowerCase();
   if (head === "watch") {
-    const id = url.searchParams.get("v") ?? "";
-    return YOUTUBE_ID.test(id) ? id : null;
+    const videoId = idOf(url.searchParams.get("v") ?? "");
+    return videoId ? { videoId, layout: "wide" } : null;
   }
-  if (head === "embed" || head === "shorts" || head === "live" || head === "v") {
-    const id = parts[1] ?? "";
-    return YOUTUBE_ID.test(id) ? id : null;
+  if (head === "shorts" || head === "embed" || head === "live" || head === "v") {
+    const videoId = idOf(parts[1] ?? "");
+    return videoId ? { videoId, layout: head === "shorts" ? "short" : "wide" } : null;
   }
   return null;
 }
@@ -50,8 +51,8 @@ function youtubeIdFrom(url: URL): string | null {
 export function parseInstitutionalVideoUrl(value: string): InstitutionalVideoSource | null {
   const url = httpsUrl(value);
   if (!url) return null;
-  const videoId = youtubeIdFrom(url);
-  if (videoId) return { kind: "youtube", videoId };
+  const youtube = youtubeFrom(url);
+  if (youtube) return { kind: "youtube", ...youtube };
   const host = url.hostname.replace(/^www\./, "").toLowerCase();
   if (
     host === "youtube.com" ||

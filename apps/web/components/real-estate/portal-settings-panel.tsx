@@ -548,7 +548,7 @@ export function PortalSettingsPanel({
                       label="URL do vídeo"
                       type="url"
                       placeholder="https://cdn.exemplo.com/institucional.mp4"
-                      helpText="MP4 em HTTPS ou link do YouTube (watch, youtu.be, embed ou shorts). Outros endereços não são incorporados. O arquivo não é salvo no banco."
+                      helpText="MP4 em HTTPS ou link do YouTube (watch, youtu.be, embed ou shorts). O Shorts permanece na proporção vertical. Outros endereços não são incorporados. O arquivo não é salvo no banco."
                       value={draft.videoUrl}
                       max={2048}
                       feedback={assessInstitutionalVideo(draft).videoUrl}
