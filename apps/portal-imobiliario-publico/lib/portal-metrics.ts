@@ -21,14 +21,14 @@ export function resolvePortalMetrics(input: {
     availableOverride ??
     (input.available != null && Number.isFinite(input.available) && input.available > 0
       ? `+${new Intl.NumberFormat("pt-BR").format(input.available)}`
-      : "+120");
+      : "A publicar");
 
-  const creciValue = input.creci?.trim() || creciOverride || "sob consulta";
+  const creciValue = input.creci?.trim() || creciOverride || "A informar";
 
   return [
     { value: availableValue, label: "Imóveis disponíveis" },
-    { value: clientsOverride ?? "+350", label: "Clientes atendidos" },
-    { value: volumeOverride ?? "R$ 80 milhões", label: "em negócios" },
+    { value: clientsOverride ?? "Direto", label: "Clientes atendidos" },
+    { value: volumeOverride ?? "Local", label: "em negócios" },
     { value: creciValue, label: "CRECI" },
   ];
 }

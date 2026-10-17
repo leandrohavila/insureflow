@@ -1,51 +1,51 @@
 # Checklist de pré-produção — Portal Imobiliário Grupo Ávila
 
-Data: 2026-10-06  
+Data desta revisão: 2026-10-17  
 App: `apps/portal-imobiliario-publico`  
-Ambiente conferido: portal local em `http://localhost:3002`, catálogo mock, Chrome 148. Sem varredura externa.
+Branch: `cursor/sprint-9-portal-conversao-f4ed`  
+Base conferida: `dc0e592`  
+Ambiente: API pública de produção lida em GET, sem gravação. Nenhuma migration foi aplicada. Nenhum merge.
 
-## Recomendação final
+## Recomendação
 
-**REQUER AJUSTES**
+**PRONTO PARA PUBLICAR O PORTAL, COM AÇÕES DE PAINEL AINDA FORA DESTE COMMIT**
 
-O acabamento de código desta revisão está no repositório. A publicação ainda depende de dois valores que não existem no código local: o WhatsApp de atendimento no cadastro do portal e a origem pública em `PORTAL_PUBLIC_URL`. Sem eles, os CTAs de conversa não aparecem e o SEO absoluto aponta para `localhost:3002`.
+O código desta revisão deixa de publicar `localhost` no SEO quando o deploy é de produção ou de preview, e deixa de exibir `+350` e `R$ 80 milhões` sem fonte. O domínio público, o WhatsApp e o CRECI já existem no cadastro. A coluna do vídeo institucional ainda não está no banco que a API pública lê.
 
-## Itens aprovados
+## O que a API pública de produção devolve
 
-- Título: `Grupo Ávila Imóveis | Imobiliária em Uberaba`.
-- Description: `Encontre casas, apartamentos, terrenos e imóveis comerciais em Uberaba.`
-- Canonical da home, Open Graph (`og:title`, `og:description`, imagem 1200×630) e Twitter Card `summary_large_image`.
-- `robots.txt` com `Allow: /` e sitemap. `sitemap.xml` inclui `/`, `/terrenos-uberaba` e `/imoveis-comerciais-uberaba`.
-- Favicon ligado no HTML: `favicon.ico`, `favicon-16x16.png` (16×16), `favicon-32x32.png` (32×32) e `apple-touch-icon.png` (180×180). Os quatro respondem 200.
-- Home em 375, 768 e 1024 px sem overflow horizontal. Um H1. CTA “Ver imóveis” visível.
-- Contraste já medido na validação anterior permanece nos pares que não mudaram de cor (H1 19.48:1, CTA dourado 6.79:1, texto branco no navy).
-- Mensagem de atendimento, quando há número: `Olá, quero falar com a {nome} sobre um imóvel em Uberaba.`
-- Mensagem de imóvel, nos cards e no detalhe: `Olá, tenho interesse no imóvel {título} (cód. {código}).`
-- O número usado é o de `PortalConfig.whatsapp`, só com dígitos, com DDI 55 quando o cadastro não traz o 55. O link é `https://wa.me/{número}?text=...`.
-- Hero, cards, botão flutuante, faixa, rodapé e menu disparam `whatsapp_click` nesse link. O menu usa o rótulo `menu`.
+`GET /api/v1/public/portal?tenantSlug=insureflow&businessUnitSlug=avila-imoveis` em 2026-10-17:
 
-## Itens corrigidos
+- WhatsApp cadastrado, 11 dígitos, sem o prefixo 55. O portal acrescenta o 55 ao montar `wa.me`.
+- Telefone cadastrado, também com 11 dígitos.
+- CRECI `62568`.
+- `portalUrl` no host `grupoavilaimoveis.com.br`.
+- A resposta não contém `institutionalVideo`. O código em produção ainda não serializa essa coluna.
 
-- `favicon.ico` passou a ter três quadros, 16×16, 32×32 e 48×48. Antes havia só o quadro de 48×48.
-- O menu “WhatsApp”, no desktop e no menu móvel, abre o `wa.me` de atendimento e grava `whatsapp_click` quando o número está cadastrado. Antes ia só para `/#whatsapp`, sem evento.
-- Hero, flutuante, faixa e rodapé usam a mesma mensagem de atendimento. O hero não marca mais telefone ou e-mail como clique de WhatsApp.
-- Cards e página do imóvel usam a mensagem com título e código do imóvel.
-- Em 1024 px as estatísticas do hero voltam a duas colunas, para “A informar” caber numa linha. Em 768 px seguem em quatro colunas. Overflow do valor: nenhum nos três tamanhos.
-- O título institucional padrão ficou “Sobre o Grupo Ávila Imóveis”.
-- O título do imóvel no card do hero deixou de ser H2, para não competir com as seções da página.
-- `Host` do `robots.txt` sai sem o esquema (`localhost:3002` neste ambiente, o host público quando `PORTAL_PUBLIC_URL` estiver definido).
+## Corrigido neste passo
 
-## Pendências
+- Canonical, Open Graph, sitemap, `robots.txt` e JSON-LD usam `portalOrigin()`. A origem passa a ser, nesta ordem: `PORTAL_PUBLIC_URL`, `NEXT_PUBLIC_PORTAL_URL`, o host do deploy na Vercel, e em produção `https://grupoavilaimoveis.com.br` se a variável pública não estiver definida. `localhost` só permanece no desenvolvimento local.
+- “Clientes atendidos” e “em negócios” voltaram aos textos de reserva do projeto, “Direto” e “Local”. O total de imóveis continua sendo a contagem real do catálogo. Sem contagem, o valor é “A publicar”, não `+120`. CRECI vem do cadastro; sem cadastro, “A informar”. Overrides por variável de ambiente continuam possíveis.
 
-- O cadastro local do portal não tem WhatsApp. O mock devolve `config: null` e o seed grava o campo só se já existir em `tenant.settings`. Nesta home, hero, cards, flutuante e o link rastreado do menu não renderizam. O menu cai em `/#whatsapp`. Não há número no repositório para confirmar o telefone publicado.
-- `PORTAL_PUBLIC_URL` não está definido para produção (o exemplo segue comentado). Canonical, Open Graph, sitemap e robots deste servidor usam `http://localhost:3002`.
-- CRECI segue “A informar”. “Clientes atendidos” e “Valor negociado” seguem “Direto” e “Local”, porque o portal não tem essa fonte.
-- Depoimentos continuam ilustrativos, com o aviso na seção.
-- O tracking grava `dataLayer` e o evento `portal:track`. Não há ID de GTM, GA4 ou Pixel.
-- Com a API fora, o destaque do mock inclui imóveis de Cuiabá. Em produção o catálogo precisa vir da API.
+## Já verdadeiro no cadastro, sem mudança de dado
 
-## Antes de publicar
+- O fluxo de atendimento lê `PortalConfig.whatsapp` e gera `https://wa.me/55{número}` com a mensagem “Olá, quero falar com a {nome} sobre um imóvel em Uberaba.”
+- O CRECI publicado é o do cadastro (`62568`), não um número inventado no código.
 
-1. Preencher o WhatsApp no cadastro do portal e abrir a home publicada: hero, um card, o botão flutuante e o menu devem apontar para o mesmo `wa.me` e disparar `whatsapp_click`.
-2. Definir `PORTAL_PUBLIC_URL` com a origem pública, sem barra no final, e conferir canonical, `og:image` e `sitemap.xml`.
-3. Preencher CRECI no mesmo cadastro, se o número já existir.
+## Migration do vídeo
+
+`20261017120000_portal_institutional_video` só adiciona `portal_configs.institutional_video` JSONB, nulo. Não apaga linha nem grava arquivo. O comando oficial é `npm run db:deploy` na raiz, e o Prisma usa `DATABASE_URL_DIRECT` quando ela existe. O boot `start:release` da API no Railway executa esse deploy. Não foi executado. O vídeo `https://youtube.com/shorts/PepqDgdLHzA` não foi gravado. Legendas continuam vazias: o YouTube informa que este clipe não tem legendas.
+
+## Bloqueios que ficam no painel
+
+1. Confirmar, sem copiar senha, que o `DATABASE_URL` do serviço que receberá a migration não é o de outro ambiente por engano. Só então `npm run db:deploy` com a URL direta desse banco.
+2. Publicar a API desta branch nesse serviço. O deploy de preview da API na Vercel não roda a migration.
+3. No projeto Vercel `insureflow-portal-imobiliario-publico`, ambiente Production, definir `PORTAL_PUBLIC_URL=https://grupoavilaimoveis.com.br` e `API_INTERNAL_URL` para a API que já serve o portal. Sem a primeira, o código desta revisão ainda usa o domínio conhecido; a variável deixa a origem explícita.
+4. Depois da coluna existir e da API nova estar no ar, salvar no painel o Shorts ativo, sem URL de legenda.
+5. Não fazer merge nesta etapa. A produção do domínio continua no commit anterior até o merge e um deploy de Production que conclua.
+
+## Fora deste escopo
+
+- Depoimentos seguem ilustrativos, com o aviso da seção.
+- Não há ID de GTM, GA4 ou Pixel. O tracking da página grava `dataLayer` e `portal:track`.
+- Nota e volume de avaliações só aparecem se as variáveis `NEXT_PUBLIC_PORTAL_RATING_*` forem definidas. Sem elas, a faixa diz que o dado será publicado.
