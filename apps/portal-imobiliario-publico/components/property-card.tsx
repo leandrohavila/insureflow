@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2, MessageCircle, Share2 } from "lucide-react";
+import { ArrowRight, Bath, BedDouble, Building2, Car, MapPin, Maximize2, Share2 } from "lucide-react";
 
 import { TrackedAnchor } from "@/components/tracked-link";
+import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import { propertyShareHref, propertyWhatsappHref } from "@/lib/commercial";
 import {
   formatArea,
@@ -60,7 +61,7 @@ export function PropertyCard({
   const exclusive = isExclusiveListing(property.features);
 
   return (
-    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none">
+    <article className="@container group relative flex h-full min-w-0 flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_12px_32px_-14px_rgba(0,12,36,.22)] transition-[box-shadow,translate] duration-[400ms] ease-out hover:shadow-[0_28px_56px_-18px_rgba(0,12,36,.35)] motion-safe:hover:-translate-y-1.5 motion-reduce:transition-none">
       <TrackedAnchor
         event="whatsapp_click"
         eventLabel="compartilhar-card"
@@ -151,7 +152,7 @@ export function PropertyCard({
           )}
         </div>
       </Link>
-      <div className={`grid gap-2 px-5 pb-5 ${whatsapp ? "grid-cols-2" : "grid-cols-1"}`}>
+      <div className={`grid gap-2 px-5 pb-5 ${whatsapp ? "grid-cols-1 @min-[320px]:grid-cols-2" : "grid-cols-1"}`}>
         <Link
           href={`/imoveis/${property.slug}`}
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#000C24] px-3 text-sm font-semibold text-white transition-colors duration-[400ms] hover:bg-[#C09048] hover:text-[#000C24] motion-reduce:transition-none"
@@ -167,9 +168,9 @@ export function PropertyCard({
             href={whatsapp}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-3 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
+            className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-3 text-sm font-semibold text-[#000C24] transition-colors duration-[400ms] hover:bg-[#1EBE5A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#000C24] active:bg-[#075E54] active:text-white motion-reduce:transition-none"
           >
-            <MessageCircle className="size-4" aria-hidden />
+            <WhatsAppIcon className="size-4 shrink-0" />
             WhatsApp
           </TrackedAnchor>
         )}

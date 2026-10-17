@@ -19,10 +19,12 @@ export function PropertyListing({
   preset,
   title = "Imóveis",
   description,
+  whatsappPhone,
 }: {
   preset?: Partial<PropertyListQuery>;
   title?: string;
   description?: string;
+  whatsappPhone?: string | null;
 }) {
   const searchParams = useSearchParams();
   const fromUrl = parseListQuery(Object.fromEntries(searchParams.entries()));
@@ -54,7 +56,7 @@ export function PropertyListing({
         {!data && loading
           ? Array.from({ length: 4 }, (_, index) => <PropertyCardSkeleton key={index} />)
           : data?.data.map((property, index) => (
-              <PropertyCard key={property.id} property={property} priority={index < 2} />
+              <PropertyCard key={property.id} property={property} priority={index < 2} whatsappPhone={whatsappPhone} />
             ))}
       </div>
       {data && total > limit && (

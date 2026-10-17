@@ -38,7 +38,12 @@ export default async function CategoryPage({ params }: PageProps) {
         <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{category.label}</h1>
         <div className="mt-4 grid grid-cols-1 gap-6 sm:mt-6 md:grid-cols-2 lg:grid-cols-4">
           {listing.data.data.map((property, index) => (
-            <PropertyCard key={property.id} property={property} priority={index < 2} />
+            <PropertyCard
+              key={property.id}
+              property={property}
+              priority={index < 2}
+              whatsappPhone={portal.data.config?.whatsapp}
+            />
           ))}
         </div>
         {listing.data.data.length === 0 && (
