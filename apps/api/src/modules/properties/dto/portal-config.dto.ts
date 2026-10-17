@@ -12,12 +12,96 @@ import {
   Matches,
   MaxLength,
   Min,
+  Validate,
+  ValidateNested,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
+  type ValidationArguments,
 } from 'class-validator';
+
+import {
+  parseCaptionsUrl,
+  parseInstitutionalVideoUrl,
+  parsePosterUrl,
+} from '../institutional-video.util';
 
 export const PUBLIC_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function blankToUndefined({ value }: { value: unknown }): unknown {
   return typeof value === 'string' && value.trim() === '' ? undefined : value;
+}
+
+@ValidatorConstraint({ name: 'institutionalVideoActive', async: false })
+class InstitutionalVideoActiveConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args: ValidationArguments) {
+    if (value !== true) return true;
+    const url = (args.object as InstitutionalVideoDto).url ?? '';
+    return parseInstitutionalVideoUrl(url) !== null;
+  }
+
+  defaultMessage() {
+    return 'Para exibir o vídeo, informe um MP4 em HTTPS ou um link do YouTube.';
+  }
+}
+
+export class InstitutionalVideoDto {
+  @ApiPropertyOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  @Validate(InstitutionalVideoActiveConstraint)
+  active?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsString()
+  @MaxLength(2048)
+  url?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsString()
+  @MaxLength(160)
+  title?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsString()
+  @MaxLength(2048)
+  posterUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(blankToUndefined)
+  @IsString()
+  @MaxLength(2048)
+  captionsUrl?: string;
+}
+
+export function institutionalVideoIssues(dto: InstitutionalVideoDto) {
+  const issues: string[] = [];
+  const url = dto.url?.trim() ?? '';
+  if (url && !parseInstitutionalVideoUrl(url)) {
+    issues.push('Use um MP4 em HTTPS ou um link do YouTube.');
+  }
+  const poster = dto.posterUrl?.trim() ?? '';
+  if (poster && !parsePosterUrl(poster)) {
+    issues.push('A capa precisa ser uma imagem HTTPS (PNG, JPEG, WebP, GIF ou AVIF).');
+  }
+  const captions = dto.captionsUrl?.trim() ?? '';
+  if (captions && !parseCaptionsUrl(captions)) {
+    issues.push('As legendas precisam ser um arquivo WebVTT em HTTPS.');
+  }
+  return issues;
 }
 
 export class UpsertPortalConfigDto {
@@ -119,6 +203,12 @@ export class UpsertPortalConfigDto {
   @IsString()
   @MaxLength(240)
   youtube?: string;
+
+  @ApiPropertyOptional({ type: InstitutionalVideoDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => InstitutionalVideoDto)
+  institutionalVideo?: InstitutionalVideoDto;
 
   @ApiPropertyOptional()
   @IsOptional()

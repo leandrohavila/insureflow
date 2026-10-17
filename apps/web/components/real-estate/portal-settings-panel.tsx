@@ -23,6 +23,7 @@ import {
   PORTAL_TEXT_LIMITS,
   assessDifferentials,
   assessImageField,
+  assessInstitutionalVideo,
   assessTextField,
   characterCounter,
   longestDifferentialLength,
@@ -94,7 +95,7 @@ const SOCIAL_FIELDS: TextFieldConfig[] = [
   { key: "youtube", label: "YouTube" },
 ]
 
-const READ_FIELDS: { key: keyof PortalConfigForm; label: string }[] = [
+const READ_FIELDS: { key: Exclude<keyof PortalConfigForm, "videoActive">; label: string }[] = [
   { key: "companyName", label: "Nome da imobiliária" },
   { key: "heroTitle", label: "Título Hero" },
   { key: "heroSubtitle", label: "Subtítulo Hero" },
@@ -220,8 +221,12 @@ export function PortalSettingsPanel({
     [saved, draft],
   )
 
-  function update(key: keyof PortalConfigForm, value: string) {
+  function update<K extends Exclude<keyof PortalConfigForm, "videoActive">>(key: K, value: PortalConfigForm[K]) {
     setDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  function updateVideoActive(active: boolean) {
+    setDraft((current) => ({ ...current, videoActive: active }))
   }
 
   function startEditing() {
@@ -278,6 +283,25 @@ export function PortalSettingsPanel({
       setToast({ message: "Falha de conexão ao salvar o portal.", tone: "danger" })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function onVideoPoster(file: File | undefined) {
+    if (!businessUnitId || !file) return
+    setUploading("videoPosterUrl")
+    setFeedback(null)
+    try {
+      const previous = draft.videoPosterUrl !== saved.videoPosterUrl ? draft.videoPosterUrl : undefined
+      const url = await uploadPortalImage(businessUnitId, file, previous)
+      update("videoPosterUrl", url)
+      setFeedback({ tone: "success", message: "Capa enviada. Salve o portal para publicar." })
+    } catch (error) {
+      setFeedback({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Não foi possível enviar a capa.",
+      })
+    } finally {
+      setUploading(null)
     }
   }
 
@@ -509,6 +533,65 @@ export function PortalSettingsPanel({
                   </FormLayout>
                 </FormSection>
 
+                <FormSection title="Vídeo institucional">
+                  <FormLayout>
+                    <label className="flex min-h-11 items-center gap-2 text-sm text-foreground sm:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={draft.videoActive}
+                        onChange={(event) => updateVideoActive(event.target.checked)}
+                      />
+                      Exibir vídeo na área institucional
+                    </label>
+                    <TextField
+                      id="portal-videoUrl"
+                      label="URL do vídeo"
+                      type="url"
+                      placeholder="https://cdn.exemplo.com/institucional.mp4"
+                      helpText="MP4 em HTTPS ou link do YouTube (watch, youtu.be, embed ou shorts). Outros endereços não são incorporados. O arquivo não é salvo no banco."
+                      value={draft.videoUrl}
+                      max={2048}
+                      feedback={assessInstitutionalVideo(draft).videoUrl}
+                      onChange={(value) => update("videoUrl", value)}
+                    />
+                    <TextField
+                      id="portal-videoTitle"
+                      label="Título do vídeo"
+                      value={draft.videoTitle}
+                      max={160}
+                      feedback={assessInstitutionalVideo(draft).videoTitle}
+                      onChange={(value) => update("videoTitle", value)}
+                    />
+                    <CountedTextarea
+                      id="portal-videoDescription"
+                      className="sm:col-span-2"
+                      label="Descrição do vídeo"
+                      value={draft.videoDescription}
+                      max={500}
+                      feedback={assessInstitutionalVideo(draft).videoDescription}
+                      onChange={(value) => update("videoDescription", value)}
+                    />
+                    <VideoPosterField
+                      url={draft.videoPosterUrl}
+                      busy={uploading === "videoPosterUrl"}
+                      error={assessInstitutionalVideo(draft).videoPosterUrl.error}
+                      onSelect={(file) => void onVideoPoster(file)}
+                      onRemove={() => update("videoPosterUrl", "")}
+                    />
+                    <TextField
+                      id="portal-videoCaptions"
+                      label="Legendas (WebVTT)"
+                      type="url"
+                      placeholder="https://cdn.exemplo.com/legendas.vtt"
+                      helpText="Opcional. Sem um arquivo .vtt, o portal informa que as legendas ainda precisam ser fornecidas. No YouTube valem as legendas do próprio vídeo."
+                      value={draft.videoCaptionsUrl}
+                      max={2048}
+                      feedback={assessInstitutionalVideo(draft).videoCaptionsUrl}
+                      onChange={(value) => update("videoCaptionsUrl", value)}
+                    />
+                  </FormLayout>
+                </FormSection>
+
                 <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                   <Button type="submit" disabled={saveDisabled}>
                     {saving ? "Salvando…" : "Salvar"}
@@ -678,6 +761,13 @@ function PortalConfigReadView({
           </ul>
         </div>
       ) : null}
+      <div className="space-y-1 text-sm">
+        <p className="text-xs text-muted-foreground">Vídeo institucional</p>
+        <p>{config.videoActive ? "Ativo" : "Inativo"}</p>
+        <p className="break-all">{config.videoUrl || "Sem URL"}</p>
+        {config.videoTitle ? <p>{config.videoTitle}</p> : null}
+        {config.videoCaptionsUrl ? <p className="break-all">Legendas: {config.videoCaptionsUrl}</p> : <p>Legendas não informadas</p>}
+      </div>
     </div>
   )
 }
@@ -815,6 +905,38 @@ function FileButton({
         {label}
       </Button>
     </>
+  )
+}
+
+function VideoPosterField({
+  url,
+  busy,
+  error,
+  onSelect,
+  onRemove,
+}: {
+  url: string
+  busy: boolean
+  error: string | null
+  onSelect: (file: File | undefined) => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="space-y-1">
+      <PortalImageField
+        label="Capa"
+        url={url}
+        busy={busy}
+        invalid={Boolean(error)}
+        onSelect={onSelect}
+        onRemove={onRemove}
+      />
+      {error ? (
+        <FieldMessage>{error}</FieldMessage>
+      ) : (
+        <p className="text-xs text-muted-foreground">Imagem exibida antes do vídeo carregar.</p>
+      )}
+    </div>
   )
 }
 

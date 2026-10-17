@@ -1,0 +1,61 @@
+import {
+  parseCaptionsUrl,
+  parseInstitutionalVideoUrl,
+  parsePosterUrl,
+  youtubeEmbedUrl,
+} from './institutional-video.util';
+
+describe('parseInstitutionalVideoUrl', () => {
+  it.each([
+    'https://cdn.example.com/avila/institucional.mp4',
+    'https://cdn.example.com/avila/institucional.mp4?token=abc',
+  ])('accepts MP4 %s', (value) => {
+    expect(parseInstitutionalVideoUrl(value)).toMatchObject({ kind: 'file' });
+  });
+
+  it.each([
+    ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+    ['https://youtu.be/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+    ['https://www.youtube.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+    ['https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+    ['https://m.youtube.com/shorts/dQw4w9WgXcQ', 'dQw4w9WgXcQ'],
+  ])('accepts YouTube %s', (value, videoId) => {
+    expect(parseInstitutionalVideoUrl(value)).toEqual({ kind: 'youtube', videoId });
+  });
+
+  it.each([
+    'http://cdn.example.com/video.mp4',
+    'https://evil.example/watch?v=dQw4w9WgXcQ',
+    'https://www.youtube.com/channel/UC1234567890',
+    'https://www.youtube.com/playlist?list=PL123',
+    'https://player.vimeo.com/video/123',
+    'javascript:alert(1)',
+    'https://user:pass@cdn.example.com/video.mp4',
+    'https://cdn.example.com/video.mp4.html',
+    '',
+  ])('rejects %s', (value) => {
+    expect(parseInstitutionalVideoUrl(value)).toBeNull();
+  });
+});
+
+describe('poster and captions', () => {
+  it('accepts image and webvtt urls', () => {
+    expect(parsePosterUrl('https://cdn.example.com/capa.png')).toContain('capa.png');
+    expect(parseCaptionsUrl('https://cdn.example.com/legenda.vtt')).toContain('legenda.vtt');
+  });
+
+  it('rejects non-image posters and non-vtt captions', () => {
+    expect(parsePosterUrl('https://cdn.example.com/capa.html')).toBeNull();
+    expect(parseCaptionsUrl('https://cdn.example.com/legenda.srt')).toBeNull();
+  });
+});
+
+describe('youtubeEmbedUrl', () => {
+  it('uses the nocookie embed host and stays muted', () => {
+    const url = new URL(youtubeEmbedUrl('dQw4w9WgXcQ', true));
+    expect(url.origin).toBe('https://www.youtube-nocookie.com');
+    expect(url.pathname).toBe('/embed/dQw4w9WgXcQ');
+    expect(url.searchParams.get('mute')).toBe('1');
+    expect(url.searchParams.get('autoplay')).toBe('1');
+  });
+});

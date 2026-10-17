@@ -1,4 +1,9 @@
 import {
+  parseCaptionsUrl,
+  parseInstitutionalVideoUrl,
+  parsePosterUrl,
+} from "@/lib/real-estate/institutional-video"
+import {
   buildPortalPublicUrl,
   isValidPortalUrl,
   isValidPublicSlug,
@@ -21,6 +26,7 @@ export const PORTAL_UPDATE_KEYS = [
   "instagram",
   "facebook",
   "youtube",
+  "institutionalVideo",
   "creci",
   "address",
   "portalUrl",
@@ -69,6 +75,12 @@ export type PortalConfigForm = {
   instagram: string
   facebook: string
   youtube: string
+  videoActive: boolean
+  videoUrl: string
+  videoTitle: string
+  videoDescription: string
+  videoPosterUrl: string
+  videoCaptionsUrl: string
   creci: string
   address: string
   portalUrl: string
@@ -92,6 +104,14 @@ export type PortalConfigPayload = {
   instagram: string | null
   facebook: string | null
   youtube: string | null
+  institutionalVideo: {
+    active: boolean
+    url: string | null
+    title: string | null
+    description: string | null
+    posterUrl: string | null
+    captionsUrl: string | null
+  } | null
   creci: string | null
   address: string | null
   portalUrl: string | null
@@ -114,6 +134,12 @@ export const EMPTY_PORTAL_CONFIG: PortalConfigForm = {
   instagram: "",
   facebook: "",
   youtube: "",
+  videoActive: false,
+  videoUrl: "",
+  videoTitle: "",
+  videoDescription: "",
+  videoPosterUrl: "",
+  videoCaptionsUrl: "",
   creci: "",
   address: "",
   portalUrl: "",
@@ -140,6 +166,71 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
+function institutionalVideoFields(value: unknown): Pick<
+  PortalConfigForm,
+  "videoActive" | "videoUrl" | "videoTitle" | "videoDescription" | "videoPosterUrl" | "videoCaptionsUrl"
+> {
+  const row = isRecord(value) ? value : {}
+  return {
+    videoActive: row.active === true,
+    videoUrl: asString(row.url),
+    videoTitle: asString(row.title),
+    videoDescription: asString(row.description),
+    videoPosterUrl: asString(row.posterUrl),
+    videoCaptionsUrl: asString(row.captionsUrl),
+  }
+}
+
+function institutionalVideoPayload(form: PortalConfigForm): PortalConfigPayload["institutionalVideo"] {
+  const url = emptyToNull(form.videoUrl)
+  const title = emptyToNull(form.videoTitle)
+  const description = emptyToNull(form.videoDescription)
+  const posterUrl = emptyToNull(form.videoPosterUrl)
+  const captionsUrl = emptyToNull(form.videoCaptionsUrl)
+  const active = form.videoActive && Boolean(url)
+  if (!url && !title && !description && !posterUrl && !captionsUrl && !form.videoActive) return null
+  return { active, url, title, description, posterUrl, captionsUrl }
+}
+
+const VIDEO_LIMITS = {
+  videoUrl: 2048,
+  videoTitle: 160,
+  videoDescription: 500,
+  videoPosterUrl: 2048,
+  videoCaptionsUrl: 2048,
+} as const
+
+export function assessInstitutionalVideo(form: PortalConfigForm) {
+  const lengthError = (key: keyof typeof VIDEO_LIMITS, label: string): PortalFieldFeedback => {
+    const value = form[key]
+    const max = VIDEO_LIMITS[key]
+    if (value.length > max) return { error: `${label} não pode ultrapassar ${max} caracteres.`, atLimit: false }
+    return { error: null, atLimit: value.length === max && value.length > 0 }
+  }
+  const url = lengthError("videoUrl", "A URL do vídeo")
+  const poster = lengthError("videoPosterUrl", "A capa")
+  const captions = lengthError("videoCaptionsUrl", "As legendas")
+  if (!url.error && form.videoUrl.trim() && !parseInstitutionalVideoUrl(form.videoUrl)) {
+    url.error = "Use um MP4 em HTTPS ou um link do YouTube."
+  }
+  if (!url.error && form.videoActive && !form.videoUrl.trim()) {
+    url.error = "Informe a URL do vídeo para exibi-lo."
+  }
+  if (!poster.error && form.videoPosterUrl.trim() && !parsePosterUrl(form.videoPosterUrl)) {
+    poster.error = "A capa precisa ser uma imagem HTTPS (PNG, JPEG, WebP, GIF ou AVIF)."
+  }
+  if (!captions.error && form.videoCaptionsUrl.trim() && !parseCaptionsUrl(form.videoCaptionsUrl)) {
+    captions.error = "As legendas precisam ser um arquivo WebVTT em HTTPS."
+  }
+  return {
+    videoUrl: url,
+    videoTitle: lengthError("videoTitle", "O título"),
+    videoDescription: lengthError("videoDescription", "A descrição"),
+    videoPosterUrl: poster,
+    videoCaptionsUrl: captions,
+  }
+}
+
 export function portalConfigFromApi(data: unknown): PortalConfigForm {
   const row = isRecord(data) ? data : {}
   const differentials = Array.isArray(row.differentials)
@@ -161,6 +252,7 @@ export function portalConfigFromApi(data: unknown): PortalConfigForm {
     instagram: asString(row.instagram),
     facebook: asString(row.facebook),
     youtube: asString(row.youtube),
+    ...institutionalVideoFields(row.institutionalVideo),
     creci: asString(row.creci),
     address: asString(row.address),
     portalUrl: asString(row.portalUrl),
@@ -192,6 +284,7 @@ export function portalConfigToPayload(
     instagram: emptyToNull(form.instagram),
     facebook: emptyToNull(form.facebook),
     youtube: emptyToNull(form.youtube),
+    institutionalVideo: institutionalVideoPayload(form),
     creci: emptyToNull(form.creci),
     address: emptyToNull(form.address),
     portalUrl: emptyToNull(form.portalUrl),
@@ -309,6 +402,7 @@ export function portalFormFeedback(form: PortalConfigForm) {
     instagram: assessTextField("instagram", form.instagram),
     facebook: assessTextField("facebook", form.facebook),
     youtube: assessTextField("youtube", form.youtube),
+    ...assessInstitutionalVideo(form),
     creci: assessTextField("creci", form.creci),
     address: assessTextField("address", form.address),
     portalUrl: assessTextField("portalUrl", form.portalUrl),

@@ -5,6 +5,7 @@ import { Building2, Home, Landmark, MessageCircle, Rocket, Store, Trees } from "
 import { CategoryCard, type CategoryTone } from "@/components/category-card";
 import { HeroFeaturedCard } from "@/components/hero-featured-card";
 import { HeroSearch } from "@/components/hero-search";
+import { InstitutionalSection } from "@/components/institutional-section";
 import { InstitutionalStats } from "@/components/institutional-stats";
 import { LaunchCard } from "@/components/launch-card";
 import { LocalBusinessJsonLd, LocalSeo } from "@/components/local-seo";
@@ -214,62 +215,14 @@ export default async function HomePage() {
 
       <SocialProof />
 
-      <section id="sobre" className="scroll-mt-16 bg-white">
-        <div className="mx-auto grid w-full max-w-[90rem] items-center gap-8 px-4 py-12 md:gap-12 md:px-8 md:py-20 lg:grid-cols-2 2xl:max-w-[110rem]">
-          <div className="relative min-h-72 overflow-hidden rounded-[28px] bg-[#000C24] shadow-[0_24px_50px_-28px_rgba(0,12,36,.65)]">
-            {aboutImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={aboutImage}
-                alt=""
-                width={960}
-                height={720}
-                className="absolute inset-0 h-full w-full object-cover opacity-45"
-                loading="lazy"
-                decoding="async"
-              />
-            )}
-            <div className="relative flex h-full min-h-72 flex-col justify-end p-8 md:p-10">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#DEAE5D]">{name}</p>
-              <p className="mt-4 max-w-md text-3xl font-extrabold leading-[1.05] tracking-tight text-white md:text-5xl">
-                Mais que imóveis. Realizamos histórias.
-              </p>
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a2f]">Posicionamento</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#000C24] md:text-4xl">{aboutTitle}</h2>
-            <p className="mt-5 whitespace-pre-wrap text-base leading-relaxed text-[#10294B] md:text-lg">{aboutText}</p>
-            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-              {differentials.map((item) => (
-                <li key={item} className="rounded-2xl border-t-4 border-[#C09048] bg-[#F6F1E8] p-4 text-sm font-semibold text-[#000C24]">
-                  {item}
-                </li>
-              ))}
-            </ul>
-            {contactHref ? (
-              <TrackedAnchor
-                event="whatsapp_click"
-                eventLabel="sobre"
-                href={contactHref}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#075E54] px-6 text-sm font-semibold text-white hover:bg-[#0b7a6e]"
-              >
-                <MessageCircle className="size-4" aria-hidden />
-                Falar no WhatsApp
-              </TrackedAnchor>
-            ) : (
-              <a
-                href="#whatsapp"
-                className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-[#C09048] px-6 text-sm font-semibold text-[#000C24] hover:bg-[#DEAE5D]"
-              >
-                Falar com a imobiliária
-              </a>
-            )}
-          </div>
-        </div>
-      </section>
+      <InstitutionalSection
+        image={aboutImage}
+        aboutTitle={aboutTitle}
+        aboutText={aboutText}
+        differentials={differentials}
+        contactHref={contactHref}
+        video={config?.institutionalVideo ?? null}
+      />
 
       <WhatsAppHighlight config={config} />
       <LocalSeo />

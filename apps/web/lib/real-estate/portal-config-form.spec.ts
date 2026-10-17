@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 
 import {
   EMPTY_PORTAL_CONFIG,
+  assessInstitutionalVideo,
   assessTextField,
   messageFromPayload,
   portalConfigFromApi,
@@ -89,6 +90,35 @@ describe("portal config mapping", () => {
     assert.equal(body.publicSlug, "avila")
     assert.equal("id" in body, false)
     assert.equal("tenantId" in body, false)
+  })
+})
+
+describe("institutional video", () => {
+  it("maps a stored video and omits an empty one from the payload", () => {
+    const form = portalConfigFromApi({
+      companyName: "Ávila",
+      institutionalVideo: {
+        active: true,
+        url: "https://cdn.example.com/avila.mp4",
+        title: "Institucional",
+        posterUrl: "https://cdn.example.com/capa.png",
+        captionsUrl: "https://cdn.example.com/legenda.vtt",
+      },
+    })
+    assert.equal(form.videoActive, true)
+    assert.equal(form.videoUrl, "https://cdn.example.com/avila.mp4")
+    assert.equal(portalConfigToPayload(base, "bu-1").institutionalVideo, null)
+  })
+
+  it("rejects arbitrary iframe origins and accepts YouTube or MP4", () => {
+    assert.ok(assessInstitutionalVideo({ ...base, videoActive: true, videoUrl: "https://vimeo.com/1" }).videoUrl.error)
+    assert.equal(
+      assessInstitutionalVideo({ ...base, videoActive: true, videoUrl: "https://youtu.be/dQw4w9WgXcQ" }).videoUrl.error,
+      null,
+    )
+    assert.ok(
+      assessInstitutionalVideo({ ...base, videoCaptionsUrl: "https://cdn.example.com/legenda.srt" }).videoCaptionsUrl.error,
+    )
   })
 })
 
