@@ -15,6 +15,7 @@ import { SocialProof } from "@/components/social-proof";
 import { SourceBanner } from "@/components/source-banner";
 import { TrackedAnchor } from "@/components/tracked-link";
 import { WhatsAppHighlight } from "@/components/whatsapp-highlight";
+import { WhatsAppIcon } from "@/components/whatsapp-icon";
 import {
   ABOUT_TEXT_FALLBACK,
   CATEGORY_LINKS,
@@ -113,9 +114,9 @@ export default async function HomePage() {
                   href={contactHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-[#075E54] px-7 text-base font-semibold text-white shadow-[0_16px_36px_-14px_rgba(7,94,84,.9)] transition-colors hover:bg-[#0b7a6e] sm:flex-none"
+                  className="inline-flex min-h-12 w-full min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-7 text-sm font-semibold text-[#000C24] transition-colors duration-[400ms] hover:bg-[#1EBE5A] active:bg-[#075E54] active:text-white motion-reduce:transition-none sm:w-auto sm:flex-none sm:self-center"
                 >
-                  <MessageCircle className="size-5" aria-hidden />
+                  <WhatsAppIcon className="size-4 shrink-0" />
                   Falar no WhatsApp
                 </TrackedAnchor>
               )}
