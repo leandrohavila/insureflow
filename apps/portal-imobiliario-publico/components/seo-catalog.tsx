@@ -26,7 +26,12 @@ export async function SeoCatalog({
       <SiteHeader config={portal.data.config} />
       <main className="mx-auto w-full max-w-[90rem] px-4 py-4 md:px-8 md:py-8 2xl:max-w-[110rem]">
         <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando...</p>}>
-          <PropertyListing preset={preset} title={title} description={description} />
+          <PropertyListing
+            preset={preset}
+            title={title}
+            description={description}
+            whatsappPhone={portal.data.config?.whatsapp}
+          />
         </Suspense>
       </main>
     </>
