@@ -21,6 +21,7 @@ import {
   fetchQuestionnaireSubmission,
   fetchQuestionnaireSubmissions,
   fetchQuestionnaireTemplate,
+  fetchQuestionnaireTemplateSuggestions,
   fetchQuestionnaireTemplates,
   updateQuestionnaireField,
   updateQuestionnaireSubmission,
@@ -54,6 +55,16 @@ export function useQuestionnaireTemplates(
   return useQuery({
     queryKey: queryKeys.questionnaires.templates.list(filters),
     queryFn: () => fetchQuestionnaireTemplates(filters),
+  });
+}
+
+export function useQuestionnaireTemplateSuggestions(leadId: string | null) {
+  return useQuery({
+    queryKey: leadId
+      ? queryKeys.questionnaires.suggestions(leadId)
+      : queryKeys.questionnaires.all,
+    queryFn: () => fetchQuestionnaireTemplateSuggestions(leadId as string),
+    enabled: Boolean(leadId),
   });
 }
 

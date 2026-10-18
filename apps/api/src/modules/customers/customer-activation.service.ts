@@ -11,6 +11,7 @@ import {
 } from '../../common/utils/document.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
+import { selectExistingCustomer } from './customer-match.util';
 
 type DealWithLead = Prisma.DealGetPayload<{
   include: {
@@ -24,6 +25,7 @@ type DealWithLead = Prisma.DealGetPayload<{
         document: true;
         documentType: true;
         assignedTo: true;
+        ownerUserId: true;
         interestCategories: true;
         businessUnitId: true;
         businessUnits: { select: { businessUnitId: true; isOrigin: true } };
@@ -66,6 +68,7 @@ export class CustomerActivationService {
             document: true,
             documentType: true,
             assignedTo: true,
+            ownerUserId: true,
             interestCategories: true,
             businessUnitId: true,
             businessUnits: { select: { businessUnitId: true, isOrigin: true } },
@@ -125,6 +128,8 @@ export class CustomerActivationService {
             renewalPipeline: DEFAULT_RENEWAL_PIPELINE,
             businessUnitId:
               deal.businessUnitId ?? deal.convertedLead?.businessUnitId ?? null,
+            ownerUserId:
+              deal.convertedLead?.ownerUserId ?? deal.ownerUserId ?? null,
             interestCategories: deal.convertedLead?.interestCategories ?? [],
             ...(deal.convertedLead?.businessUnits.length
               ? {
@@ -296,28 +301,48 @@ export class CustomerActivationService {
   ) {
     const lead = deal.convertedLead;
     const documentDigits = stripDocumentDigits(lead?.document ?? '');
-
-    if (documentDigits.length === 11 || documentDigits.length === 14) {
-      const byDocument = await tx.customer.findFirst({
-        where: { tenantId, document: documentDigits },
-      });
-      if (byDocument) return byDocument;
-    }
-
-    const email = lead?.email?.trim().toLowerCase();
-    if (email) {
-      const byEmail = await tx.customer.findFirst({
-        where: { tenantId, email: { equals: email, mode: 'insensitive' } },
-      });
-      if (byEmail) return byEmail;
-    }
-
+    const email = lead?.email?.trim().toLowerCase() || null;
     const phoneDigits = stripDocumentDigits(lead?.phone ?? '');
-    if (phoneDigits.length >= 10) {
-      const byPhone = await tx.customer.findFirst({
-        where: { tenantId, phone: { contains: phoneDigits.slice(-8) } },
+    const documentIsComplete =
+      documentDigits.length === 11 || documentDigits.length === 14;
+
+    const byDocument = documentIsComplete
+      ? await tx.customer.findFirst({
+          where: { tenantId, document: documentDigits },
+        })
+      : null;
+
+    const byEmail =
+      !documentIsComplete && email
+        ? await tx.customer.findMany({
+            where: {
+              tenantId,
+              email: { equals: email, mode: 'insensitive' },
+            },
+            take: 2,
+          })
+        : [];
+
+    const byPhone =
+      !documentIsComplete && byEmail.length === 0 && phoneDigits.length >= 10
+        ? await tx.customer.findMany({
+            where: { tenantId, phone: { contains: phoneDigits } },
+            take: 5,
+          })
+        : [];
+
+    const selected = selectExistingCustomer({
+      documentDigits,
+      email,
+      phoneDigits,
+      byDocument,
+      byEmail,
+      byPhone,
+    });
+    if (selected) {
+      return tx.customer.findFirst({
+        where: { id: selected.id, tenantId },
       });
-      if (byPhone) return byPhone;
     }
 
     if (deal.customerId) {

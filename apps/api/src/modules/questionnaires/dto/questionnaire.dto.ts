@@ -332,4 +332,13 @@ export class CreateQuestionnaireSubmissionDto {
 
 export class UpdateQuestionnaireSubmissionDto extends PartialType(
   CreateQuestionnaireSubmissionDto,
-) {}
+) {
+  @ApiPropertyOptional({
+    example: '2026-05-18T16:25:00.000Z',
+    description:
+      'updatedAt conhecido pelo cliente. Uma versão mais nova no servidor rejeita o salvamento.',
+  })
+  @IsOptional()
+  @IsDateString()
+  expectedUpdatedAt?: string;
+}

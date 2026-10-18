@@ -22,6 +22,7 @@ import {
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.interface';
+import type { BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
 import {
   CreateQuestionnaireFieldDto,
   CreateQuestionnaireSubmissionDto,
@@ -45,6 +46,33 @@ export class QuestionnairesController {
   private readonly logger = new Logger(QuestionnairesController.name);
 
   constructor(private readonly questionnaires: QuestionnairesService) {}
+
+  private actorFrom(user: JwtAccessPayload): BusinessUnitActor {
+    return {
+      userId: user.sub,
+      tenantId: user.tenantId,
+      roles: user.roles,
+      permissions: user.permissions,
+      currentBusinessUnitId: user.currentBusinessUnitId,
+    };
+  }
+
+  @Get('template-suggestions')
+  @RequirePermissions('questionnaires:view')
+  @ApiOperation({
+    summary: 'Sugerir templates compatíveis com o produto e a unidade do lead',
+  })
+  @ApiQuery({ name: 'leadId', required: true })
+  suggestTemplates(
+    @CurrentUser() user: JwtAccessPayload,
+    @Query('leadId') leadId: string,
+  ) {
+    return this.questionnaires.suggestTemplatesForLead(
+      user.tenantId,
+      leadId,
+      this.actorFrom(user),
+    );
+  }
 
   @Get('templates')
   @RequirePermissions('questionnaires:view')
@@ -206,7 +234,11 @@ export class QuestionnairesController {
         `[BUG-003] GET submissions rawQuery=${JSON.stringify(request.query)} validated=${JSON.stringify(query)}`,
       );
     }
-    return this.questionnaires.findSubmissions(user.tenantId, query);
+    return this.questionnaires.findSubmissions(
+      user.tenantId,
+      query,
+      this.actorFrom(user),
+    );
   }
 
   @Get('submissions/:id')
@@ -217,7 +249,11 @@ export class QuestionnairesController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
   ) {
-    return this.questionnaires.findSubmission(user.tenantId, id);
+    return this.questionnaires.findSubmission(
+      user.tenantId,
+      id,
+      this.actorFrom(user),
+    );
   }
 
   @Post('submissions')
@@ -227,7 +263,12 @@ export class QuestionnairesController {
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateQuestionnaireSubmissionDto,
   ) {
-    return this.questionnaires.createSubmission(user.tenantId, dto, user.sub);
+    return this.questionnaires.createSubmission(
+      user.tenantId,
+      dto,
+      user.sub,
+      this.actorFrom(user),
+    );
   }
 
   @Patch('submissions/:id')
@@ -244,6 +285,7 @@ export class QuestionnairesController {
       id,
       dto,
       user.sub,
+      this.actorFrom(user),
     );
   }
 
@@ -255,6 +297,10 @@ export class QuestionnairesController {
     @CurrentUser() user: JwtAccessPayload,
     @Param('id') id: string,
   ) {
-    return this.questionnaires.deleteSubmission(user.tenantId, id);
+    return this.questionnaires.deleteSubmission(
+      user.tenantId,
+      id,
+      this.actorFrom(user),
+    );
   }
 }

@@ -13,11 +13,19 @@ import {
   fieldsToDescriptors,
   resolveValidationProfile,
 } from '@repo/forms-engine';
+import {
+  andWhere,
+  canViewAllBusinessUnits,
+  relatedLeadCustomerDealWhere,
+  type BusinessUnitActor,
+} from '../../common/utils/business-unit-acl.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { BusinessUnitAccessService } from '../access/business-unit-access.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
 import { LeadsService } from '../leads/leads.service';
 import { QuotesService } from '../quotes/quotes.service';
 import { buildQuestionnaireAnswerChanges } from './questionnaire-answer-audit.util';
+import { matchQuestionnaireTemplates } from './questionnaire-template-match.util';
 import type {
   CreateQuestionnaireFieldDto,
   CreateQuestionnaireSubmissionDto,
@@ -82,6 +90,7 @@ export class QuestionnairesService {
     private readonly leads: LeadsService,
     private readonly activityEngine: ActivityEngineService,
     private readonly quotes: QuotesService,
+    private readonly businessUnitAccess: BusinessUnitAccessService,
   ) {}
 
   async findTemplates(
@@ -314,10 +323,15 @@ export class QuestionnairesService {
   async findSubmissions(
     tenantId: string,
     query: ListQuestionnaireSubmissionsQueryDto,
+    actor?: BusinessUnitActor,
   ) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
-    const where = this.buildSubmissionWhere(tenantId, query);
+    await this.assertListedReferencesVisible(tenantId, query, actor);
+    const where = andWhere(
+      this.buildSubmissionWhere(tenantId, query),
+      await this.submissionListScope(actor),
+    );
 
     const [total, submissions] = await this.prisma.$transaction([
       this.prisma.questionnaireSubmission.count({ where }),
@@ -341,9 +355,16 @@ export class QuestionnairesService {
     };
   }
 
-  async findSubmission(tenantId: string, id: string) {
+  async findSubmission(
+    tenantId: string,
+    id: string,
+    actor?: BusinessUnitActor,
+  ) {
     const submission = await this.prisma.questionnaireSubmission.findFirst({
-      where: { id, tenantId },
+      where: andWhere(
+        { id, tenantId },
+        await this.submissionRecordScope(actor),
+      ),
       include: submissionInclude,
     });
     if (!submission) {
@@ -352,12 +373,100 @@ export class QuestionnairesService {
     return submission;
   }
 
+  async suggestTemplatesForLead(
+    tenantId: string,
+    leadId: string,
+    actor?: BusinessUnitActor,
+  ) {
+    const normalizedLeadId = leadId?.trim();
+    if (!normalizedLeadId) {
+      throw new BadRequestException('Informe o lead.');
+    }
+    if (actor) {
+      await this.businessUnitAccess.assertLeadVisible(
+        actor,
+        tenantId,
+        normalizedLeadId,
+      );
+    }
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: normalizedLeadId, tenantId },
+      select: {
+        id: true,
+        interestCategories: true,
+        businessUnit: { select: { type: true } },
+      },
+    });
+    if (!lead) {
+      throw new NotFoundException('Lead relacionado não encontrado');
+    }
+
+    const templates = await this.prisma.questionnaireTemplate.findMany({
+      where: { tenantId, status: 'active' },
+      select: {
+        id: true,
+        name: true,
+        version: true,
+        status: true,
+        settings: true,
+      },
+      orderBy: [{ name: 'asc' }, { version: 'desc' }],
+      take: 100,
+    });
+    const evaluated = matchQuestionnaireTemplates({
+      interests: lead.interestCategories,
+      businessUnitType: lead.businessUnit?.type ?? null,
+      templates,
+    });
+    const visible =
+      evaluated.match === 'none'
+        ? templates
+        : templates.filter((template) =>
+            evaluated.templateIds.includes(template.id),
+          );
+
+    return {
+      leadId: lead.id,
+      businessUnitType: lead.businessUnit?.type ?? null,
+      interestCategories: lead.interestCategories,
+      match: evaluated.match,
+      suggestedTemplateId: evaluated.suggestedTemplateId,
+      templates: visible.map((template) => ({
+        id: template.id,
+        name: template.name,
+        version: template.version,
+        status: template.status,
+        settings: template.settings,
+      })),
+    };
+  }
+
   async createSubmission(
     tenantId: string,
     dto: CreateQuestionnaireSubmissionDto,
     performedById?: string,
+    actor?: BusinessUnitActor,
   ) {
+    await this.assertActorCanUseReferences(tenantId, dto, actor);
+    if (
+      actor &&
+      !canViewAllBusinessUnits(actor) &&
+      !dto.leadId &&
+      !dto.customerId &&
+      !dto.dealId
+    ) {
+      throw new BadRequestException(
+        'A resposta precisa estar vinculada a um lead, negócio ou cliente da sua unidade.',
+      );
+    }
     await this.ensureSubmissionReferencesBelongToTenant(tenantId, dto);
+    if (dto.leadId) {
+      await this.assertTemplateMatchesLead(
+        tenantId,
+        dto.leadId,
+        dto.templateId,
+      );
+    }
     const template = await this.getTemplateForSubmission(
       tenantId,
       dto.templateId,
@@ -368,6 +477,47 @@ export class QuestionnairesService {
       dto.answers ?? {},
       dto.status ?? 'draft',
     );
+
+    /**
+     * Reaproveita o rascunho do mesmo lead e template.
+     * Unicidade no banco exigiria índice parcial e migration; a corrida
+     * entre duas criações simultâneas continua possível.
+     */
+    if ((dto.status ?? 'draft') === 'draft' && dto.leadId) {
+      const draftWhere = {
+        tenantId,
+        leadId: dto.leadId,
+        templateId: dto.templateId,
+        status: 'draft' as const,
+      };
+      const scope = await this.submissionRecordScope(actor);
+      const existingDraft = await this.prisma.questionnaireSubmission.findFirst(
+        {
+          where: scope ? { AND: [draftWhere, scope] } : draftWhere,
+          orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+          select: { id: true, updatedAt: true, answers: true },
+        },
+      );
+      if (existingDraft) {
+        const incomingAnswers = dto.answers ?? {};
+        const hasIncoming =
+          this.isPlainObject(incomingAnswers) &&
+          Object.keys(incomingAnswers).length > 0;
+        if (!hasIncoming) {
+          return this.findSubmission(tenantId, existingDraft.id, actor);
+        }
+        return this.updateSubmission(
+          tenantId,
+          existingDraft.id,
+          {
+            ...dto,
+            expectedUpdatedAt: existingDraft.updatedAt.toISOString(),
+          },
+          performedById,
+          actor,
+        );
+      }
+    }
 
     const submission = await this.prisma.questionnaireSubmission.create({
       data: {
@@ -410,9 +560,16 @@ export class QuestionnairesService {
     id: string,
     dto: UpdateQuestionnaireSubmissionDto,
     performedById?: string,
+    actor?: BusinessUnitActor,
   ) {
-    const current = await this.getSubmissionForUpdate(tenantId, id);
+    const current = await this.getSubmissionForUpdate(tenantId, id, actor);
+    await this.assertActorCanUseReferences(tenantId, dto, actor);
     await this.ensureSubmissionReferencesBelongToTenant(tenantId, dto);
+    const leadId = dto.leadId ?? current.leadId ?? undefined;
+    if (leadId && dto.templateId) {
+      await this.assertTemplateMatchesLead(tenantId, leadId, dto.templateId);
+    }
+    this.assertDraftIsNotStale(current.updatedAt, dto.expectedUpdatedAt);
     const template = await this.getTemplateForSubmission(
       tenantId,
       dto.templateId ?? current.templateId,
@@ -504,8 +661,12 @@ export class QuestionnairesService {
     return submission;
   }
 
-  async deleteSubmission(tenantId: string, id: string) {
-    await this.ensureSubmissionBelongsToTenant(tenantId, id);
+  async deleteSubmission(
+    tenantId: string,
+    id: string,
+    actor?: BusinessUnitActor,
+  ) {
+    await this.getSubmissionForUpdate(tenantId, id, actor);
     await this.prisma.questionnaireSubmission.delete({ where: { id } });
     return { deleted: true, id };
   }
@@ -589,20 +750,133 @@ export class QuestionnairesService {
     }
   }
 
-  private async getSubmissionForUpdate(tenantId: string, id: string) {
+  private async getSubmissionForUpdate(
+    tenantId: string,
+    id: string,
+    actor?: BusinessUnitActor,
+  ) {
     const submission = await this.prisma.questionnaireSubmission.findFirst({
-      where: { id, tenantId },
+      where: andWhere(
+        { id, tenantId },
+        await this.submissionRecordScope(actor),
+      ),
       select: {
         id: true,
         templateId: true,
         status: true,
         answers: true,
+        leadId: true,
+        updatedAt: true,
       },
     });
     if (!submission) {
       throw new NotFoundException('Resposta de questionário não encontrada');
     }
     return submission;
+  }
+
+  private assertDraftIsNotStale(updatedAt: Date, expectedUpdatedAt?: string) {
+    if (!expectedUpdatedAt) return;
+    const expected = new Date(expectedUpdatedAt).getTime();
+    if (Number.isNaN(expected)) return;
+    if (updatedAt.getTime() > expected) {
+      throw new ConflictException(
+        'Existe um rascunho mais recente. Recarregue antes de salvar.',
+      );
+    }
+  }
+
+  private async submissionListScope(actor?: BusinessUnitActor) {
+    if (!actor) return undefined;
+    return relatedLeadCustomerDealWhere(
+      await this.businessUnitAccess.resolveIds(actor),
+    );
+  }
+
+  private async submissionRecordScope(actor?: BusinessUnitActor) {
+    if (!actor) return undefined;
+    return relatedLeadCustomerDealWhere(
+      await this.businessUnitAccess.resolveRecordIds(actor),
+    );
+  }
+
+  private async assertListedReferencesVisible(
+    tenantId: string,
+    query: ListQuestionnaireSubmissionsQueryDto,
+    actor?: BusinessUnitActor,
+  ) {
+    if (!actor) return;
+    await this.assertActorCanUseReferences(
+      tenantId,
+      {
+        leadId: query.leadId,
+        customerId: query.customerId,
+        dealId: query.dealId,
+      },
+      actor,
+    );
+  }
+
+  private async assertActorCanUseReferences(
+    tenantId: string,
+    dto: { leadId?: string; customerId?: string; dealId?: string },
+    actor?: BusinessUnitActor,
+  ) {
+    if (!actor) return;
+    if (dto.leadId) {
+      await this.businessUnitAccess.assertLeadVisible(
+        actor,
+        tenantId,
+        dto.leadId,
+      );
+    }
+    if (dto.customerId) {
+      await this.businessUnitAccess.assertCustomerVisible(
+        actor,
+        tenantId,
+        dto.customerId,
+      );
+    }
+    if (dto.dealId) {
+      await this.businessUnitAccess.assertDealVisible(
+        actor,
+        tenantId,
+        dto.dealId,
+      );
+    }
+  }
+
+  private async assertTemplateMatchesLead(
+    tenantId: string,
+    leadId: string,
+    templateId: string,
+  ) {
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: leadId, tenantId },
+      select: {
+        interestCategories: true,
+        businessUnit: { select: { type: true } },
+      },
+    });
+    if (!lead) {
+      throw new NotFoundException('Lead relacionado não encontrado');
+    }
+    const templates = await this.prisma.questionnaireTemplate.findMany({
+      where: { tenantId, status: 'active' },
+      select: { id: true, settings: true },
+      take: 100,
+    });
+    const evaluated = matchQuestionnaireTemplates({
+      interests: lead.interestCategories,
+      businessUnitType: lead.businessUnit?.type ?? null,
+      templates,
+    });
+    if (evaluated.match === 'none') return;
+    if (!evaluated.templateIds.includes(templateId)) {
+      throw new BadRequestException(
+        'Este template não corresponde ao produto e à unidade do lead.',
+      );
+    }
   }
 
   private async ensureSubmissionReferencesBelongToTenant(

@@ -202,7 +202,24 @@ export type CreateQuestionnaireSubmissionInput = {
 };
 
 export type UpdateQuestionnaireSubmissionInput =
-  Partial<CreateQuestionnaireSubmissionInput>;
+  Partial<CreateQuestionnaireSubmissionInput> & {
+    expectedUpdatedAt?: string;
+  };
+
+export type QuestionnaireTemplateSuggestion = {
+  leadId: string;
+  businessUnitType: "INSURANCE" | "REAL_ESTATE" | null;
+  interestCategories: string[];
+  match: "unique" | "ambiguous" | "none";
+  suggestedTemplateId: string | null;
+  templates: Array<{
+    id: string;
+    name: string;
+    version: number;
+    status: string;
+    settings?: Record<string, unknown> | null;
+  }>;
+};
 
 export type BackendQuestionnaireField = Omit<
   QuestionnaireField,
