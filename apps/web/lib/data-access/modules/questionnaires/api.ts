@@ -21,10 +21,12 @@ import type {
   UpdateQuestionnaireFieldInput,
   UpdateQuestionnaireSubmissionInput,
   UpdateQuestionnaireTemplateInput,
+  QuestionnaireTemplateSuggestion,
 } from "./types";
 
 const QUESTIONNAIRE_TEMPLATES_PATH = "/api/questionnaires/templates";
 const QUESTIONNAIRE_SUBMISSIONS_PATH = "/api/questionnaires/submissions";
+const QUESTIONNAIRE_SUGGESTIONS_PATH = "/api/questionnaires/template-suggestions";
 
 function toTemplateQueryString(filters: QuestionnaireTemplateListFilters = {}) {
   const params = new URLSearchParams();
@@ -60,6 +62,12 @@ function toSubmissionQueryString(
 
   const query = params.toString();
   return query ? `?${query}` : "";
+}
+
+export async function fetchQuestionnaireTemplateSuggestions(leadId: string) {
+  return apiClient.get<QuestionnaireTemplateSuggestion>(
+    `${QUESTIONNAIRE_SUGGESTIONS_PATH}?leadId=${encodeURIComponent(leadId)}`,
+  );
 }
 
 export async function fetchQuestionnaireTemplates(

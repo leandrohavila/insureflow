@@ -103,6 +103,8 @@ export const queryKeys = {
       detail: (id: string) =>
         ["questionnaires", "submissions", "detail", id] as const,
     },
+    suggestions: (leadId: string) =>
+      ["questionnaires", "template-suggestions", leadId] as const,
   },
   companies: entityKeys("companies"),
   businessUnits: {

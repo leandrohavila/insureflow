@@ -1,5 +1,6 @@
 import {
   getBlockDefinition,
+  INSURANCE_PRODUCTS,
   instantiateBlock,
   mergeTemplateRules,
   searchBlocks,
@@ -23,6 +24,13 @@ describe("forms-library catalog", () => {
   it("filters blocks by product", () => {
     const autoBlocks = searchBlocks({ product: "auto" })
     expect(autoBlocks.some((block) => block.id === "auto.block.vehicle")).toBe(true)
+  })
+
+  it("exposes auto and does not define a property purchase product", () => {
+    expect([...(INSURANCE_PRODUCTS as readonly string[])]).toContain("auto")
+    expect([...(INSURANCE_PRODUCTS as readonly string[])]).not.toContain(
+      "property_buy",
+    )
   })
 })
 

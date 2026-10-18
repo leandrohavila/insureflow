@@ -16,7 +16,7 @@ import {
 import {
   useCreateQuestionnaireSubmission,
   useQuestionnaireFields,
-  useQuestionnaireTemplates,
+  useQuestionnaireTemplateSuggestions,
   useUpdateQuestionnaireSubmission,
   type JsonObject,
   type QuestionnaireField,
@@ -72,9 +72,11 @@ function formatSavedTime(date: Date) {
 function DraftSaveIndicatorSlot({
   status,
   lastSavedAt,
+  detail,
 }: {
   status: QuestionnaireDraftSaveStatus
   lastSavedAt: Date | null
+  detail?: string | null
 }) {
   let content: React.ReactNode = (
     <span className="invisible select-none" aria-hidden>
@@ -93,7 +95,7 @@ function DraftSaveIndicatorSlot({
     content = (
       <span className="inline-flex items-center gap-1.5 text-amber-300">
         <CloudOff className="size-3 shrink-0" />
-        Falha ao sincronizar — cópia local mantida
+        {detail ?? "As respostas não foram salvas. Falha ao sincronizar com o servidor."}
       </span>
     )
   } else if (status === "saved" && lastSavedAt) {
@@ -113,6 +115,7 @@ function DraftSaveIndicatorSlot({
 function QuestionnaireDialogFooter({
   status,
   lastSavedAt,
+  saveDetail,
   isBusy,
   canFinalize,
   leadId,
@@ -123,6 +126,7 @@ function QuestionnaireDialogFooter({
 }: {
   status: QuestionnaireDraftSaveStatus
   lastSavedAt: Date | null
+  saveDetail?: string | null
   isBusy: boolean
   canFinalize: boolean
   leadId: string | null
@@ -137,7 +141,11 @@ function QuestionnaireDialogFooter({
       aria-label="Ações do questionário"
       className="-mx-4 -mb-4 mt-5 grid shrink-0 grid-cols-1 gap-3 border-t border-white/[0.08] bg-muted/50 p-4 sm:grid-cols-[minmax(14rem,1fr)_auto] sm:items-center"
     >
-      <DraftSaveIndicatorSlot status={status} lastSavedAt={lastSavedAt} />
+      <DraftSaveIndicatorSlot
+        status={status}
+        lastSavedAt={lastSavedAt}
+        detail={saveDetail}
+      />
       <div className="flex flex-wrap items-center justify-end gap-2 sm:justify-end">
         <Button type="button" variant="outline" disabled={isBusy} onClick={onCancel}>
           Cancelar
@@ -210,21 +218,15 @@ export function QuestionnaireSubmissionDialog({
   const scrollRootRef = useRef<HTMLDivElement | null>(null)
   const formInteractionRef = useRef<"idle" | "draft" | "finalize">("idle")
 
-  const templatesQuery = useQuestionnaireTemplates({
-    status: "active",
-    page: 1,
-    limit: 100,
-  })
+  const suggestionQuery = useQuestionnaireTemplateSuggestions(open ? leadId : null)
+  const suggestion = suggestionQuery.data ?? null
   const templates = useMemo(
-    () => templatesQuery.data?.data ?? [],
-    [templatesQuery.data?.data],
+    () => suggestion?.templates ?? [],
+    [suggestion?.templates],
   )
   const selectedTemplate = templates.find((template) => template.id === templateId)
   const fieldsQuery = useQuestionnaireFields(templateId || null)
-  const fields = useMemo(
-    () => fieldsQuery.data ?? selectedTemplate?.fields ?? [],
-    [fieldsQuery.data, selectedTemplate?.fields],
-  )
+  const fields = useMemo(() => fieldsQuery.data ?? [], [fieldsQuery.data])
   const createSubmission = useCreateQuestionnaireSubmission()
   const finalizeSubmission = useUpdateQuestionnaireSubmission()
 
@@ -292,13 +294,28 @@ export function QuestionnaireSubmissionDialog({
     setSubmitSummary(null)
   }, [])
 
+  const appliedLeadRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (!open) return
-    const firstTemplate = templates[0]
-    setTemplateId((current) => current || firstTemplate?.id || "")
+    if (!open) {
+      appliedLeadRef.current = null
+      return
+    }
     resetFinalizeValidationUi()
     formInteractionRef.current = "idle"
-  }, [open, resetFinalizeValidationUi, templates])
+  }, [open, resetFinalizeValidationUi])
+
+  useEffect(() => {
+    if (!open || !leadId || !suggestion || suggestion.leadId !== leadId) return
+    if (appliedLeadRef.current === leadId) return
+    appliedLeadRef.current = leadId
+    if (suggestion.match === "unique" && suggestion.suggestedTemplateId) {
+      setTemplateId(suggestion.suggestedTemplateId)
+      return
+    }
+    setTemplateId("")
+    setAnswers({})
+  }, [leadId, open, suggestion])
 
   useEffect(() => {
     if (formInteractionRef.current !== "finalize") return
@@ -440,7 +457,7 @@ export function QuestionnaireSubmissionDialog({
             className="mt-5 min-h-0 flex-1 space-y-5 overflow-y-auto pr-1"
           >
             <label className="space-y-2">
-              <span className="text-sm font-medium">Template ativo</span>
+              <span className="text-sm font-medium">Template</span>
               <select
                 value={templateId}
                 onChange={(event) => {
@@ -449,15 +466,36 @@ export function QuestionnaireSubmissionDialog({
                   resetFinalizeValidationUi()
                   formInteractionRef.current = "idle"
                 }}
+                disabled={suggestionQuery.isLoading || templates.length === 0}
                 className="flex h-9 w-full rounded-md border border-input bg-background/40 px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <option value="">Selecione um template</option>
+                <option value="">
+                  {suggestion?.match === "unique"
+                    ? "Questionário sugerido"
+                    : "Selecione um template"}
+                </option>
                 {templates.map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name} v{template.version}
                   </option>
                 ))}
               </select>
+              {suggestion?.match === "unique" ? (
+                <p className="text-xs text-muted-foreground">
+                  Questionário sugerido para o produto e a unidade deste lead.
+                </p>
+              ) : null}
+              {suggestion?.match === "ambiguous" ? (
+                <p className="text-xs text-amber-200">
+                  Há mais de um questionário compatível. Escolha qual preencher.
+                </p>
+              ) : null}
+              {suggestion?.match === "none" ? (
+                <p className="text-xs text-amber-200">
+                  Nenhum questionário corresponde ao produto deste lead. Escolha
+                  um template explicitamente.
+                </p>
+              ) : null}
             </label>
 
             {autosave.isLoadingDraft ? (
@@ -475,7 +513,18 @@ export function QuestionnaireSubmissionDialog({
               fieldRefs={fieldRefs}
             />
 
-            {!templatesQuery.isLoading && templates.length === 0 ? (
+            {suggestionQuery.isError ? (
+              <p
+                className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                role="alert"
+              >
+                Não foi possível identificar o questionário deste lead.
+              </p>
+            ) : null}
+
+            {!suggestionQuery.isLoading &&
+            !suggestionQuery.isError &&
+            templates.length === 0 ? (
               <p className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
                 Nenhum template ativo disponível. Ative um template antes de
                 preencher questionários.
@@ -495,6 +544,7 @@ export function QuestionnaireSubmissionDialog({
           <QuestionnaireDialogFooter
             status={autosave.saveStatus}
             lastSavedAt={autosave.lastSavedAt}
+            saveDetail={autosave.saveDetail}
             isBusy={isBusy}
             canFinalize={canFinalize}
             leadId={leadId}

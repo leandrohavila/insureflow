@@ -19,9 +19,24 @@ import {
 } from "./questionnaire-draft-payload"
 import { buildDraftAnswers } from "./questionnaire-field-validation"
 import { answersToFormState, mergeAnswersWithFields } from "./questionnaire-form-state"
+import {
+  autosaveStorageKey,
+  captureAutosaveOperation,
+  clearSettledAutosave,
+  createAutosaveCursor,
+  draftMutationTarget,
+  invalidateAutosaveCursor,
+  performGuardedAutosave,
+  sameAutosaveIdentity,
+  settleAutosaveFailure,
+  settleAutosaveSuccess,
+  writeSettledAutosave,
+  type AutosaveCursor,
+  type AutosaveIdentity,
+  type AutosaveStorage,
+} from "./autosave-session"
 
 const AUTOSAVE_DELAY_MS = 2_000
-const LOCAL_STORAGE_PREFIX = "insureflow:questionnaire-draft:"
 
 export type QuestionnaireDraftSaveStatus =
   | "idle"
@@ -40,20 +55,22 @@ type UseQuestionnaireDraftAutosaveOptions = {
   onHydrate: (answers: JsonObject) => void
 }
 
-function localDraftKey(leadId: string, templateId: string) {
-  return `${LOCAL_STORAGE_PREFIX}${leadId}:${templateId}`
+function browserAutosaveStorage(): AutosaveStorage | null {
+  if (typeof window === "undefined") return null
+  return window.localStorage
 }
 
 function readLocalDraft(leadId: string, templateId: string) {
   if (typeof window === "undefined") return null
   try {
-    const raw = window.localStorage.getItem(localDraftKey(leadId, templateId))
+    const raw = window.localStorage.getItem(autosaveStorageKey(leadId, templateId))
     if (!raw) return null
     const parsed = JSON.parse(raw) as {
       answers?: JsonObject
       draftId?: string
       updatedAt?: string
       payloadHash?: string
+      baseUpdatedAt?: string
     }
     return parsed.answers ? parsed : null
   } catch {
@@ -61,36 +78,11 @@ function readLocalDraft(leadId: string, templateId: string) {
   }
 }
 
-function writeLocalDraft(
-  leadId: string,
-  templateId: string,
-  answers: JsonObject,
-  draftId?: string | null,
-  payloadHash?: string,
-) {
-  if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(
-      localDraftKey(leadId, templateId),
-      JSON.stringify({
-        answers,
-        draftId: draftId ?? undefined,
-        payloadHash,
-        updatedAt: new Date().toISOString(),
-      }),
-    )
-  } catch {
-    // quota or private mode — ignore
-  }
-}
-
 function clearLocalDraft(leadId: string, templateId: string) {
-  if (typeof window === "undefined") return
-  try {
-    window.localStorage.removeItem(localDraftKey(leadId, templateId))
-  } catch {
-    // ignore
-  }
+  clearSettledAutosave(browserAutosaveStorage() ?? { setItem() {}, removeItem() {} }, {
+    leadId,
+    templateId,
+  })
 }
 
 type LocalDraftRecord = NonNullable<ReturnType<typeof readLocalDraft>>
@@ -111,7 +103,7 @@ function draftTimestamp(value?: string | null) {
   return Number.isNaN(parsed) ? 0 : parsed
 }
 
-/** Prefer newer content; empty remote must not discard fresher local copy. */
+/** A API prevalece ao reabrir. O local só continua a mesma versão remota. */
 function resolveDraftSource(
   remote: RemoteDraftRecord | null,
   local: LocalDraftRecord | null,
@@ -125,6 +117,7 @@ function resolveDraftSource(
       draftId: remote?.id ?? local?.draftId ?? null,
       from: "none" as const,
       updatedAt: remote?.updatedAt ?? local?.updatedAt ?? null,
+      baseUpdatedAt: remote?.updatedAt ?? null,
     }
   }
 
@@ -134,35 +127,32 @@ function resolveDraftSource(
       draftId: local?.draftId ?? remote?.id ?? null,
       from: "local" as const,
       updatedAt: local?.updatedAt ?? null,
+      baseUpdatedAt: local?.baseUpdatedAt ?? null,
     }
   }
 
-  if (remoteHas && !localHas) {
-    return {
-      answers: remote!.answers!,
-      draftId: remote!.id,
-      from: "remote" as const,
-      updatedAt: remote?.updatedAt ?? null,
-    }
-  }
+  const localContinuesRemote =
+    localHas &&
+    Boolean(local?.baseUpdatedAt) &&
+    local?.baseUpdatedAt === remote?.updatedAt &&
+    draftTimestamp(local?.updatedAt) > draftTimestamp(remote?.updatedAt)
 
-  const remoteTs = draftTimestamp(remote?.updatedAt)
-  const localTs = draftTimestamp(local?.updatedAt)
-
-  if (localTs > remoteTs) {
+  if (localContinuesRemote) {
     return {
       answers: local!.answers!,
-      draftId: local?.draftId ?? remote?.id ?? null,
+      draftId: local?.draftId ?? remote!.id,
       from: "local" as const,
       updatedAt: local?.updatedAt ?? null,
+      baseUpdatedAt: remote?.updatedAt ?? null,
     }
   }
 
   return {
     answers: remote!.answers!,
-    draftId: remote!.id ?? local?.draftId ?? null,
+    draftId: remote!.id,
     from: "remote" as const,
-    updatedAt: remote?.updatedAt ?? local?.updatedAt ?? null,
+    updatedAt: remote?.updatedAt ?? null,
+    baseUpdatedAt: remote?.updatedAt ?? null,
   }
 }
 
@@ -175,24 +165,45 @@ export function useQuestionnaireDraftAutosave({
   answers,
   onHydrate,
 }: UseQuestionnaireDraftAutosaveOptions) {
+  const identity = useMemo<AutosaveIdentity>(
+    () => ({ open, leadId, templateId }),
+    [leadId, open, templateId],
+  )
   const [draftId, setDraftId] = useState<string | null>(null)
   const [saveStatus, setSaveStatus] = useState<QuestionnaireDraftSaveStatus>("idle")
+  const [saveDetail, setSaveDetail] = useState<string | null>(null)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
   const answersRef = useRef(answers)
   const fieldsRef = useRef(fields)
-  const draftIdRef = useRef(draftId)
   const onHydrateRef = useRef(onHydrate)
   const saveInFlightRef = useRef(false)
   const pendingSaveRef = useRef(false)
   const hydrateKeyRef = useRef<string | null>(null)
-  const lastPersistedHashRef = useRef<string | null>(null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flightTokenRef = useRef(0)
+  const cursorRef = useRef<AutosaveCursor>(createAutosaveCursor(identity))
+
+  if (!sameAutosaveIdentity(cursorRef.current.identity, identity)) {
+    cursorRef.current = invalidateAutosaveCursor(cursorRef.current, identity)
+    flightTokenRef.current += 1
+    saveInFlightRef.current = false
+    pendingSaveRef.current = false
+    hydrateKeyRef.current = null
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = null
+    }
+    setDraftId(null)
+    setSaveDetail(null)
+    setSaveStatus("idle")
+    setHydrated(false)
+    setLastSavedAt(null)
+  }
 
   answersRef.current = answers
   fieldsRef.current = fields
-  draftIdRef.current = draftId
   onHydrateRef.current = onHydrate
 
   const draftListFilters = useMemo(
@@ -227,12 +238,10 @@ export function useQuestionnaireDraftAutosave({
       debounceTimerRef.current = null
     }
     hydrateKeyRef.current = null
-    lastPersistedHashRef.current = null
-    saveInFlightRef.current = false
     pendingSaveRef.current = false
     setHydrated(false)
     setDraftId(null)
-    draftIdRef.current = null
+    setSaveDetail(null)
     setSaveStatus("idle")
     setLastSavedAt(null)
   }, [])
@@ -242,20 +251,14 @@ export function useQuestionnaireDraftAutosave({
   }, [open, resetSession])
 
   useEffect(() => {
-    if (!open) return
-    hydrateKeyRef.current = null
-    lastPersistedHashRef.current = null
-    setHydrated(false)
-    setDraftId(null)
-    draftIdRef.current = null
-  }, [leadId, open, templateId])
-
-  useEffect(() => {
     if (!draftsQueryEnabled || !leadId || !templateId || fields.length === 0) return
 
     const hydrateKey = `${leadId}:${templateId}`
     if (hydrateKeyRef.current === hydrateKey) return
     if (draftsQuery.isLoading) return
+    if (!sameAutosaveIdentity(cursorRef.current.identity, { open, leadId, templateId })) {
+      return
+    }
 
     hydrateKeyRef.current = hydrateKey
 
@@ -271,16 +274,18 @@ export function useQuestionnaireDraftAutosave({
     onHydrateRef.current(mergeAnswersWithFields(fields, hydratedAnswers))
 
     const persistedHash = buildDraftPayloadHash(fields, hydratedAnswers)
-    lastPersistedHashRef.current =
+    cursorRef.current.lastPersistedHash =
       local?.payloadHash ??
       (resolved.answers && Object.keys(resolved.answers).length > 0
         ? hashDraftAnswersPayload(buildDraftAnswers(fields, hydratedAnswers))
         : persistedHash)
-
+    cursorRef.current.baseUpdatedAt = resolved.baseUpdatedAt
+    cursorRef.current.pauseAutosave = false
+    cursorRef.current.draftId = resolved.draftId
     setDraftId(resolved.draftId)
-    draftIdRef.current = resolved.draftId
     setHydrated(true)
-    setSaveStatus(resolved.draftId || local ? "saved" : "idle")
+    setSaveDetail(null)
+    setSaveStatus(resolved.from === "remote" ? "saved" : "idle")
 
     if (resolved.updatedAt) {
       setLastSavedAt(new Date(resolved.updatedAt))
@@ -292,7 +297,7 @@ export function useQuestionnaireDraftAutosave({
       draftId: resolved.draftId,
       fromRemote: resolved.from === "remote",
       fromLocal: resolved.from === "local",
-      payloadHash: lastPersistedHashRef.current,
+      payloadHash: cursorRef.current.lastPersistedHash,
     })
   }, [
     draftsQuery.data,
@@ -300,29 +305,33 @@ export function useQuestionnaireDraftAutosave({
     draftsQueryEnabled,
     fields,
     leadId,
+    open,
     templateId,
   ])
 
   const persistDraft = useCallback(async (options?: { force?: boolean }) => {
-    if (!enabled || !leadId || !templateId || fieldsRef.current.length === 0) {
+    const target = draftMutationTarget(cursorRef.current)
+    if (!enabled || !target || fieldsRef.current.length === 0) {
       return false
     }
+    if (cursorRef.current.pauseAutosave) return false
     if (!hydrateKeyRef.current && !options?.force) return false
 
     const currentFields = fieldsRef.current
     const payloadAnswers = buildDraftAnswers(currentFields, answersRef.current)
     const payloadHash = hashDraftAnswersPayload(payloadAnswers)
     const hasContent = Object.keys(payloadAnswers).length > 0
+    const cursor = cursorRef.current
 
     if (
       !options?.force &&
-      payloadHash === lastPersistedHashRef.current &&
-      (draftIdRef.current || !hasContent)
+      payloadHash === cursor.lastPersistedHash &&
+      (cursor.draftId || !hasContent)
     ) {
       logAutosave(AUTOSAVE_LOG.skipped, {
         reason: "unchanged_payload",
         payloadHash,
-        draftId: draftIdRef.current,
+        draftId: cursor.draftId,
       })
       setSaveStatus((current) =>
         current === "saving" ? "saved" : current === "pending" ? "idle" : current,
@@ -330,7 +339,7 @@ export function useQuestionnaireDraftAutosave({
       return false
     }
 
-    if (!hasContent && !draftIdRef.current && !options?.force) {
+    if (!hasContent && !cursor.draftId && !options?.force) {
       logAutosave(AUTOSAVE_LOG.skipped, { reason: "empty_without_draft" })
       setSaveStatus("idle")
       return false
@@ -342,73 +351,89 @@ export function useQuestionnaireDraftAutosave({
       return false
     }
 
+    const operation = captureAutosaveOperation(cursor, payloadAnswers, payloadHash)
     logAutosave(AUTOSAVE_LOG.trigger, {
       force: options?.force ?? false,
       payloadHash,
-      draftId: draftIdRef.current,
+      draftId: operation.draftId,
       fieldCount: Object.keys(payloadAnswers).length,
     })
 
+    const myFlight = ++flightTokenRef.current
     saveInFlightRef.current = true
     setSaveStatus("saving")
-
-    writeLocalDraft(
-      leadId,
-      templateId,
-      answersRef.current,
-      draftIdRef.current,
-      payloadHash,
-    )
+    setSaveDetail(null)
 
     try {
-      const body = {
-        templateId,
-        leadId,
-        mode: "INTERNAL" as const,
-        origin: "INTERNAL" as const,
-        status: "draft" as const,
-        answers: payloadAnswers,
+      const storage = browserAutosaveStorage()
+      const settlement = await performGuardedAutosave({
+        operation,
+        readCursor: () => cursorRef.current,
+        run: () => {
+          const body = {
+            templateId: operation.identity.templateId,
+            leadId: operation.identity.leadId ?? "",
+            mode: "INTERNAL" as const,
+            origin: "INTERNAL" as const,
+            status: "draft" as const,
+            answers: operation.answers,
+          }
+          return operation.draftId
+            ? updateDraft.mutateAsync({
+                id: operation.draftId,
+                input: {
+                  ...body,
+                  ...(operation.baseUpdatedAt
+                    ? { expectedUpdatedAt: operation.baseUpdatedAt }
+                    : {}),
+                },
+                autosave: true,
+              })
+            : createDraft.mutateAsync({ ...body, autosave: true })
+        },
+        mapSuccess: (live, saved) => settleAutosaveSuccess(live, operation, saved),
+        mapFailure: (live, error) => settleAutosaveFailure(live, operation, error),
+      })
+
+      if (!settlement.applied) return false
+
+      cursorRef.current = settlement.cursor
+      if ("write" in settlement) {
+        if (storage) writeSettledAutosave(storage, settlement.write)
+        setDraftId(settlement.draftId)
+        setLastSavedAt(new Date())
+        setSaveDetail(null)
+        setSaveStatus("saved")
+        logAutosave(AUTOSAVE_LOG.success, {
+          draftId: settlement.draftId,
+          payloadHash,
+        })
+        return true
       }
 
-      const saved = draftIdRef.current
-        ? await updateDraft.mutateAsync({
-            id: draftIdRef.current,
-            input: body,
-            autosave: true,
-          })
-        : await createDraft.mutateAsync({ ...body, autosave: true })
-
-      setDraftId(saved.id)
-      draftIdRef.current = saved.id
-      lastPersistedHashRef.current = payloadHash
-      writeLocalDraft(
-        leadId,
-        templateId,
-        answersRef.current,
-        saved.id,
-        payloadHash,
-      )
-      setLastSavedAt(new Date())
-      setSaveStatus("saved")
-      logAutosave(AUTOSAVE_LOG.success, {
-        draftId: saved.id,
-        payloadHash,
-      })
-      return true
-    } catch (error) {
+      if (settlement.tone === "conflict") {
+        if (storage) clearSettledAutosave(storage, settlement.clearLocalKey)
+        hydrateKeyRef.current = null
+        void draftsQuery.refetch()
+      } else if (storage) {
+        writeSettledAutosave(storage, settlement.backup)
+      }
       setSaveStatus("error")
+      setSaveDetail(settlement.message)
       logAutosave(AUTOSAVE_LOG.error, {
-        message: error instanceof Error ? error.message : "unknown",
+        message: settlement.message ?? "unknown",
       })
       return false
     } finally {
-      saveInFlightRef.current = false
-      if (pendingSaveRef.current) {
-        pendingSaveRef.current = false
-        void persistDraft()
+      if (flightTokenRef.current === myFlight) {
+        saveInFlightRef.current = false
+        if (pendingSaveRef.current) {
+          pendingSaveRef.current = false
+          void persistDraft()
+        }
       }
     }
-  }, [createDraft, enabled, leadId, templateId, updateDraft])
+  }, [createDraft, draftsQuery, enabled, updateDraft])
 
   const persistDraftRef = useRef(persistDraft)
   persistDraftRef.current = persistDraft
@@ -416,18 +441,20 @@ export function useQuestionnaireDraftAutosave({
   useEffect(() => {
     if (!open || !enabled || !hydrated || !leadId || !templateId) return
 
-    if (!draftPayloadHash && !draftIdRef.current) {
+    if (!draftPayloadHash && !cursorRef.current.draftId) {
       setSaveStatus("idle")
       return
     }
 
-    if (draftPayloadHash === lastPersistedHashRef.current) {
+    if (draftPayloadHash === cursorRef.current.lastPersistedHash) {
       return
     }
 
     if (saveInFlightRef.current || createDraft.isPending || updateDraft.isPending) {
       return
     }
+
+    if (cursorRef.current.pauseAutosave) return
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
@@ -464,17 +491,30 @@ export function useQuestionnaireDraftAutosave({
   }, [])
 
   const clearDraft = useCallback(() => {
-    if (leadId && templateId) clearLocalDraft(leadId, templateId)
+    const current = cursorRef.current
+    if (current.identity.leadId && current.identity.templateId) {
+      clearLocalDraft(current.identity.leadId, current.identity.templateId)
+    }
+    flightTokenRef.current += 1
+    saveInFlightRef.current = false
+    cursorRef.current = {
+      ...current,
+      generation: current.generation + 1,
+      draftId: null,
+      baseUpdatedAt: null,
+      lastPersistedHash: null,
+      pauseAutosave: false,
+    }
     setDraftId(null)
-    draftIdRef.current = null
-    lastPersistedHashRef.current = null
+    setSaveDetail(null)
     setLastSavedAt(null)
     setSaveStatus("idle")
-  }, [leadId, templateId])
+  }, [])
 
   return {
     draftId,
     saveStatus,
+    saveDetail,
     lastSavedAt,
     hydrated,
     isLoadingDraft: draftsQueryEnabled && draftsQuery.isLoading && !hydrated,
