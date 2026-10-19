@@ -53,13 +53,20 @@ export type QuestionnaireTemplateMatch = 'unique' | 'ambiguous' | 'none';
 export type QuestionnaireTemplateCandidate = {
   id: string;
   settings?: unknown;
+  fieldKeys?: readonly string[];
+  fields?: readonly { key: string }[];
 };
+
+export type QuestionnaireTemplateMatchReason =
+  | 'missing_interest'
+  | 'no_template';
 
 export type QuestionnaireTemplateMatchResult = {
   match: QuestionnaireTemplateMatch;
   suggestedTemplateId: string | null;
   /** Templates compatíveis. Vazio quando não há correspondência. */
   templateIds: string[];
+  reason?: QuestionnaireTemplateMatchReason;
 };
 
 const KNOWN_INTERESTS = new Set<string>(INTEREST_CATEGORIES);
@@ -107,6 +114,42 @@ export function readTemplateProductKeys(settings: unknown): string[] {
   return keys;
 }
 
+const FIELD_PREFIXES: Record<string, readonly string[]> = {
+  AUTO_INSURANCE: ['auto'],
+  HOME_INSURANCE: ['residencial'],
+  LIFE_INSURANCE: ['vida'],
+};
+
+function fieldPrefix(key: string) {
+  const dot = key.indexOf('.');
+  return dot === -1 ? key : key.slice(0, dot);
+}
+
+function templateMatchesInterest(
+  template: QuestionnaireTemplateCandidate,
+  accepted: Set<string>,
+  prefixes: Set<string>,
+) {
+  if (
+    readTemplateProductKeys(template.settings).some((key) => accepted.has(key))
+  ) {
+    return true;
+  }
+  return templateMatchesByFields(template, prefixes);
+}
+
+const MIN_PRODUCT_FIELDS = 2;
+
+function templateMatchesByFields(
+  template: QuestionnaireTemplateCandidate,
+  prefixes: Set<string>,
+) {
+  const keys =
+    template.fieldKeys ?? template.fields?.map((field) => field.key) ?? [];
+  const hits = keys.filter((key) => prefixes.has(fieldPrefix(key))).length;
+  return hits >= MIN_PRODUCT_FIELDS;
+}
+
 export function matchQuestionnaireTemplates(input: {
   interests: readonly string[];
   businessUnitType?: string | null;
@@ -116,17 +159,33 @@ export function matchQuestionnaireTemplates(input: {
     input.interests,
     input.businessUnitType,
   );
+  if (relevant.length === 0) {
+    return {
+      match: 'none',
+      suggestedTemplateId: null,
+      templateIds: [],
+      reason: 'missing_interest',
+    };
+  }
   const groups = relevant
     .map((interest) => INTEREST_PRODUCT_KEYS[interest])
     .filter((group): group is readonly string[] => Boolean(group));
   const accepted = new Set(groups.flat());
+  const prefixes = new Set(
+    relevant.flatMap((interest) => FIELD_PREFIXES[interest] ?? []),
+  );
   const matched = input.templates.filter((template) =>
-    readTemplateProductKeys(template.settings).some((key) => accepted.has(key)),
+    templateMatchesInterest(template, accepted, prefixes),
   );
   const templateIds = matched.map((template) => template.id);
 
   if (matched.length === 0 || groups.length === 0) {
-    return { match: 'none', suggestedTemplateId: null, templateIds: [] };
+    return {
+      match: 'none',
+      suggestedTemplateId: null,
+      templateIds: [],
+      reason: 'no_template',
+    };
   }
 
   if (groups.length === 1 && matched.length === 1) {

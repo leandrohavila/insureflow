@@ -237,10 +237,11 @@ export function LeadsPage() {
       businessUnitId: businessUnitId === "all" ? undefined : businessUnitId,
       interestCategory:
         interestCategory === "all" ? undefined : interestCategory,
+      createdWithinDays: period === "all" ? undefined : Number(period) as 7 | 30 | 90,
       page,
       limit: PAGE_SIZE,
     }),
-    [businessUnitId, interestCategory, mineOnly, page, search, source, status],
+    [businessUnitId, interestCategory, mineOnly, page, period, search, source, status],
   )
 
   const leadsQuery = useLeads(filters)
@@ -443,15 +444,7 @@ export function LeadsPage() {
     () => leadsQuery.data?.data ?? [],
     [leadsQuery.data?.data],
   )
-  const visibleLeads = useMemo(() => {
-    if (period === "all") return leads
-    const days = Number(period)
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
-    return leads.filter((row) => {
-      const created = new Date(row.createdAt).getTime()
-      return !Number.isNaN(created) && created >= cutoff
-    })
-  }, [leads, period])
+  const visibleLeads = leads
   const meta = leadsQuery.data?.meta
   const hasConvertedOnPage = visibleLeads.some((row) => Boolean(row.dealId))
   const dealsForStage = useCrmDeals({ enabled: hasConvertedOnPage })
@@ -1267,6 +1260,7 @@ export function LeadsPage() {
             open={canManageQuestionnaires && Boolean(questionnaireLead)}
             leadId={questionnaireLead?.id ?? null}
             leadName={questionnaireLead?.name}
+            lead={questionnaireLead}
             onOpenChange={(open) => {
               if (!open) setQuestionnaireLead(null)
             }}

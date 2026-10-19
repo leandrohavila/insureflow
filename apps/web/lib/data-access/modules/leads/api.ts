@@ -32,6 +32,9 @@ function toQueryString(filters: LeadListFilters = {}) {
   if (filters.interestCategory && filters.interestCategory !== "all") {
     params.set("interestCategory", filters.interestCategory)
   }
+  if (filters.createdWithinDays) {
+    params.set("createdWithinDays", String(filters.createdWithinDays))
+  }
   if (filters.page) params.set("page", String(filters.page))
   if (filters.limit) params.set("limit", String(filters.limit))
 

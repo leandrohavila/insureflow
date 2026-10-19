@@ -48,4 +48,16 @@ describe('buildLeadRenewalAgendaDrafts', () => {
     expect(drafts[0]?.occurredAt).toEqual(d60);
     expect(drafts[1]?.occurredAt).toEqual(d30);
   });
+
+  it('não recria um lembrete removido quando o operador envia a agenda explícita', () => {
+    const drafts = buildLeadRenewalAgendaDrafts({
+      expiresAt: new Date('2027-04-15T12:00:00.000Z'),
+      now: new Date('2026-09-01T12:00:00.000Z'),
+      explicit: true,
+      scheduledAtByDays: { 60: new Date('2027-02-01T10:00:00.000Z') },
+    });
+    expect(drafts.map((item) => item.operationalEventKind)).toEqual([
+      leadRenewalEventKind(60),
+    ]);
+  });
 });

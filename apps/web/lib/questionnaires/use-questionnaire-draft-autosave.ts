@@ -13,11 +13,11 @@ import {
 
 import {
   AUTOSAVE_LOG,
-  buildDraftPayloadHash,
   hashDraftAnswersPayload,
   logAutosave,
 } from "./questionnaire-draft-payload"
 import { buildDraftAnswers } from "./questionnaire-field-validation"
+import { retainClearedDraftAnswers } from "./lead-answer-prefill"
 import { answersToFormState, mergeAnswersWithFields } from "./questionnaire-form-state"
 import {
   autosaveStorageKey,
@@ -52,7 +52,10 @@ type UseQuestionnaireDraftAutosaveOptions = {
   templateId: string
   fields: QuestionnaireField[]
   answers: JsonObject
-  onHydrate: (answers: JsonObject) => void
+  onHydrate: (
+    answers: JsonObject,
+    context: { persistedKeys: readonly string[] },
+  ) => void | { materializedKeys?: readonly string[] }
 }
 
 function browserAutosaveStorage(): AutosaveStorage | null {
@@ -175,6 +178,8 @@ export function useQuestionnaireDraftAutosave({
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
+  const materializedKeysRef = useRef<Set<string>>(new Set())
+  const [materializedTick, setMaterializedTick] = useState(0)
   const answersRef = useRef(answers)
   const fieldsRef = useRef(fields)
   const onHydrateRef = useRef(onHydrate)
@@ -228,9 +233,16 @@ export function useQuestionnaireDraftAutosave({
   const updateDraft = useUpdateQuestionnaireSubmission()
 
   const draftPayloadHash = useMemo(() => {
-    if (!enabled || fields.length === 0) return ""
-    return buildDraftPayloadHash(fields, answers)
-  }, [answers, enabled, fields])
+    if (!enabled || fields.length === 0 || materializedTick < 0) return ""
+    return hashDraftAnswersPayload(
+      retainClearedDraftAnswers(
+        fields,
+        answers,
+        buildDraftAnswers(fields, answers),
+        materializedKeysRef.current,
+      ),
+    )
+  }, [answers, enabled, fields, materializedTick])
 
   const resetSession = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -239,6 +251,8 @@ export function useQuestionnaireDraftAutosave({
     }
     hydrateKeyRef.current = null
     pendingSaveRef.current = false
+    materializedKeysRef.current = new Set()
+    setMaterializedTick((value) => value + 1)
     setHydrated(false)
     setDraftId(null)
     setSaveDetail(null)
@@ -266,19 +280,38 @@ export function useQuestionnaireDraftAutosave({
     const local = readLocalDraft(leadId, templateId)
     const resolved = resolveDraftSource(remoteDraft, local)
 
+    const rawAnswers = resolved.answers ?? {}
+    const persistedKeys = Object.keys(rawAnswers)
     const hydratedAnswers =
-      resolved.answers && Object.keys(resolved.answers).length > 0
-        ? answersToFormState(fields, resolved.answers)
+      persistedKeys.length > 0
+        ? answersToFormState(fields, rawAnswers)
         : mergeAnswersWithFields(fields, {})
+    const formAnswers = mergeAnswersWithFields(fields, hydratedAnswers)
+    const hydrateResult = onHydrateRef.current(formAnswers, { persistedKeys })
+    materializedKeysRef.current = new Set([
+      ...persistedKeys,
+      ...(hydrateResult?.materializedKeys ?? []),
+    ])
+    setMaterializedTick((value) => value + 1)
 
-    onHydrateRef.current(mergeAnswersWithFields(fields, hydratedAnswers))
-
-    const persistedHash = buildDraftPayloadHash(fields, hydratedAnswers)
+    const persistedPayload = retainClearedDraftAnswers(
+      fields,
+      formAnswers,
+      buildDraftAnswers(fields, formAnswers),
+      new Set(persistedKeys),
+    )
     cursorRef.current.lastPersistedHash =
       local?.payloadHash ??
-      (resolved.answers && Object.keys(resolved.answers).length > 0
-        ? hashDraftAnswersPayload(buildDraftAnswers(fields, hydratedAnswers))
-        : persistedHash)
+      (persistedKeys.length > 0
+        ? hashDraftAnswersPayload(persistedPayload)
+        : hashDraftAnswersPayload(
+            retainClearedDraftAnswers(
+              fields,
+              formAnswers,
+              buildDraftAnswers(fields, formAnswers),
+              materializedKeysRef.current,
+            ),
+          ))
     cursorRef.current.baseUpdatedAt = resolved.baseUpdatedAt
     cursorRef.current.pauseAutosave = false
     cursorRef.current.draftId = resolved.draftId
@@ -318,7 +351,16 @@ export function useQuestionnaireDraftAutosave({
     if (!hydrateKeyRef.current && !options?.force) return false
 
     const currentFields = fieldsRef.current
-    const payloadAnswers = buildDraftAnswers(currentFields, answersRef.current)
+    const built = buildDraftAnswers(currentFields, answersRef.current)
+    const payloadAnswers = retainClearedDraftAnswers(
+      currentFields,
+      answersRef.current,
+      built,
+      materializedKeysRef.current,
+    )
+    for (const key of Object.keys(payloadAnswers)) {
+      materializedKeysRef.current.add(key)
+    }
     const payloadHash = hashDraftAnswersPayload(payloadAnswers)
     const hasContent = Object.keys(payloadAnswers).length > 0
     const cursor = cursorRef.current

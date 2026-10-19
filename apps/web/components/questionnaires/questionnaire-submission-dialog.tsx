@@ -37,12 +37,14 @@ import {
   useQuestionnaireDraftAutosave,
   type QuestionnaireDraftSaveStatus,
 } from "@/lib/questionnaires/use-questionnaire-draft-autosave"
+import { prefillLeadAnswers, type LeadAnswerSource } from "@/lib/questionnaires/lead-answer-prefill"
 import { cn } from "@/lib/utils"
 
 type QuestionnaireSubmissionDialogProps = {
   open: boolean
   leadId: string | null
   leadName?: string | null
+  lead?: LeadAnswerSource | null
   onOpenChange: (open: boolean) => void
 }
 
@@ -206,6 +208,7 @@ export function QuestionnaireSubmissionDialog({
   open,
   leadId,
   leadName,
+  lead,
   onOpenChange,
 }: QuestionnaireSubmissionDialogProps) {
   const [templateId, setTemplateId] = useState("")
@@ -268,9 +271,25 @@ export function QuestionnaireSubmissionDialog({
     !createSubmission.isPending &&
     !finalizeSubmission.isPending
 
-  const handleHydrate = useCallback((hydrated: JsonObject) => {
-    setAnswers(hydrated)
-  }, [])
+  const handleHydrate = useCallback((
+    hydrated: JsonObject,
+    context: { persistedKeys: readonly string[] },
+  ) => {
+    const persisted = new Set(context.persistedKeys)
+    const next = prefillLeadAnswers(orderedFields, hydrated, {
+      name: lead?.name ?? leadName,
+      email: lead?.email,
+      phone: lead?.phone,
+      company: lead?.company,
+      document: lead?.document,
+      documentType: lead?.documentType,
+    }, persisted)
+    setAnswers(next)
+    const materializedKeys = orderedFields
+      .filter((field) => !persisted.has(field.key) && next[field.key])
+      .map((field) => field.key)
+    return { materializedKeys }
+  }, [lead, leadName, orderedFields])
 
   const autosave = useQuestionnaireDraftAutosave({
     open,
@@ -492,8 +511,9 @@ export function QuestionnaireSubmissionDialog({
               ) : null}
               {suggestion?.match === "none" ? (
                 <p className="text-xs text-amber-200">
-                  Nenhum questionário corresponde ao produto deste lead. Escolha
-                  um template explicitamente.
+                  {suggestion.reason === "missing_interest"
+                    ? "Este lead não tem tipo de seguro definido. Escolha um template explicitamente."
+                    : "Nenhum questionário ativo corresponde ao produto deste lead. Escolha um template explicitamente."}
                 </p>
               ) : null}
             </label>

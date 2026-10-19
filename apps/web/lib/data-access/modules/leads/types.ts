@@ -54,6 +54,18 @@ export type Lead = {
   currentInsurer?: string | null
   currentPolicyNumber?: string | null
   policyExpiresAt?: string | null
+  renewalD60Disabled?: boolean
+  renewalD30Disabled?: boolean
+  renewalD15Disabled?: boolean
+  renewalReminderD60?: string | null
+  renewalReminderD30?: string | null
+  renewalReminderD15?: string | null
+  renewalReminderD60CompletedAt?: string | null
+  renewalReminderD30CompletedAt?: string | null
+  renewalReminderD15CompletedAt?: string | null
+  nextContactAt?: string | null
+  nextContactType?: string | null
+  nextContactNotes?: string | null
   createdAt: string
   updatedAt: string
   initials: string
@@ -77,6 +89,7 @@ export type LeadListFilters = {
   mine?: boolean
   businessUnitId?: string
   interestCategory?: InterestCategory | "all"
+  createdWithinDays?: 7 | 30 | 90
   page?: number
   limit?: number
 }
@@ -120,13 +133,13 @@ export type CreateLeadInput = {
   opportunityType?: string
   currentInsurer?: string
   currentPolicyNumber?: string
-  policyExpiresAt?: string
-  nextContactAt?: string
-  nextContactType?: string
-  nextContactNotes?: string
-  renewalReminderD60?: string
-  renewalReminderD30?: string
-  renewalReminderD15?: string
+  policyExpiresAt?: string | null
+  nextContactAt?: string | null
+  nextContactType?: string | null
+  nextContactNotes?: string | null
+  renewalReminderD60?: string | null
+  renewalReminderD30?: string | null
+  renewalReminderD15?: string | null
 }
 
 export type CreateLeadRequestInput = CreateLeadInput & {

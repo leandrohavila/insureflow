@@ -71,6 +71,67 @@ describe("buildLeadDialogFormState", () => {
     expect(form.nextContactType).toBe("whatsapp")
   })
 
+  it("reidrata lembrete e próximo contato salvos em vez da sugestão", () => {
+    const form = buildLeadDialogFormState(
+      {
+        ...sampleLead,
+        policyExpiresAt: "2027-04-15T00:00:00.000Z",
+        renewalReminderD60: "2027-02-01T14:30:00.000Z",
+        nextContactAt: "2027-03-20T13:00:00.000Z",
+        nextContactType: "call",
+        nextContactNotes: "Retornar proposta",
+      },
+      "Operador",
+    )
+    const saved = new Date("2027-02-01T14:30:00.000Z")
+    const contact = new Date("2027-03-20T13:00:00.000Z")
+    const pad = (value: number) => String(value).padStart(2, "0")
+    expect(form.renewalReminderD60Date).toBe(
+      `${saved.getFullYear()}-${pad(saved.getMonth() + 1)}-${pad(saved.getDate())}`,
+    )
+    expect(form.renewalReminderD60Time).toBe(
+      `${pad(saved.getHours())}:${pad(saved.getMinutes())}`,
+    )
+    expect(form.renewalReminderD30Date).toBe("2027-03-16")
+    expect(form.followUpDays).toBe("custom")
+    expect(form.nextContactDate).toBe(
+      `${contact.getFullYear()}-${pad(contact.getMonth() + 1)}-${pad(contact.getDate())}`,
+    )
+    expect(form.nextContactType).toBe("call")
+    expect(form.nextContactNotes).toBe("Retornar proposta")
+    expect(form.renewalReminderD60Mode).toBe("manual")
+  })
+
+  it("mantém D-60 desativado ao reabrir o diálogo", () => {
+    const form = buildLeadDialogFormState(
+      {
+        ...sampleLead,
+        policyExpiresAt: "2027-04-15T00:00:00.000Z",
+        renewalD60Disabled: true,
+      },
+      "Operador",
+    )
+    expect(form.renewalReminderD60Mode).toBe("disabled")
+    expect(form.renewalReminderD60Date).toBe("")
+    expect(form.renewalReminderD30Mode).toBe("suggested")
+    expect(form.renewalReminderD30Date).toBe("2027-03-16")
+  })
+
+  it("distingue atividade concluída de lembrete desativado", () => {
+    const form = buildLeadDialogFormState(
+      {
+        ...sampleLead,
+        policyExpiresAt: "2027-04-15T00:00:00.000Z",
+        renewalReminderD60CompletedAt: "2027-02-14T12:00:00.000Z",
+        renewalD30Disabled: true,
+      },
+      "Operador",
+    )
+    expect(form.renewalReminderD60Mode).toBe("completed")
+    expect(form.renewalReminderD60Date).toBe("")
+    expect(form.renewalReminderD30Mode).toBe("disabled")
+  })
+
   it("locks business unit and default interests on create", () => {
     const form = buildLeadDialogFormState(null, "Operador", {
       lockedBusinessUnitId: "re-1",

@@ -211,6 +211,7 @@ export type QuestionnaireTemplateSuggestion = {
   businessUnitType: "INSURANCE" | "REAL_ESTATE" | null;
   interestCategories: string[];
   match: "unique" | "ambiguous" | "none";
+  reason?: "missing_interest" | "no_template" | null;
   suggestedTemplateId: string | null;
   templates: Array<{
     id: string;

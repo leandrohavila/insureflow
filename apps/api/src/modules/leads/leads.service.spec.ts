@@ -80,12 +80,26 @@ describe('LeadsService.createLead', () => {
     const activityCreateMany = jest.fn().mockResolvedValue({ count: 0 });
     const activityCreate = jest.fn().mockResolvedValue({ id: 'act-next-1' });
     const prisma = {
-      lead: { create: leadCreate },
+      lead: {
+        create: leadCreate,
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
       user: { findFirst: userFindFirst },
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'lead-new-1', d60: false, d30: false, d15: false },
+        ]),
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn(prisma),
+      ),
       activity: {
         deleteMany: activityDeleteMany,
         createMany: activityCreateMany,
         create: activityCreate,
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
+        findMany: jest.fn().mockResolvedValue([]),
       },
     } as unknown as PrismaService;
 
@@ -207,7 +221,10 @@ describe('LeadsService.createLead', () => {
         },
       ]
     >;
-    expect(createCalls[0]?.[0]?.data).toEqual(
+    const nextContact = createCalls.find(
+      (call) => call[0]?.data.operationalEventKind === 'lead_next_contact',
+    );
+    expect(nextContact?.[0]?.data).toEqual(
       expect.objectContaining({
         type: 'whatsapp',
         leadId: 'lead-new-1',
@@ -217,7 +234,8 @@ describe('LeadsService.createLead', () => {
         operationalEventKind: 'lead_next_contact',
       }),
     );
-    expect(activityCreateMany).toHaveBeenCalled();
+    expect(activityCreate).toHaveBeenCalled();
+    expect(activityCreateMany).not.toHaveBeenCalled();
   });
 
   it('stores normalized document digits from contract payload', async () => {

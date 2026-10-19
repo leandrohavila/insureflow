@@ -42,7 +42,9 @@ import {
   leadFormToAgendaFields,
   NEXT_CONTACT_ACTIVITY_OPTIONS,
   NEXT_CONTACT_PRESET_CUSTOM,
-  suggestRenewalReminderFields,
+  applyPolicyExpiryChange,
+  applyExplicitRenewalRecalculation,
+  describeRenewalRecalculation,
 } from "@/lib/data-access/modules/leads/lead-next-contact-form"
 import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
@@ -68,6 +70,25 @@ const statusLabels: Record<LeadStatus, string> = {
   qualified: "Qualificado",
   converted: "Convertido",
   lost: "Perdido",
+}
+
+function reminderModeForField(
+  key: keyof LeadDialogFormState,
+):
+  | "renewalReminderD60Mode"
+  | "renewalReminderD30Mode"
+  | "renewalReminderD15Mode"
+  | null {
+  if (key === "renewalReminderD60Date" || key === "renewalReminderD60Time") {
+    return "renewalReminderD60Mode"
+  }
+  if (key === "renewalReminderD30Date" || key === "renewalReminderD30Time") {
+    return "renewalReminderD30Mode"
+  }
+  if (key === "renewalReminderD15Date" || key === "renewalReminderD15Time") {
+    return "renewalReminderD15Mode"
+  }
+  return null
 }
 
 function optionalFormValue(value: string) {
@@ -210,6 +231,7 @@ export function LeadDialog({
   const [duplicateDismissed, setDuplicateDismissed] = useState(false)
   const [form, setForm] = useState<LeadDialogFormState>(EMPTY_LEAD_DIALOG_FORM)
   const [submitLocked, setSubmitLocked] = useState(false)
+  const [renewalPreview, setRenewalPreview] = useState<string[] | null>(null)
 
   const intent: LeadCreateIntent =
     intentProp ?? leadIntentFromUnitType(lead?.businessUnit?.type)
@@ -231,6 +253,7 @@ export function LeadDialog({
   useEffect(() => {
     if (!open) {
       setDuplicateDismissed(false)
+      setRenewalPreview(null)
       setForm(EMPTY_LEAD_DIALOG_FORM)
       console.log("[DRAWER] 7-before-loading-false")
       bug010DrawerLog("before setSubmitLocked(false)")
@@ -276,14 +299,16 @@ export function LeadDialog({
     value: LeadDialogFormState[K],
   ) {
     setForm((current) => {
-      const next = { ...current, [key]: value }
       if (key === "policyExpiresAt") {
-        return {
-          ...next,
-          ...suggestRenewalReminderFields(String(value)),
-        }
+        return applyPolicyExpiryChange(current, String(value))
       }
-      return next
+      const reminderMode = reminderModeForField(key)
+      if (reminderMode) {
+        const mode = current[reminderMode]
+        if (mode === "disabled" || mode === "completed") return current
+        return { ...current, [key]: value, [reminderMode]: "manual" }
+      }
+      return { ...current, [key]: value }
     })
   }
 
@@ -324,7 +349,6 @@ export function LeadDialog({
         opportunityType: optionalFormValue(form.opportunityType),
         currentInsurer: optionalFormValue(form.currentInsurer),
         currentPolicyNumber: optionalFormValue(form.currentPolicyNumber),
-        policyExpiresAt: optionalFormValue(form.policyExpiresAt),
         businessUnitId,
         interestCategories: form.interestCategories,
         ...leadFormToAgendaFields(form),
@@ -534,31 +558,127 @@ export function LeadDialog({
                   </p>
                   {(
                     [
-                      ["D-60", "renewalReminderD60Date", "renewalReminderD60Time"],
-                      ["D-30", "renewalReminderD30Date", "renewalReminderD30Time"],
-                      ["D-15", "renewalReminderD15Date", "renewalReminderD15Time"],
+                      [
+                        "D-60",
+                        "renewalReminderD60Date",
+                        "renewalReminderD60Time",
+                        "renewalReminderD60Mode",
+                      ],
+                      [
+                        "D-30",
+                        "renewalReminderD30Date",
+                        "renewalReminderD30Time",
+                        "renewalReminderD30Mode",
+                      ],
+                      [
+                        "D-15",
+                        "renewalReminderD15Date",
+                        "renewalReminderD15Time",
+                        "renewalReminderD15Mode",
+                      ],
                     ] as const
-                  ).map(([label, dateKey, timeKey]) => (
-                    <div key={label} className="grid gap-3 sm:grid-cols-[4rem_1fr_8rem] sm:items-end">
-                      <p className="text-sm font-medium">{label}</p>
-                      <label className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Data</span>
-                        <Input
-                          type="date"
-                          value={form[dateKey]}
-                          onChange={(event) => update(dateKey, event.target.value)}
-                        />
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-xs text-muted-foreground">Hora</span>
-                        <Input
-                          type="time"
-                          value={form[timeKey]}
-                          onChange={(event) => update(timeKey, event.target.value)}
-                        />
-                      </label>
+                  ).map(([label, dateKey, timeKey, modeKey]) => {
+                    const mode = form[modeKey]
+                    const status =
+                      mode === "disabled"
+                        ? "Desativado"
+                        : mode === "completed"
+                          ? "Concluída"
+                          : mode === "manual"
+                            ? "Data alterada manualmente"
+                            : "Sugestão automática"
+                    return (
+                      <div
+                        key={label}
+                        className="grid gap-3 sm:grid-cols-[4rem_1fr_8rem_auto] sm:items-end"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{label}</p>
+                          <p className="text-xs text-muted-foreground">{status}</p>
+                        </div>
+                        <label className="space-y-1">
+                          <span className="text-xs text-muted-foreground">Data</span>
+                          <Input
+                            type="date"
+                            value={form[dateKey]}
+                            disabled={mode === "disabled" || mode === "completed"}
+                            onChange={(event) =>
+                              update(dateKey, event.target.value)
+                            }
+                          />
+                        </label>
+                        <label className="space-y-1">
+                          <span className="text-xs text-muted-foreground">Hora</span>
+                          <Input
+                            type="time"
+                            value={form[timeKey]}
+                            disabled={mode === "disabled" || mode === "completed"}
+                            onChange={(event) =>
+                              update(timeKey, event.target.value)
+                            }
+                          />
+                        </label>
+                        {mode === "completed" ? (
+                          <p className="text-xs text-muted-foreground">
+                            A atividade concluída permanece no histórico.
+                          </p>
+                        ) : mode === "disabled" ? (
+                          <span />
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                [modeKey]: "disabled",
+                                [dateKey]: "",
+                              }))
+                            }
+                          >
+                            Desativar
+                          </Button>
+                        )}
+                      </div>
+                    )
+                  })}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setRenewalPreview(describeRenewalRecalculation(form))
+                    }
+                  >
+                    Recalcular lembretes
+                  </Button>
+                  {renewalPreview ? (
+                    <div className="space-y-2 rounded-md border border-white/10 p-3 text-sm">
+                      {renewalPreview.map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setForm((current) =>
+                              applyExplicitRenewalRecalculation(current),
+                            )
+                            setRenewalPreview(null)
+                          }}
+                        >
+                          Confirmar recálculo
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setRenewalPreview(null)}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
                     </div>
-                  ))}
+                  ) : null}
                 </div>
               ) : null}
               </LeadDialogSection>
