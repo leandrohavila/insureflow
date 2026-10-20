@@ -1084,6 +1084,17 @@ export function LeadsPage() {
             onSubmitLockedChange={(locked) => {
               leadDialogSubmitLockedRef.current = locked
             }}
+            onMarkLost={
+              editingLead
+                ? async (input) => {
+                    const updated = await updateLead.mutateAsync({
+                      id: editingLead.id,
+                      input,
+                    })
+                    setEditingLead(updated)
+                  }
+                : undefined
+            }
             onOpenChange={(open) => {
               setDialogOpen(open)
               if (!open) {

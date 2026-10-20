@@ -549,7 +549,7 @@ export class LeadsService {
         tenantId,
         dto.lossReasonId,
       );
-      if (!createReason) {
+      if (!createReason?.isActive) {
         throw new BadRequestException('Motivo de perda inválido ou inativo.');
       }
       if (
@@ -742,7 +742,7 @@ export class LeadsService {
       : null;
 
     if (transitioningToLost) {
-      if (!configuredReason) {
+      if (!configuredReason?.isActive) {
         throw new BadRequestException('Motivo de perda inválido ou inativo.');
       }
       if (
