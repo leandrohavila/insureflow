@@ -1224,6 +1224,33 @@ export class LeadsService {
       ? await this.findFoldedSourceIds(tenantId, source)
       : [];
 
+    const documentDigits = search ? stripDocumentDigits(search) : '';
+    const searchOr: Prisma.LeadWhereInput[] = search
+      ? [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+          { company: { contains: search, mode: 'insensitive' } },
+          { source: { contains: search, mode: 'insensitive' } },
+          { assignedTo: { contains: search, mode: 'insensitive' } },
+          {
+            ownerUser: {
+              name: { contains: search, mode: 'insensitive' },
+            },
+          },
+          {
+            ownerUser: {
+              email: { contains: search, mode: 'insensitive' },
+            },
+          },
+          // Menos de 3 dígitos casa documento por acaso; telefone usa o mesmo mínimo.
+          ...(documentDigits.length >= 3
+            ? [{ document: { contains: documentDigits } }]
+            : []),
+          ...(normalizedIds.length ? [{ id: { in: normalizedIds } }] : []),
+        ]
+      : [];
+
     let legacyWhere: Prisma.LeadWhereInput = {
       tenantId,
       ...attributeWhere,
@@ -1239,30 +1266,7 @@ export class LeadsService {
             ],
           }
         : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { email: { contains: search, mode: 'insensitive' } },
-              { phone: { contains: search, mode: 'insensitive' } },
-              { company: { contains: search, mode: 'insensitive' } },
-              { source: { contains: search, mode: 'insensitive' } },
-              { assignedTo: { contains: search, mode: 'insensitive' } },
-              {
-                ownerUser: {
-                  name: { contains: search, mode: 'insensitive' },
-                },
-              },
-              {
-                ownerUser: {
-                  email: { contains: search, mode: 'insensitive' },
-                },
-              },
-              { document: { contains: stripDocumentDigits(search) } },
-              ...(normalizedIds.length ? [{ id: { in: normalizedIds } }] : []),
-            ],
-          }
-        : {}),
+      ...(searchOr.length ? { OR: searchOr } : {}),
     };
 
     if (actor?.userId && actor.tenantId && this.buAccess) {
