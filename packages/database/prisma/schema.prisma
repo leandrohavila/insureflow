@@ -685,6 +685,10 @@ model Lead {
   currentInsurer       String?   @map("current_insurer")
   currentPolicyNumber  String?   @map("current_policy_number")
   policyExpiresAt      DateTime? @map("policy_expires_at")
+  /// Lembrete D-60 desativado pelo corretor. Não é conclusão da atividade.
+  renewalD60Disabled Boolean @default(false) @map("renewal_d60_disabled")
+  renewalD30Disabled Boolean @default(false) @map("renewal_d30_disabled")
+  renewalD15Disabled Boolean @default(false) @map("renewal_d15_disabled")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

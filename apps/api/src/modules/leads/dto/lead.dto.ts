@@ -19,7 +19,11 @@ import {
 import { INTEREST_CATEGORIES } from '../../../common/constants/interest-categories';
 
 import { LIST_QUERY_MAX_LIMIT } from '../../../common/dto/pagination.constants';
-import { optionalEmptyValue } from '../../../common/dto/optional-value.util';
+import {
+  optionalEmptyValue,
+  nullableEmptyDate,
+  nullableEmptyText,
+} from '../../../common/dto/optional-value.util';
 import { LEAD_DOCUMENT_TYPES } from '../../../common/utils/document.util';
 import { CRM_DEAL_STAGES, type CrmDealStage } from '../../crm/dto/deal.dto';
 import { NEXT_CONTACT_ACTIVITY_TYPES } from '../lead-next-contact.util';
@@ -92,6 +96,15 @@ export class ListLeadsQueryDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   mine?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Leads criados nos últimos 7, 30 ou 90 dias.',
+    enum: [7, 30, 90],
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([7, 30, 90])
+  createdWithinDays?: 7 | 30 | 90;
 
   @ApiPropertyOptional({ description: 'Filtrar por unidade de negócio.' })
   @IsOptional()
@@ -294,18 +307,18 @@ export class CreateLeadDto {
   currentPolicyNumber?: string;
 
   @ApiPropertyOptional({ example: '2027-04-15' })
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyDate)
   @IsOptional()
   @IsDateString()
-  policyExpiresAt?: string;
+  policyExpiresAt?: string | null;
 
   @ApiPropertyOptional({
     description: 'Data/hora personalizada do próximo contato comercial.',
   })
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyDate)
   @IsOptional()
   @IsDateString()
-  nextContactAt?: string;
+  nextContactAt?: string | null;
 
   @ApiPropertyOptional({ enum: NEXT_CONTACT_ACTIVITY_TYPES })
   @Transform(optionalEmptyValue)
@@ -314,29 +327,29 @@ export class CreateLeadDto {
   nextContactType?: (typeof NEXT_CONTACT_ACTIVITY_TYPES)[number];
 
   @ApiPropertyOptional()
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyText)
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  nextContactNotes?: string;
+  nextContactNotes?: string | null;
 
   @ApiPropertyOptional({ description: 'Data editável da renovação D-60.' })
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyDate)
   @IsOptional()
   @IsDateString()
-  renewalReminderD60?: string;
+  renewalReminderD60?: string | null;
 
   @ApiPropertyOptional({ description: 'Data editável da renovação D-30.' })
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyDate)
   @IsOptional()
   @IsDateString()
-  renewalReminderD30?: string;
+  renewalReminderD30?: string | null;
 
   @ApiPropertyOptional({ description: 'Data editável da renovação D-15.' })
-  @Transform(optionalEmptyValue)
+  @Transform(nullableEmptyDate)
   @IsOptional()
   @IsDateString()
-  renewalReminderD15?: string;
+  renewalReminderD15?: string | null;
 }
 
 export class UpdateLeadDto extends PartialType(CreateLeadDto) {}

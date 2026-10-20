@@ -59,6 +59,7 @@ describe('matchQuestionnaireTemplates', () => {
     expect(result.match).toBe('none');
     expect(result.suggestedTemplateId).toBeNull();
     expect(result.templateIds).toEqual([]);
+    expect(result.reason).toBe('no_template');
   });
 
   it('não escolhe sozinho quando há dois templates do mesmo produto', () => {
@@ -87,6 +88,54 @@ describe('matchQuestionnaireTemplates', () => {
       match: 'unique',
       suggestedTemplateId: 'tpl-compra',
       templateIds: ['tpl-compra'],
+    });
+  });
+
+  it('não sugere template por um único campo isolado', () => {
+    const result = matchQuestionnaireTemplates({
+      interests: ['AUTO_INSURANCE'],
+      businessUnitType: 'INSURANCE',
+      templates: [
+        {
+          id: 'tpl-fields',
+          settings: {},
+          fieldKeys: ['shared.full_name', 'auto.plate'],
+        },
+        vida,
+      ],
+    });
+    expect(result.match).toBe('none');
+    expect(result.suggestedTemplateId).toBeNull();
+    expect(result.reason).toBe('no_template');
+  });
+
+  it('reconhece o produto quando há mais de um campo específico', () => {
+    const result = matchQuestionnaireTemplates({
+      interests: ['AUTO_INSURANCE'],
+      businessUnitType: 'INSURANCE',
+      templates: [
+        {
+          id: 'tpl-fields',
+          settings: {},
+          fieldKeys: ['shared.full_name', 'auto.plate', 'auto.model'],
+        },
+        vida,
+      ],
+    });
+    expect(result.match).toBe('unique');
+    expect(result.suggestedTemplateId).toBe('tpl-fields');
+  });
+
+  it('explica a ausência de produto no lead sem escolher template incompatível', () => {
+    const result = matchQuestionnaireTemplates({
+      interests: [],
+      businessUnitType: 'INSURANCE',
+      templates: [auto],
+    });
+    expect(result).toMatchObject({
+      match: 'none',
+      suggestedTemplateId: null,
+      reason: 'missing_interest',
     });
   });
 });

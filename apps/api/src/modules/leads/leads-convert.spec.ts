@@ -77,7 +77,10 @@ describe('LeadsService.convertLead questionnaire continuity', () => {
 
     const prisma = {
       lead: { findFirst: jest.fn().mockResolvedValue(leadRow) },
-      activity: { groupBy: jest.fn().mockResolvedValue([]) },
+      activity: {
+        groupBy: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
       $transaction: jest.fn((callback: (client: typeof tx) => unknown) =>
         callback(tx),
       ),

@@ -409,6 +409,7 @@ export class QuestionnairesService {
         version: true,
         status: true,
         settings: true,
+        fields: { select: { key: true } },
       },
       orderBy: [{ name: 'asc' }, { version: 'desc' }],
       take: 100,
@@ -430,6 +431,7 @@ export class QuestionnairesService {
       businessUnitType: lead.businessUnit?.type ?? null,
       interestCategories: lead.interestCategories,
       match: evaluated.match,
+      reason: evaluated.reason ?? null,
       suggestedTemplateId: evaluated.suggestedTemplateId,
       templates: visible.map((template) => ({
         id: template.id,
@@ -863,7 +865,11 @@ export class QuestionnairesService {
     }
     const templates = await this.prisma.questionnaireTemplate.findMany({
       where: { tenantId, status: 'active' },
-      select: { id: true, settings: true },
+      select: {
+        id: true,
+        settings: true,
+        fields: { select: { key: true } },
+      },
       take: 100,
     });
     const evaluated = matchQuestionnaireTemplates({

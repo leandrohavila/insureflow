@@ -148,6 +148,39 @@ export function serializeLeadRecord(
       (
         lead as { policyExpiresAt?: Date | null }
       ).policyExpiresAt?.toISOString() ?? null,
+    renewalD60Disabled: Boolean(
+      (lead as { renewalD60Disabled?: boolean }).renewalD60Disabled,
+    ),
+    renewalD30Disabled: Boolean(
+      (lead as { renewalD30Disabled?: boolean }).renewalD30Disabled,
+    ),
+    renewalD15Disabled: Boolean(
+      (lead as { renewalD15Disabled?: boolean }).renewalD15Disabled,
+    ),
+    renewalReminderD60CompletedAt:
+      (lead as { renewalReminderD60CompletedAt?: string | null })
+        .renewalReminderD60CompletedAt ?? null,
+    renewalReminderD30CompletedAt:
+      (lead as { renewalReminderD30CompletedAt?: string | null })
+        .renewalReminderD30CompletedAt ?? null,
+    renewalReminderD15CompletedAt:
+      (lead as { renewalReminderD15CompletedAt?: string | null })
+        .renewalReminderD15CompletedAt ?? null,
+    renewalReminderD60:
+      (lead as { renewalReminderD60?: string | null }).renewalReminderD60 ??
+      null,
+    renewalReminderD30:
+      (lead as { renewalReminderD30?: string | null }).renewalReminderD30 ??
+      null,
+    renewalReminderD15:
+      (lead as { renewalReminderD15?: string | null }).renewalReminderD15 ??
+      null,
+    nextContactAt:
+      (lead as { nextContactAt?: string | null }).nextContactAt ?? null,
+    nextContactType:
+      (lead as { nextContactType?: string | null }).nextContactType ?? null,
+    nextContactNotes:
+      (lead as { nextContactNotes?: string | null }).nextContactNotes ?? null,
     createdAt: lead.createdAt.toISOString(),
     updatedAt: lead.updatedAt.toISOString(),
   };

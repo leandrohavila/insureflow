@@ -20,13 +20,13 @@ export type CreateLeadPayload = {
   opportunityType?: string
   currentInsurer?: string
   currentPolicyNumber?: string
-  policyExpiresAt?: string
-  nextContactAt?: string
-  nextContactType?: string
-  nextContactNotes?: string
-  renewalReminderD60?: string
-  renewalReminderD30?: string
-  renewalReminderD15?: string
+  policyExpiresAt?: string | null
+  nextContactAt?: string | null
+  nextContactType?: string | null
+  nextContactNotes?: string | null
+  renewalReminderD60?: string | null
+  renewalReminderD30?: string | null
+  renewalReminderD15?: string | null
 }
 
 function optionalValue(value: string | undefined) {
@@ -79,20 +79,30 @@ export function buildCreateLeadPayload(
   if (currentInsurer) payload.currentInsurer = currentInsurer
   const currentPolicyNumber = optionalValue(input.currentPolicyNumber)
   if (currentPolicyNumber) payload.currentPolicyNumber = currentPolicyNumber
-  const policyExpiresAt = optionalValue(input.policyExpiresAt)
+  const policyExpiresAt = input.policyExpiresAt
   if (policyExpiresAt) payload.policyExpiresAt = policyExpiresAt
-  const nextContactAt = optionalValue(input.nextContactAt)
+  else if (policyExpiresAt === null) payload.policyExpiresAt = null
+  const nextContactAt = input.nextContactAt
   if (nextContactAt) payload.nextContactAt = nextContactAt
-  const nextContactType = optionalValue(input.nextContactType)
+  else if (nextContactAt === null) payload.nextContactAt = null
+  const nextContactType = optionalValue(input.nextContactType ?? undefined)
   if (nextContactType) payload.nextContactType = nextContactType
-  const nextContactNotes = optionalValue(input.nextContactNotes)
+  else if (input.nextContactType === null) payload.nextContactType = null
+  const nextContactNotes = optionalValue(input.nextContactNotes ?? undefined)
   if (nextContactNotes) payload.nextContactNotes = nextContactNotes
-  const renewalReminderD60 = optionalValue(input.renewalReminderD60)
-  if (renewalReminderD60) payload.renewalReminderD60 = renewalReminderD60
-  const renewalReminderD30 = optionalValue(input.renewalReminderD30)
-  if (renewalReminderD30) payload.renewalReminderD30 = renewalReminderD30
-  const renewalReminderD15 = optionalValue(input.renewalReminderD15)
-  if (renewalReminderD15) payload.renewalReminderD15 = renewalReminderD15
+  else if (input.nextContactNotes === null) payload.nextContactNotes = null
+  assignNullableDate(payload, "renewalReminderD60", input.renewalReminderD60)
+  assignNullableDate(payload, "renewalReminderD30", input.renewalReminderD30)
+  assignNullableDate(payload, "renewalReminderD15", input.renewalReminderD15)
 
   return payload
+}
+
+function assignNullableDate(
+  payload: CreateLeadPayload,
+  key: "renewalReminderD60" | "renewalReminderD30" | "renewalReminderD15",
+  value: string | null | undefined,
+) {
+  if (value) payload[key] = value
+  else if (value === null) payload[key] = null
 }

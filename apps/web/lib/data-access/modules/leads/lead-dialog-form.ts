@@ -6,7 +6,12 @@ import {
 } from "../../../documents/document"
 import type { InterestCategory } from "@/lib/business-units/constants"
 import type { Lead } from "./types"
-import { suggestRenewalReminderFields } from "./lead-next-contact-form"
+import {
+  suggestRenewalReminderFields,
+  isoToDateTimeInputs,
+  NEXT_CONTACT_PRESET_CUSTOM,
+  type RenewalReminderMode,
+} from "./lead-next-contact-form"
 
 export type LeadDialogFormState = {
   name: string
@@ -31,10 +36,16 @@ export type LeadDialogFormState = {
   nextContactNotes: string
   renewalReminderD60Date: string
   renewalReminderD60Time: string
+  renewalReminderD60Mode: RenewalReminderMode
+  renewalReminderD60CompletedAt: string
   renewalReminderD30Date: string
   renewalReminderD30Time: string
+  renewalReminderD30Mode: RenewalReminderMode
+  renewalReminderD30CompletedAt: string
   renewalReminderD15Date: string
   renewalReminderD15Time: string
+  renewalReminderD15Mode: RenewalReminderMode
+  renewalReminderD15CompletedAt: string
 }
 
 export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
@@ -60,10 +71,16 @@ export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
   nextContactNotes: "",
   renewalReminderD60Date: "",
   renewalReminderD60Time: "09:00",
+  renewalReminderD60Mode: "suggested",
+  renewalReminderD60CompletedAt: "",
   renewalReminderD30Date: "",
   renewalReminderD30Time: "09:00",
+  renewalReminderD30Mode: "suggested",
+  renewalReminderD30CompletedAt: "",
   renewalReminderD15Date: "",
   renewalReminderD15Time: "09:00",
+  renewalReminderD15Mode: "suggested",
+  renewalReminderD15CompletedAt: "",
 }
 
 function formatStoredDocument(
@@ -118,15 +135,109 @@ export function buildLeadDialogFormState(
     businessUnitId:
       options?.lockedBusinessUnitId || lead.businessUnitId || "",
     interestCategories: lead.interestCategories ?? [],
-    followUpDays: "",
-    nextContactDate: "",
-    nextContactTime: "09:00",
-    nextContactType: "whatsapp",
-    nextContactNotes: "",
-    ...suggestRenewalReminderFields(
+    ...hydrateNextContact(lead),
+    ...hydrateRenewalReminders(
       lead.policyExpiresAt ? lead.policyExpiresAt.slice(0, 10) : "",
+      lead,
     ),
   }
+}
+
+function hydrateNextContact(lead: Lead) {
+  if (!lead.nextContactAt) {
+    return {
+      followUpDays: "",
+      nextContactDate: "",
+      nextContactTime: "09:00",
+      nextContactType: lead.nextContactType || "whatsapp",
+      nextContactNotes: lead.nextContactNotes ?? "",
+    }
+  }
+  const when = isoToDateTimeInputs(lead.nextContactAt)
+  return {
+    followUpDays: NEXT_CONTACT_PRESET_CUSTOM,
+    nextContactDate: when.date,
+    nextContactTime: when.time,
+    nextContactType: lead.nextContactType || "whatsapp",
+    nextContactNotes: lead.nextContactNotes ?? "",
+  }
+}
+
+function hydrateRenewalReminders(
+  expiresAt: string,
+  lead: Lead,
+) {
+  const suggested = suggestRenewalReminderFields(expiresAt)
+  const fields: ReturnType<typeof suggestRenewalReminderFields> & {
+    renewalReminderD60Mode: RenewalReminderMode
+    renewalReminderD60CompletedAt: string
+    renewalReminderD30Mode: RenewalReminderMode
+    renewalReminderD30CompletedAt: string
+    renewalReminderD15Mode: RenewalReminderMode
+    renewalReminderD15CompletedAt: string
+  } = {
+    ...suggested,
+    renewalReminderD60Mode: "suggested",
+    renewalReminderD60CompletedAt: "",
+    renewalReminderD30Mode: "suggested",
+    renewalReminderD30CompletedAt: "",
+    renewalReminderD15Mode: "suggested",
+    renewalReminderD15CompletedAt: "",
+  }
+  const slots = [
+    {
+      dateKey: "renewalReminderD60Date",
+      timeKey: "renewalReminderD60Time",
+      modeKey: "renewalReminderD60Mode",
+      completedKey: "renewalReminderD60CompletedAt",
+      disabled: lead.renewalD60Disabled,
+      iso: lead.renewalReminderD60,
+      completedAt: lead.renewalReminderD60CompletedAt,
+    },
+    {
+      dateKey: "renewalReminderD30Date",
+      timeKey: "renewalReminderD30Time",
+      modeKey: "renewalReminderD30Mode",
+      completedKey: "renewalReminderD30CompletedAt",
+      disabled: lead.renewalD30Disabled,
+      iso: lead.renewalReminderD30,
+      completedAt: lead.renewalReminderD30CompletedAt,
+    },
+    {
+      dateKey: "renewalReminderD15Date",
+      timeKey: "renewalReminderD15Time",
+      modeKey: "renewalReminderD15Mode",
+      completedKey: "renewalReminderD15CompletedAt",
+      disabled: lead.renewalD15Disabled,
+      iso: lead.renewalReminderD15,
+      completedAt: lead.renewalReminderD15CompletedAt,
+    },
+  ] as const
+  for (const slot of slots) {
+    if (slot.disabled) {
+      fields[slot.dateKey] = ""
+      fields[slot.timeKey] = "09:00"
+      fields[slot.modeKey] = "disabled"
+      continue
+    }
+    if (slot.iso) {
+      const when = isoToDateTimeInputs(slot.iso)
+      fields[slot.dateKey] = when.date
+      fields[slot.timeKey] = when.time
+      const followsSuggestion =
+        when.date === suggested[slot.dateKey] &&
+        when.time === suggested[slot.timeKey]
+      fields[slot.modeKey] = followsSuggestion ? "suggested" : "manual"
+      continue
+    }
+    if (slot.completedAt) {
+      fields[slot.dateKey] = ""
+      fields[slot.timeKey] = "09:00"
+      fields[slot.modeKey] = "completed"
+      fields[slot.completedKey] = slot.completedAt
+    }
+  }
+  return fields
 }
 
 export function shouldShowPageLeadSaveError(

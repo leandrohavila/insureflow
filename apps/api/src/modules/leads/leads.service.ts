@@ -38,8 +38,17 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityEngineService } from '../activities/activity-engine.service';
 import { BusinessUnitsService } from '../business-units/business-units.service';
 import { LeadFollowUpsService } from '../lead-follow-ups/lead-follow-ups.service';
-import { syncLeadRenewalActivities } from './lead-renewal-agenda.sync';
-import { renewalReminderDatesFromDto } from './lead-renewal-agenda.util';
+import { parsePolicyExpiresAt } from './lead-civil-date.util';
+import { applyLeadRenewalActivities } from './lead-renewal-agenda.sync';
+import { renewalReminderSlotsFromDto } from './lead-renewal-agenda.util';
+import {
+  LEAD_SEARCH_ACCENTS_FROM,
+  LEAD_SEARCH_ACCENTS_TO,
+  buildLeadAttributeWhere,
+  leadPhoneLikePattern,
+  leadSearchLikePattern,
+} from './lead-list-filters.util';
+import { loadLeadAgendaById } from './lead-agenda-snapshot';
 import { syncLeadNextContactActivity } from './lead-next-contact.sync';
 import { LeadLossReasonsService } from '../lead-loss-reasons/lead-loss-reasons.service';
 import {
@@ -210,9 +219,15 @@ export class LeadsService {
     });
 
     const mapStartedAt = performance.now();
+    const agendaByLeadId = await loadLeadAgendaById(
+      this.prisma,
+      tenantId,
+      leadIds,
+    );
     const data = leads.map((lead) =>
       serializeLeadRecord({
         ...lead,
+        ...agendaByLeadId.get(lead.id),
         lastInteractionAt: resolveLeadLastInteractionAt(
           activityByLeadId.get(lead.id),
           lead.lastContactAt,
@@ -272,8 +287,12 @@ export class LeadsService {
       [id],
     );
 
+    const agendaByLeadId = await loadLeadAgendaById(this.prisma, tenantId, [
+      id,
+    ]);
     return serializeLeadRecord({
       ...lead,
+      ...agendaByLeadId.get(id),
       lastInteractionAt: resolveLeadLastInteractionAt(
         activityByLeadId.get(id),
         lead.lastContactAt,
@@ -543,64 +562,80 @@ export class LeadsService {
       }
     }
 
-    console.info('[BUG010][prisma] transaction', {
-      traceId,
-      transactionMs: 0,
-      note: 'createLead não usa transaction explícita',
-    });
+    const createdReminders = renewalReminderSlotsFromDto(dto);
+    const performerId = ownerUserId ?? actor?.userId;
     const insertStartedAt = performance.now();
     console.info('[BUG010][prisma] INSERT lead start', { traceId });
-    const lead = await this.prisma.lead.create({
-      data: Object.assign(
-        {
+    const lead = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.lead.create({
+        data: Object.assign(
+          {
+            tenantId,
+            name: dto.name,
+            email: dto.email,
+            phone: dto.phone,
+            company: dto.company,
+            source: dto.source,
+            status: dto.status ?? 'new',
+            notes: dto.notes,
+            assignedTo,
+            ownerUserId,
+            ownerTeamId,
+            lastContactAt: now,
+            lastInteractionAt: now,
+            businessUnitId: units.originId,
+            interestCategories: dto.interestCategories ?? [],
+            lostReason: dto.lostReason,
+            reactivationEnabled: dto.reactivationEnabled ?? true,
+            reactivationDays: dto.reactivationDays,
+            ...(dto.lossReasonId ? { lossReasonId: dto.lossReasonId } : {}),
+            ...(units.unitIds.length
+              ? {
+                  businessUnits: {
+                    create: units.unitIds.map((businessUnitId) => ({
+                      businessUnitId,
+                      isOrigin: businessUnitId === units.originId,
+                    })),
+                  },
+                }
+              : {}),
+            ...documentFields,
+          },
+          {
+            opportunityType: dto.opportunityType ?? null,
+            currentInsurer: dto.currentInsurer ?? null,
+            currentPolicyNumber: dto.currentPolicyNumber ?? null,
+            policyExpiresAt: parsePolicyExpiresAt(dto.policyExpiresAt),
+          },
+        ),
+        include: leadOwnerInclude,
+      });
+      if (
+        performerId &&
+        (createdReminders.anyPresent || created.policyExpiresAt)
+      ) {
+        const synced = await applyLeadRenewalActivities(tx, {
           tenantId,
-          name: dto.name,
-          email: dto.email,
-          phone: dto.phone,
-          company: dto.company,
-          source: dto.source,
-          status: dto.status ?? 'new',
-          notes: dto.notes,
-          assignedTo,
-          ownerUserId,
-          ownerTeamId,
-          lastContactAt: now,
-          lastInteractionAt: now,
-          businessUnitId: units.originId,
-          interestCategories: dto.interestCategories ?? [],
-          lostReason: dto.lostReason,
-          reactivationEnabled: dto.reactivationEnabled ?? true,
-          reactivationDays: dto.reactivationDays,
-          ...(dto.lossReasonId ? { lossReasonId: dto.lossReasonId } : {}),
-          ...(units.unitIds.length
-            ? {
-                businessUnits: {
-                  create: units.unitIds.map((businessUnitId) => ({
-                    businessUnitId,
-                    isOrigin: businessUnitId === units.originId,
-                  })),
-                },
-              }
-            : {}),
-          ...documentFields,
-        },
-        {
-          opportunityType: dto.opportunityType ?? null,
-          currentInsurer: dto.currentInsurer ?? null,
-          currentPolicyNumber: dto.currentPolicyNumber ?? null,
-          policyExpiresAt: dto.policyExpiresAt
-            ? new Date(dto.policyExpiresAt)
-            : null,
-        },
-      ),
-      include: leadOwnerInclude,
+          leadId: created.id,
+          performedById: performerId,
+          expiresAt: created.policyExpiresAt,
+          slots: createdReminders.slots,
+          generateMissing: !createdReminders.anyPresent,
+          failIfMissing: true,
+        });
+        if (synced.missing) {
+          throw new NotFoundException('Lead não encontrado');
+        }
+        return { ...created, ...synced.flags };
+      }
+      return created;
     });
     console.info('[BUG010][prisma] INSERT lead end', {
       traceId,
       insertMs: Number((performance.now() - insertStartedAt).toFixed(2)),
+      note: 'lead e lembretes de renovação confirmados na mesma transação',
     });
     logLeadSerialize('createLead', { id: lead.id });
-    const performerId = lead.ownerUserId ?? actor?.userId;
     if (dto.nextContactAt && performerId) {
       await syncLeadNextContactActivity(this.prisma, {
         tenantId,
@@ -621,16 +656,7 @@ export class LeadsService {
           : 'WHATSAPP',
       });
     }
-    if (performerId) {
-      await syncLeadRenewalActivities(this.prisma, {
-        tenantId,
-        leadId: lead.id,
-        performedById: performerId,
-        expiresAt: (lead as { policyExpiresAt?: Date | null }).policyExpiresAt,
-        scheduledAtByDays: renewalReminderDatesFromDto(dto),
-      });
-    }
-    return serializeLeadRecord({
+    return this.serializeLeadWithAgenda(tenantId, {
       ...lead,
       lastInteractionAt: resolveLeadLastInteractionAt(
         undefined,
@@ -788,18 +814,47 @@ export class LeadsService {
         : {}),
       ...(dto.policyExpiresAt !== undefined
         ? {
-            policyExpiresAt: dto.policyExpiresAt
-              ? new Date(dto.policyExpiresAt)
-              : null,
+            policyExpiresAt: parsePolicyExpiresAt(dto.policyExpiresAt),
           }
         : {}),
     });
 
-    let lead = await this.prisma.lead.update({
-      where: { id },
-      data,
-      include: leadOwnerInclude,
-    });
+    const updatedReminders = renewalReminderSlotsFromDto(dto);
+    const renewalPerformerId =
+      (ownerUserIdPatch !== undefined
+        ? ownerUserIdPatch
+        : existing?.ownerUserId) ??
+      actor?.userId ??
+      null;
+    let lead;
+    if (updatedReminders.anyPresent && renewalPerformerId) {
+      const performerId = renewalPerformerId;
+      lead = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.lead.update({
+          where: { id },
+          data,
+          include: leadOwnerInclude,
+        });
+        const synced = await applyLeadRenewalActivities(tx, {
+          tenantId,
+          leadId: id,
+          performedById: performerId,
+          slots: updatedReminders.slots,
+          generateMissing: false,
+          failIfMissing: true,
+        });
+        if (synced.missing) {
+          throw new NotFoundException('Lead não encontrado');
+        }
+        return { ...updated, ...synced.flags };
+      });
+    } else {
+      lead = await this.prisma.lead.update({
+        where: { id },
+        data,
+        include: leadOwnerInclude,
+      });
+    }
 
     if (dto.businessUnitId !== undefined || dto.businessUnitIds !== undefined) {
       const units = await this.resolveRequestedUnits(tenantId, dto, {
@@ -849,26 +904,6 @@ export class LeadsService {
       });
     }
 
-    if (
-      dto.policyExpiresAt !== undefined ||
-      dto.opportunityType === 'renewal' ||
-      dto.renewalReminderD60 !== undefined ||
-      dto.renewalReminderD30 !== undefined ||
-      dto.renewalReminderD15 !== undefined
-    ) {
-      const performerId = lead.ownerUserId ?? actor?.userId;
-      if (performerId) {
-        await syncLeadRenewalActivities(this.prisma, {
-          tenantId,
-          leadId: lead.id,
-          performedById: performerId,
-          expiresAt: (lead as { policyExpiresAt?: Date | null })
-            .policyExpiresAt,
-          scheduledAtByDays: renewalReminderDatesFromDto(dto),
-        });
-      }
-    }
-
     if (dto.nextContactAt !== undefined) {
       const performerId = lead.ownerUserId ?? actor?.userId;
       if (performerId) {
@@ -883,7 +918,7 @@ export class LeadsService {
       }
     }
 
-    return serializeLeadRecord({
+    return this.serializeLeadWithAgenda(tenantId, {
       ...lead,
       lastInteractionAt: resolveLeadLastInteractionAt(
         activityByLeadId.get(id),
@@ -1107,26 +1142,103 @@ export class LeadsService {
     };
   }
 
+  private async serializeLeadWithAgenda(
+    tenantId: string,
+    lead: Parameters<typeof serializeLeadRecord>[0] & { id: string },
+  ) {
+    const agendaByLeadId = await loadLeadAgendaById(this.prisma, tenantId, [
+      lead.id,
+    ]);
+    return serializeLeadRecord({
+      ...lead,
+      ...agendaByLeadId.get(lead.id),
+    });
+  }
+
+  private async findNormalizedSearchIds(tenantId: string, search: string) {
+    const textPattern = leadSearchLikePattern(search);
+    const phonePattern = leadPhoneLikePattern(search);
+    const parts: Prisma.Sql[] = [];
+    if (textPattern) {
+      parts.push(
+        Prisma.sql`translate(lower("name"), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'`,
+        Prisma.sql`translate(lower(coalesce("email", '')), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'`,
+        Prisma.sql`translate(lower(coalesce("company", '')), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'`,
+        Prisma.sql`translate(lower(coalesce("source", '')), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'`,
+        Prisma.sql`translate(lower(coalesce("assignedTo", '')), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'`,
+        Prisma.sql`EXISTS (
+          SELECT 1 FROM "users" u
+          WHERE u.id = "leads"."owner_user_id"
+          AND u."tenantId" = ${tenantId}
+          AND (
+            translate(lower(u."name"), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'
+            OR translate(lower(u."email"), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${textPattern} ESCAPE '\\'
+          )
+        )`,
+      );
+    }
+    if (phonePattern) {
+      parts.push(
+        Prisma.sql`regexp_replace(coalesce("phone", ''), '\\D', '', 'g') LIKE ${phonePattern}`,
+        Prisma.sql`regexp_replace(coalesce("document", ''), '\\D', '', 'g') LIKE ${phonePattern}`,
+      );
+    }
+    if (parts.length === 0) return [];
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT id FROM "leads"
+      WHERE "tenantId" = ${tenantId}
+      AND (${Prisma.join(parts, ' OR ')})
+    `);
+    return rows.map((row) => row.id);
+  }
+
+  private async findFoldedSourceIds(tenantId: string, source: string) {
+    const pattern = leadSearchLikePattern(source);
+    if (!pattern) return [];
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT id FROM "leads"
+      WHERE "tenantId" = ${tenantId}
+      AND translate(lower(coalesce("source", '')), ${LEAD_SEARCH_ACCENTS_FROM}, ${LEAD_SEARCH_ACCENTS_TO}) LIKE ${pattern} ESCAPE '\\'
+    `);
+    return rows.map((row) => row.id);
+  }
+
   private async buildLeadWhere(
     tenantId: string,
     query: ListLeadsQueryDto,
     actor?: LeadActor,
   ): Promise<Prisma.LeadWhereInput> {
     const search = query.search?.trim();
-
-    let assignedToFilter: Prisma.LeadWhereInput | undefined;
-    if (query.mine && actor?.userId) {
-      assignedToFilter = { ownerUserId: actor.userId };
-    }
+    const source = query.source?.trim();
+    const attributeWhere = buildLeadAttributeWhere({
+      status: query.status,
+      interestCategory: query.interestCategory,
+      mine: query.mine,
+      actorUserId: actor?.userId,
+      createdWithinDays: query.createdWithinDays,
+    });
+    const normalizedIds = search
+      ? await this.findNormalizedSearchIds(tenantId, search)
+      : [];
+    const sourceIds = source
+      ? await this.findFoldedSourceIds(tenantId, source)
+      : [];
 
     let legacyWhere: Prisma.LeadWhereInput = {
       tenantId,
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.source ? { source: query.source } : {}),
-      ...(query.interestCategory
-        ? { interestCategories: { has: query.interestCategory } }
+      ...attributeWhere,
+      ...(source
+        ? {
+            AND: [
+              {
+                OR: [
+                  { source: { contains: source, mode: 'insensitive' } },
+                  ...(sourceIds.length ? [{ id: { in: sourceIds } }] : []),
+                ],
+              },
+            ],
+          }
         : {}),
-      ...(assignedToFilter ?? {}),
       ...(search
         ? {
             OR: [
@@ -1147,6 +1259,7 @@ export class LeadsService {
                 },
               },
               { document: { contains: stripDocumentDigits(search) } },
+              ...(normalizedIds.length ? [{ id: { in: normalizedIds } }] : []),
             ],
           }
         : {}),
