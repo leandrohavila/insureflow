@@ -69,7 +69,7 @@ export function CrmPageHeader({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-9 shrink-0 text-sm"
+                  className="h-8 shrink-0 text-sm"
                   onClick={secondaryAction.onClick}
                 >
                   {secondaryAction.label}
@@ -77,8 +77,9 @@ export function CrmPageHeader({
               ) : null}
               {primaryAction ? (
                 <Button
+                  variant="create"
                   size="sm"
-                  className="h-9 shrink-0 gap-1.5 text-sm shadow-md shadow-primary/15"
+                  className="h-8 shrink-0 text-sm"
                   onClick={primaryAction.onClick}
                 >
                   <Plus className="size-3.5" strokeWidth={1.5} />

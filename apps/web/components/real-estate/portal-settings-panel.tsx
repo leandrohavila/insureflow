@@ -593,7 +593,7 @@ export function PortalSettingsPanel({
                 </FormSection>
 
                 <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                  <Button type="submit" disabled={saveDisabled}>
+                  <Button type="submit" variant="save" disabled={saveDisabled}>
                     {saving ? "Salvando…" : "Salvar"}
                   </Button>
                   <Button type="button" variant="outline" onClick={cancelEditing} disabled={saving}>
@@ -670,7 +670,7 @@ export function PortalSettingsPanel({
               </div>
               <Input placeholder="Link" value={banner.link} onChange={(event) => setBanner({ ...banner, link: event.target.value })} />
               <Input placeholder="Ordem" value={banner.order} onChange={(event) => setBanner({ ...banner, order: event.target.value })} />
-              <Button type="submit" disabled={!businessUnitId || !banner.image}>
+              <Button type="submit" variant="save" disabled={!businessUnitId || !banner.image}>
                 Adicionar banner
               </Button>
             </form>

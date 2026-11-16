@@ -156,9 +156,41 @@ export async function clearBackendTokens() {
   cookieStore.delete(API_REFRESH_TOKEN_COOKIE)
 }
 
+function backendUnavailableResponse() {
+  return new Response(
+    JSON.stringify({
+      statusCode: 503,
+      error: "Service Unavailable",
+      message: "API indisponível no momento. Tente novamente em instantes.",
+    }),
+    { status: 503, headers: { "Content-Type": "application/json" } },
+  )
+}
+
 export async function backendFetch(
   path: string,
   init: RequestInit = {},
+  request?: Request,
+) {
+  try {
+    return await backendFetchUnsafe(path, init, request)
+  } catch (error) {
+    if (!isNetworkFetchError(error)) throw error
+    console.error("[backendFetch] backend unreachable", {
+      path,
+      cause: error.cause instanceof Error ? error.cause.message : error.message,
+    })
+    return backendUnavailableResponse()
+  }
+}
+
+function isNetworkFetchError(error: unknown): error is TypeError {
+  return error instanceof TypeError && error.message === "fetch failed"
+}
+
+async function backendFetchUnsafe(
+  path: string,
+  init: RequestInit,
   request?: Request,
 ) {
   const url = `${getBackendApiBaseUrl()}${path}`

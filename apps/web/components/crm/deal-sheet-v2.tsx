@@ -134,7 +134,8 @@ export function DealSheetV2({
       onSectionChange={(id) => setSection(id as DealSheetV2Section)}
       ariaLabel={`Negócio: ${deal.title}`}
       ariaDescription={`Workspace operacional do negócio ${deal.title}, no estágio ${stageLabel}.`}
-      width="default"
+      width="wide"
+      className="avila-lead-surface"
     >
       {/* -------------------------------------------------------------- */}
       {/* HEADER — quatro zonas verticais:                                */}
@@ -143,7 +144,7 @@ export function DealSheetV2({
       {/*   3) meta (owner, última interação)                             */}
       {/*   4) quick actions                                              */}
       {/* -------------------------------------------------------------- */}
-      <EntitySheetShell.Header>
+      <EntitySheetShell.Header className="gap-4! bg-white">
         {/* Zona 1 — status badges em linha */}
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusPill tone={stageTone} variant="soft" size="sm" dot>
@@ -241,7 +242,7 @@ export function DealSheetV2({
       {/* -------------------------------------------------------------- */}
       <EntitySheetShell.Body className="overflow-y-auto px-0 md:px-0">
         <div className="flex min-h-full flex-col xl:flex-row">
-          <div className="entity-sheet-section min-w-0 flex-1 px-5 md:px-7">
+          <div className="entity-sheet-section min-w-0 flex-1 px-5! py-6! md:px-7!">
             {section === "overview" ? <DealOverviewSection deal={deal} /> : null}
 
             {section === "timeline" ? (
@@ -286,7 +287,7 @@ export function DealSheetV2({
 
           <CommercialIntelligencePanel
             deal={deal}
-            className="px-5 pb-8 md:px-7 xl:sticky xl:top-0 xl:max-h-full xl:overflow-y-auto xl:pb-10 xl:pr-7"
+            className="border-t border-[#e4ddd2] bg-white px-5! py-5! md:px-7! xl:sticky xl:top-0 xl:max-h-full xl:w-[320px] xl:overflow-y-auto xl:border-t-0 xl:border-l xl:pb-10!"
           />
         </div>
       </EntitySheetShell.Body>

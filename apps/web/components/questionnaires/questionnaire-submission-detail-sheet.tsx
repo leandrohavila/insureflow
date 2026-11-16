@@ -307,7 +307,7 @@ function SubmissionActions({
             <X className="size-4" />
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" variant="save" disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (

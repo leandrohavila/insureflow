@@ -53,7 +53,7 @@ export function BusinessUnitsManager() {
             label: BUSINESS_UNIT_TYPE_LABELS[item],
           }))}
         />
-        <Button type="submit" disabled={createUnit.isPending || !name.trim()}>
+        <Button type="submit" variant="create" disabled={createUnit.isPending || !name.trim()}>
           Adicionar
         </Button>
       </form>

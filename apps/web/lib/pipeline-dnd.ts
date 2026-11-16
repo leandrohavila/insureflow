@@ -10,7 +10,7 @@ import {
 import {
   computePipelineOrderAtIndex,
   getSortedStageDeals,
-  sortDealsForPipeline,
+  sortDealsKeepingTies,
 } from "./pipeline-order"
 
 export const stageDroppableId = (stageId: CrmStageId) => `stage:${stageId}`
@@ -179,7 +179,7 @@ export function reorderDeals(
 ): CrmDeal[] {
   if (!overId || activeId === overId) return deals
 
-  const sorted = sortDealsForPipeline(deals)
+  const sorted = sortDealsKeepingTies(deals)
   const activeDeal = sorted.find((deal) => deal.id === activeId)
   if (!activeDeal) return deals
 
@@ -187,7 +187,7 @@ export function reorderDeals(
   if (!targetStage) return deals
 
   const baselineSorted = dragBaseline
-    ? sortDealsForPipeline(dragBaseline)
+    ? sortDealsKeepingTies(dragBaseline)
     : sorted
   const referenceStageDeals = getSortedStageDeals(
     baselineSorted,

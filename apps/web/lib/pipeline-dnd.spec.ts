@@ -270,6 +270,19 @@ describe("reorderDeals", () => {
 
   })
 
+
+  it("H. moves above a card tied at pipelineOrder 0 even when createdAt says otherwise (regression)", () => {
+    // Estado real: array ordenado [g, m, p], todos com ordem 0. "m" é mais antigo
+    // que "g" (createdAt), mas está visualmente abaixo dele. Subir "m" sobre "g"
+    // precisa ser aplicado, em vez de ignorado como "já está no alvo".
+    const input: CrmDeal[] = [
+      { ...deal("g", "contato", 0), createdAt: "2026-05-20T20:00:00.000Z" },
+      { ...deal("m", "contato", 0), createdAt: "2026-05-20T10:00:00.000Z" },
+      { ...deal("p", "contato", 0), createdAt: "2026-07-14T10:00:00.000Z" },
+    ]
+
+    const result = reorderDeals(input, "m", "g")
+
+    expect(stageIds(result, "contato")).toEqual(["m", "g", "p"])
+  })
 })
-
-

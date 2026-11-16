@@ -83,9 +83,9 @@ export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
         <div className="flex min-w-0 items-center justify-end">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            className="text-xs"
             aria-expanded={detailsOpen}
             onClick={() => setDetailsOpen((open) => !open)}
           >

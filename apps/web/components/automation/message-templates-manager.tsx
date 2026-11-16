@@ -85,7 +85,7 @@ export function MessageTemplatesManager() {
         <p className="text-xs text-muted-foreground">
           Variáveis: {`{{nome}} {{empresa}} {{produto}} {{corretor}} {{vencimento}}`}
         </p>
-        <Button type="submit" disabled={createTemplate.isPending}>
+        <Button type="submit" variant="save" disabled={createTemplate.isPending}>
           Salvar template
         </Button>
       </form>

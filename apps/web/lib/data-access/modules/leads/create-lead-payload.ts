@@ -14,6 +14,7 @@ export type CreateLeadPayload = {
   notes?: string
   assignedTo?: string
   businessUnitId?: string
+  businessUnitIds?: string[]
   interestCategories?: InterestCategory[]
   followUpDays?: number
   followUpType?: "CALL" | "WHATSAPP" | "EMAIL" | "MEETING"
@@ -67,6 +68,11 @@ export function buildCreateLeadPayload(
 
   if (input.status) payload.status = input.status
   if (input.businessUnitId) payload.businessUnitId = input.businessUnitId
+  if (input.businessUnitIds?.length) {
+    payload.businessUnitIds = [
+      ...new Set(input.businessUnitIds.map((id) => id.trim()).filter(Boolean)),
+    ]
+  }
   if (input.interestCategories?.length) {
     payload.interestCategories = input.interestCategories
   }

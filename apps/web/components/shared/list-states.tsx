@@ -24,9 +24,11 @@ function StatePanel({
   action,
   className,
   minHeightClassName = "min-h-[260px]",
-}: StatePanelProps) {
+  role,
+}: StatePanelProps & { role?: "status" | "alert" }) {
   return (
     <div
+      role={role}
       className={cn(
         "glass-panel flex flex-col items-center justify-center gap-3 rounded-[var(--if-radius-2xl)] p-8 text-center",
         minHeightClassName,
@@ -62,9 +64,12 @@ export function LoadingState({
         "glass-panel flex min-h-[320px] items-center justify-center rounded-[var(--if-radius-2xl)]",
         className,
       )}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
     >
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
+        <Loader2 className="size-4 animate-spin" aria-hidden />
         {label}
       </div>
     </div>
@@ -127,6 +132,7 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <StatePanel
+      role="alert"
       icon={AlertCircle}
       title={title}
       description={description}
@@ -159,6 +165,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <StatePanel
+      role="status"
       icon={icon}
       title={title}
       description={description}

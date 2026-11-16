@@ -26,7 +26,7 @@ export function CommercialChecklistPanel({
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="rounded-lg border border-border/60 bg-[var(--crm-surface-panel)] p-3">
+      <div className="rounded-lg border border-border/60 bg-[var(--crm-surface-panel)] p-3!">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium tracking-[-0.02em]">Progresso</p>
           <p className="crm-text-metric text-lg font-semibold tabular-nums">
@@ -57,7 +57,7 @@ export function CommercialChecklistPanel({
             <AlertCircle className="size-3.5" aria-hidden />
             Pendências obrigatórias
           </p>
-          <ul className="mt-1.5 space-y-1">
+          <ul className="mt-1.5! flex flex-col gap-1">
             {checklist.pendingRequired.map((item) => (
               <li key={item.id} className="crm-text-meta text-foreground/70">
                 {item.label}
@@ -67,11 +67,11 @@ export function CommercialChecklistPanel({
         </div>
       ) : null}
 
-      <ul className="space-y-1">
+      <ul className="flex flex-col gap-1">
         {checklist.items.map((item) => (
           <li
             key={item.id}
-            className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[12px]"
+            className="flex items-start gap-2 rounded-md px-1.5! py-1! text-[12px]"
           >
             {item.completed ? (
               <CheckCircle2
@@ -84,14 +84,22 @@ export function CommercialChecklistPanel({
                 aria-hidden
               />
             )}
-            <span
-              className={cn(
-                item.completed ? "text-foreground/75" : "text-foreground/90",
-              )}
-            >
-              {item.label}
-              {item.required ? (
-                <span className="ml-1 text-destructive">*</span>
+            <span className="min-w-0">
+              <span
+                className={cn(
+                  "block break-words",
+                  item.completed ? "text-[#5c6578]" : "text-[var(--avila-navy-900)]",
+                )}
+              >
+                {item.label}
+                {item.required ? (
+                  <span className="text-destructive"> · obrigatório</span>
+                ) : null}
+              </span>
+              {item.hint ? (
+                <span className="mt-0.5 block text-[11px] leading-relaxed text-[#5c6578]">
+                  {item.hint}
+                </span>
               ) : null}
             </span>
           </li>

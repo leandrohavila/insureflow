@@ -198,17 +198,31 @@ export function DealsPage() {
     [captureFocus, syncDealParam],
   )
 
+  const [moveError, setMoveError] = useState<string | null>(null)
+  const refetchDeals = dealsQuery.refetch
+
   const handleDealMove = useCallback(
     async (deal: CrmDeal, update: DealPipelineUpdateInput) => {
       if (!canManageCrm) {
-        throw new Error("Sem permissão para mover negócios no pipeline.")
+        const message = "Sem permissão para mover negócios no pipeline."
+        setMoveError(message)
+        throw new Error(message)
       }
-      await updateDealPipeline.mutateAsync({
-        id: deal.id,
-        input: { stage: update.stage, pipelineOrder: update.pipelineOrder },
-      })
+      setMoveError(null)
+      try {
+        await updateDealPipeline.mutateAsync({
+          id: deal.id,
+          input: { stage: update.stage, pipelineOrder: update.pipelineOrder },
+        })
+      } catch (error) {
+        setMoveError(
+          getErrorMessage(error, "Não foi possível mover o negócio. Tente novamente."),
+        )
+        void refetchDeals()
+        throw error
+      }
     },
-    [canManageCrm, updateDealPipeline],
+    [canManageCrm, refetchDeals, updateDealPipeline],
   )
 
   const handleDealEdit = (deal: CrmDeal) => {
@@ -237,8 +251,10 @@ export function DealsPage() {
         placeholder="Filtrar negócios, empresas ou contatos…"
         value={queryInput}
         onChange={(event) => setQueryInput(event.target.value)}
+        className="h-8 border-[#d6cfc4] bg-white shadow-none"
       />
-      <Inline wrap={false} className="shrink-0">
+      <Inline className="min-w-0 max-w-full">
+        <div className={CRM_VIEW_TOGGLE_WRAP} role="group" aria-label="Unidade de negócio">
         {(
           [
             ["all", "Todas"],
@@ -249,20 +265,23 @@ export function DealsPage() {
           <button
             key={id}
             type="button"
+            aria-pressed={unitFilter === id}
             onClick={() => setUnitFilter(id)}
             className={crmViewToggleButton(unitFilter === id)}
           >
             {label}
           </button>
         ))}
+        </div>
         <CRMRightSidebarToggle />
-        <Button variant="outline" size="sm" className="shrink-0 gap-2">
+        <Button variant="outline" size="sm" className="h-8 shrink-0">
           <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
           Filtros
         </Button>
         <div className={CRM_VIEW_TOGGLE_WRAP}>
           <button
             type="button"
+            aria-pressed={view === "board"}
             onClick={() => setView("board")}
             className={crmViewToggleButton(view === "board")}
           >
@@ -271,6 +290,7 @@ export function DealsPage() {
           </button>
           <button
             type="button"
+            aria-pressed={view === "list"}
             onClick={() => setView("list")}
             className={crmViewToggleButton(view === "list")}
           >
@@ -283,12 +303,12 @@ export function DealsPage() {
   )
 
   return (
-    <PageContainer fillHeight>
+    <PageContainer fillHeight className="avila-pipeline-surface">
       <ContentContainer variant={dsContentLayoutVariant.crmDeals}>
         <OperationalPageLayout density="dense">
           <PageHeader
             compact
-            className="shrink-0"
+            className="pipeline-page-header shrink-0"
             title="Negócios"
             actions={
               <CrmPageHeaderActions
@@ -297,7 +317,7 @@ export function DealsPage() {
                     href="/crm"
                     className={cn(
                       buttonVariants({ variant: "outline", size: "sm" }),
-                      "h-9 gap-2",
+                      "h-8",
                     )}
                   >
                     Visão geral
@@ -306,7 +326,7 @@ export function DealsPage() {
                 primary={
                   <>
                     <PermissionGate permission="crm:manage">
-                      <Button variant="outline" size="sm" className="h-8 gap-2">
+                      <Button variant="import" size="sm" className="h-8">
                         <Upload className="size-3.5" strokeWidth={1.5} />
                         Importar
                       </Button>
@@ -358,6 +378,23 @@ export function DealsPage() {
           >
             {!dealsQuery.isLoading && deals.length === 0 ? (
               <PipelineConversionEmpty dealCount={0} />
+            ) : null}
+            {moveError ? (
+              <div
+                role="alert"
+                className="mb-2! flex shrink-0 items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3! py-2! text-sm text-destructive"
+              >
+                <span className="min-w-0">{moveError}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 text-destructive"
+                  onClick={() => setMoveError(null)}
+                >
+                  Fechar
+                </Button>
+              </div>
             ) : null}
             {view === "board" ? (
               <PipelineBoard

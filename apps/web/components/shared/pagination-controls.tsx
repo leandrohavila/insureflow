@@ -1,5 +1,7 @@
 "use client"
 
+import type { ReactNode } from "react"
+
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +17,8 @@ export type PaginationControlsProps = {
   previousLabel?: string
   nextLabel?: string
   className?: string
+  summary?: ReactNode
+  pageSizeLabel?: string
 }
 
 export function PaginationControls({
@@ -22,6 +26,8 @@ export function PaginationControls({
   onPageChange,
   previousLabel = "Anterior",
   nextLabel = "Próxima",
+  summary,
+  pageSizeLabel,
   className,
 }: PaginationControlsProps) {
   const currentPage = Math.max(1, meta.page)
@@ -35,9 +41,13 @@ export function PaginationControls({
       )}
     >
       <span>
-        Página {currentPage} de {totalPages}
+        {summary ?? (
+          <>
+            Página {currentPage} de {totalPages}
+          </>
+        )}
       </span>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -46,6 +56,14 @@ export function PaginationControls({
         >
           {previousLabel}
         </Button>
+        {summary ? (
+          <span
+            className="inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-primary px-2 text-sm font-medium text-primary-foreground"
+            aria-current="page"
+          >
+            {currentPage}
+          </span>
+        ) : null}
         <Button
           variant="outline"
           size="sm"
@@ -54,6 +72,11 @@ export function PaginationControls({
         >
           {nextLabel}
         </Button>
+        {pageSizeLabel ? (
+          <span className="inline-flex h-8 items-center rounded-md border border-border bg-card px-2.5 text-xs text-foreground">
+            {pageSizeLabel}
+          </span>
+        ) : null}
       </div>
     </div>
   )

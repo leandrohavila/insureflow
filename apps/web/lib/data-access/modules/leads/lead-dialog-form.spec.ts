@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest"
 
 import {
   buildLeadDialogFormState,
+  collectLeadDialogUnitIds,
+  leadDialogCanSubmit,
+  leadDialogUnitFields,
   EMPTY_LEAD_DIALOG_FORM,
   getLeadDialogSessionKey,
   resolveLeadDialogSaveError,
@@ -138,8 +141,73 @@ describe("buildLeadDialogFormState", () => {
       defaultInterestCategories: ["PROPERTY_BUY"],
     })
     expect(form.businessUnitId).toBe("re-1")
+    expect(form.businessUnitIds).toEqual(["re-1"])
     expect(form.interestCategories).toEqual(["PROPERTY_BUY"])
     expect(form.assignedTo).toBe("Operador")
+  })
+})
+
+describe("leadDialogCanSubmit", () => {
+  it("exige nome e ao menos uma unidade", () => {
+    expect(
+      leadDialogCanSubmit({
+        name: "Marina",
+        businessUnitIds: [],
+      }),
+    ).toBe(false)
+    expect(
+      leadDialogCanSubmit({
+        name: "Marina",
+        businessUnitIds: ["bu-1"],
+      }),
+    ).toBe(true)
+    expect(
+      leadDialogCanSubmit({
+        name: "  ",
+        businessUnitIds: ["bu-1"],
+      }),
+    ).toBe(false)
+  })
+})
+
+describe("leadDialogUnitFields", () => {
+  it("preserva a origem e envia o conjunto explícito", () => {
+    expect(leadDialogUnitFields(["bu-2", "bu-1"], "bu-1")).toEqual({
+      businessUnitId: "bu-1",
+      businessUnitIds: ["bu-2", "bu-1"],
+    })
+  })
+
+  it("não envia lista vazia", () => {
+    expect(leadDialogUnitFields([], "bu-1")).toEqual({})
+  })
+
+  it("reúne vínculos existentes sem substituir pela unidade do cadastro", () => {
+    expect(
+      collectLeadDialogUnitIds(
+        {
+          ...sampleLead,
+          businessUnitId: "bu-1",
+          businessUnits: [
+            {
+              id: "bu-1",
+              name: "Corretora",
+              slug: "corretora",
+              type: "INSURANCE",
+              isActive: true,
+            },
+            {
+              id: "bu-2",
+              name: "Imóveis",
+              slug: "imoveis",
+              type: "REAL_ESTATE",
+              isActive: true,
+            },
+          ],
+        },
+        "bu-9",
+      ),
+    ).toEqual(["bu-1", "bu-2"])
   })
 })
 

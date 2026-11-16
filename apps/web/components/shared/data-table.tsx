@@ -6,7 +6,13 @@ import { MoreHorizontal } from "lucide-react"
 import { hasPermission, type Permission } from "@repo/auth"
 
 import { GlassCard } from "@/components/dashboard/glass-card"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -66,12 +72,17 @@ export type DataTableProps<T> = DataTableStateProps & {
   getRowId: (row: T, index: number) => string
   onRowClick?: (row: T) => void
   rowActions?: DataTableRowAction<T>[]
+  /** `menu` agrupa as ações existentes em um menu, sem alterar o que cada ação faz. */
+  rowActionLayout?: "icons" | "menu"
   title?: React.ReactNode
   subtitle?: React.ReactNode
   selectable?: boolean
   pagination?: PaginationControlsProps
   className?: string
   tableClassName?: string
+  /** Padding das células. O padrão das outras telas permanece. */
+  cellClassName?: string
+  headerCellClassName?: string
   cardDelay?: number
   /** Cabeçalho fixo quando a tabela está dentro de um container rolável. */
   stickyHeader?: boolean
@@ -99,6 +110,7 @@ export function DataTable<T>({
   getRowId,
   onRowClick,
   rowActions,
+  rowActionLayout = "icons",
   title,
   subtitle,
   selectable = false,
@@ -114,6 +126,8 @@ export function DataTable<T>({
   onRetry,
   className,
   tableClassName,
+  cellClassName,
+  headerCellClassName,
   cardDelay = 0.1,
   stickyHeader = false,
   density = "default",
@@ -225,7 +239,8 @@ export function DataTable<T>({
                     className={cn(
                       compact
                         ? "h-8 text-[11px] font-semibold tracking-wide text-foreground/70 uppercase"
-                        : "h-11 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase",
+                        : "h-11 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase",
+                      headerCellClassName,
                       column.hideOnMobile && "hidden md:table-cell",
                       column.headerClassName,
                       column.className,
@@ -242,10 +257,14 @@ export function DataTable<T>({
                       "pr-5 text-right font-semibold uppercase md:pr-6",
                       compact
                         ? "h-8 text-[11px] tracking-wide text-foreground/70"
-                        : "h-11 text-[10px] tracking-[0.12em] text-muted-foreground",
+                        : "h-11 text-[11px] tracking-wide text-muted-foreground",
                     )}
                   >
-                    Ações
+                    {rowActionLayout === "menu" ? (
+                      <span className="sr-only">Mais ações</span>
+                    ) : (
+                      "Ações"
+                    )}
                   </TableHead>
                 ) : null}
               </TableRow>
@@ -290,6 +309,7 @@ export function DataTable<T>({
                         key={column.key}
                         className={cn(
                           compact ? "py-1.5" : "py-3.5",
+                          cellClassName,
                           column.hideOnMobile && "hidden md:table-cell",
                           column.className,
                           column.sticky === "left" &&
@@ -308,7 +328,41 @@ export function DataTable<T>({
                         onClick={(event) => event.stopPropagation()}
                       >
                         <div className="flex justify-end gap-1">
-                          {visibleActions.length > 0 ? (
+                          {visibleActions.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">
+                              —
+                            </span>
+                          ) : rowActionLayout === "menu" ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                aria-label="Mais ações"
+                                className={cn(
+                                  buttonVariants({
+                                    variant: "ghost",
+                                    size: "icon-sm",
+                                  }),
+                                )}
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {visibleActions.map((action) => (
+                                  <DropdownMenuItem
+                                    key={action.key}
+                                    variant={
+                                      action.variant === "destructive"
+                                        ? "destructive"
+                                        : "default"
+                                    }
+                                    disabled={isRowActionDisabled(action, row)}
+                                    onClick={() => action.onSelect(row)}
+                                  >
+                                    {action.label}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
                             visibleActions.map((action) => {
                               const Icon = action.icon ?? MoreHorizontal
                               return (
@@ -332,10 +386,6 @@ export function DataTable<T>({
                                 </Button>
                               )
                             })
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              —
-                            </span>
                           )}
                         </div>
                       </TableCell>

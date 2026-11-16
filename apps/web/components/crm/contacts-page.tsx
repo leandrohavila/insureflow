@@ -191,7 +191,7 @@ export function ContactsPage() {
         }
       >
         <PermissionGate permission="crm:manage">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="import" size="sm">
             <Upload className="size-3.5" strokeWidth={1.5} />
             Importar
           </Button>

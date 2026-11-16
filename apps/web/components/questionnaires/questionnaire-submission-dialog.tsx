@@ -160,7 +160,7 @@ function QuestionnaireDialogFooter({
         >
           Salvar rascunho
         </Button>
-        <Button type="submit" disabled={!canFinalize || isBusy}>
+        <Button type="submit" variant="save" disabled={!canFinalize || isBusy}>
           {isFinalizing ? (
             <>
               <Loader2 className="size-4 animate-spin" />
