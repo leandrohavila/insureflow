@@ -17,6 +17,8 @@ type LeadCreateMenuProps = {
   insuranceEnabled?: boolean
   realEstateEnabled?: boolean
   align?: "start" | "end"
+  /** Ação de criação na lista de Leads: verde de sucesso. */
+  accent?: boolean
 }
 
 export function LeadCreateMenu({
@@ -24,6 +26,7 @@ export function LeadCreateMenu({
   insuranceEnabled = true,
   realEstateEnabled = true,
   align = "end",
+  accent = false,
 }: LeadCreateMenuProps) {
   const canCreate = insuranceEnabled || realEstateEnabled
 
@@ -33,8 +36,8 @@ export function LeadCreateMenu({
         disabled={!canCreate}
         aria-label="Novo lead"
         className={cn(
-          buttonVariants({ size: "sm" }),
-          "h-8 gap-1.5",
+          buttonVariants({ variant: accent ? "create" : "primary", size: "sm" }),
+          "h-9 gap-1.5 px-3!",
         )}
       >
         <Plus className="size-3.5" strokeWidth={1.5} />

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, type FormEvent } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, X } from "lucide-react"
 
 import {
   pipelineStages,
@@ -86,9 +86,9 @@ export function DealFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-lg">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <DialogHeader>
+      <DialogContent className="avila-lead-surface gap-0 border-[#d6cfc4] bg-[var(--avila-ivory)] p-0! text-[var(--avila-navy-900)] sm:max-w-lg">
+        <form onSubmit={handleSubmit} className="flex max-h-[min(90vh,760px)] flex-col">
+          <DialogHeader className="border-b border-[#e4ddd2] bg-white px-6! py-4! pr-12!">
             <DialogTitle>{deal ? "Editar negócio" : "Novo negócio"}</DialogTitle>
             <DialogDescription>
               {deal
@@ -97,8 +97,8 @@ export function DealFormDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="space-y-2 sm:col-span-2">
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6! py-5! sm:grid-cols-2">
+            <label className="flex flex-col gap-2 sm:col-span-2">
               <span className="text-sm font-medium">Título</span>
               <Input
                 required
@@ -107,7 +107,7 @@ export function DealFormDialog({
                 placeholder="Ex.: Frota corporativa"
               />
             </label>
-            <label className="space-y-2 sm:col-span-2">
+            <label className="flex flex-col gap-2 sm:col-span-2">
               <span className="text-sm font-medium">Empresa</span>
               <Input
                 required
@@ -116,7 +116,7 @@ export function DealFormDialog({
                 placeholder="Ex.: Transportes Sul"
               />
             </label>
-            <label className="space-y-2">
+            <label className="flex flex-col gap-2">
               <span className="text-sm font-medium">Valor</span>
               <Input
                 required
@@ -128,7 +128,7 @@ export function DealFormDialog({
                 placeholder="67000"
               />
             </label>
-            <label className="space-y-2">
+            <label className="flex flex-col gap-2">
               <span className="text-sm font-medium">Estágio</span>
               <FormSelect
                 value={form.stage}
@@ -141,7 +141,7 @@ export function DealFormDialog({
                 }))}
               />
             </label>
-            <label className="space-y-2 sm:col-span-2">
+            <label className="flex flex-col gap-2 sm:col-span-2">
               <span className="text-sm font-medium">Responsável</span>
               <Input
                 value={form.assignedTo}
@@ -152,21 +152,22 @@ export function DealFormDialog({
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="mx-6! rounded-lg border border-destructive/30 bg-destructive/10 px-3! py-2! text-sm text-destructive">
               {getErrorMessage(error, "Erro ao salvar negócio")}
             </p>
           ) : null}
 
-          <DialogFooter>
+          <DialogFooter className="mx-0! mb-0! border-t border-[#e4ddd2] bg-white px-6! py-4!">
             <Button
               type="button"
               variant="outline"
               disabled={pending}
               onClick={() => onOpenChange(false)}
             >
+              <X className="size-4" />
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" variant="save" disabled={pending}>
               {pending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />

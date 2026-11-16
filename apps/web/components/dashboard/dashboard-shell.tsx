@@ -2,17 +2,21 @@
 
 import { motion, useReducedMotion } from "framer-motion"
 
+import { usePathname } from "next/navigation"
+
 import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import { AppTopbar } from "@/components/dashboard/app-topbar"
 import { BusinessUnitPreloader } from "@/components/dashboard/business-unit-preloader"
 import { SessionProvider } from "@/components/auth/session-provider"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import type { SessionPayload } from "@repo/auth"
+import { isCrmCanvasPath } from "@/lib/layout/crm-canvas"
 import {
   DASHBOARD_INSET_FRAME,
   DASHBOARD_MAIN_SLOT,
 } from "@/lib/layout/operational-shell"
 import { easeOut } from "@/lib/motion"
+import { cn } from "@/lib/utils"
 
 type DashboardShellProps = {
   children: React.ReactNode
@@ -21,6 +25,8 @@ type DashboardShellProps = {
 
 export function DashboardShell({ children, session }: DashboardShellProps) {
   const reduce = useReducedMotion()
+  const pathname = usePathname()
+  const crmCanvas = isCrmCanvasPath(pathname ?? "")
 
   return (
     <SessionProvider initialSession={session}>
@@ -35,7 +41,14 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
             transition={{ duration: 0.4, ease: easeOut }}
           >
             <AppTopbar session={session} />
-            <motion.div className={DASHBOARD_MAIN_SLOT}>{children}</motion.div>
+            <motion.div
+              className={cn(
+                DASHBOARD_MAIN_SLOT,
+                crmCanvas && "avila-crm-canvas",
+              )}
+            >
+              {children}
+            </motion.div>
           </motion.div>
         </SidebarInset>
       </SidebarProvider>

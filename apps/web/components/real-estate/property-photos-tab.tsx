@@ -194,7 +194,7 @@ export function PropertyPhotosTab({ propertyId }: PropertyPhotosTabProps) {
                   <Button
                     type="button"
                     size="icon-sm"
-                    variant="destructive"
+                    variant="delete"
                     disabled={busy}
                     onClick={() =>
                       remove.mutate({ propertyId, imageId: image.id })

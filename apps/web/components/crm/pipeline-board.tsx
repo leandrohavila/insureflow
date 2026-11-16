@@ -27,8 +27,9 @@ import type {
 } from "@/lib/data-access/modules/crm"
 import { pipelineStages } from "@/lib/data-access/modules/crm"
 import {
+  ensureDistinctPipelineOrder,
   getSortedStageDeals,
-  hasDealPipelinePositionChanged,
+  listPipelinePositionChanges,
   sortDealsForPipeline,
 } from "@/lib/pipeline-order"
 import { createPipelineCollisionDetection } from "@/lib/pipeline-collision"
@@ -328,13 +329,13 @@ export function PipelineBoard({
           dropStickyOver,
         ) ?? over.id
 
-      const finalDeals = reorderDeals(
+      const reordered = reorderDeals(
         dealsRef.current,
         active.id,
         dropOverId,
         snapshot,
       )
-      const moved = finalDeals.find((deal) => deal.id === active.id)
+      const moved = reordered.find((deal) => deal.id === active.id)
       if (!moved) {
         clearDragUiState()
         finishDragSession()
@@ -342,7 +343,19 @@ export function PipelineBoard({
         return
       }
 
-      const positionChanged = hasDealPipelinePositionChanged(original, moved)
+      const layoutChanged =
+        original.stage !== moved.stage ||
+        pipelineStageOrderKey(snapshot, moved.stage) !==
+          pipelineStageOrderKey(reordered, moved.stage)
+      const finalDeals = layoutChanged
+        ? ensureDistinctPipelineOrder(reordered, moved.id)
+        : reordered
+      const changedDeals = listPipelinePositionChanges(snapshot, finalDeals)
+      const persistQueue = [
+        ...changedDeals.filter((deal) => deal.id === active.id),
+        ...changedDeals.filter((deal) => deal.id !== active.id),
+      ]
+      const positionChanged = persistQueue.length > 0
 
       if (positionChanged) {
         persistInFlightRef.current = true
@@ -365,10 +378,12 @@ export function PipelineBoard({
       }
 
       try {
-        await onDealMove(moved, {
-          stage: moved.stage,
-          pipelineOrder: moved.pipelineOrder,
-        })
+        for (const deal of persistQueue) {
+          await onDealMove(deal, {
+            stage: deal.stage,
+            pipelineOrder: deal.pipelineOrder,
+          })
+        }
       } catch {
         dealsRef.current = snapshot
         setDeals(snapshot)

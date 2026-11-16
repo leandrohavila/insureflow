@@ -469,7 +469,7 @@ export function TemplateWizardDialog({
                   <ArrowRight className="size-4" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={pending || !canNext}>
+                <Button type="submit" variant="save" disabled={pending || !canNext}>
                   {pending ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />

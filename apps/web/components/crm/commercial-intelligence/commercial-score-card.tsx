@@ -36,7 +36,7 @@ export function CommercialScoreCard({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border/60 bg-[var(--crm-surface-panel)] p-3",
+        "rounded-lg border border-border/60 bg-[var(--crm-surface-panel)] p-3!",
         className,
       )}
     >
@@ -66,19 +66,18 @@ export function CommercialScoreCard({
         />
       </div>
 
-      <ul className="mt-3 space-y-1">
-        {score.criteria
-          .filter((item) => !item.met)
-          .slice(0, 4)
-          .map((item) => (
-            <li
-              key={item.id}
-              className="crm-text-meta flex items-center justify-between gap-2 text-foreground/65"
-            >
-              <span>{item.label}</span>
-              <span className="tabular-nums">+{item.weight}</span>
-            </li>
-          ))}
+      <ul className="mt-3! flex flex-col gap-1.5">
+        {score.criteria.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-center justify-between gap-2 text-xs text-[#5c6578]"
+          >
+            <span className="min-w-0 break-words">{item.label}</span>
+            <span className="shrink-0 tabular-nums text-[var(--avila-navy-900)]">
+              {item.met ? item.earned : 0}/{item.weight}
+            </span>
+          </li>
+        ))}
       </ul>
     </div>
   )

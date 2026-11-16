@@ -23,6 +23,7 @@ const COUNT_FILTER = { page: 1, limit: 1 } as const
 export function useLeadCaptureMetrics(options?: { enabled?: boolean }): {
   metrics: LeadCaptureMetrics
   isLoading: boolean
+  isError: boolean
   insuranceBusinessUnitId: string | null
   realEstateBusinessUnitId: string | null
 } {
@@ -94,9 +95,20 @@ export function useLeadCaptureMetrics(options?: { enabled?: boolean }): {
       Boolean(realEstateBusinessUnitId) &&
       realEstateCustomers.isLoading)
 
+  const isError =
+    enabled &&
+    [
+      context,
+      insuranceQuery,
+      realEstateQuery,
+      insuranceCustomers,
+      realEstateCustomers,
+    ].some((query) => query.isError && !query.data)
+
   return {
     metrics,
     isLoading,
+    isError,
     insuranceBusinessUnitId,
     realEstateBusinessUnitId,
   }

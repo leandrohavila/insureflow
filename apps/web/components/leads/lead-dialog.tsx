@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, type FormEvent } from "react"
-import { Loader2 } from "lucide-react"
+import { Check, Loader2, X } from "lucide-react"
 
 import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { ActivityTimeline } from "@/components/activities/activity-timeline"
@@ -33,9 +33,12 @@ import type {
   LeadStatus,
 } from "@/lib/data-access/modules/leads"
 import { useLeadDuplicates } from "@/lib/data-access/modules/leads"
+import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
 import {
   buildLeadDialogFormState,
   EMPTY_LEAD_DIALOG_FORM,
+  leadDialogCanSubmit,
+  leadDialogUnitFields,
   type LeadDialogFormState,
 } from "@/lib/data-access/modules/leads/lead-dialog-form"
 import {
@@ -52,8 +55,8 @@ import {
   type InterestCategory,
 } from "@/lib/business-units/constants"
 import {
-  interestsForLeadIntent,
   leadIntentFromUnitType,
+  resolveInterestAvailability,
   type LeadCreateIntent,
 } from "@/lib/leads/lead-intent"
 import { LEAD_OPPORTUNITY_PIPELINE_HINT } from "@/lib/leads/lead-pipeline-clarity"
@@ -106,7 +109,7 @@ function formatLeadDate(value: string | null | undefined) {
 
 function buildDuplicateMeta(duplicate: LeadDuplicate) {
   return (
-    <ul className="space-y-0.5">
+    <ul className="flex flex-col gap-0.5">
       <li>
         <span className="opacity-70">Status:</span> {statusLabels[duplicate.status]}
       </li>
@@ -126,50 +129,176 @@ function buildDuplicateMeta(duplicate: LeadDuplicate) {
   )
 }
 
+function LeadDialogUnits({
+  selectedIds,
+  units,
+  knownUnits,
+  onToggle,
+}: {
+  selectedIds: string[]
+  units: Array<{ id: string; name: string }>
+  knownUnits: Array<{ id: string; name: string }>
+  onToggle: (id: string) => void
+}) {
+  const options = new Map<string, string>()
+  for (const unit of [...knownUnits, ...units]) {
+    if (unit.id && unit.name) options.set(unit.id, unit.name)
+  }
+
+  return (
+    <fieldset className="lg:col-span-2">
+      <legend className="text-sm font-medium text-[var(--avila-navy-900)]">
+        Unidades de negócio
+      </legend>
+      <div className="mt-2! flex flex-wrap gap-x-4 gap-y-2">
+        {[...options.entries()].map(([id, name]) => (
+          <label
+            key={id}
+            className="w-auto! flex-row! items-center! gap-2! text-sm font-normal text-[var(--avila-navy-900)]"
+          >
+            <input
+              type="checkbox"
+              className="size-4 accent-[var(--avila-navy-900)]"
+              checked={selectedIds.includes(id)}
+              onChange={() => onToggle(id)}
+            />
+            {name}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
+function InterestChip({
+  category,
+  active,
+  onClick,
+}: {
+  category: InterestCategory
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      className={cn(
+        "rounded-full border px-3! py-1.5! text-xs font-medium",
+        active
+          ? "border-[var(--avila-navy-900)] bg-[var(--avila-navy-900)] text-[var(--avila-ivory)]"
+          : "border-[#d6cfc4] bg-white text-[var(--avila-navy-900)]",
+      )}
+      onClick={onClick}
+    >
+      {INTEREST_CATEGORY_LABELS[category]}
+    </button>
+  )
+}
+
 function LeadDialogBusinessFields({
   form,
   update,
-  intent,
+  available,
+  pending,
+  incompatible,
 }: {
   form: LeadDialogFormState
   update: <K extends keyof LeadDialogFormState>(
     key: K,
     value: LeadDialogFormState[K],
   ) => void
-  intent: LeadCreateIntent
+  available: InterestCategory[]
+  pending: boolean
+  incompatible: InterestCategory[]
 }) {
-  const visibleInterests = interestsForLeadIntent(intent)
+  const insurance = available.filter((category) =>
+    category.endsWith("_INSURANCE"),
+  )
+  const property = available.filter((category) =>
+    category.startsWith("PROPERTY_"),
+  )
+
+  function toggle(category: InterestCategory) {
+    const active = form.interestCategories.includes(category)
+    update(
+      "interestCategories",
+      active
+        ? form.interestCategories.filter((item) => item !== category)
+        : [...form.interestCategories, category],
+    )
+  }
+
+  function renderGroup(title: string, categories: InterestCategory[]) {
+    if (categories.length === 0) return null
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-semibold tracking-wide text-[#5c6578] uppercase">
+          {title}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <InterestChip
+              key={category}
+              category={category}
+              active={form.interestCategories.includes(category)}
+              onClick={() => toggle(category)}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-2 sm:col-span-2">
-      <span className="text-sm font-medium">Interesses</span>
-      <div className="flex flex-wrap gap-2">
-        {visibleInterests.map((category) => {
-          const active = form.interestCategories.includes(category)
-          return (
-            <button
-              key={category}
-              type="button"
-              className={cn(
-                "rounded-full border px-3 py-1 text-xs",
-                active
-                  ? "border-primary/40 bg-primary/15 text-primary"
-                  : "border-white/[0.08] text-muted-foreground",
-              )}
-              onClick={() =>
-                update(
-                  "interestCategories",
-                  active
-                    ? form.interestCategories.filter((item) => item !== category)
-                    : [...form.interestCategories, category],
-                )
-              }
-            >
-              {INTEREST_CATEGORY_LABELS[category]}
-            </button>
-          )
-        })}
-      </div>
+    <div className="flex flex-col gap-3 lg:col-span-2">
+      <span className="text-sm font-medium text-[var(--avila-navy-900)]">
+        Qualificações
+      </span>
+      {pending ? (
+        <p className="text-sm text-[#5c6578]">
+          Carregando as qualificações das unidades selecionadas…
+        </p>
+      ) : available.length === 0 ? (
+        <p className="text-sm text-[#5c6578]">
+          Selecione ao menos uma unidade para ver as qualificações.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {renderGroup("Seguros", insurance)}
+          {renderGroup("Imóveis", property)}
+        </div>
+      )}
+      {incompatible.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-[#c05612]/45 bg-[#fff4e8] p-3!">
+          <p className="text-sm font-semibold text-[#9a4510]">
+            Há qualificações fora das unidades selecionadas
+          </p>
+          <p className="text-sm text-[var(--avila-navy-900)]">
+            Remova antes de salvar:{" "}
+            {incompatible
+              .map((category) => INTEREST_CATEGORY_LABELS[category])
+              .join(", ")}
+            .
+          </p>
+          <Button
+            type="button"
+            variant="warning"
+            size="sm"
+            className="w-fit"
+            onClick={() =>
+              update(
+                "interestCategories",
+                form.interestCategories.filter(
+                  (category) => !incompatible.includes(category),
+                ),
+              )
+            }
+          >
+            Remover qualificações incompatíveis
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -186,14 +315,12 @@ function LeadDialogSection({
   columns?: boolean
 }) {
   return (
-    <section className="space-y-3 sm:col-span-2">
-      <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        <span className="inline-flex size-5 items-center justify-center rounded-full border border-white/15 text-[10px] tabular-nums text-foreground">
-          {step}
-        </span>
+    <section className="rounded-xl border border-border bg-white p-4! shadow-[0_1px_2px_rgb(0_12_36/0.04)]">
+      <h3 className="mb-3! text-[11px] font-semibold tracking-wide text-[var(--avila-navy-800)] uppercase">
+        <span className="mr-2 text-[var(--avila-gold-600)]">{step}.</span>
         {title}
       </h3>
-      <div className={columns ? "grid gap-4 sm:grid-cols-2" : "space-y-3"}>
+      <div className={columns ? "grid gap-4 lg:grid-cols-2" : "grid gap-4"}>
         {children}
       </div>
     </section>
@@ -228,6 +355,7 @@ export function LeadDialog({
   onSubmitLockedChange,
 }: LeadDialogProps) {
   const { session } = useSession()
+  const unitsQuery = useBusinessUnits()
   const [duplicateDismissed, setDuplicateDismissed] = useState(false)
   const [form, setForm] = useState<LeadDialogFormState>(EMPTY_LEAD_DIALOG_FORM)
   const [submitLocked, setSubmitLocked] = useState(false)
@@ -312,12 +440,53 @@ export function LeadDialog({
     })
   }
 
+  const submitPending = pending || submitLocked
+  const interestUnits = new Map<string, string>()
+  for (const unit of [
+    ...(lead?.businessUnits ?? []),
+    ...(lead?.businessUnit ? [lead.businessUnit] : []),
+    ...(unitsQuery.data ?? []),
+  ]) {
+    if (unit.id && unit.type) interestUnits.set(unit.id, unit.type)
+  }
+  const interestAvailability = unitsQuery.isError
+    ? {
+        available: form.interestCategories,
+        incompatible: [] as InterestCategory[],
+        pending: false,
+      }
+    : resolveInterestAvailability({
+        selectedUnitIds: form.businessUnitIds,
+        units: [...interestUnits].map(([id, type]) => ({ id, type })),
+        selectedInterests: form.interestCategories,
+        settled: !unitsQuery.isLoading,
+      })
+  const canSubmit =
+    leadDialogCanSubmit({
+      name: form.name,
+      businessUnitIds: form.businessUnitIds,
+    }) &&
+    !interestAvailability.pending &&
+    interestAvailability.incompatible.length === 0
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending || submitLocked) return
     if (!form.name.trim()) return
-    const businessUnitId = lockedBusinessUnitId || form.businessUnitId.trim()
-    if (!businessUnitId) return
+    const units = leadDialogUnitFields(
+      form.businessUnitIds,
+      lead?.businessUnitId || lockedBusinessUnitId || form.businessUnitId,
+    )
+    if (
+      !leadDialogCanSubmit({
+        name: form.name,
+        businessUnitIds: form.businessUnitIds,
+      }) ||
+      interestAvailability.pending ||
+      interestAvailability.incompatible.length > 0
+    ) {
+      return
+    }
 
     bug010DrawerResetFlow()
     bug010DrawerSetState({ dialogOpen: open, submitLocked })
@@ -349,8 +518,10 @@ export function LeadDialog({
         opportunityType: optionalFormValue(form.opportunityType),
         currentInsurer: optionalFormValue(form.currentInsurer),
         currentPolicyNumber: optionalFormValue(form.currentPolicyNumber),
-        businessUnitId,
-        interestCategories: form.interestCategories,
+        ...units,
+        interestCategories: form.interestCategories.filter((category) =>
+          interestAvailability.available.includes(category),
+        ),
         ...leadFormToAgendaFields(form),
       })
     } finally {
@@ -361,11 +532,6 @@ export function LeadDialog({
     }
   }
 
-  const submitPending = pending || submitLocked
-  const canSubmit =
-    Boolean(form.name.trim()) &&
-    Boolean(lockedBusinessUnitId || form.businessUnitId.trim())
-
   useEffect(() => {
     console.log("[DRAWER] isSubmitting =", submitPending)
   }, [submitPending])
@@ -373,10 +539,13 @@ export function LeadDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {open ? (
-        <DialogContent className="max-h-[90vh] overflow-y-auto border-white/[0.08] bg-background/95 sm:max-w-2xl">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
+        <DialogContent className="avila-crm-canvas avila-lead-surface w-[min(1040px,calc(100%-2rem))] gap-0 overflow-hidden border-border bg-[var(--avila-ivory)] p-0 text-foreground shadow-xl sm:max-w-[1040px]">
+          <form
+            onSubmit={handleSubmit}
+            className="grid max-h-[min(92vh,920px)] grid-rows-[auto_minmax(0,1fr)_auto]"
+          >
+            <DialogHeader className="border-b border-border bg-white px-6! py-4! pr-12!">
+              <DialogTitle className="text-lg font-semibold tracking-tight text-[var(--avila-navy-900)]">
                 {lead
                   ? "Editar lead"
                   : intent === "real-estate"
@@ -387,9 +556,12 @@ export function LeadDialog({
                 {lead
                   ? "Atualize os dados de contato e o contexto comercial do lead."
                   : intent === "real-estate"
-                    ? "O lead entra na Ávila Imóveis. Não é preciso escolher unidade."
-                    : "O lead entra na Corretora Ávila. Não é preciso escolher unidade."}
+                    ? "O lead entra na Ávila Imóveis. Você pode vincular também a Corretora Ávila."
+                    : "O lead entra na Corretora Ávila. Você pode vincular também a Ávila Imóveis."}
               </DialogDescription>
+              {lead ? (
+                <p className="text-sm font-medium text-foreground">{lead.name}</p>
+              ) : null}
               {lead ? (
                 <p className="text-xs text-muted-foreground">
                   {formatLastInteraction(
@@ -399,9 +571,32 @@ export function LeadDialog({
               ) : null}
             </DialogHeader>
 
+            <div className="min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6! py-5!">
             <div className="grid gap-6">
-              <LeadDialogSection step={1} title="Dados">
-              <label className="space-y-2 sm:col-span-2">
+              <LeadDialogSection step={1} title="Dados do lead">
+              <LeadDialogUnits
+                selectedIds={form.businessUnitIds}
+                units={(unitsQuery.data ?? []).filter((unit) => unit.isActive)}
+                knownUnits={[
+                  ...(lead?.businessUnits ?? []),
+                  ...(lead?.businessUnit ? [lead.businessUnit] : []),
+                ]}
+                onToggle={(id) => {
+                  setForm((current) => {
+                    const has = current.businessUnitIds.includes(id)
+                    const businessUnitIds = has
+                      ? current.businessUnitIds.filter((item) => item !== id)
+                      : [...current.businessUnitIds, id]
+                    const businessUnitId = businessUnitIds.includes(
+                      current.businessUnitId,
+                    )
+                      ? current.businessUnitId
+                      : (businessUnitIds[0] ?? "")
+                    return { ...current, businessUnitIds, businessUnitId }
+                  })
+                }}
+              />
+              <label className="flex flex-col gap-2 lg:col-span-2">
                 <span className="text-sm font-medium">Nome</span>
                 <Input
                   required
@@ -410,7 +605,7 @@ export function LeadDialog({
                   placeholder="Ex.: Marina Costa"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">E-mail</span>
                 <Input
                   type="email"
@@ -419,7 +614,7 @@ export function LeadDialog({
                   placeholder="lead@email.com"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Telefone</span>
                 <Input
                   value={form.phone}
@@ -431,7 +626,7 @@ export function LeadDialog({
                   autoComplete="tel"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Tipo de documento</span>
                 <FormSelect
                   value={form.documentType}
@@ -444,7 +639,7 @@ export function LeadDialog({
                   }))}
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">
                   {form.documentType === "cpf" ? "CPF" : "CNPJ"}
                 </span>
@@ -464,7 +659,7 @@ export function LeadDialog({
                   inputMode="numeric"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Empresa</span>
                 <Input
                   value={form.company}
@@ -472,7 +667,7 @@ export function LeadDialog({
                   placeholder="Ex.: Transportes Sul"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Origem</span>
                 <Input
                   value={form.source}
@@ -480,10 +675,7 @@ export function LeadDialog({
                   placeholder="whatsapp, site, indicação..."
                 />
               </label>
-              </LeadDialogSection>
-
-              <LeadDialogSection step={2} title="Qualificação">
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Responsável</span>
                 <Input
                   value={form.assignedTo}
@@ -492,15 +684,20 @@ export function LeadDialog({
                   required
                 />
               </label>
+              </LeadDialogSection>
+
+              <LeadDialogSection step={2} title="Qualificação">
               <LeadDialogBusinessFields
                 form={form}
                 update={update}
-                intent={intent}
+                available={interestAvailability.available}
+                pending={interestAvailability.pending}
+                incompatible={interestAvailability.incompatible}
               />
               </LeadDialogSection>
 
               <LeadDialogSection step={3} title="Oportunidade">
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Tipo oportunidade</span>
                 <FormSelect
                   value={form.opportunityType}
@@ -519,7 +716,7 @@ export function LeadDialog({
                   {LEAD_OPPORTUNITY_PIPELINE_HINT}
                 </p>
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Seguradora atual</span>
                 <Input
                   value={form.currentInsurer}
@@ -528,7 +725,7 @@ export function LeadDialog({
                   }
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Número apólice</span>
                 <Input
                   value={form.currentPolicyNumber}
@@ -537,7 +734,7 @@ export function LeadDialog({
                   }
                 />
               </label>
-              <label className="space-y-2">
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Vencimento apólice</span>
                 <Input
                   type="date"
@@ -549,7 +746,7 @@ export function LeadDialog({
               </label>
 
               {form.policyExpiresAt ? (
-                <div className="space-y-3 sm:col-span-2 rounded-lg border border-white/10 p-3">
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-white p-3! lg:col-span-2">
                   <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
                     Renovações automáticas
                   </p>
@@ -590,13 +787,13 @@ export function LeadDialog({
                     return (
                       <div
                         key={label}
-                        className="grid gap-3 sm:grid-cols-[4rem_1fr_8rem_auto] sm:items-end"
+                        className="grid gap-3 lg:grid-cols-[4rem_1fr_8rem_auto] lg:items-end"
                       >
                         <div>
                           <p className="text-sm font-medium">{label}</p>
                           <p className="text-xs text-muted-foreground">{status}</p>
                         </div>
-                        <label className="space-y-1">
+                        <label className="flex flex-col gap-1">
                           <span className="text-xs text-muted-foreground">Data</span>
                           <Input
                             type="date"
@@ -607,7 +804,7 @@ export function LeadDialog({
                             }
                           />
                         </label>
-                        <label className="space-y-1">
+                        <label className="flex flex-col gap-1">
                           <span className="text-xs text-muted-foreground">Hora</span>
                           <Input
                             type="time"
@@ -653,7 +850,7 @@ export function LeadDialog({
                     Recalcular lembretes
                   </Button>
                   {renewalPreview ? (
-                    <div className="space-y-2 rounded-md border border-white/10 p-3 text-sm">
+                    <div className="space-y-2 rounded-md border border-border p-3 text-sm">
                       {renewalPreview.map((line) => (
                         <p key={line}>{line}</p>
                       ))}
@@ -684,8 +881,8 @@ export function LeadDialog({
               </LeadDialogSection>
 
               <LeadDialogSection step={4} title="Próxima ação" columns={false}>
-              <div className="space-y-3 rounded-lg border border-white/10 p-3">
-                <label className="space-y-2">
+              <div className="space-y-3 rounded-lg border border-border p-3">
+                <label className="flex flex-col gap-2">
                   <span className="text-sm font-medium">Próximo contato</span>
                   <FormSelect
                     value={form.followUpDays}
@@ -703,8 +900,8 @@ export function LeadDialog({
                   />
                 </label>
                 {form.followUpDays === NEXT_CONTACT_PRESET_CUSTOM ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="space-y-2">
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    <label className="flex flex-col gap-2">
                       <span className="text-sm font-medium">Data</span>
                       <Input
                         required
@@ -715,7 +912,7 @@ export function LeadDialog({
                         }
                       />
                     </label>
-                    <label className="space-y-2">
+                    <label className="flex flex-col gap-2">
                       <span className="text-sm font-medium">Hora</span>
                       <Input
                         type="time"
@@ -725,7 +922,7 @@ export function LeadDialog({
                         }
                       />
                     </label>
-                    <label className="space-y-2">
+                    <label className="flex flex-col gap-2">
                       <span className="text-sm font-medium">Tipo de atividade</span>
                       <FormSelect
                         value={form.nextContactType}
@@ -738,7 +935,7 @@ export function LeadDialog({
                         }))}
                       />
                     </label>
-                    <label className="space-y-2 sm:col-span-2">
+                    <label className="flex flex-col gap-2 lg:col-span-2">
                       <span className="text-sm font-medium">Observação</span>
                       <Input
                         value={form.nextContactNotes}
@@ -751,16 +948,37 @@ export function LeadDialog({
                   </div>
                 ) : null}
               </div>
-              <label className="space-y-2 sm:col-span-2">
+              </LeadDialogSection>
+
+              <LeadDialogSection step={5} title="Histórico e observações" columns={false}>
+              <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Notas</span>
-                <Input
+                <textarea
                   value={form.notes}
                   onChange={(event) => update("notes", event.target.value)}
                   placeholder="Contexto da oportunidade"
+                  rows={4}
+                  className="w-full resize-y rounded-lg border px-2.5! py-2! text-sm"
                 />
               </label>
+
+            {lead ? (
+              <>
+                <ActivityQuickActions
+                  leadId={lead.id}
+                  dealId={lead.dealId}
+                  compact
+                  embedded
+                />
+                <ActivityTimeline
+                  leadId={lead.id}
+                  dealId={lead.dealId}
+                  embedded
+                  showHeading={false}
+                />
+              </>
+            ) : null}
               </LeadDialogSection>
-            </div>
 
             {primaryDuplicate && !duplicateDismissed ? (
               <CommercialWarningBanner
@@ -791,42 +1009,34 @@ export function LeadDialog({
                 {getErrorMessage(error, "Erro ao salvar lead")}
               </p>
             ) : null}
+            </div>
+            </div>
 
-            {lead ? (
-              <LeadDialogSection step={5} title="Histórico" columns={false}>
-                <ActivityQuickActions
-                  leadId={lead.id}
-                  dealId={lead.dealId}
-                  compact
-                  embedded
-                />
-                <ActivityTimeline
-                  leadId={lead.id}
-                  dealId={lead.dealId}
-                  embedded
-                />
-              </LeadDialogSection>
-            ) : null}
-
-            <DialogFooter>
+            <DialogFooter className="mx-0! mb-0! border-t border-border bg-white px-6! py-4!">
               <Button
                 type="button"
                 variant="outline"
                 disabled={submitPending}
                 onClick={() => onOpenChange(false)}
               >
+                <X className="size-4" />
                 Cancelar
               </Button>
-              <Button type="submit" disabled={submitPending || !canSubmit}>
+              <Button
+                type="submit"
+                variant="save"
+                disabled={submitPending || !canSubmit}
+              >
                 {submitPending ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
                     Salvando…
                   </>
-                ) : lead ? (
-                  "Salvar alterações"
                 ) : (
-                  "Salvar lead"
+                  <>
+                    <Check className="size-4" />
+                    {lead ? "Salvar alterações" : "Salvar lead"}
+                  </>
                 )}
               </Button>
             </DialogFooter>

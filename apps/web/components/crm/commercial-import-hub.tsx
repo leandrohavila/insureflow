@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Upload } from "lucide-react"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
 import { buttonVariants } from "@/components/ui/button"
@@ -25,8 +26,9 @@ export function CommercialImportHub() {
           <PermissionGate permission="leads:manage">
             <Link
               href="/crm/importacoes/leads"
-              className={cn(buttonVariants({ size: "sm" }), "mt-4")}
+              className={cn(buttonVariants({ variant: "import", size: "sm" }), "mt-4")}
             >
+              <Upload className="size-3.5" />
               Importar leads
             </Link>
           </PermissionGate>
@@ -39,8 +41,9 @@ export function CommercialImportHub() {
           <PermissionGate permission="clients:manage">
             <Link
               href="/crm/importacoes/clientes"
-              className={cn(buttonVariants({ size: "sm" }), "mt-4")}
+              className={cn(buttonVariants({ variant: "import", size: "sm" }), "mt-4")}
             >
+              <Upload className="size-3.5" />
               Importar clientes
             </Link>
           </PermissionGate>

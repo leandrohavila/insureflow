@@ -59,24 +59,18 @@ export function CommercialJourney({
   }
 
   return (
-    <ol className={cn("flex flex-col gap-1", className)}>
-      {stages.map((stage, index) => (
+    <ol className={cn("flex flex-col gap-2", className)}>
+      {stages.map((stage) => (
         <li
           key={stage.id}
-          className="relative flex items-start gap-2 rounded-md px-1.5 py-1.5"
+          className="flex items-start gap-3 rounded-lg border border-[#e4ddd2] bg-white px-3! py-2.5!"
         >
-          {index < stages.length - 1 ? (
-            <span
-              aria-hidden
-              className="absolute left-[13px] top-[26px] h-[calc(100%-4px)] w-px bg-[var(--crm-stroke-faint)]"
-            />
-          ) : null}
-          <span className="relative z-[1] mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--crm-surface-panel)]">
+          <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#f6f1e8]">
             <StageIcon status={stage.status} />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <p className="text-[12px] font-medium tracking-[-0.01em] text-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-medium text-[var(--avila-navy-900)]">
                 {stage.label}
               </p>
               <StatusPill
@@ -88,8 +82,8 @@ export function CommercialJourney({
               </StatusPill>
             </div>
             {stage.hint ? (
-              <p className="crm-text-meta mt-0.5 text-foreground/55">
-                {stage.hint}
+              <p className="mt-1! text-xs leading-relaxed text-[#5c6578]">
+                {stage.status === "BLOCKED" ? `Bloqueio: ${stage.hint}` : stage.hint}
               </p>
             ) : null}
           </div>

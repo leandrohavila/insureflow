@@ -252,8 +252,8 @@ export function DealQuotesHub({ deal, crmReturnHref }: DealQuotesHubProps) {
           <PermissionGate permission="quotes:manage">
             <Button
               type="button"
+              variant="create"
               size="sm"
-              className="gap-1.5"
               onClick={() => setComparisonDrawer("create")}
             >
               <Plus className="size-3.5" />
@@ -281,8 +281,8 @@ export function DealQuotesHub({ deal, crmReturnHref }: DealQuotesHubProps) {
               <PermissionGate permission="quotes:manage">
                 <Button
                   type="button"
+                  variant="create"
                   size="sm"
-                  className="gap-1.5"
                   onClick={() => setComparisonDrawer("create")}
                 >
                   <Plus className="size-3.5" />

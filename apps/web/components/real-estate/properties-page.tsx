@@ -196,7 +196,7 @@ export function PropertiesPage() {
                 <PageActionsGroup>
                   <Link
                     href="/real-estate/properties/new"
-                    className={cn(buttonVariants({ size: "sm" }))}
+                    className={cn(buttonVariants({ variant: "create", size: "sm" }))}
                   >
                     <Plus className="mr-1.5 size-4" />
                     Novo imóvel
@@ -258,7 +258,7 @@ export function PropertiesPage() {
             canManage ? (
               <Link
                 href="/real-estate/properties/new"
-                className={cn(buttonVariants({ size: "sm" }))}
+                className={cn(buttonVariants({ variant: "create", size: "sm" }))}
               >
                 <Plus className="mr-1.5 size-4" />
                 Novo imóvel

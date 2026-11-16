@@ -28,6 +28,7 @@ export type LeadDialogFormState = {
   currentPolicyNumber: string
   policyExpiresAt: string
   businessUnitId: string
+  businessUnitIds: string[]
   interestCategories: InterestCategory[]
   followUpDays: string
   nextContactDate: string
@@ -63,6 +64,7 @@ export const EMPTY_LEAD_DIALOG_FORM: LeadDialogFormState = {
   currentPolicyNumber: "",
   policyExpiresAt: "",
   businessUnitId: "",
+  businessUnitIds: [] as string[],
   interestCategories: [],
   followUpDays: "",
   nextContactDate: "",
@@ -97,6 +99,52 @@ export function getLeadDialogSessionKey(lead: Lead | null) {
   return lead?.id ?? "__new__"
 }
 
+export function collectLeadDialogUnitIds(
+  lead: Pick<Lead, "businessUnitId" | "businessUnits"> | null,
+  lockedBusinessUnitId?: string,
+) {
+  if (!lead) {
+    const locked = lockedBusinessUnitId?.trim()
+    return locked ? [locked] : []
+  }
+  const ids = [
+    ...(lead.businessUnits ?? []).map((unit) => unit.id),
+    lead.businessUnitId,
+  ]
+  return [
+    ...new Set(
+      ids
+        .map((id) => id?.trim())
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ]
+}
+
+/** Origem permanece quando ainda está selecionada. A lista enviada é o conjunto explícito. */
+export function leadDialogUnitFields(
+  businessUnitIds: string[],
+  preferredOrigin?: string,
+) {
+  const ids = [
+    ...new Set(businessUnitIds.map((id) => id.trim()).filter(Boolean)),
+  ]
+  if (ids.length === 0) return {}
+  const preferred = preferredOrigin?.trim()
+  return {
+    businessUnitId: preferred && ids.includes(preferred) ? preferred : ids[0],
+    businessUnitIds: ids,
+  }
+}
+
+/** Cadastro e edição exigem nome e ao menos uma unidade. Lista vazia não é enviada. */
+export function leadDialogCanSubmit(input: {
+  name: string
+  businessUnitIds: string[]
+}) {
+  if (!input.name.trim()) return false
+  return input.businessUnitIds.some((id) => id.trim())
+}
+
 export type BuildLeadDialogFormOptions = {
   lockedBusinessUnitId?: string
   defaultInterestCategories?: InterestCategory[]
@@ -107,11 +155,20 @@ export function buildLeadDialogFormState(
   sessionName?: string | null,
   options?: BuildLeadDialogFormOptions,
 ): LeadDialogFormState {
+  const businessUnitIds = collectLeadDialogUnitIds(
+    lead,
+    options?.lockedBusinessUnitId,
+  )
+  const preferredOrigin = lead?.businessUnitId || options?.lockedBusinessUnitId || ""
+
   if (!lead) {
     return {
       ...EMPTY_LEAD_DIALOG_FORM,
       assignedTo: sessionName?.trim() ?? "",
-      businessUnitId: options?.lockedBusinessUnitId ?? "",
+      businessUnitId: businessUnitIds.includes(preferredOrigin)
+        ? preferredOrigin
+        : (businessUnitIds[0] ?? ""),
+      businessUnitIds,
       interestCategories: options?.defaultInterestCategories ?? [],
     }
   }
@@ -132,8 +189,10 @@ export function buildLeadDialogFormState(
     policyExpiresAt: lead.policyExpiresAt
       ? lead.policyExpiresAt.slice(0, 10)
       : "",
-    businessUnitId:
-      options?.lockedBusinessUnitId || lead.businessUnitId || "",
+    businessUnitId: businessUnitIds.includes(preferredOrigin)
+      ? preferredOrigin
+      : (businessUnitIds[0] ?? ""),
+    businessUnitIds,
     interestCategories: lead.interestCategories ?? [],
     ...hydrateNextContact(lead),
     ...hydrateRenewalReminders(

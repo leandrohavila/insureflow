@@ -29,12 +29,12 @@ type CrmCaptureActionsProps = {
   className?: string
 }
 
-const primaryClass = cn(buttonVariants({ size: "sm" }), "h-8")
-const secondaryClass = cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8")
+const primaryClass = cn(buttonVariants({ variant: "create", size: "sm" }), "h-8")
+const secondaryClass = primaryClass
 
 /**
  * CTAs de captura — Dashboard, Pipeline e Leads Imobiliários.
- * Navy = ação primária; outline = secundária. Gold não é peso funcional.
+ * Criar lead ou negócio usa a variante de sucesso. Gold não é peso funcional.
  */
 export function CrmCaptureActions({
   module = "crm",

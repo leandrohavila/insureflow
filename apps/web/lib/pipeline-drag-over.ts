@@ -34,6 +34,10 @@ export function resolvePipelineDragOverTarget(
   if (!activeDeal) return rawOverId
 
   let target = rawOverId
+  // Alvo pegajoso de outra coluna (card já mudou de coluna) é obsoleto.
+  const sticky = isStickyValidForActiveColumn(deals, activeDeal, stickyOverId)
+    ? stickyOverId
+    : null
 
   if (isStageDroppableId(target)) {
     const stage = parseStageId(target)
@@ -44,7 +48,7 @@ export function resolvePipelineDragOverTarget(
 
       if (sameColumn && columnDeals.length > 1) {
         if (activeIndex < columnDeals.length - 1) {
-          if (stickyOverId) return stickyOverId
+          if (sticky) return sticky
           if (activeIndex <= 0) return null
           return columnDeals[0]!.id
         }
@@ -52,8 +56,19 @@ export function resolvePipelineDragOverTarget(
     }
   }
 
-  target = resolveStickyPipelineOver(deals, activeId, target, stickyOverId)
+  target = resolveStickyPipelineOver(deals, activeId, target, sticky)
   return target
+}
+
+function isStickyValidForActiveColumn(
+  deals: CrmDeal[],
+  activeDeal: CrmDeal,
+  stickyOverId: UniqueIdentifier | null,
+): boolean {
+  if (!stickyOverId) return false
+  if (isStageDroppableId(stickyOverId)) return true
+  const stickyDeal = deals.find((deal) => deal.id === stickyOverId)
+  return Boolean(stickyDeal && stickyDeal.stage === activeDeal.stage)
 }
 
 /**
@@ -70,12 +85,18 @@ export function resolveStickyPipelineOver(
 
   const activeDeal = deals.find((deal) => deal.id === activeId)
   if (!activeDeal) return rawOverId
+  if (!isStickyValidForActiveColumn(deals, activeDeal, stickyOverId)) {
+    return rawOverId
+  }
 
   const stageDeals = getSortedStageDeals(deals, activeDeal.stage)
   const activeIndex = stageDeals.findIndex((deal) => deal.id === activeId)
   if (activeIndex !== 0) return rawOverId
 
   if (isStageDroppableId(rawOverId)) {
+    // O alvo pegajoso só serve para evitar oscilação dentro da própria coluna.
+    // Se o ponteiro está sobre OUTRA coluna, esse é o destino real.
+    if (parseStageId(rawOverId) !== activeDeal.stage) return rawOverId
     return stickyOverId
   }
 

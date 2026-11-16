@@ -12,6 +12,8 @@ type PropertyCellProps = {
   icon?: ComponentType<{ className?: string; strokeWidth?: number }>
   /** Cell ocupa as 2 colunas do grid (md+). */
   span?: 1 | 2
+  /** Quebra valores longos em vez de cortá-los. */
+  wrap?: boolean
   className?: string
 }
 
@@ -28,12 +30,13 @@ export function PropertyCell({
   value,
   icon: Icon,
   span = 1,
+  wrap = false,
   className,
 }: PropertyCellProps) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-1 px-3.5 py-2.5",
+        "flex min-w-0 flex-col gap-1 px-3.5! py-2.5!",
         span === 2 && "md:col-span-2",
         className,
       )}
@@ -46,7 +49,7 @@ export function PropertyCell({
             strokeWidth={1.5}
           />
         ) : null}
-        <span className="min-w-0 flex-1 truncate">{value}</span>
+        <span className={cn("min-w-0 flex-1", wrap ? "break-words whitespace-normal" : "truncate")}>{value}</span>
       </span>
     </div>
   )

@@ -94,7 +94,7 @@ export function RealEstateDashboard() {
                   {canManage ? (
                     <Link
                       href="/real-estate/properties/new"
-                      className={cn(buttonVariants({ size: "sm" }))}
+                      className={cn(buttonVariants({ variant: "create", size: "sm" }))}
                     >
                       + Novo imóvel
                     </Link>

@@ -109,7 +109,7 @@ export function TimelineLane({
       description={
         !isLoading && latestOccurredAt ? (
           <span className="crm-text-meta">
-            Última interação: {formatLastInteraction(latestOccurredAt)}
+            {formatLastInteraction(latestOccurredAt)}
           </span>
         ) : undefined
       }

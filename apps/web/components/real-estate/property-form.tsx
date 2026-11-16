@@ -477,7 +477,7 @@ export function PropertyForm({ propertyId }: PropertyFormProps) {
                 ) : null}
 
                 <div className="flex justify-end gap-2">
-                  <Button type="submit" disabled={saving || !businessUnitId}>
+                  <Button type="submit" variant="save" disabled={saving || !businessUnitId}>
                     {saving ? (
                       <>
                         <Loader2 className="mr-2 size-4 animate-spin" />

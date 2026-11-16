@@ -23,100 +23,74 @@ type DealOverviewSectionProps = {
  * header sticky do `EntitySheetShell` para máxima visibilidade durante todo
  * o scroll do workspace.
  */
+function missing(value: string | null | undefined) {
+  const text = value?.trim()
+  return text || "Não informado"
+}
+
 export function DealOverviewSection({ deal }: DealOverviewSectionProps) {
   const phoneRaw = deal.commercialContext?.phone ?? null
   const phone = phoneRaw ? formatPhoneBrMask(formatStoredPhone(phoneRaw)) : null
+  const cell = "bg-white"
 
   return (
-    <div className="flex flex-col gap-4">
-      <SectionPanel title="Propriedades do negócio" tone="default">
+    <div className="flex flex-col gap-5">
+      <SectionPanel title="Propriedades do negócio" tone="panel" bordered>
         <PropertyGrid>
-          <PropertyCell
-            icon={Building2}
-            label="Empresa"
-            value={deal.company || "—"}
-            className="bg-[var(--crm-surface-panel)]"
-          />
-          <PropertyCell
-            icon={User}
-            label="Contato"
-            value={deal.contact || "—"}
-            className="bg-[var(--crm-surface-panel)]"
-          />
-          {deal.email ? (
-            <PropertyCell
-              icon={Mail}
-              label="E-mail"
-              value={deal.email}
-              className="bg-[var(--crm-surface-panel)]"
-            />
-          ) : null}
-          {phone ? (
-            <PropertyCell
-              icon={Phone}
-              label="Telefone"
-              value={phone}
-              className="bg-[var(--crm-surface-panel)]"
-            />
-          ) : null}
-          <PropertyCell
-            icon={Package}
-            label="Produto"
-            value={deal.product || "—"}
-            className="bg-[var(--crm-surface-panel)]"
-          />
+          <PropertyCell icon={Building2} label="Empresa" value={missing(deal.company)} wrap className={cell} />
+          <PropertyCell icon={User} label="Contato" value={missing(deal.contact)} wrap className={cell} />
+          <PropertyCell icon={Mail} label="E-mail" value={missing(deal.email)} wrap className={cell} />
+          <PropertyCell icon={Phone} label="Telefone" value={missing(phone)} wrap className={cell} />
+          <PropertyCell icon={Package} label="Produto" value={missing(deal.product)} wrap className={cell} />
           <PropertyCell
             icon={User}
             label="Proprietário"
             value={
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <Avatar className="size-5">
-                  <AvatarFallback className="bg-primary/20 text-[8px] text-primary">
+                  <AvatarFallback className="bg-[var(--avila-navy-900)] text-[8px] text-[var(--avila-ivory)]">
                     {deal.ownerInitials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="truncate">{deal.owner || "Sem proprietário"}</span>
+                <span className="break-words">{deal.owner?.trim() || "Não informado"}</span>
               </span>
             }
-            className="bg-[var(--crm-surface-panel)]"
+            wrap
+            className={cell}
+          />
+          <PropertyCell
+            icon={Tag}
+            label="Origem do lead"
+            value={missing(deal.convertedLead?.name)}
+            wrap
+            className={cell}
+          />
+          <PropertyCell
+            icon={Hash}
+            label="ID do negócio"
+            value={<code className="font-mono text-[11px] break-all">{deal.id}</code>}
+            wrap
+            className={cell}
           />
         </PropertyGrid>
       </SectionPanel>
 
-      {deal.tags.length > 0 ? (
-        <SectionPanel title="Tags" tone="default">
-          <div className="flex flex-wrap items-center gap-1.5 px-1.5 pb-1 pt-0.5">
+      <SectionPanel title="Tags" tone="panel" bordered>
+        {deal.tags.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 px-1.5 pb-1">
             {deal.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-medium text-foreground/75"
-                style={{
-                  backgroundColor:
-                    "color-mix(in oklch, var(--foreground) 5%, transparent)",
-                }}
+                className="inline-flex h-7 items-center gap-1 rounded-full border border-[#e4ddd2] bg-[#f6f1e8] px-2.5 text-xs font-medium text-[var(--avila-navy-900)]"
               >
                 <Hash className="size-3 opacity-60" strokeWidth={1.75} />
                 {tag}
               </span>
             ))}
           </div>
-        </SectionPanel>
-      ) : null}
-
-      <SectionPanel title="Identificação" tone="default" density="compact">
-        <PropertyGrid>
-          <PropertyCell
-            icon={Tag}
-            label="ID do negócio"
-            value={
-              <code className="font-mono text-[11px] text-foreground/70">
-                {deal.id}
-              </code>
-            }
-            className="bg-[var(--crm-surface-panel)]"
-            span={2}
-          />
-        </PropertyGrid>
+        ) : (
+          <p className="px-1.5 pb-1 text-sm text-[#5c6578]">Nenhuma tag informada.</p>
+        )}
       </SectionPanel>
     </div>
   )

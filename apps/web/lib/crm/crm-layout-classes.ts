@@ -65,25 +65,15 @@ export const CRM_FILTER_INPUT =
 
 
 export const CRM_VIEW_TOGGLE_WRAP =
-
-  "flex shrink-0 rounded-md border border-white/12 bg-white/[0.04] p-0.5"
-
-
+  "flex h-8 shrink-0 items-center rounded-lg border border-[#d6cfc4] bg-white p-0.5!"
 
 export function crmViewToggleButton(active: boolean) {
-
   return cn(
-
-    "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-sm font-medium transition-colors",
-
+    "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5! text-sm font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-[var(--avila-action-focus)] focus-visible:outline-none",
     active
-
-      ? "bg-primary text-primary-foreground shadow-sm"
-
-      : "text-foreground/75 hover:bg-white/[0.06] hover:text-foreground",
-
+      ? "bg-[var(--avila-navy-900)] text-[var(--avila-ivory)]"
+      : "bg-transparent text-[var(--avila-navy-900)] hover:bg-[var(--avila-ivory)]",
   )
-
 }
 
 

@@ -7,34 +7,42 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
-  ArrowRightLeft,
   CalendarClock,
-  ClipboardList,
-  Edit3,
+  CircleCheck,
+  CircleDashed,
+  Clock,
+  Briefcase,
   ExternalLink,
   Eye,
   Mail,
-  MessageSquare,
+  MoreHorizontal,
+  Pencil,
   Phone,
   Trash2,
   Upload,
   UserPlus,
 } from "lucide-react"
+import { hasPermission, type Permission } from "@repo/auth"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
 import {
   useCanManage,
   usePermission,
+  useSession,
   useShowMineLeadsFilter,
 } from "@/components/auth/session-provider"
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon"
 import { ConvertLeadDialog } from "@/components/leads/convert-lead-dialog"
 import { LeadCreateEmptyActions, LeadCreateMenu } from "@/components/leads/lead-create-menu"
 import { LeadCaptureMetricsGrid } from "@/components/leads/lead-capture-metrics"
 import { LeadDialog } from "@/components/leads/lead-dialog"
+import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
 import { QuestionnaireSubmissionDetailSheet } from "@/components/questionnaires/questionnaire-submission-detail-sheet"
@@ -60,7 +68,19 @@ import {
 } from "@/components/design-system"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { getErrorMessage } from "@/lib/data-access"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import type {
@@ -79,7 +99,7 @@ import {
 } from "@/lib/data-access/modules/leads"
 import { shouldShowPageLeadSaveError } from "@/lib/data-access/modules/leads/lead-dialog-form"
 import { resetLeadSaveMutations } from "@/lib/data-access/modules/leads/lead-dialog-mutations"
-import { formatLastInteraction } from "@/lib/crm/last-interaction"
+import { NEXT_CONTACT_ACTIVITY_OPTIONS } from "@/lib/data-access/modules/leads/lead-next-contact-form"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
 import { useLeadCaptureMetrics } from "@/lib/leads/use-lead-capture-metrics"
@@ -104,7 +124,6 @@ import {
   deriveLeadPriority,
   LEAD_OPERATIONAL_BADGE_LABEL,
   LEAD_PRIORITY_LABEL,
-  leadHasNoContact,
   leadTelHref,
   leadWhatsAppHref,
 } from "@/lib/leads/lead-operational-signals"
@@ -141,11 +160,102 @@ const statusLabels: Record<LeadStatus, string> = {
 }
 
 const statusStyles: Record<LeadStatus, string> = {
-  new: "border-sky-400/30 bg-sky-500/10 text-sky-200",
-  contacted: "border-violet-400/30 bg-violet-500/10 text-violet-200",
-  qualified: "border-primary/35 bg-primary/15 text-primary-foreground",
-  converted: "border-emerald-400/35 bg-emerald-500/10 text-emerald-300",
-  lost: "border-rose-400/35 bg-rose-500/10 text-rose-200",
+  new: "border-success/30 bg-success/15 text-success",
+  contacted: "border-info/25 bg-info/12 text-info",
+  qualified: "border-[var(--avila-gold-600)]/45 bg-[var(--avila-gold-600)]/16 text-[var(--avila-navy-900)]",
+  converted: "border-success/25 bg-success/20 text-success",
+  lost: "border-destructive/30 bg-destructive/12 text-destructive",
+}
+
+const leadActionButtonClass =
+  "h-8 w-full max-w-[9.25rem] justify-center px-2 text-xs font-semibold"
+
+function LeadIconButton({
+  label,
+  disabled,
+  onClick,
+  tone = "muted",
+  children,
+}: {
+  label: string
+  disabled?: boolean
+  onClick: () => void
+  tone?: "phone" | "whatsapp" | "schedule" | "view" | "muted"
+  children: ReactNode
+}) {
+  const toneClass = {
+    phone: "text-[var(--avila-action-success)] hover:bg-[var(--avila-action-success)]/12",
+    whatsapp: "text-[#128C7E] hover:bg-[var(--avila-action-whatsapp)]/20",
+    schedule: "text-[var(--avila-action-info)] hover:bg-[var(--avila-action-info)]/12",
+    view: "text-[var(--avila-action-primary)] hover:bg-[var(--avila-action-primary)]/10",
+    muted: "text-muted-foreground hover:bg-muted hover:text-foreground",
+  }[tone]
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            disabled={disabled}
+            onClick={(event) => {
+              event.stopPropagation()
+              onClick()
+            }}
+            className={cn(
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
+              toneClass,
+            )}
+          />
+        }
+      >
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+const AVATAR_TONES = [
+  "bg-[var(--avila-gold-600)]/18 text-[var(--avila-navy-900)]",
+  "bg-info/15 text-info",
+  "bg-success/15 text-success",
+  "bg-warning/20 text-warning-foreground",
+  "bg-primary/10 text-primary",
+]
+
+function avatarTone(name: string) {
+  let hash = 0
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash + name.charCodeAt(index)) % AVATAR_TONES.length
+  }
+  return AVATAR_TONES[hash] ?? AVATAR_TONES[0]
+}
+
+function formatLeadMoment(iso?: string | null) {
+  if (!iso) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  const time = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+  const startOfDay = (value: Date) =>
+    new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
+  const diffDays = Math.round(
+    (startOfDay(date) - startOfDay(new Date())) / 86_400_000,
+  )
+  if (diffDays === 0) return `Hoje, ${time}`
+  if (diffDays === -1) return `Ontem, ${time}`
+  if (diffDays === 1) return `Amanhã, ${time}`
+  return `${date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}, ${time}`
+}
+
+function nextContactActivityLabel(type?: string | null) {
+  return (
+    NEXT_CONTACT_ACTIVITY_OPTIONS.find((item) => item.value === type)?.label ??
+    null
+  )
 }
 
 function BusinessUnitFilter({
@@ -158,11 +268,13 @@ function BusinessUnitFilter({
   const { data: units = [] } = useBusinessUnits()
   return (
     <FilterSelect
+      showLabel
       label="Empresa"
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      className="h-9 min-w-[8.5rem] bg-card px-3!"
       options={[
-        { value: "all", label: "Todas as empresas" },
+        { value: "all", label: "Todas" },
         ...units.map((unit) => ({ value: unit.id, label: unit.name })),
       ]}
     />
@@ -191,9 +303,6 @@ export function LeadsPage() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null)
-  const [convertToastDealId, setConvertToastDealId] = useState<string | null>(
-    null,
-  )
   const [leadCreateToast, setLeadCreateToast] = useState<string | null>(null)
   const [convertTarget, setConvertTarget] = useState<Lead | null>(null)
   const createSubmitLockRef = useRef(false)
@@ -206,7 +315,9 @@ export function LeadsPage() {
   } | null>(null)
   const previousDialogOpenRef = useRef(dialogOpen)
   const convertSubmitLockRef = useRef(false)
+  const convertDialogEpochRef = useRef(0)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
+  const [detailLead, setDetailLead] = useState<Lead | null>(null)
   // Quando o flag ?sheet=v2 está ON e o usuário clica "Editar dados do lead"
   // dentro do LeadSheetV2 (que é leitura-primeiro), forçamos o fallback para o
   // LeadDialog legado. Isso evita criar formulário inline (fora do escopo) e
@@ -218,6 +329,7 @@ export function LeadsPage() {
     [createIntent],
   )
   const [forceLegacyForm, setForceLegacyForm] = useState(false)
+  const { session } = useSession()
   const canManageLeads = useCanManage("leads:view")
   const canConvertLeads = usePermission("leads:manage")
   const canViewDeals = usePermission("crm:view")
@@ -303,6 +415,17 @@ export function LeadsPage() {
     [resetLeadSaveMutationsState],
   )
 
+  const openLeadDetails = useCallback(
+    (lead: Lead) => {
+      if (isLeadSheetV2) {
+        openLeadDialog(lead)
+        return
+      }
+      setDetailLead(lead)
+    },
+    [isLeadSheetV2, openLeadDialog],
+  )
+
   useEffect(() => {
     console.log("[DRAWER] dialogOpen =", dialogOpen)
     bug010DrawerLog("dialogOpen effect", {
@@ -373,6 +496,7 @@ export function LeadsPage() {
   )
 
   const closeConvertDialog = useCallback(() => {
+    convertDialogEpochRef.current += 1
     setConvertTarget(null)
     setDialogOpen(false)
     setEditingLead(null)
@@ -415,10 +539,11 @@ export function LeadsPage() {
     const deepLinkId = convertId ?? leadId
     if (!deepLinkId) return
 
+    const epoch = convertDialogEpochRef.current
     let cancelled = false
     void fetchLead(deepLinkId)
       .then((lead) => {
-        if (cancelled) return
+        if (cancelled || epoch !== convertDialogEpochRef.current) return
         if (convertId) {
           if (lead.status === "converted") {
             syncLeadUrlParams({ lead: null, convert: null })
@@ -429,7 +554,7 @@ export function LeadsPage() {
           setEditingLead(null)
           return
         }
-        openLeadDialog(lead)
+        openLeadDetails(lead)
       })
       .catch(() => {
         // lead inexistente ou sem permissão — ignorar
@@ -438,7 +563,7 @@ export function LeadsPage() {
     return () => {
       cancelled = true
     }
-  }, [openLeadDialog, searchParams, syncLeadUrlParams])
+  }, [openLeadDetails, searchParams, syncLeadUrlParams])
 
   const leads = useMemo(
     () => leadsQuery.data?.data ?? [],
@@ -446,6 +571,10 @@ export function LeadsPage() {
   )
   const visibleLeads = leads
   const meta = leadsQuery.data?.meta
+  const leadCountLabel =
+    leadsQuery.isError && meta?.total == null
+      ? "—"
+      : String(meta?.total ?? leads.length)
   const hasConvertedOnPage = visibleLeads.some((row) => Boolean(row.dealId))
   const dealsForStage = useCrmDeals({ enabled: hasConvertedOnPage })
   const stageByDealId = useMemo(() => {
@@ -488,31 +617,36 @@ export function LeadsPage() {
         key: "name",
         header: "Lead",
         sticky: "left",
-        className: "min-w-[12rem] max-w-[16rem]",
+        className: "w-[14%]",
         render: (row) => {
           const priority = deriveLeadPriority(row)
           const badges = deriveLeadOperationalBadges(row)
           return (
-            <div className="flex items-center gap-2">
-              <Avatar className="size-6 border border-white/10">
-                <AvatarFallback className="bg-white/[0.06] text-[10px] font-semibold text-foreground">
+            <div className="flex items-center gap-2.5 py-0.5">
+              <Avatar className="size-9 shrink-0">
+                <AvatarFallback
+                  className={cn(
+                    "text-[11px] font-semibold",
+                    avatarTone(row.name),
+                  )}
+                >
                   {row.initials}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 leading-tight">
-                <p className="truncate text-sm font-medium tracking-[-0.02em]">
+                <p
+                  className="line-clamp-2 text-sm font-semibold tracking-tight text-foreground"
+                  title={row.name}
+                >
                   {row.name}
                 </p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
-                      "rounded-full border px-1.5 py-px text-[10px] font-medium",
-                      priority === "high" &&
-                        "border-rose-400/30 bg-rose-500/10 text-rose-200",
-                      priority === "medium" &&
-                        "border-amber-400/30 bg-amber-500/10 text-amber-200",
-                      priority === "low" &&
-                        "border-white/10 text-muted-foreground",
+                      "rounded-full px-1.5! py-0.5! text-[10px] font-semibold",
+                      priority === "high" && "bg-destructive/12 text-destructive",
+                      priority === "medium" && "bg-warning/25 text-warning-foreground",
+                      priority === "low" && "bg-muted text-muted-foreground",
                     )}
                   >
                     {LEAD_PRIORITY_LABEL[priority]}
@@ -521,15 +655,11 @@ export function LeadsPage() {
                     <span
                       key={badge}
                       className={cn(
-                        "rounded-full border px-1.5 py-px text-[10px]",
-                        badge === "no_contact" &&
-                          "border-sky-400/30 bg-sky-500/10 text-sky-200",
-                        badge === "contact_today" &&
-                          "border-emerald-400/30 bg-emerald-500/10 text-emerald-200",
-                        badge === "overdue" &&
-                          "border-rose-400/35 bg-rose-500/10 text-rose-200",
-                        badge === "renewal_soon" &&
-                          "border-amber-400/35 bg-amber-500/10 text-amber-100",
+                        "text-[11px] font-medium",
+                        badge === "no_contact" && "text-info",
+                        badge === "contact_today" && "text-success",
+                        badge === "overdue" && "text-destructive",
+                        badge === "renewal_soon" && "text-warning-foreground",
                       )}
                     >
                       {LEAD_OPERATIONAL_BADGE_LABEL[badge]}
@@ -544,18 +674,18 @@ export function LeadsPage() {
       {
         key: "contact",
         header: "Contato",
-        className: "min-w-[8.5rem]",
+        className: "w-[13%]",
         render: (row) => (
-          <div className="flex flex-col gap-0 text-[11px] leading-tight text-muted-foreground">
+          <div className="flex flex-col justify-center gap-1 text-[13px] leading-none text-foreground">
             {row.phone ? (
               <span className="flex items-center gap-1.5">
-                <Phone className="size-3 opacity-60" />
-                {row.phone}
+                <Phone className="size-3.5 shrink-0 text-success" />
+                <span className="truncate">{row.phone}</span>
               </span>
             ) : null}
             {row.email ? (
-              <span className="flex max-w-[10rem] items-center gap-1.5 truncate">
-                <Mail className="size-3 shrink-0 opacity-60" />
+              <span className="flex items-center gap-1.5" title={row.email}>
+                <Mail className="size-3.5 shrink-0 text-info" />
                 <span className="truncate">{row.email}</span>
               </span>
             ) : null}
@@ -566,26 +696,25 @@ export function LeadsPage() {
       {
         key: "status",
         header: "Status",
-        className: "w-[6.5rem]",
+        className: "w-[8%]",
         render: (row) => (
-          <Badge
-            variant="outline"
+          <span
             className={cn(
-              "rounded-full text-[10px] font-semibold",
+              "inline-flex h-6 items-center rounded-full border px-2.5! text-[11px] font-semibold leading-none",
               statusStyles[row.status],
             )}
           >
             {statusLabels[row.status]}
-          </Badge>
+          </span>
         ),
       },
       {
         key: "owner",
         header: "Responsável",
         hideOnMobile: true,
-        className: "min-w-[7rem]",
+        className: "w-[8%]",
         render: (row) => (
-          <span className="text-xs text-muted-foreground">
+          <span className="block truncate text-sm text-foreground">
             {leadOwnerDisplayName(row) || "—"}
           </span>
         ),
@@ -594,51 +723,55 @@ export function LeadsPage() {
         key: "source",
         header: "Origem",
         hideOnMobile: true,
-        className: "min-w-[6rem]",
+        className: "w-[7%]",
         render: (row) => (
-          <span className="text-xs text-muted-foreground">
+          <span
+            className="block max-w-[11rem] truncate text-sm text-foreground"
+            title={row.source || undefined}
+          >
             {row.source || "—"}
           </span>
         ),
       },
       {
         key: "lastInteraction",
-        header: "Última",
+        header: "Última interação",
         hideOnMobile: true,
-        className: "min-w-[7rem]",
-        render: (row) => (
-          <span className="text-xs text-muted-foreground">
-            {formatLastInteraction(row.lastInteractionAt ?? row.lastContactAt)}
-          </span>
-        ),
+        className: "w-[10%]",
+        render: (row) => {
+          const when = formatLeadMoment(
+            row.lastInteractionAt ?? row.lastContactAt,
+          )
+          return (
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-foreground">
+              <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+              {when ?? "Sem interação"}
+            </span>
+          )
+        },
       },
       {
         key: "pipeline",
         header: "Pipeline",
-        className: "min-w-[9.5rem]",
+        className: "w-[9%]",
         render: (row) => {
           const stage = row.dealId ? stageByDealId.get(row.dealId) : null
           const view = leadPipelinePresentation(row, stage)
+          const PipelineIcon = view.converted ? CircleCheck : CircleDashed
           return (
             <div className="flex flex-col gap-0.5">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-xs font-medium",
-                  view.converted ? "text-emerald-300" : "text-muted-foreground",
+                  "inline-flex items-center gap-1.5 text-sm font-medium",
+                  view.converted ? "text-success" : "text-destructive",
                 )}
               >
-                <span
-                  className={cn(
-                    "size-2 shrink-0 rounded-full",
-                    view.converted ? "bg-emerald-400" : "bg-white/35",
-                  )}
-                  aria-hidden
-                />
+                <PipelineIcon className="size-3.5 shrink-0" aria-hidden />
                 {view.statusLabel}
               </span>
               {view.stageLabel ? (
-                <span className="pl-3.5 text-[10px] text-muted-foreground">
-                  Estágio: {view.stageLabel}
+                <span className="pl-5 text-[11px] text-muted-foreground">
+                  {view.stageLabel}
                 </span>
               ) : null}
             </div>
@@ -648,7 +781,7 @@ export function LeadsPage() {
       {
         key: "pipelineAction",
         header: "Ação",
-        className: "min-w-[10.5rem]",
+        className: "w-[9%]",
         render: (row) => {
           const view = leadPipelinePresentation(row)
           return (
@@ -656,27 +789,31 @@ export function LeadsPage() {
               {view.showConvert && canConvertLeads ? (
                 <Button
                   type="button"
+                  variant="convert"
                   size="sm"
-                  className="h-7 px-2.5 text-[11px]"
+                  className={leadActionButtonClass}
+                  title="Converter em negócio"
                   disabled={convertLead.isPending}
                   onClick={() => openConvertDialog(row)}
                 >
-                  Converter em negócio
+                  <Briefcase className="size-3.5" />
+                  Converter
                 </Button>
               ) : null}
               {view.showOpenDeal && canViewDeals && row.dealId ? (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="view"
                   size="sm"
-                  className="h-7 gap-1 px-2.5 text-[11px]"
+                  className={leadActionButtonClass}
                   onClick={() => router.push(`/crm/negocios?deal=${row.dealId}`)}
                 >
+                  <ExternalLink className="size-3.5" />
                   Abrir negócio
                 </Button>
               ) : null}
               {view.converted && !view.showOpenDeal ? (
-                <span className="text-xs font-medium text-emerald-300">
+                <span className="text-sm font-medium text-success">
                   Negócio criado
                 </span>
               ) : null}
@@ -685,68 +822,186 @@ export function LeadsPage() {
         },
       },
       {
+        key: "nextAction",
+        header: "Próxima ação",
+        hideOnMobile: true,
+        className: "w-[11%]",
+        render: (row) => {
+          const when = formatLeadMoment(row.nextContactAt)
+          const detail =
+            row.nextContactNotes?.trim() ||
+            nextContactActivityLabel(row.nextContactType)
+          const scheduled = row.nextContactAt
+            ? new Date(row.nextContactAt)
+            : null
+          const overdue =
+            scheduled != null &&
+            !Number.isNaN(scheduled.getTime()) &&
+            scheduled.getTime() < Date.now() &&
+            row.status !== "converted" &&
+            row.status !== "lost"
+          if (!when && !detail) {
+            return (
+              <span className="text-sm text-muted-foreground">
+                — Sem próxima ação
+              </span>
+            )
+          }
+          return (
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-sm font-medium",
+                  overdue ? "text-destructive" : "text-foreground",
+                )}
+              >
+                <Clock
+                  className={cn(
+                    "size-3.5 shrink-0",
+                    overdue ? "text-destructive" : "text-warning-foreground",
+                  )}
+                />
+                {when ?? "Agendada"}
+              </span>
+              {detail ? (
+                <span className="line-clamp-2 pl-5 text-[11px] leading-snug text-muted-foreground">
+                  {detail}
+                </span>
+              ) : null}
+            </div>
+          )
+        },
+      },
+      {
         key: "quick",
-        header: "Rápidas",
-        className: "w-[9.5rem]",
+        header: "Ações",
+        className: "w-[11%]",
         render: (row) => {
           const tel = leadTelHref(row.phone)
           const wa = leadWhatsAppHref(row.phone)
+          const menu: Array<{
+            key: string
+            label: string
+            icon?: ReactNode
+            permission?: Permission
+            hidden?: boolean
+            disabled?: boolean
+            destructive?: boolean
+            onSelect: () => void
+          }> = [
+            {
+              key: "open-deal",
+              label: "Abrir negócio",
+              icon: <ExternalLink className="size-3.5" />,
+              permission: "crm:view",
+              disabled: !row.dealId,
+              onSelect: () => {
+                if (row.dealId) router.push(`/crm/negocios?deal=${row.dealId}`)
+              },
+            },
+            {
+              key: "questionnaire",
+              label: "Preencher questionário",
+              permission: "questionnaires:manage",
+              onSelect: () => setQuestionnaireLead(row),
+            },
+            {
+              key: "convert",
+              label: "Converter em negócio",
+              icon: <Briefcase className="size-3.5" />,
+              permission: "leads:manage",
+              disabled: row.status === "converted" || convertLead.isPending,
+              onSelect: () => openConvertDialog(row),
+            },
+            {
+              key: "edit",
+              label: "Editar lead",
+              icon: <Pencil className="size-3.5" />,
+              permission: "leads:manage",
+              onSelect: () => openLeadDialog(row),
+            },
+            {
+              key: "delete",
+              label: "Excluir lead",
+              icon: <Trash2 className="size-3.5" />,
+              permission: "leads:manage",
+              destructive: true,
+              hidden: isLeadConverted(row),
+              disabled: deleteLead.isPending,
+              onSelect: () => {
+                if (isLeadConverted(row)) return
+                if (window.confirm(`Excluir lead ${row.name}?`)) {
+                  deleteLead.mutate(row.id)
+                }
+              },
+            },
+          ]
+          const visibleMenu = menu.filter(
+            (action) =>
+              !action.hidden &&
+              (!action.permission || hasPermission(session, action.permission)),
+          )
           return (
-            <div
-              className="flex items-center gap-0.5"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-7 p-0"
-                disabled={!tel}
-                title="Ligar"
-                onClick={() => {
-                  if (tel) window.open(tel, "_self")
-                }}
+            <TooltipProvider delay={400}>
+              <div
+                className="flex items-center justify-end gap-0.5"
+                onClick={(event) => event.stopPropagation()}
               >
-                <Phone className="size-3.5" />
-                <span className="sr-only">Ligar</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-7 p-0"
-                disabled={!wa}
-                title="WhatsApp"
-                onClick={() => {
-                  if (wa) window.open(wa, "_blank", "noopener,noreferrer")
-                }}
-              >
-                <MessageSquare className="size-3.5" />
-                <span className="sr-only">WhatsApp</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-7 p-0"
-                title="Agendar"
-                onClick={() => setScheduleLead(row)}
-              >
-                <CalendarClock className="size-3.5" />
-                <span className="sr-only">Agendar</span>
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="size-7 p-0"
-                title="Abrir"
-                onClick={() => openLeadDialog(row)}
-              >
-                <Eye className="size-3.5" />
-                <span className="sr-only">Abrir</span>
-              </Button>
-            </div>
+                <LeadIconButton
+                  label="Ligar"
+                  tone="phone"
+                  disabled={!tel}
+                  onClick={() => {
+                    if (tel) window.open(tel, "_self")
+                  }}
+                >
+                  <Phone className="size-3.5" />
+                </LeadIconButton>
+                <LeadIconButton
+                  label="WhatsApp"
+                  tone="whatsapp"
+                  disabled={!wa}
+                  onClick={() => {
+                    if (wa) window.open(wa, "_blank", "noopener,noreferrer")
+                  }}
+                >
+                  <WhatsAppIcon className="size-3.5" />
+                </LeadIconButton>
+                <LeadIconButton
+                  label="Agendar"
+                  tone="schedule"
+                  onClick={() => setScheduleLead(row)}
+                >
+                  <CalendarClock className="size-3.5" />
+                </LeadIconButton>
+                <LeadIconButton label="Abrir" tone="view" onClick={() => openLeadDetails(row)}>
+                  <Eye className="size-3.5" />
+                </LeadIconButton>
+                {visibleMenu.length > 0 ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      aria-label="Mais ações"
+                      className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {visibleMenu.map((action) => (
+                        <DropdownMenuItem
+                          key={action.key}
+                          variant={action.destructive ? "destructive" : "default"}
+                          disabled={action.disabled}
+                          onClick={action.onSelect}
+                        >
+                          {action.icon}
+                          {action.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : null}
+              </div>
+            </TooltipProvider>
           )
         },
       },
@@ -755,25 +1010,46 @@ export function LeadsPage() {
       canConvertLeads,
       canViewDeals,
       convertLead.isPending,
+      deleteLead,
       openConvertDialog,
+      openLeadDetails,
       openLeadDialog,
       router,
+      session,
       stageByDealId,
     ],
   )
 
   return (
-    <PageContainer fillHeight>
-      <ContentContainer variant={dsContentLayoutVariant.leads}>
-        <OperationalPageLayout density="dense">
+    <PageContainer className="max-w-none min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4! pt-4! pb-8!">
+      <ContentContainer
+        variant={dsContentLayoutVariant.leads}
+        className="max-w-none"
+      >
+        <OperationalPageLayout density="dense" className="h-auto overflow-visible">
           <PageHeader
-            compact
             className="shrink-0"
+            breadcrumbs={
+              <ol className="flex items-center gap-1.5">
+                <li>
+                  <Link href="/crm" className="hover:text-foreground">
+                    CRM
+                  </Link>
+                </li>
+                <li aria-hidden="true">›</li>
+                <li className="font-medium text-foreground" aria-current="page">
+                  Leads
+                </li>
+              </ol>
+            }
             title={
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center gap-2.5">
                 Leads
-                <Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
-                  {meta?.total ?? leads.length}
+                <Badge
+                  variant="secondary"
+                  className="h-6 rounded-full px-2 text-xs font-medium text-muted-foreground"
+                >
+                  {leadCountLabel}
                 </Badge>
               </span>
             }
@@ -786,6 +1062,7 @@ export function LeadsPage() {
                 >
                   <PermissionGate permission="leads:manage">
                     <LeadCreateMenu
+                      accent
                       onCreate={(intent) => openLeadDialog(null, intent)}
                       insuranceEnabled={
                         captureMetrics.isLoading ||
@@ -797,11 +1074,19 @@ export function LeadsPage() {
                       }
                     />
                   </PermissionGate>
+                </PageActionsGroup>
+                <PageActionsGroup aria-label="Ações secundárias">
                   <PermissionGate permission="leads:manage">
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                    <Link
+                      href="/crm/importacoes/leads"
+                      className={cn(
+                        buttonVariants({ variant: "import", size: "sm" }),
+                        "h-9 gap-1.5 px-3!",
+                      )}
+                    >
                       <Upload className="size-3.5" strokeWidth={1.5} />
                       Importar
-                    </Button>
+                    </Link>
                   </PermissionGate>
                 </PageActionsGroup>
               </PageActions>
@@ -816,40 +1101,33 @@ export function LeadsPage() {
               <LeadCaptureMetricsGrid
                 metrics={captureMetrics.metrics}
                 loading={captureMetrics.isLoading}
+                unavailable={captureMetrics.isError}
               />
             </Profiler>
           </OperationalWorkspaceMetrics>
 
-          <OperationalWorkspace>
+          <OperationalWorkspace className="overflow-visible">
             <OperationalWorkspaceToolbar dense>
-            <FilterBar
-              activeCount={activeFilterCount}
-              clearLabel="Limpar"
-              onClear={() => {
-                setSearchInput("")
-                setStatus("all")
-                setSource("")
-                setBusinessUnitId("all")
-                setInterestCategory("all")
-                setPeriod("all")
-                setMineOnly(false)
-              }}
-            >
+            <div className="rounded-xl border border-border bg-card p-3! shadow-[0_1px_2px_rgb(0_12_36/0.04)]">
+            <FilterBar className="items-end">
               <FilterSearch
                 label="Buscar leads"
-                placeholder="Nome, telefone, origem…"
+                placeholder="Nome, telefone, e-mail, origem…"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                containerClassName="min-w-[12rem] max-w-[18rem] flex-[1.2]"
+                containerClassName="w-full min-w-[14rem] max-w-full basis-full sm:w-auto sm:max-w-[18rem] sm:basis-[16rem] sm:flex-1"
+                className="h-9 bg-background pr-3!"
               />
               <FilterSelect
+                showLabel
                 label="Status"
                 value={status}
+                className="h-9 min-w-[7.5rem] bg-card px-3!"
                 onChange={(event) =>
                   setStatus(event.target.value as LeadStatus | "all")
                 }
                 options={[
-                  { value: "all", label: "Status" },
+                  { value: "all", label: "Todos" },
                   ...LEAD_STATUSES.map((item) => ({
                     value: item,
                     label: statusLabels[item],
@@ -857,32 +1135,38 @@ export function LeadsPage() {
                 ]}
               />
               <FilterSelect
+                showLabel
                 label="Responsável"
                 value={mineOnly ? "mine" : "all"}
+                className="h-9 min-w-[7.5rem] bg-card px-3!"
                 onChange={(event) =>
                   setMineOnly(event.target.value === "mine")
                 }
                 options={[
-                  { value: "all", label: "Responsável" },
+                  { value: "all", label: "Todos" },
                   { value: "mine", label: "Meus leads" },
                 ]}
               />
               <FilterText
+                showLabel
                 label="Origem"
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
-                placeholder="Origem"
+                placeholder="Todas"
+                className="h-9 min-w-[7.5rem] bg-card px-3!"
               />
               <FilterSelect
-                label="Tipo Seguro"
+                showLabel
+                label="Tipo de Seguro"
                 value={interestCategory}
+                className="h-9 min-w-[8.5rem] bg-card px-3!"
                 onChange={(event) =>
                   setInterestCategory(
                     event.target.value as InterestCategory | "all",
                   )
                 }
                 options={[
-                  { value: "all", label: "Tipo Seguro" },
+                  { value: "all", label: "Todos" },
                   ...INTEREST_CATEGORIES.map((item) => ({
                     value: item,
                     label: INTEREST_CATEGORY_LABELS[item],
@@ -890,13 +1174,15 @@ export function LeadsPage() {
                 ]}
               />
               <FilterSelect
+                showLabel
                 label="Período"
                 value={period}
+                className="h-9 min-w-[7rem] bg-card px-3!"
                 onChange={(event) =>
                   setPeriod(event.target.value as "all" | "7" | "30" | "90")
                 }
                 options={[
-                  { value: "all", label: "Período" },
+                  { value: "all", label: "Todos" },
                   { value: "7", label: "7 dias" },
                   { value: "30", label: "30 dias" },
                   { value: "90", label: "90 dias" },
@@ -906,23 +1192,38 @@ export function LeadsPage() {
                 value={businessUnitId}
                 onChange={setBusinessUnitId}
               />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 self-end"
+                disabled={activeFilterCount === 0}
+                onClick={() => {
+                  setSearchInput("")
+                  setStatus("all")
+                  setSource("")
+                  setBusinessUnitId("all")
+                  setInterestCategory("all")
+                  setPeriod("all")
+                  setMineOnly(false)
+                }}
+              >
+                Limpar
+              </Button>
             </FilterBar>
+            </div>
             </OperationalWorkspaceToolbar>
 
-            <OperationalWorkspaceMain>
+            <OperationalWorkspaceMain className="overflow-visible">
             <DataTable
-              stickyHeader
-              fill
-              density="compact"
-              className="w-full min-h-0"
+              density="default"
+              className="w-full"
+              cellClassName="px-3! py-2.5! align-middle whitespace-normal"
+              headerCellClassName="px-3! py-2.5! whitespace-normal"
+              tableClassName="w-full table-fixed max-lg:min-w-[64rem]"
               data={visibleLeads}
               columns={columns}
               getRowId={(row) => row.id}
-              getRowClassName={(row) =>
-                leadHasNoContact(row)
-                  ? "bg-sky-500/[0.06] hover:bg-sky-500/[0.1]"
-                  : undefined
-              }
               selectable={false}
               loading={leadsQuery.isLoading}
               loadingLabel="Carregando leads…"
@@ -950,64 +1251,10 @@ export function LeadsPage() {
               onRowClick={
                 canManageLeads
                   ? (row) => {
-                      openLeadDialog(row)
+                      openLeadDetails(row)
                     }
                   : undefined
               }
-              rowActions={[
-                {
-                  key: "open-deal",
-                  label: "Abrir negócio",
-                  icon: ExternalLink,
-                  disabled: (row) => !row.dealId,
-                  permission: "crm:view",
-                  onSelect: (row) => {
-                    if (row.dealId) {
-                      router.push(`/crm/negocios?deal=${row.dealId}`)
-                    }
-                  },
-                },
-                {
-                  key: "questionnaire",
-                  label: "Preencher questionário",
-                  icon: ClipboardList,
-                  permission: "questionnaires:manage",
-                  onSelect: (row) => setQuestionnaireLead(row),
-                },
-                {
-                  key: "convert",
-                  label: "Converter em negócio",
-                  icon: ArrowRightLeft,
-                  disabled: (row) =>
-                    row.status === "converted" || convertLead.isPending,
-                  permission: "leads:manage",
-                  onSelect: (row) => openConvertDialog(row),
-                },
-                {
-                  key: "edit",
-                  label: "Editar lead",
-                  icon: Edit3,
-                  permission: "leads:manage",
-                  onSelect: (row) => {
-                    openLeadDialog(row)
-                  },
-                },
-                {
-                  key: "delete",
-                  label: "Excluir lead",
-                  icon: Trash2,
-                  variant: "destructive",
-                  disabled: deleteLead.isPending,
-                  hidden: (row) => isLeadConverted(row),
-                  permission: "leads:manage",
-                  onSelect: (row) => {
-                    if (isLeadConverted(row)) return
-                    if (window.confirm(`Excluir lead ${row.name}?`)) {
-                      deleteLead.mutate(row.id)
-                    }
-                  },
-                },
-              ]}
               pagination={{
                 meta: {
                   page: meta?.page ?? page,
@@ -1015,6 +1262,12 @@ export function LeadsPage() {
                   total: meta?.total,
                 },
                 onPageChange: setPage,
+                summary: `Mostrando ${
+                  (meta?.total ?? leads.length) === 0
+                    ? 0
+                    : (page - 1) * PAGE_SIZE + 1
+                } a ${Math.min(page * PAGE_SIZE, meta?.total ?? leads.length)} de ${meta?.total ?? leads.length} leads`,
+                pageSizeLabel: `${PAGE_SIZE} por página`,
               }}
             />
             </OperationalWorkspaceMain>
@@ -1066,11 +1319,11 @@ export function LeadsPage() {
             lead={editingLead}
             intent={createIntent}
             lockedBusinessUnitId={
-              editingLead?.businessUnitId ||
-              (createIntent === "real-estate"
-                ? captureMetrics.realEstateBusinessUnitId
-                : captureMetrics.insuranceBusinessUnitId) ||
-              undefined
+              editingLead
+                ? editingLead.businessUnitId || undefined
+                : (createIntent === "real-estate"
+                    ? captureMetrics.realEstateBusinessUnitId
+                    : captureMetrics.insuranceBusinessUnitId) || undefined
             }
             defaultInterestCategories={defaultInterestCategories}
             open={
@@ -1229,24 +1482,58 @@ export function LeadsPage() {
             />
           ) : null}
 
+          <LeadDetailSheet
+            lead={detailLead}
+            open={detailLead !== null && !isLeadSheetV2}
+            stageLabel={
+              detailLead?.dealId
+                ? stageByDealId.get(detailLead.dealId)
+                : null
+            }
+            canConvert={canConvertLeads}
+            canViewDeals={canViewDeals}
+            canSchedule
+            onOpenChange={(open) => {
+              if (!open) setDetailLead(null)
+            }}
+            onEdit={(lead) => {
+              setDetailLead(null)
+              openLeadDialog(lead)
+            }}
+            onConvert={(lead) => {
+              setDetailLead(null)
+              openConvertDialog(lead)
+            }}
+            onSchedule={(lead) => {
+              setDetailLead(null)
+              setScheduleLead(lead)
+            }}
+            onOpenDeal={(dealId) => {
+              setDetailLead(null)
+              router.push(`/crm/negocios?deal=${dealId}`)
+            }}
+          />
           <ConvertLeadDialog
             key={convertTarget?.id ?? "convert-closed"}
             lead={convertTarget}
             open={convertTarget !== null}
             pending={convertLead.isPending}
+            error={convertLead.error}
             onOpenChange={(open) => {
-              if (!open) closeConvertDialog()
+              if (!open && !convertLead.isPending) closeConvertDialog()
             }}
             onConvert={async (lead) => {
               if (convertLead.isPending || convertSubmitLockRef.current) return
               convertSubmitLockRef.current = true
               try {
                 const { deal } = await convertLead.mutateAsync({ id: lead.id })
-                closeConvertDialog()
-                setConvertToastDealId(deal.id)
+                if (!deal?.id) {
+                  convertSubmitLockRef.current = false
+                  return
+                }
+                setConvertTarget(null)
+                router.replace(`/crm/negocios?deal=${deal.id}`)
               } catch {
-                // erro exibido via convertLead.error
-              } finally {
                 convertSubmitLockRef.current = false
               }
             }}
@@ -1274,18 +1561,6 @@ export function LeadsPage() {
             }}
           />
 
-          <ActionToast
-            open={convertToastDealId !== null}
-            message="Negócio criado"
-            actionLabel="Abrir negócio"
-            onAction={() => {
-              if (convertToastDealId) {
-                router.push(`/crm/negocios?deal=${convertToastDealId}`)
-              }
-              setConvertToastDealId(null)
-            }}
-            onDismiss={() => setConvertToastDealId(null)}
-          />
           <ActionToast
             open={leadCreateToast !== null}
             message={leadCreateToast ?? ""}

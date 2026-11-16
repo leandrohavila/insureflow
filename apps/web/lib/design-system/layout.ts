@@ -69,7 +69,7 @@ export const dsLayout = {
   },
   filterBar: {
     className:
-      "flex min-w-0 w-full flex-nowrap items-center gap-[var(--if-layout-control-gap)] overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      "flex min-w-0 w-full flex-wrap items-center gap-[var(--if-layout-control-gap)] overflow-visible",
   },
   toolbar: {
     className:

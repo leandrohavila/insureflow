@@ -179,7 +179,10 @@ export function FilterSearch({
         aria-hidden
       />
       <Input
-        className={cn("h-[var(--if-control-height-md)] w-full pl-[var(--if-space-10)]", className)}
+        className={cn(
+          "h-[var(--if-control-height-md)] w-full min-w-0 pl-10! pr-3",
+          className,
+        )}
         type="search"
         {...props}
       />
@@ -194,13 +197,21 @@ const filterControlClassName = cn(
 
 export type FilterTextProps = Omit<ComponentProps<"input">, "type"> & {
   label: string
+  showLabel?: boolean
 }
 
 /** Filtro de texto livre com a mesma aparência de `FilterSelect`. */
-export function FilterText({ label, className, ...props }: FilterTextProps) {
+export function FilterText({
+  label,
+  showLabel = false,
+  className,
+  ...props
+}: FilterTextProps) {
   return (
     <label className="grid gap-[var(--if-space-1)]">
-      <span className="sr-only">{label}</span>
+      <span className={showLabel ? "text-[11px] font-medium text-muted-foreground" : "sr-only"}>
+        {label}
+      </span>
       <input
         type="search"
         className={cn(
@@ -223,17 +234,21 @@ export type FilterSelectOption = {
 export type FilterSelectProps = Omit<ComponentProps<"select">, "children"> & {
   label: string
   options: FilterSelectOption[]
+  showLabel?: boolean
 }
 
 export function FilterSelect({
   label,
   options,
+  showLabel = false,
   className,
   ...props
 }: FilterSelectProps) {
   return (
     <label className="grid gap-[var(--if-space-1)]">
-      <span className="sr-only">{label}</span>
+      <span className={showLabel ? "text-[11px] font-medium text-muted-foreground" : "sr-only"}>
+        {label}
+      </span>
       <select
         className={cn(filterControlClassName, className)}
         aria-label={label}

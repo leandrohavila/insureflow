@@ -364,9 +364,9 @@ function ProposalDetailPanel({
       <div className="flex flex-col gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="info"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={busy}
           onClick={onGeneratePdf}
         >
@@ -379,9 +379,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="info"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={!proposal.hasPdf}
           onClick={onDownloadPdf}
         >
@@ -390,9 +390,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="info"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={busy || proposal.status !== "draft"}
           onClick={onSend}
         >
@@ -401,9 +401,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="info"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={
             busy ||
             (proposal.status !== "sent" && proposal.status !== "viewed")
@@ -415,9 +415,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="success"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={busy || proposal.status === "accepted"}
           onClick={onAccept}
         >
@@ -426,9 +426,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="danger"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={busy || proposal.status === "rejected"}
           onClick={onReject}
         >
@@ -436,9 +436,9 @@ function ProposalDetailPanel({
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="warning"
           size="sm"
-          className="justify-start gap-2"
+          className="justify-start"
           disabled={
             busy ||
             proposal.status === "accepted" ||

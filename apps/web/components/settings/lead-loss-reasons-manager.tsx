@@ -61,6 +61,7 @@ export function LeadLossReasonsManager() {
         />
         <Button
           type="submit"
+          variant="create"
           disabled={
             createReason.isPending ||
             !name.trim() ||

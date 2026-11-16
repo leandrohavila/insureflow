@@ -4,7 +4,6 @@ import { useState } from "react"
 import {
   CalendarClock,
   MapPin,
-  MessageSquare,
   Phone,
   RefreshCw,
 } from "lucide-react"
@@ -18,6 +17,7 @@ import {
   type CreateActivityInput,
 } from "@/lib/data-access/modules/activities"
 import { Button } from "@/components/ui/button"
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon"
 import { cn } from "@/lib/utils"
 
 type ActivityQuickActionsProps = {
@@ -32,6 +32,7 @@ type QuickAction = {
   type: ActivityType
   label: string
   icon: typeof Phone
+  variant: "contact" | "whatsapp" | "schedule" | "info" | "warning"
 }
 
 const compactQuickLabels: Partial<Record<QuickAction["type"], string>> = {
@@ -43,11 +44,11 @@ const compactQuickLabels: Partial<Record<QuickAction["type"], string>> = {
 }
 
 const quickActions: QuickAction[] = [
-  { type: "call", label: "+ Nova Ligação", icon: Phone },
-  { type: "whatsapp", label: "+ Novo WhatsApp", icon: MessageSquare },
-  { type: "follow_up", label: "+ Novo Follow-up", icon: CalendarClock },
-  { type: "renewal", label: "+ Nova Renovação", icon: RefreshCw },
-  { type: "visit", label: "+ Nova Visita", icon: MapPin },
+  { type: "call", label: "+ Nova Ligação", icon: Phone, variant: "contact" },
+  { type: "whatsapp", label: "+ Novo WhatsApp", icon: Phone, variant: "whatsapp" },
+  { type: "follow_up", label: "+ Novo Follow-up", icon: CalendarClock, variant: "schedule" },
+  { type: "renewal", label: "+ Nova Renovação", icon: RefreshCw, variant: "warning" },
+  { type: "visit", label: "+ Nova Visita", icon: MapPin, variant: "info" },
 ]
 
 export function ActivityQuickActions({
@@ -86,17 +87,20 @@ export function ActivityQuickActions({
       <div className={cn("space-y-2", className)}>
         <div className="flex flex-wrap gap-2">
           {quickActions.map((action) => {
-            const Icon = action.icon
+            const Icon = action.type === "whatsapp" ? null : action.icon
             return (
               <Button
                 key={action.type}
                 type="button"
                 size={compact ? "sm" : "default"}
-                variant="outline"
-                className="gap-1.5"
+                variant={action.variant}
                 onClick={() => openQuickAction(action.type)}
               >
-                <Icon className="size-3.5" />
+                {action.type === "whatsapp" ? (
+                  <WhatsAppIcon className="size-3.5" />
+                ) : Icon ? (
+                  <Icon className="size-3.5" />
+                ) : null}
                 {compact ? compactQuickLabels[action.type] : action.label}
               </Button>
             )

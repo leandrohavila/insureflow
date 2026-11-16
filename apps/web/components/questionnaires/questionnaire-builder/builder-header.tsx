@@ -131,7 +131,7 @@ export function QuestionnaireBuilderHeader({
                 render={
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="import"
                     size="sm"
                     className="gap-2"
                     onClick={onImport}
@@ -146,8 +146,8 @@ export function QuestionnaireBuilderHeader({
             </Tooltip>
             <Button
               type="button"
+              variant="create"
               size="sm"
-              className="gap-2"
               onClick={onNewTemplate}
               aria-label="Novo template"
             >
@@ -227,9 +227,8 @@ export function QuestionnaireBuilderHeader({
             <>
               <Button
                 type="button"
-                variant="outline"
+                variant="save"
                 size="sm"
-                className="gap-2"
                 disabled={savePending}
                 onClick={onSave}
                 aria-label="Salvar alterações"

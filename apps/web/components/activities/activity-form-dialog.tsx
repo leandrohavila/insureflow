@@ -430,6 +430,7 @@ export function ActivityFormDialog({
             </Button>
             <Button
               type="submit"
+              variant="save"
               disabled={!canSubmit}
               aria-disabled={!canSubmit}
               className={cn(!canSubmit && "pointer-events-none")}
@@ -452,7 +453,7 @@ export function ActivityFormDialog({
   if (embedded) {
     if (!open) return null
     return (
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+      <div className="rounded-lg border border-[#d6cfc4] bg-white p-3!">
         {formBody}
       </div>
     )
@@ -461,7 +462,7 @@ export function ActivityFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="crm-workspace z-[60] flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0 sm:max-w-lg"
+        className="avila-lead-surface crm-workspace z-[60] flex max-h-[min(90svh,760px)] flex-col overflow-hidden p-0! text-[var(--avila-navy-900)] sm:max-w-lg"
         style={{
           backgroundColor: "var(--crm-surface-base)",
           borderColor: "var(--crm-stroke-default)",

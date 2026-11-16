@@ -76,3 +76,52 @@ describe("resolvePipelineDragOverTarget", () => {
     ).toBe("stage:novo")
   })
 })
+
+describe("crossing columns (regression: card stuck in the intermediate column)", () => {
+  // O card ativo já foi inserido ao vivo no topo de "contato" ao passar por ela,
+  // com um card de "contato" como alvo pegajoso. O ponteiro agora está sobre a
+  // coluna vazia "cotacao": o destino deve ser essa coluna, não a anterior.
+  const crossing = [
+    deal("x", "contato", 500),
+    deal("m", "contato", 1000),
+    deal("n", "contato", 2000),
+  ]
+
+  it("does not let a sticky card from another column override a different stage", () => {
+    expect(resolveStickyPipelineOver(crossing, "x", "stage:cotacao", "m")).toBe(
+      "stage:cotacao",
+    )
+    expect(
+      resolvePipelineDragOverTarget(crossing, "x", "stage:cotacao", "m"),
+    ).toBe("stage:cotacao")
+  })
+
+  it("still suppresses stage-container jitter inside the same column", () => {
+    expect(resolveStickyPipelineOver(crossing, "x", "stage:contato", "m")).toBe("m")
+  })
+
+  it("ignores a stale sticky card after the active card already changed column (drop on empty column)", () => {
+    // No drop o card ativo já está em "cotacao" (sozinho); o alvo pegajoso "m"
+    // ainda aponta para um card de "contato".
+    const dropped = [
+      deal("x", "cotacao", 1000),
+      deal("m", "contato", 1000),
+      deal("n", "contato", 2000),
+    ]
+    expect(resolveStickyPipelineOver(dropped, "x", "stage:cotacao", "m")).toBe(
+      "stage:cotacao",
+    )
+    expect(
+      resolvePipelineDragOverTarget(dropped, "x", "stage:cotacao", "m"),
+    ).toBe("stage:cotacao")
+  })
+
+  it("ignores a stale sticky card when dropped over a populated column", () => {
+    const dropped = [
+      deal("x", "proposta", 500),
+      deal("p", "proposta", 1000),
+      deal("m", "contato", 1000),
+    ]
+    expect(resolvePipelineDragOverTarget(dropped, "x", "p", "m")).toBe("p")
+  })
+})

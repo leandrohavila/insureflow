@@ -132,7 +132,7 @@ export function LeadReactivationWorkspace() {
           </label>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={updateSettings.isPending || isLoading}>
+          <Button type="submit" variant="save" disabled={updateSettings.isPending || isLoading}>
             Salvar configuração
           </Button>
           <Button

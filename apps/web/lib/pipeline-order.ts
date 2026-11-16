@@ -16,6 +16,18 @@ export function sortDealsForPipeline(deals: CrmDeal[]) {
   return [...deals].sort(compareDealsForPipeline)
 }
 
+/**
+ * Ordena por etapa e pipelineOrder preservando a ordem atual do array nos empates.
+ * É a mesma visão que o quadro renderiza (getSortedStageDeals); usar o desempate por
+ * createdAt aqui faria o reorder discordar da tela quando há pipelineOrder repetido.
+ */
+export function sortDealsKeepingTies(deals: CrmDeal[]) {
+  return allPipelineStages
+    .map((stage) => stage.id)
+    .filter((id, index, ids) => ids.indexOf(id) === index)
+    .flatMap((stageId) => getSortedStageDeals(deals, stageId))
+}
+
 export function compareDealsForPipeline(a: CrmDeal, b: CrmDeal) {
   const stageDiff = stageRank[a.stage] - stageRank[b.stage]
   if (stageDiff !== 0) return stageDiff
@@ -62,4 +74,48 @@ export function hasDealPipelinePositionChanged(
   after: CrmDeal,
 ) {
   return before.stage !== after.stage || before.pipelineOrder !== after.pipelineOrder
+}
+
+/**
+ * Empates de pipelineOrder (ex.: vários 0) impedem calcular uma posição intermediária
+ * e a API desempata por createdAt. Se o card movido não ficar estritamente entre os
+ * vizinhos, renumera a etapa inteira mantendo a ordem visual.
+ */
+export function ensureDistinctPipelineOrder(
+  deals: CrmDeal[],
+  dealId: string,
+): CrmDeal[] {
+  const moved = deals.find((deal) => deal.id === dealId)
+  if (!moved) return deals
+
+  const stageDeals = getSortedStageDeals(deals, moved.stage)
+  const index = stageDeals.findIndex((deal) => deal.id === dealId)
+  const prev = stageDeals[index - 1]
+  const next = stageDeals[index + 1]
+  const isDistinct =
+    (!prev || prev.pipelineOrder < moved.pipelineOrder) &&
+    (!next || moved.pipelineOrder < next.pipelineOrder)
+  if (isDistinct) return deals
+
+  const renumbered = new Map(
+    stageDeals.map((deal, position) => [
+      deal.id,
+      (position + 1) * PIPELINE_ORDER_STEP,
+    ]),
+  )
+  return deals.map((deal) => {
+    const pipelineOrder = renumbered.get(deal.id)
+    return pipelineOrder === undefined ? deal : { ...deal, pipelineOrder }
+  })
+}
+
+export function listPipelinePositionChanges(
+  before: CrmDeal[],
+  after: CrmDeal[],
+): CrmDeal[] {
+  const previous = new Map(before.map((deal) => [deal.id, deal]))
+  return after.filter((deal) => {
+    const prior = previous.get(deal.id)
+    return !prior || hasDealPipelinePositionChanged(prior, deal)
+  })
 }

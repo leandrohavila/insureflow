@@ -200,7 +200,7 @@ export function CustomersPage() {
         }
       >
         <PermissionGate permission="clients:manage">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="import" size="sm">
             <Upload className="size-3.5" strokeWidth={1.5} />
             Importar
           </Button>
@@ -289,7 +289,7 @@ export function CustomersPage() {
         emptyDescription="Clique em Novo para começar."
         emptyAction={
           <PermissionGate permission="clients:manage">
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Button variant="create" size="sm" onClick={() => setDialogOpen(true)}>
               Novo cliente
             </Button>
           </PermissionGate>

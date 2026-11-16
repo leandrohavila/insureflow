@@ -270,7 +270,7 @@ export function QuoteLineDrawer({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" variant="save" disabled={isPending}>
               {isPending ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
