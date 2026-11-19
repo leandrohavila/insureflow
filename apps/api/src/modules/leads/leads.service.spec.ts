@@ -1,3 +1,5 @@
+import { NotFoundException } from '@nestjs/common';
+
 import { LeadsService } from './leads.service';
 import type { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type { OwnershipService } from '../access/ownership.service';
@@ -301,5 +303,208 @@ describe('LeadsService.createLead', () => {
 
     expect(leadCreate).toHaveBeenCalledTimes(1);
     expect(second).toEqual(first);
+  });
+});
+
+describe('LeadsService.updateLead lost', () => {
+  const tenantId = 'tenant-1';
+  const leadId = 'lead-1';
+  const actor = {
+    userId: 'user-owner',
+    tenantId,
+    roles: ['comercial'],
+    permissions: ['leads:manage'],
+  };
+
+  function updatedLead(data: Record<string, unknown>) {
+    return {
+      id: leadId,
+      tenantId,
+      name: 'Marina Costa',
+      email: 'marina@email.com',
+      phone: null,
+      company: null,
+      source: 'whatsapp',
+      documentType: null,
+      document: null,
+      notes: 'Nota original',
+      assignedTo: 'Ana Costa',
+      ownerUserId: 'user-owner',
+      ownerTeamId: null,
+      businessUnitId: null,
+      interestCategories: [],
+      dealId: null,
+      reactivationAttempts: 0,
+      lastReactivatedAt: null,
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-22T12:00:00.000Z'),
+      ownerUser: { id: 'user-owner', name: 'Ana Costa', initials: 'AC' },
+      businessUnit: null,
+      businessUnits: [],
+      ...data,
+    };
+  }
+
+  function createUpdateService(reason: Record<string, unknown> | null) {
+    const leadUpdate = jest
+      .fn()
+      .mockImplementation(({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve(updatedLead(data)),
+      );
+    const findOne = jest.fn().mockResolvedValue(reason);
+    const publish = jest.fn().mockResolvedValue(null);
+    const prisma = {
+      lead: {
+        findFirst: jest.fn().mockImplementation(({ select }) => {
+          if (select?.status) {
+            return Promise.resolve({
+              ownerUserId: 'user-owner',
+              status: 'qualified',
+              businessUnitId: null,
+              businessUnits: [],
+            });
+          }
+          return Promise.resolve({ id: leadId });
+        }),
+        update: leadUpdate,
+      },
+      leadReactivationSetting: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      activity: {
+        groupBy: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    } as unknown as PrismaService;
+
+    const service = new LeadsService(
+      prisma,
+      {
+        getEnforcementMode: jest.fn().mockResolvedValue('off'),
+      } as unknown as OwnershipService,
+      { publish } as unknown as ActivityEngineService,
+      {} as BusinessUnitsService,
+      {} as never,
+      { findOne } as never,
+    );
+
+    return { service, leadUpdate, findOne, publish };
+  }
+
+  it('rejeita perda sem motivo e não grava o lead', async () => {
+    const { service, leadUpdate, findOne } = createUpdateService(null);
+
+    await expect(
+      service.updateLead(tenantId, leadId, { status: 'lost' }, actor),
+    ).rejects.toThrow(
+      'Motivo de perda é obrigatório ao marcar o lead como perdido.',
+    );
+
+    expect(findOne).not.toHaveBeenCalled();
+    expect(leadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejeita motivo inativo', async () => {
+    const { service, leadUpdate } = createUpdateService({
+      id: 'reason-off',
+      name: 'Motivo antigo',
+      isActive: false,
+      reactivationEnabled: false,
+      reactivationDays: null,
+    });
+
+    await expect(
+      service.updateLead(
+        tenantId,
+        leadId,
+        { status: 'lost', lossReasonId: 'reason-off' },
+        actor,
+      ),
+    ).rejects.toThrow('Motivo de perda inválido ou inativo.');
+
+    expect(leadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejeita motivo inexistente', async () => {
+    const { service, leadUpdate, findOne } = createUpdateService(null);
+    findOne.mockRejectedValue(
+      new NotFoundException('Motivo de perda não encontrado'),
+    );
+
+    await expect(
+      service.updateLead(
+        tenantId,
+        leadId,
+        { status: 'lost', lossReasonId: 'missing' },
+        actor,
+      ),
+    ).rejects.toThrow('Motivo de perda não encontrado');
+
+    expect(leadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('marca como perdido com motivo ativo e agenda a reativação do motivo', async () => {
+    const { service, leadUpdate, publish } = createUpdateService({
+      id: 'reason-1',
+      name: 'Sem orçamento',
+      isActive: true,
+      reactivationEnabled: true,
+      reactivationDays: 30,
+    });
+
+    const result = await service.updateLead(
+      tenantId,
+      leadId,
+      { status: 'lost', lossReasonId: 'reason-1' },
+      actor,
+    );
+
+    const data = leadUpdate.mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.status).toBe('lost');
+    expect(data.lossReasonId).toBe('reason-1');
+    expect(data.lostReason).toBe('Sem orçamento');
+    expect(data.name).toBeUndefined();
+    expect(data.email).toBeUndefined();
+    expect(data.notes).toBeUndefined();
+    expect(data.reactivationEnabled).toBe(true);
+    expect(data.reactivationDays).toBe(30);
+    expect(data.nextReactivationAt).toBeInstanceOf(Date);
+    expect(data.lostAt).toBeInstanceOf(Date);
+    const diffDays = Math.round(
+      ((data.nextReactivationAt as Date).getTime() -
+        (data.lostAt as Date).getTime()) /
+        86_400_000,
+    );
+    expect(diffDays).toBe(30);
+    expect(result.status).toBe('lost');
+    expect(result.lostReason).toBe('Sem orçamento');
+    expect(publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationalEventKind: 'lead_lost',
+        leadId,
+      }),
+    );
+  });
+
+  it('motivo sem reativação não agenda a próxima data', async () => {
+    const { service, leadUpdate } = createUpdateService({
+      id: 'reason-2',
+      name: 'Sem interesse',
+      isActive: true,
+      reactivationEnabled: false,
+      reactivationDays: null,
+    });
+
+    await service.updateLead(
+      tenantId,
+      leadId,
+      { status: 'lost', lossReasonId: 'reason-2' },
+      actor,
+    );
+
+    const data = leadUpdate.mock.calls[0][0].data as Record<string, unknown>;
+    expect(data.reactivationEnabled).toBe(false);
+    expect(data.nextReactivationAt).toBeNull();
+    expect(data.reactivationDays).toBeNull();
   });
 });

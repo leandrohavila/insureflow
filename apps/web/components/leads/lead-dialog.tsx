@@ -6,6 +6,7 @@ import { Check, Loader2, X } from "lucide-react"
 import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { ActivityTimeline } from "@/components/activities/activity-timeline"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
+import { LeadMarkLostSection } from "@/components/leads/lead-mark-lost-section"
 import { useSession } from "@/components/auth/session-provider"
 import { FormSelect } from "@/components/design-system"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,7 @@ import {
   resolveInterestAvailability,
   type LeadCreateIntent,
 } from "@/lib/leads/lead-intent"
+import type { MarkLeadLostInput } from "@/lib/leads/lead-mark-lost"
 import { LEAD_OPPORTUNITY_PIPELINE_HINT } from "@/lib/leads/lead-pipeline-clarity"
 import {
   bug010DrawerLog,
@@ -339,6 +341,7 @@ export type LeadDialogProps = {
   onSubmit: (input: CreateLeadInput) => void | Promise<void>
   onOpenExistingLead: (leadId: string) => void
   onSubmitLockedChange: (locked: boolean) => void
+  onMarkLost?: (input: MarkLeadLostInput) => Promise<void>
 }
 
 export function LeadDialog({
@@ -353,6 +356,7 @@ export function LeadDialog({
   onSubmit,
   onOpenExistingLead,
   onSubmitLockedChange,
+  onMarkLost,
 }: LeadDialogProps) {
   const { session } = useSession()
   const unitsQuery = useBusinessUnits()
@@ -564,6 +568,11 @@ export function LeadDialog({
               ) : null}
               {lead ? (
                 <p className="text-xs text-muted-foreground">
+                  {statusLabels[lead.status]}
+                  {lead.status === "lost" && lead.lostReason
+                    ? ` · ${lead.lostReason}`
+                    : ""}
+                  {" · "}
                   {formatLastInteraction(
                     lead.lastInteractionAt ?? lead.lastContactAt,
                   )}
@@ -1001,6 +1010,14 @@ export function LeadDialog({
                   variant: "outline",
                   onClick: () => setDuplicateDismissed(true),
                 }}
+              />
+            ) : null}
+
+            {lead && onMarkLost ? (
+              <LeadMarkLostSection
+                lead={lead}
+                pending={pending}
+                onMarkLost={onMarkLost}
               />
             ) : null}
 
