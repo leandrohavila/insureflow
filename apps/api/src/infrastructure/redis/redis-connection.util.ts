@@ -44,6 +44,7 @@ export function buildRedisConnection(cfg: {
 }): ParsedRedisConfig {
   const redisUrl = cfg.redisUrl?.trim();
   if (redisUrl) {
+    console.log('REDIS_URL RAW =>', JSON.stringify(process.env.REDIS_URL));
     const u = new URL(redisUrl);
     const host = u.hostname;
     const port = parseInt(u.port || '6379', 10);
