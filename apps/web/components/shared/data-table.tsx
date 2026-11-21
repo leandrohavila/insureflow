@@ -327,7 +327,7 @@ export function DataTable<T>({
                     )}
                         onClick={(event) => event.stopPropagation()}
                       >
-                        <div className="flex justify-end gap-1">
+                        <div className="flex flex-wrap justify-end gap-[var(--if-layout-button-gap)]">
                           {visibleActions.length === 0 ? (
                             <span className="text-xs text-muted-foreground">
                               —

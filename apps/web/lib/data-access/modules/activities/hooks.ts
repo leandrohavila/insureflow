@@ -15,6 +15,7 @@ import {
   fetchActivity,
   updateActivity,
 } from "./api"
+import { activityTimelineQueryOptions } from "./timeline-refetch"
 import type {
   Activity,
   ActivityListFilters,
@@ -51,6 +52,9 @@ function invalidateRelatedQueries(
 ) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.activities.all })
   void queryClient.invalidateQueries({ queryKey: queryKeys.crm.deals.all })
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.commercialAgenda.all,
+  })
   if (activity.leadId) {
     void queryClient.invalidateQueries({
       queryKey: queryKeys.leads.detail(activity.leadId),
@@ -76,6 +80,19 @@ export function useActivities(
   })
 }
 
+export function useLeadTimelineActivities(
+  filters: ActivityListFilters,
+  enabled = true,
+) {
+  return useQuery(
+    activityTimelineQueryOptions({
+      queryKey: queryKeys.activities.list(filters),
+      queryFn: () => fetchActivities(filters),
+      enabled,
+    }),
+  )
+}
+
 export function useActivityTimeline(ctx: ActivityContext) {
   const merge = shouldMergeLeadDeal(ctx)
   const filters = contextFilters(ctx)
@@ -87,7 +104,7 @@ export function useActivityTimeline(ctx: ActivityContext) {
     enabled: merge && enabled,
   })
 
-  const singleQuery = useActivities(filters, enabled && !merge)
+  const singleQuery = useLeadTimelineActivities(filters, enabled && !merge)
 
   if (merge) {
     return {
@@ -180,6 +197,9 @@ export function useDeleteActivity(ctx: ActivityContext) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.activities.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.crm.deals.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.leads.all })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.commercialAgenda.all,
+      })
       queryClient.removeQueries({ queryKey: queryKeys.activities.detail(id) })
     },
   })

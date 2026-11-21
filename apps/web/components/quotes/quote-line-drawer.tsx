@@ -1,19 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Shield } from "lucide-react"
 
-import { FormField, FormLayout } from "@/components/design-system"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSection,
+  CrmFormDrawerSubmit,
+} from "@/components/crm/crm-form-drawer"
+import { FormField, FormLayout } from "@/components/design-system"
+import { Input } from "@/components/ui/input"
 import {
   useAddQuoteLine,
   useUpdateQuoteLine,
@@ -21,7 +21,7 @@ import {
 } from "@/lib/data-access/modules/quotes"
 import { getErrorMessage } from "@/lib/data-access"
 const textareaClass =
-  "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+  "flex min-h-20 w-full resize-y rounded-lg border border-[#D6CFC4] bg-white px-3 py-2 text-sm text-[#10294B] shadow-none outline-none placeholder:text-[#5C6578] focus-visible:border-[#10294B] focus-visible:ring-2 focus-visible:ring-[#10294B]/20 disabled:cursor-not-allowed disabled:opacity-50"
 
 type QuoteLineDrawerProps = {
   open: boolean
@@ -155,22 +155,16 @@ export function QuoteLineDrawer({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col border-white/[0.08] bg-background/95 p-0 backdrop-blur-xl sm:max-w-lg"
-      >
-        <form className="flex h-full flex-col" onSubmit={(e) => void handleSubmit(e)}>
-          <SheetHeader className="border-b border-white/[0.06] px-6 py-5 text-left">
-            <SheetDescription className="text-xs text-primary">
-              Linha de cotação
-            </SheetDescription>
-            <SheetTitle className="text-xl font-semibold tracking-[-0.03em]">
-              {mode === "create" ? "Adicionar seguradora" : "Editar linha"}
-            </SheetTitle>
-          </SheetHeader>
+    <CrmFormDrawer open={open} onOpenChange={onOpenChange}>
+        <form className="flex h-full min-h-0 flex-col" onSubmit={(e) => void handleSubmit(e)}>
+          <CrmFormDrawerHeader
+            icon={Shield}
+            title={mode === "create" ? "Adicionar seguradora" : "Editar linha"}
+            description="Linha de cotação deste comparativo."
+          />
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <CrmFormDrawerBody>
+            <CrmFormDrawerSection title="Seguradora">
             <FormLayout>
               <FormField label="Seguradora" htmlFor="line-insurer" required>
                 <Input
@@ -255,36 +249,23 @@ export function QuoteLineDrawer({
             </FormLayout>
 
             {error ? (
-              <p className="mt-3 text-sm text-destructive" role="alert">
+              <p className="rounded-lg border border-[#e7c4c4] bg-[#fdf3f2] p-3 text-sm text-[#9f2d2d]" role="alert">
                 {error}
               </p>
             ) : null}
-          </div>
+            </CrmFormDrawerSection>
+          </CrmFormDrawerBody>
 
-          <SheetFooter className="border-t border-white/[0.06] px-6 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
+          <CrmFormDrawerFooter>
+            <CrmFormDrawerCancel
               disabled={isPending}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" variant="save" disabled={isPending}>
-              {isPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : mode === "create" ? (
-                "Adicionar linha"
-              ) : (
-                "Salvar linha"
-              )}
-            </Button>
-          </SheetFooter>
+              onClick={() => onOpenChange(false)}
+            />
+            <CrmFormDrawerSubmit pending={isPending}>
+              {mode === "create" ? "Adicionar linha" : "Salvar linha"}
+            </CrmFormDrawerSubmit>
+          </CrmFormDrawerFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+    </CrmFormDrawer>
   )
 }

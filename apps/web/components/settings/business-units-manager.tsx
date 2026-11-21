@@ -76,8 +76,7 @@ export function BusinessUnitsManager() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
+                variant="crmSecondary"
                 onClick={() =>
                   updateUnit.mutate({
                     id: unit.id,
@@ -90,7 +89,6 @@ export function BusinessUnitsManager() {
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
                 onClick={() => deleteUnit.mutate(unit.id)}
               >
                 Excluir

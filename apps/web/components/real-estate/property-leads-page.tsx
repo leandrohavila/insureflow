@@ -239,7 +239,7 @@ export function PropertyLeadsPage() {
   )
 
   const createAction = canManage ? (
-    <Button size="sm" className="h-9 gap-1.5" onClick={openCreate}>
+    <Button variant="crmPrimary" onClick={openCreate}>
       <Plus className="size-3.5" />
       Novo Lead Imobiliário
     </Button>
@@ -373,7 +373,7 @@ export function PropertyLeadsPage() {
               emptyAction={
                 canManage ? (
                   <PermissionGate permission="leads:manage">
-                    <Button size="sm" className="gap-1.5" onClick={openCreate}>
+                    <Button variant="crmPrimary" onClick={openCreate}>
                       <Plus className="size-3.5" />
                       Novo Lead Imobiliário
                     </Button>

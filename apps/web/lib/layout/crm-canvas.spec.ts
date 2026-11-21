@@ -17,15 +17,17 @@ describe("superfície clara do CRM", () => {
       "/crm/campanhas-reativacao",
       "/crm/dashboard-360",
       "/crm/customer-360/abc",
+      "/questionarios/templates",
+      "/questionarios/respostas",
+      "/",
     ]) {
       assert.equal(isCrmCanvasPath(path), true, path)
     }
   })
 
-  it("não altera Seguros, Imobiliário, Configurações, Portal nem o dashboard geral", () => {
+  it("não altera Seguros, Imobiliário, Configurações nem o Portal", () => {
     for (const path of [
-      "/",
-      "/questionarios/templates",
+      "/questionario/token-publico",
       "/cotacoes",
       "/propostas",
       "/apolices",

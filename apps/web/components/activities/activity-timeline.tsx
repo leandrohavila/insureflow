@@ -42,6 +42,8 @@ type ActivityTimelineProps = {
   filterType?: ActivityType | null
   /** Form de atividade inline — evita modal sobre o dialog do lead. */
   embedded?: boolean
+  presentation?: "dialog" | "drawer"
+  lockLink?: boolean
 }
 
 export function ActivityTimeline({
@@ -52,6 +54,8 @@ export function ActivityTimeline({
   suppressEmptyState = false,
   filterType = null,
   embedded = false,
+  presentation: formPresentation = "dialog",
+  lockLink = false,
 }: ActivityTimelineProps) {
   const ctx = { leadId, dealId }
   const timelineQuery = useActivityTimeline(ctx)
@@ -245,6 +249,8 @@ export function ActivityTimeline({
 
       <ActivityFormDialog
         embedded={embedded}
+        presentation={formPresentation}
+        lockLink={lockLink}
         open={editingActivity !== null}
         onOpenChange={(open) => {
           if (!open) setEditingActivity(null)
@@ -265,6 +271,8 @@ export function ActivityTimeline({
 
       <ActivityFormDialog
         embedded={embedded}
+        presentation={formPresentation}
+        lockLink={lockLink}
         open={rescheduleContext !== null}
         onOpenChange={(open) => {
           if (!open) {

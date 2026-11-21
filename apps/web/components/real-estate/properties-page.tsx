@@ -196,9 +196,9 @@ export function PropertiesPage() {
                 <PageActionsGroup>
                   <Link
                     href="/real-estate/properties/new"
-                    className={cn(buttonVariants({ variant: "create", size: "sm" }))}
+                    className={cn(buttonVariants({ variant: "crmPrimary" }))}
                   >
-                    <Plus className="mr-1.5 size-4" />
+                    <Plus className="size-3.5" strokeWidth={1.75} />
                     Novo imóvel
                   </Link>
                 </PageActionsGroup>
@@ -214,7 +214,7 @@ export function PropertiesPage() {
             </span>
             <Button
               type="button"
-              size="sm"
+              variant="crmPrimary"
               disabled={batch.isPending}
               onClick={() => {
                 batch.mutate(
@@ -227,8 +227,7 @@ export function PropertiesPage() {
             </Button>
             <Button
               type="button"
-              size="sm"
-              variant="outline"
+              variant="crmSecondary"
               disabled={batch.isPending}
               onClick={() => {
                 batch.mutate(
