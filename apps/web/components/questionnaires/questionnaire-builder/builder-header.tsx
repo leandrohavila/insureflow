@@ -73,7 +73,7 @@ export function QuestionnaireBuilderHeader({
   savePending,
 }: QuestionnaireBuilderHeaderProps) {
   return (
-    <header className="flex shrink-0 flex-col gap-[var(--if-space-3)]">
+    <header className="flex shrink-0 flex-col gap-[var(--if-space-3)] rounded-2xl border border-[#e4ddd2] bg-[var(--avila-paper)] p-[var(--if-space-4)] shadow-[0_1px_2px_rgb(16_41_75/0.04)]">
       <div className="flex flex-col gap-[var(--if-space-2)]">
         <h1 className="text-xl font-semibold tracking-[-0.03em] md:text-2xl">
           Builder de Questionários
@@ -94,7 +94,7 @@ export function QuestionnaireBuilderHeader({
             <Input
               placeholder="Buscar template..."
               aria-label="Buscar template"
-              className="h-10 rounded-full border-white/[0.08] bg-white/[0.04] pl-10"
+              className="h-10 rounded-full border-[#d6cfc4] bg-[var(--avila-ivory)] pl-10"
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
             />
@@ -109,7 +109,7 @@ export function QuestionnaireBuilderHeader({
                   event.target.value as QuestionnaireTemplateStatus | "all",
                 )
               }
-              className="flex h-9 rounded-md border border-input bg-background/40 px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="flex h-9 rounded-md border border-[#d6cfc4] bg-[var(--avila-ivory)] px-3 py-1 text-sm text-[var(--avila-navy-900)] shadow-none outline-none transition-colors focus-visible:border-[var(--avila-gold-600)] focus-visible:ring-[3px] focus-visible:ring-[var(--avila-gold-600)]/30"
             >
               <option value="all">Todos os status</option>
               {QUESTIONNAIRE_TEMPLATE_STATUSES.map((item) => (
@@ -131,9 +131,7 @@ export function QuestionnaireBuilderHeader({
                 render={
                   <Button
                     type="button"
-                    variant="import"
-                    size="sm"
-                    className="gap-2"
+                    variant="crmSecondary"
                     onClick={onImport}
                     aria-label="Importar template"
                   />
@@ -146,8 +144,7 @@ export function QuestionnaireBuilderHeader({
             </Tooltip>
             <Button
               type="button"
-              variant="create"
-              size="sm"
+              variant="crmPrimary"
               onClick={onNewTemplate}
               aria-label="Novo template"
             >
@@ -159,9 +156,7 @@ export function QuestionnaireBuilderHeader({
           {onToggleBlocks && template ? (
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
+              variant="crmSecondary"
               onClick={onToggleBlocks}
               aria-label="Inserir bloco"
             >
@@ -173,9 +168,7 @@ export function QuestionnaireBuilderHeader({
           {onToggleRules && template ? (
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
+              variant="crmSecondary"
               onClick={onToggleRules}
               aria-label="Editor de regras"
             >

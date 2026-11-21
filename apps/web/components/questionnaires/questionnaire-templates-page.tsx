@@ -799,11 +799,12 @@ export function QuestionnaireTemplatesPage() {
   const previewPresentation = previewMode === "collapsed" ? "docked" : previewMode
   const previewPanelClass = cn(
     "min-h-0 min-w-0",
-    "fixed inset-y-0 right-0 z-40 flex w-[min(100vw,30rem)] flex-col bg-background/98 p-3 shadow-2xl",
-    "min-[1440px]:static min-[1440px]:z-auto min-[1440px]:h-full min-[1440px]:shrink-0 min-[1440px]:bg-transparent min-[1440px]:p-0 min-[1440px]:shadow-none",
+    "fixed inset-x-0 bottom-0 z-40 flex h-[min(46vh,22rem)] w-full flex-col bg-[var(--avila-ivory)] p-3 shadow-2xl",
+    "md:inset-y-0 md:inset-x-auto md:right-0 md:h-auto md:w-[min(100vw,24rem)]",
+    "xl:static xl:z-auto xl:h-full xl:shrink-0 xl:bg-transparent xl:p-0 xl:shadow-none",
     previewMode === "expanded"
-      ? "min-[1440px]:w-[min(36vw,34rem)]"
-      : "min-[1440px]:w-[20rem] min-[1680px]:w-[24rem]",
+      ? "xl:w-[min(34vw,28rem)]"
+      : "xl:w-[18rem] min-[1440px]:w-[22rem]",
   )
 
   return (
@@ -812,7 +813,7 @@ export function QuestionnaireTemplatesPage() {
         initial={reduce ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: easeOut }}
-        className="flex min-h-0 min-w-0 flex-1 flex-col gap-[var(--if-space-4)] overflow-hidden px-[var(--if-layout-page-x)] py-[var(--if-space-4)] [@media(min-height:900px)]:gap-[var(--if-space-5)] [@media(min-height:900px)]:py-[var(--if-layout-page-y)]"
+        className="questionnaire-builder flex min-h-0 min-w-0 flex-1 flex-col gap-[var(--if-space-4)] overflow-hidden px-[var(--if-layout-page-x)] py-[var(--if-space-4)] [@media(min-height:900px)]:gap-[var(--if-space-5)] [@media(min-height:900px)]:py-[var(--if-layout-page-y)]"
       >
         <QuestionnaireNavTabs />
 
@@ -929,7 +930,7 @@ export function QuestionnaireTemplatesPage() {
               />
               </div>
             ) : (
-              <div className="flex h-full min-h-64 items-center justify-center rounded-xl border border-dashed border-white/[0.12] p-[var(--if-space-8)] text-center text-sm text-muted-foreground">
+              <div className="flex h-full min-h-64 items-center justify-center rounded-xl border border-dashed border-[#d6cfc4] bg-[var(--avila-paper)] p-[var(--if-space-8)] text-center text-sm text-[#5c6578]">
                 Selecione ou crie um template para editar perguntas.
               </div>
             )}
@@ -956,7 +957,7 @@ export function QuestionnaireTemplatesPage() {
 
         {previewMode === "fullscreen" && typeof document !== "undefined"
           ? createPortal(
-              <div className="fixed inset-0 z-[80] flex bg-background p-[var(--if-space-4)] md:p-[var(--if-space-6)]">
+              <div className="questionnaire-builder avila-crm-canvas fixed inset-0 z-[80] flex bg-[var(--avila-ivory)] p-[var(--if-space-4)] text-[var(--avila-navy-900)] md:p-[var(--if-space-6)]">
                 <QuestionnaireFormPreview
                   id="questionnaire-preview-panel"
                   template={selectedTemplate}
@@ -976,7 +977,7 @@ export function QuestionnaireTemplatesPage() {
         {previewMode !== "collapsed" && previewMode !== "fullscreen" ? (
           <button
             type="button"
-            className="fixed inset-0 z-30 bg-black/45 min-[1440px]:hidden"
+            className="fixed inset-0 z-30 hidden bg-[rgb(16_41_75/0.28)] md:block xl:hidden"
             aria-label="Fechar preview"
             onClick={() => updatePreviewMode("collapsed")}
           />
@@ -1080,7 +1081,7 @@ export function QuestionnaireTemplatesPage() {
         <Sheet open={templatesOpen} onOpenChange={setTemplatesOpen}>
           <SheetContent
             side="left"
-            className="w-full border-white/[0.08] bg-background/98 p-0 sm:max-w-md xl:hidden"
+            className="questionnaire-builder avila-crm-canvas w-full border-[#d6cfc4] bg-[var(--avila-ivory)] p-0 text-[var(--avila-navy-900)] sm:max-w-md xl:hidden"
           >
             <SheetHeader className="border-b border-white/[0.06] p-[var(--if-space-4)]">
               <SheetTitle>Templates</SheetTitle>
@@ -1133,7 +1134,7 @@ export function QuestionnaireTemplatesPage() {
         <Sheet open={rulesOpen} onOpenChange={setRulesOpen}>
           <SheetContent
             side="right"
-            className="w-full border-white/[0.08] bg-background/98 p-0 sm:max-w-2xl"
+            className="questionnaire-builder avila-crm-canvas w-full border-[#d6cfc4] bg-[var(--avila-paper)] p-0 text-[var(--avila-navy-900)] data-[side=right]:w-[min(100vw,42rem)] data-[side=right]:sm:max-w-none"
           >
             <SheetHeader className="border-b border-white/[0.06] p-[var(--if-space-4)]">
               <SheetTitle>Editor de regras</SheetTitle>

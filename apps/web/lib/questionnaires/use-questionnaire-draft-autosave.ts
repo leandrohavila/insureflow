@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   leadSubmissionListFilters,
   useCreateQuestionnaireSubmission,
+  useQuestionnaireSubmission,
   useQuestionnaireSubmissions,
   useUpdateQuestionnaireSubmission,
   type JsonObject,
@@ -52,6 +53,7 @@ type UseQuestionnaireDraftAutosaveOptions = {
   templateId: string
   fields: QuestionnaireField[]
   answers: JsonObject
+  resumeSubmissionId?: string | null
   onHydrate: (
     answers: JsonObject,
     context: { persistedKeys: readonly string[] },
@@ -166,6 +168,7 @@ export function useQuestionnaireDraftAutosave({
   templateId,
   fields,
   answers,
+  resumeSubmissionId = null,
   onHydrate,
 }: UseQuestionnaireDraftAutosaveOptions) {
   const identity = useMemo<AutosaveIdentity>(
@@ -226,7 +229,10 @@ export function useQuestionnaireDraftAutosave({
 
   const draftsQuery = useQuestionnaireSubmissions(
     draftListFilters ?? { page: 1, limit: 1 },
-    { enabled: draftsQueryEnabled },
+    { enabled: draftsQueryEnabled && !resumeSubmissionId },
+  )
+  const resumeQuery = useQuestionnaireSubmission(
+    open && resumeSubmissionId ? resumeSubmissionId : null,
   )
 
   const createDraft = useCreateQuestionnaireSubmission()
@@ -265,18 +271,35 @@ export function useQuestionnaireDraftAutosave({
   }, [open, resetSession])
 
   useEffect(() => {
-    if (!draftsQueryEnabled || !leadId || !templateId || fields.length === 0) return
+    if (!open || !enabled || !leadId || !templateId || fields.length === 0) return
 
-    const hydrateKey = `${leadId}:${templateId}`
+    const hydrateKey = `${leadId}:${templateId}:${resumeSubmissionId ?? ""}`
     if (hydrateKeyRef.current === hydrateKey) return
-    if (draftsQuery.isLoading) return
     if (!sameAutosaveIdentity(cursorRef.current.identity, { open, leadId, templateId })) {
       return
     }
 
-    hydrateKeyRef.current = hydrateKey
+    let remoteDraft: RemoteDraftRecord | null = null
+    if (resumeSubmissionId) {
+      if (resumeQuery.isLoading) return
+      const submission = resumeQuery.data
+      if (
+        submission &&
+        submission.templateId === templateId &&
+        (submission.status === "draft" || submission.status === "in_progress")
+      ) {
+        remoteDraft = {
+          id: submission.id,
+          answers: submission.answers,
+          updatedAt: submission.updatedAt,
+        }
+      }
+    } else {
+      if (!draftsQueryEnabled || draftsQuery.isLoading) return
+      remoteDraft = draftsQuery.data?.data[0] ?? null
+    }
 
-    const remoteDraft = draftsQuery.data?.data[0] ?? null
+    hydrateKeyRef.current = hydrateKey
     const local = readLocalDraft(leadId, templateId)
     const resolved = resolveDraftSource(remoteDraft, local)
 
@@ -336,9 +359,13 @@ export function useQuestionnaireDraftAutosave({
     draftsQuery.data,
     draftsQuery.isLoading,
     draftsQueryEnabled,
+    enabled,
     fields,
     leadId,
     open,
+    resumeQuery.data,
+    resumeQuery.isLoading,
+    resumeSubmissionId,
     templateId,
   ])
 

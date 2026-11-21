@@ -14,7 +14,7 @@ export function QuestionnaireNavTabs() {
   const pathname = usePathname()
 
   return (
-    <div className="flex rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
+    <div className="flex w-fit rounded-lg border border-[#e4ddd2] bg-[var(--avila-paper)] p-0.5 shadow-[0_1px_2px_rgb(16_41_75/0.04)]">
       {tabs.map((tab) => {
         const active = pathname.startsWith(tab.href)
         return (

@@ -66,7 +66,7 @@ export const RuleTesterDialog = memo(function RuleTesterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="questionnaire-builder avila-crm-canvas max-h-[90vh] overflow-y-auto border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Testar regra</DialogTitle>
           <DialogDescription>

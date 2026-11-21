@@ -26,7 +26,7 @@ export const CanvasStructureMinimap = memo(function CanvasStructureMinimap({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-white/[0.06] bg-transparent",
+        "overflow-hidden rounded-xl border border-[#e4ddd2] bg-[var(--avila-paper)]",
         className,
       )}
     >
@@ -46,7 +46,7 @@ export const CanvasStructureMinimap = memo(function CanvasStructureMinimap({
       </button>
       {open ? (
         <nav
-          className="max-h-48 space-y-0.5 overflow-y-auto border-t border-white/[0.06] p-[var(--if-space-2)]"
+          className="max-h-48 space-y-0.5 overflow-y-auto border-t border-[#e4ddd2] p-[var(--if-space-2)]"
           aria-label="Navegação rápida de seções"
         >
           {sections.map((section) => (

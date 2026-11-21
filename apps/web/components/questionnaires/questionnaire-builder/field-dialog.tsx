@@ -233,7 +233,7 @@ export function QuestionnaireFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto border-white/[0.08] bg-background/95 sm:max-w-3xl">
+      <DialogContent className="questionnaire-builder avila-crm-canvas max-h-[90svh] overflow-y-auto border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)] sm:max-w-3xl">
         <form onSubmit={handleSubmit} className="space-y-5">
           <DialogHeader>
             <DialogTitle>

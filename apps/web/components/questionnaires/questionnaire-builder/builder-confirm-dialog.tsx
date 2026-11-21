@@ -33,7 +33,7 @@ export function BuilderConfirmDialog({
 }: BuilderConfirmDialogProps) {
   return (
     <Dialog open={state.open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-md">
+      <DialogContent className="questionnaire-builder avila-crm-canvas border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{state.title}</DialogTitle>
           <DialogDescription>{state.description}</DialogDescription>

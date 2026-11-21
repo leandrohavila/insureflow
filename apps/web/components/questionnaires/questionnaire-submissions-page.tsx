@@ -189,7 +189,7 @@ export function QuestionnaireSubmissionsPage() {
             type="button"
             variant="ghost"
             size="sm"
-            className="-ml-2 w-fit gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+            className="-ml-2 w-fit gap-2 px-2 text-muted-foreground hover:text-foreground"
             onClick={handleBackToCrm}
           >
             <ArrowLeft className="size-4" />

@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { QuestionnaireBuilderCanvas } from "./builder-canvas"
-import { builderSurfaces } from "./builder-surfaces"
+import { builderPortalClass, builderSurfaces } from "./builder-surfaces"
 import { CanvasStructureMinimap } from "./canvas-structure-minimap"
 import { FieldLibraryDrawer } from "./field-library-drawer"
 import { FieldPropertiesPanel } from "./field-properties-panel"
@@ -151,7 +151,7 @@ export const QuestionnaireBuilderWorkspace = memo(
           {templateName ? (
             <div
               data-builder-level="template"
-              className="shrink-0 rounded-2xl border border-primary/35 border-l-[3px] border-l-primary bg-primary/[0.08] px-[var(--if-space-5)] py-[var(--if-space-4)]"
+              className="shrink-0 rounded-2xl border border-[#e4ddd2] border-l-[3px] border-l-[var(--avila-gold-600)] bg-[var(--avila-paper)] px-[var(--if-space-5)] py-[var(--if-space-4)] shadow-[0_1px_2px_rgb(16_41_75/0.04)]"
             >
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
                 Template
@@ -161,7 +161,7 @@ export const QuestionnaireBuilderWorkspace = memo(
                   {templateName}
                 </h2>
                 {templateStatusLabel ? (
-                  <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span className="shrink-0 rounded-full border border-[#d6cfc4] bg-[var(--avila-ivory)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#5c6578]">
                     {templateStatusLabel}
                   </span>
                 ) : null}
@@ -229,7 +229,7 @@ export const QuestionnaireBuilderWorkspace = memo(
             >
               <SheetContent
                 side="right"
-                className="flex w-full flex-col border-white/[0.08] bg-background/98 p-0 sm:max-w-md"
+                className={cn(builderPortalClass, "flex w-full flex-col p-0 sm:max-w-md")}
               >
                 {selectedField ? (
                   <FieldPropertiesPanel

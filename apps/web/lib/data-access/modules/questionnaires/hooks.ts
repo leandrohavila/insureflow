@@ -13,14 +13,18 @@ import {
   createQuestionnaireField,
   createQuestionnaireSubmission,
   createQuestionnaireTemplate,
+  ensureIntelligentQuestionnaireForm,
   deleteQuestionnaireField,
   deleteQuestionnaireSubmission,
   deleteQuestionnaireTemplate,
+  createQuestionnaireShare,
   fetchQuestionnaireField,
   fetchQuestionnaireFields,
+  fetchQuestionnaireShares,
   fetchQuestionnaireSubmission,
   fetchQuestionnaireSubmissions,
   fetchQuestionnaireTemplate,
+  revokeQuestionnaireShare,
   fetchQuestionnaireTemplateSuggestions,
   fetchQuestionnaireTemplates,
   updateQuestionnaireField,
@@ -65,6 +69,21 @@ export function useQuestionnaireTemplateSuggestions(leadId: string | null) {
       : queryKeys.questionnaires.all,
     queryFn: () => fetchQuestionnaireTemplateSuggestions(leadId as string),
     enabled: Boolean(leadId),
+  });
+}
+
+export function useEnsureIntelligentForm() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (branch: "auto" | "residencial" | "empresarial") =>
+      ensureIntelligentQuestionnaireForm(branch),
+    onSuccess: (template) => {
+      queryClient.setQueryData(
+        queryKeys.questionnaires.templates.detail(template.id),
+        template,
+      );
+    },
   });
 }
 
@@ -291,6 +310,7 @@ export function useLeadQuestionnaireSubmissions(
     templateId?: string;
     limit?: number;
     enabled?: boolean;
+    refetchInterval?: number | false;
   },
 ) {
   const limit = options?.limit ?? 5;
@@ -312,6 +332,7 @@ export function useLeadQuestionnaireSubmissions(
     queryKey: byLeadKey,
     queryFn: () => fetchQuestionnaireSubmissions(filters),
     enabled: Boolean(leadId) && (options?.enabled ?? true),
+    refetchInterval: options?.refetchInterval,
     select: (response) => ({
       ...response,
       leadStatus: deriveLeadQuestionnaireStatus(
@@ -363,6 +384,56 @@ export function useUpdateQuestionnaireSubmission() {
     onSuccess: (submission, variables) => {
       applySubmissionMutationCache(queryClient, submission, {
         meta: { autosave: variables.autosave },
+      });
+    },
+  });
+}
+
+export function useQuestionnaireShares(submissionId: string | null) {
+  return useQuery({
+    queryKey: submissionId
+      ? queryKeys.questionnaires.submissions.shares(submissionId)
+      : queryKeys.questionnaires.submissions.all,
+    queryFn: () => fetchQuestionnaireShares(submissionId as string),
+    enabled: Boolean(submissionId),
+  });
+}
+
+export function useCreateQuestionnaireShare() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      submissionId,
+      expiresInDays,
+    }: {
+      submissionId: string;
+      expiresInDays: number;
+    }) => createQuestionnaireShare(submissionId, expiresInDays),
+    onSuccess: (_share, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.questionnaires.submissions.shares(
+          variables.submissionId,
+        ),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.questionnaires.submissions.all,
+      });
+    },
+  });
+}
+
+export function useRevokeQuestionnaireShare(submissionId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (shareId: string) => revokeQuestionnaireShare(shareId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.questionnaires.submissions.shares(submissionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.questionnaires.submissions.all,
       });
     },
   });

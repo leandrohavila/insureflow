@@ -445,10 +445,11 @@ const SortableSection = memo(function SortableSection({
           </SortableContext>
 
           {!disabled ? (
-            <div className="mt-[var(--if-space-3)] rounded-2xl border border-primary/35 bg-primary/[0.08] p-[var(--if-space-3)]">
+            <div className="mt-[var(--if-space-3)]">
               <Button
                 type="button"
-                className="h-11 w-full gap-2 text-sm font-semibold shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-md"
+                variant="outline"
+                className="h-10 w-full gap-2 border-dashed border-[#d6cfc4] bg-[var(--avila-ivory)] text-sm font-semibold text-[var(--avila-navy-900)] hover:border-[var(--avila-gold-600)] hover:bg-[var(--avila-paper)]"
                 onClick={openLibrary}
               >
                 <Plus className="size-4" />
@@ -685,7 +686,7 @@ export const QuestionnaireBuilderCanvas = memo(function QuestionnaireBuilderCanv
   return (
     <div className="flex min-h-0 flex-col gap-[var(--if-space-6)] md:gap-[var(--if-space-8)]">
       {!isCanvasEmpty ? (
-        <div className="flex flex-col gap-[var(--if-space-4)] sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col items-start gap-3 lg:flex-row lg:items-end lg:gap-6">
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
               Seções
@@ -696,23 +697,12 @@ export const QuestionnaireBuilderCanvas = memo(function QuestionnaireBuilderCanv
           </div>
 
           {canManage ? (
-            <div className="flex flex-wrap items-center gap-[var(--if-space-2)]">
+            <div className="flex min-w-0 flex-wrap items-center gap-[var(--if-space-2)]">
               <QuickAddMenu
                 disabled={reorderPending}
                 onInsert={quickInsert}
                 onOpenLibrary={() => openLibrary()}
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 gap-2 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
-                disabled={reorderPending}
-                onClick={() => openLibrary()}
-              >
-                <Plus className="size-4" />
-                Campo Personalizado
-              </Button>
             </div>
           ) : null}
         </div>

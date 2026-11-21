@@ -16,9 +16,9 @@ export const statusLabels: Record<QuestionnaireTemplateStatus, string> = {
 }
 
 export const statusStyles: Record<QuestionnaireTemplateStatus, string> = {
-  draft: "border-slate-400/30 bg-slate-500/10 text-slate-200",
-  active: "border-emerald-400/35 bg-emerald-500/10 text-emerald-300",
-  archived: "border-amber-400/30 bg-amber-500/10 text-amber-200",
+  draft: "border-[#d6cfc4] bg-[#ebe5dc] text-[#5c6578]",
+  active: "border-[#157a3c]/30 bg-[#e8f6ee] text-[#157a3c]",
+  archived: "border-[#c05612]/30 bg-[#fff1e8] text-[#9a4510]",
 }
 
 export const fieldTypeLabels: Record<QuestionnaireFieldType, string> = {
