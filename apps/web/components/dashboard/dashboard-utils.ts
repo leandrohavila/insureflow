@@ -59,7 +59,7 @@ export const dashboardCardLinkClassName =
   "h-7 shrink-0 px-2 text-xs text-muted-foreground"
 
 export const dashboardSectionTitleClassName =
-  "text-sm font-medium tracking-tight text-foreground"
+  "text-base font-semibold tracking-tight text-foreground"
 
 export const dashboardSectionSubtitleClassName =
   "text-xs text-muted-foreground"
@@ -74,12 +74,12 @@ export const dashboardFunnelBarClassName =
   "rounded-sm bg-primary/70 transition-[width,background-color,filter] duration-[var(--if-duration-base)] hover:brightness-110"
 
 export const dashboardExecutiveGridClassName =
-  "grid min-w-0 grid-cols-1 items-stretch gap-[var(--if-space-2)] lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]"
+  "dashboard-split grid min-w-0 grid-cols-1 items-stretch xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]"
 
 export const dashboardAnalyticsGridClassName =
-  "grid min-w-0 grid-cols-1 items-stretch gap-[var(--if-space-2)] md:grid-cols-2 xl:grid-cols-3"
+  "dashboard-analytics grid min-w-0 grid-cols-1 items-stretch md:grid-cols-2 xl:grid-cols-3"
 
-export const dashboardSectionGapClassName = "gap-1.5"
+export const dashboardSectionGapClassName = "gap-3"
 
 export const dashboardUniformCardClassName = "h-full"
 

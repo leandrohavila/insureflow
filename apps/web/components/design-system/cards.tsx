@@ -48,6 +48,8 @@ export type StatCardProps = ComponentProps<"article"> & {
   icon?: ComponentType<{ className?: string }>
   tone?: StatCardTone
   density?: StatCardDensity
+  /** Superfície clara da Visão Geral. O padrão permanece para os demais módulos. */
+  surface?: "default" | "light"
   loading?: boolean
   error?: ReactNode
 }
@@ -61,6 +63,15 @@ const statTone = {
   info: "text-info",
 } as const
 
+const lightStatTone = {
+  neutral: "text-[#5C6578]",
+  primary: "text-[#10294B]",
+  success: "text-[#1F6B4A]",
+  warning: "text-[#8A6230]",
+  danger: "text-[#8C3030]",
+  info: "text-[#1A5FBF]",
+} as const
+
 export function StatCard({
   label,
   value,
@@ -68,11 +79,14 @@ export function StatCard({
   icon: Icon,
   tone = "neutral",
   density = "default",
+  surface = "default",
   loading = false,
   error,
   className,
   ...props
 }: StatCardProps) {
+  const light = surface === "light"
+  const toneClass = light ? lightStatTone[tone] : statTone[tone]
   if (density === "compact") {
     return (
       <AppCard
@@ -81,12 +95,13 @@ export function StatCard({
         title={typeof description === "string" ? description : undefined}
         className={cn(
           "flex min-w-0 w-full items-center justify-between gap-[var(--if-space-2)] py-2",
+          light && "border-[#D6CFC4]! bg-white! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)]",
           className,
         )}
         {...props}
       >
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
+          <p className={cn("truncate text-[0.625rem] font-medium uppercase tracking-wide", light ? "text-[#5C6578]" : "text-muted-foreground")}>
             {label}
           </p>
           <div className="flex min-h-[var(--if-stat-value-height-compact)] items-center">
@@ -99,7 +114,7 @@ export function StatCard({
                 <span className="sr-only">Carregando indicador</span>
               </>
             ) : (
-              <p className="truncate text-2xl font-semibold tracking-tight text-foreground tabular-nums">
+              <p className={cn("truncate text-2xl font-semibold tracking-tight tabular-nums", light ? "text-[#10294B]" : "text-foreground")}>
                 {value}
               </p>
             )}
@@ -108,8 +123,9 @@ export function StatCard({
         {Icon ? (
           <span
             className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-[var(--if-radius-md)] bg-white/[0.04]",
-              statTone[tone],
+              "flex size-7 shrink-0 items-center justify-center rounded-[var(--if-radius-md)]",
+              light ? "bg-[#F6F1E8]" : "bg-white/[0.04]",
+              toneClass,
             )}
           >
             <Icon className="size-3.5" aria-hidden />
@@ -128,15 +144,19 @@ export function StatCard({
   return (
     <AppCard
       aria-busy={loading || undefined}
-        className={cn("flex min-h-[8.25rem] min-w-0 w-full flex-col gap-[var(--if-space-3)]", className)}
+        className={cn(
+          "flex min-h-[8.25rem] min-w-0 w-full flex-col gap-[var(--if-space-3)]",
+          light && "border-[#D6CFC4]! bg-white! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)]",
+          className,
+        )}
       {...props}
     >
       <div className="flex items-start justify-between gap-[var(--if-space-3)]">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className={cn("text-xs font-medium uppercase tracking-wide", light ? "text-[#5C6578]" : "text-muted-foreground")}>
           {label}
         </p>
         {Icon ? (
-          <span className={cn("flex size-[var(--if-icon-lg)] items-center justify-center rounded-[var(--if-radius-md)] bg-white/[0.04]", statTone[tone])}>
+          <span className={cn("flex size-[var(--if-icon-lg)] items-center justify-center rounded-[var(--if-radius-md)]", light ? "bg-[#F6F1E8]" : "bg-white/[0.04]", toneClass)}>
             <Icon className="size-[var(--if-icon-md)]" aria-hidden />
           </span>
         ) : null}
@@ -151,7 +171,7 @@ export function StatCard({
             <span className="sr-only">Carregando indicador</span>
           </>
         ) : (
-          <p className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">
+          <p className={cn("text-2xl font-semibold tracking-tight tabular-nums", light ? "text-[#10294B]" : "text-foreground")}>
             {value}
           </p>
         )}
@@ -159,7 +179,7 @@ export function StatCard({
       {error ? (
         <p className="text-xs leading-relaxed text-destructive">{error}</p>
       ) : description ? (
-        <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+        <p className={cn("text-xs leading-relaxed", light ? "text-[#5C6578]" : "text-muted-foreground")}>{description}</p>
       ) : null}
     </AppCard>
   )

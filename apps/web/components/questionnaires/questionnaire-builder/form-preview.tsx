@@ -137,8 +137,8 @@ const PageDots = memo(function PageDots({
           className={cn(
             "rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             index === current
-              ? "size-2.5 bg-primary"
-              : "size-2 bg-white/20 hover:bg-white/35",
+              ? "size-2.5 bg-[var(--avila-gold-600)]"
+              : "size-2 bg-[#d6cfc4] hover:bg-[#c4bbae]",
           )}
         />
       ))}
@@ -174,14 +174,14 @@ const DeviceFrame = memo(function DeviceFrame({
   return (
     <div
       className={cn(
-        "mx-auto rounded-[2rem] border-[6px] border-zinc-800 bg-zinc-900 p-1.5 shadow-2xl",
+        "mx-auto rounded-[2rem] border-[6px] border-[#d6cfc4] bg-[var(--avila-ivory)] p-1.5 shadow-[0_12px_28px_-18px_rgb(16_41_75/0.28)]",
         isMobile ? "w-[min(100%,390px)]" : "w-[min(100%,768px)]",
       )}
     >
       {isMobile ? (
-        <div className="mx-auto mb-1.5 h-1 w-14 rounded-full bg-zinc-700" />
+        <div className="mx-auto mb-1.5 h-1 w-14 rounded-full bg-[#d6cfc4]" />
       ) : null}
-      <div className="overflow-hidden rounded-[1.25rem] bg-background">
+      <div className="overflow-hidden rounded-[1.25rem] border border-[#e4ddd2] bg-[var(--avila-paper)]">
         <div className="p-[var(--if-space-4)] md:p-[var(--if-space-5)]">
           {children}
         </div>
@@ -212,7 +212,7 @@ function PreviewChromeButton({
             onClick={onClick}
             className={cn(
               "inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors",
-              "hover:bg-white/[0.12] hover:text-foreground",
+              "hover:bg-[#ebe5dc] hover:text-[var(--avila-navy-900)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               pressed && "bg-primary/15 text-primary",
             )}

@@ -8,22 +8,22 @@ export type PriorityLevel = "high" | "medium" | "low"
 
 const priorityMeta: Record<
   PriorityLevel,
-  { emoji: string; label: string; badgeClass: string }
+  { label: string; badgeClass: string; dotClass: string }
 > = {
   high: {
-    emoji: "🔴",
     label: "Alta",
-    badgeClass: "bg-destructive/15 text-destructive",
+    badgeClass: "bg-destructive/12 text-destructive",
+    dotClass: "bg-destructive",
   },
   medium: {
-    emoji: "🟠",
     label: "Média",
-    badgeClass: "bg-warning/15 text-warning",
+    badgeClass: "bg-warning/18 text-warning-foreground",
+    dotClass: "bg-warning",
   },
   low: {
-    emoji: "🟢",
     label: "Baixa",
-    badgeClass: "bg-success/15 text-success",
+    badgeClass: "bg-success/12 text-success",
+    dotClass: "bg-success",
   },
 }
 
@@ -57,9 +57,10 @@ export function DashboardPriorityItem({
           disabled && "cursor-default",
         )}
       >
-        <span aria-hidden className="text-[0.625rem] leading-none">
-          {meta.emoji}
-        </span>
+        <span
+          aria-hidden
+          className={cn("size-2 justify-self-center rounded-full", meta.dotClass)}
+        />
         <span
           className={cn(
             "text-base font-semibold tabular-nums leading-none",

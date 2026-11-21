@@ -52,8 +52,13 @@ const SUBMISSION_TONE: Record<
 > = {
   pending: "neutral",
   draft: "warn",
+  in_progress: "info",
+  pending_client: "warn",
   submitted: "info",
   reviewed: "success",
+  completed: "success",
+  expired: "neutral",
+  cancelled: "neutral",
   archived: "violet",
 }
 
@@ -94,7 +99,7 @@ export function LeadCommercialSection({
     return latest.status
   }, [latest])
 
-  const isDraft = submissionState === "draft"
+  const isDraft = submissionState === "draft" || submissionState === "in_progress"
   const isPending = submissionState === "pending"
 
   return (

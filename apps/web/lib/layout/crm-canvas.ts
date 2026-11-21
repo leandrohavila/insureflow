@@ -1,7 +1,6 @@
 /**
  * Rotas cujo miolo do dashboard usa a superfície clara do CRM.
- * A sidebar e o topbar ficam de fora. Seguros, Imobiliário,
- * Configurações e Portal não entram nesta lista.
+ * A navegação lateral é independente e vale para todo o shell.
  */
 const CRM_CANVAS_EXCLUSIONS = [
   "/crm/follow-ups",
@@ -16,7 +15,13 @@ function matchesPrefix(path: string, prefix: string) {
 export function isCrmCanvasPath(pathname: string) {
   const path = (pathname.split("?")[0] ?? pathname).replace(/\/+$/, "") || "/"
 
-  if (matchesPrefix(path, "/leads") || matchesPrefix(path, "/clientes")) {
+  if (path === "/") return true
+
+  if (
+    matchesPrefix(path, "/leads") ||
+    matchesPrefix(path, "/clientes") ||
+    matchesPrefix(path, "/questionarios")
+  ) {
     return true
   }
 

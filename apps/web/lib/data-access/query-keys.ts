@@ -102,6 +102,8 @@ export const queryKeys = {
       details: () => ["questionnaires", "submissions", "detail"] as const,
       detail: (id: string) =>
         ["questionnaires", "submissions", "detail", id] as const,
+      shares: (submissionId: string) =>
+        ["questionnaires", "submissions", "shares", submissionId] as const,
     },
     suggestions: (leadId: string) =>
       ["questionnaires", "template-suggestions", leadId] as const,

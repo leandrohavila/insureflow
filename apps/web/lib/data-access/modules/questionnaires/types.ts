@@ -34,6 +34,11 @@ export const QUESTIONNAIRE_SUBMISSION_STATUSES = [
   "submitted",
   "reviewed",
   "archived",
+  "pending_client",
+  "in_progress",
+  "completed",
+  "expired",
+  "cancelled",
 ] as const;
 
 export type QuestionnaireTemplateStatus =
@@ -159,14 +164,35 @@ export type QuestionnaireSubmission = {
   mode: QuestionnaireSubmissionMode;
   origin: QuestionnaireOrigin;
   status: QuestionnaireSubmissionStatus;
+  branch?: "auto" | "residencial" | "empresarial" | null;
+  templateVersion?: {
+    id: string;
+    versionNumber: number;
+    publishedAt?: string | null;
+    definition?: unknown;
+  } | null;
   answers: JsonObject;
   metadata?: JsonObject | null;
   leadId?: string | null;
   customerId?: string | null;
   dealId?: string | null;
   submittedAt?: string | null;
+  completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type QuestionnaireShareStatus = "active" | "revoked" | "expired";
+
+export type QuestionnaireShare = {
+  id: string;
+  submissionId: string;
+  status: QuestionnaireShareStatus;
+  expiresAt: string;
+  revokedAt?: string | null;
+  createdAt: string;
+  createdBy?: { id: string; name: string } | null;
+  token?: string;
 };
 
 export type QuestionnaireSubmissionListFilters = {

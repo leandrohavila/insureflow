@@ -15,36 +15,13 @@ import {
   PRIORITY_TONE,
   STAGE_TONE,
 } from "@/components/crm/sheet-sections/deal-shared"
-import { getDealCardSignals } from "@/lib/crm/deal-card-signals"
+import { dealCardFacts, getDealCardSignals } from "@/lib/crm/deal-card-signals"
 import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import type { CrmDeal } from "@/lib/data-access/modules/crm"
 import { formatCurrency, stageLabelMap } from "@/lib/data-access/modules/crm"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import { easeOut } from "@/lib/motion"
-
-function dealPhone(deal: CrmDeal) {
-  return (
-    deal.commercialContext?.phone?.trim() ||
-    deal.convertedLead?.phone?.trim() ||
-    "Sem telefone"
-  )
-}
-
-function dealNextAction(deal: CrmDeal) {
-  if (deal.sla?.status === "overdue") return "Follow-up atrasado"
-  if (deal.sla?.dueAt) {
-    const date = new Date(deal.sla.dueAt)
-    if (!Number.isNaN(date.getTime())) {
-      return `Até ${date.toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "short",
-      })}`
-    }
-  }
-  if (deal.sla?.status === "warning") return "Follow-up em alerta"
-  return "Sem próxima ação"
-}
 
 type DealCardProps = {
   deal: CrmDeal
@@ -73,6 +50,7 @@ export function DealCard({
   const reduce = useReducedMotion()
 
   const signals = useMemo(() => getDealCardSignals(deal), [deal])
+  const facts = useMemo(() => dealCardFacts(deal), [deal])
   const density = resolvePipelineDensity(compact ? "compact" : "comfortable")
   const show = (field: (typeof density.visibleFields)[number]) =>
     density.visibleFields.includes(field)
@@ -134,14 +112,11 @@ export function DealCard({
       <div className="deal-card-v2__head">
         <div className="min-w-0 flex-1">
           <h4 className="deal-card-v2__title">{deal.title}</h4>
-          {show("company") ? (
+          {show("company") && facts.client ? (
             <p className="deal-card-v2__company">
               <Building2 className="size-3 shrink-0 opacity-50" strokeWidth={1.5} />
-              <span className="truncate">{deal.company}</span>
+              <span className="truncate">{facts.client}</span>
             </p>
-          ) : null}
-          {show("contact") && deal.contact ? (
-            <p className="deal-card-v2__contact truncate">{deal.contact}</p>
           ) : null}
         </div>
 
@@ -172,94 +147,51 @@ export function DealCard({
           {formatCurrency(deal.value)}
         </p>
         <div className="deal-card-v2__meta">
-          <span className="deal-card-v2__owner">
-            <Avatar className={show("ownerName") ? "size-6" : "size-5"}>
-              <AvatarFallback className="bg-primary/15 text-[8px] text-primary">
-                {deal.ownerInitials}
-              </AvatarFallback>
-            </Avatar>
-            {show("ownerName") ? (
-              <span className="crm-text-micro max-w-[8rem] truncate">
-                {deal.owner}
-              </span>
-            ) : null}
-          </span>
-          {show("interaction") && !show("phone") ? (
+          {facts.owner ? (
+            <span className="deal-card-v2__owner">
+              <Avatar className="size-5">
+                <AvatarFallback className="bg-[var(--avila-navy-900)]/10 text-[8px] text-[var(--avila-navy-900)]">
+                  {deal.ownerInitials}
+                </AvatarFallback>
+              </Avatar>
+              {show("ownerName") ? (
+                <span className="crm-text-micro max-w-[8rem] truncate">
+                  {facts.owner}
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            <span />
+          )}
+          {show("nextAction") && facts.next ? (
             <span
               className={cn(
                 "deal-card-v2__interaction crm-text-micro tabular-nums",
-                signals.isStale && "deal-card-v2__interaction--stale",
+                facts.next.overdue && "text-destructive",
               )}
-              title={signals.interactionLabel}
             >
-              {signals.interactionLabel}
+              {facts.next.label}
             </span>
           ) : null}
         </div>
       </div>
 
-      {show("phone") ? (
-        <dl className="deal-card-v2__context">
-          <div className="deal-card-v2__context-row">
-            <dt className="deal-card-v2__context-label">Telefone</dt>
-            <dd className="deal-card-v2__context-value">{dealPhone(deal)}</dd>
-          </div>
-          {show("product") ? (
-            <div className="deal-card-v2__context-row">
-              <dt className="deal-card-v2__context-label">Produto</dt>
-              <dd className="deal-card-v2__context-value">
-                {deal.product || "Sem produto"}
-              </dd>
-            </div>
-          ) : null}
-          {show("ownerName") ? (
-            <div className="deal-card-v2__context-row">
-              <dt className="deal-card-v2__context-label">Responsável</dt>
-              <dd className="deal-card-v2__context-value">
-                {deal.owner || "Sem responsável"}
-              </dd>
-            </div>
-          ) : null}
-          {show("nextAction") ? (
-            <div className="deal-card-v2__context-row">
-              <dt className="deal-card-v2__context-label">Próxima ação</dt>
-              <dd className="deal-card-v2__context-value">{dealNextAction(deal)}</dd>
-            </div>
-          ) : null}
-          {show("interaction") ? (
-            <div className="deal-card-v2__context-row">
-              <dt className="deal-card-v2__context-label">Última interação</dt>
-              <dd
-                className={cn(
-                  "deal-card-v2__context-value",
-                  signals.isStale && "deal-card-v2__interaction--stale",
-                )}
-              >
-                {signals.interactionLabel}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-      ) : null}
-
       {/* ── Rodapé: badges + indicadores ── */}
       <div className="deal-card-v2__foot">
         <div className="deal-card-v2__badges">
-          <StatusPill
-            tone={
-              deal.sla?.status === "overdue"
-                ? "danger"
-                : deal.sla?.status === "warning"
-                  ? "warn"
-                  : deal.businessUnit?.type === "REAL_ESTATE"
-                    ? "violet"
-                    : "info"
-            }
-            variant="ghost"
-            size="xs"
-          >
-            {businessUnitPipelineBadge(deal.businessUnit?.type)}
-          </StatusPill>
+          {show("product") && facts.branch ? (
+            <span className="deal-card-v2__chip">{facts.branch}</span>
+          ) : show("unit") ? (
+            <StatusPill
+              tone={
+                deal.businessUnit?.type === "REAL_ESTATE" ? "violet" : "info"
+              }
+              variant="ghost"
+              size="xs"
+            >
+              {businessUnitPipelineBadge(deal.businessUnit?.type)}
+            </StatusPill>
+          ) : null}
           {show("score") && deal.score ? (
             <StatusPill
               tone={

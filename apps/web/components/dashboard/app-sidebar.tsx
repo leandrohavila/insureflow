@@ -55,7 +55,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
       variant="sidebar"
       className="avila-sidebar z-30 border-r-0"
     >
-      <SidebarHeader className="gap-2 border-b border-white/[0.06] px-3 py-4">
+      <SidebarHeader className="gap-2 border-b border-sidebar-border px-3 py-4">
         <motion.div
           initial={reduce ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -63,7 +63,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
         >
           <Link
             href="/"
-            className="group/logo flex items-center gap-2.5 rounded-lg px-1 py-0.5 outline-none ring-sidebar-ring transition-colors hover:bg-white/[0.04] focus-visible:ring-2"
+            className="group/logo flex items-center gap-2.5 rounded-lg px-1 py-0.5 outline-none ring-sidebar-ring transition-colors hover:bg-sidebar-accent focus-visible:ring-2"
           >
             <GrupoAvilaLogo
               variant="plate"
@@ -117,7 +117,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
                           className={cn(
                             "relative z-[1] h-9 rounded-lg px-2.5 text-[13px] font-medium tracking-[-0.01em]",
                             "text-sidebar-foreground/75 transition-colors duration-200",
-                            "hover:bg-[#10294B] hover:text-sidebar-foreground",
+                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                             active && "avila-sidebar-nav-active text-sidebar-foreground",
                             "data-[active=true]:bg-transparent data-[active=true]:shadow-none",
                           )}
@@ -149,9 +149,9 @@ export function AppSidebar({ session }: AppSidebarProps) {
         ))}
       </SidebarContent>
 
-      <SidebarSeparator className="mx-4 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <SidebarSeparator className="mx-4 bg-sidebar-border" />
 
-      <SidebarFooter className="border-t border-white/[0.05] p-2.5">
+      <SidebarFooter className="border-t border-sidebar-border p-2.5">
         <PoweredByInsureFlow className="px-2 pb-2 group-data-[collapsible=icon]:hidden" />
         <SidebarMenu>
           <SidebarMenuItem>
@@ -161,11 +161,11 @@ export function AppSidebar({ session }: AppSidebarProps) {
             >
               <SidebarMenuButton
                 size="lg"
-                className="h-12 rounded-xl border border-transparent transition-colors hover:border-white/[0.08] hover:bg-white/[0.04]"
+                className="h-12 rounded-xl border border-transparent transition-colors hover:border-sidebar-border hover:bg-sidebar-accent"
                 render={(props) => <Link href="/configuracoes" {...props} />}
               >
-                <Avatar className="size-9 rounded-lg border border-white/10 shadow-md ring-2 ring-[#C09048]/25">
-                  <AvatarFallback className="rounded-lg bg-[#10294B] text-[11px] font-semibold text-[#DEAE5D]">
+                <Avatar className="size-9 rounded-lg border border-sidebar-border ring-2 ring-[#C09048]/30">
+                  <AvatarFallback className="rounded-lg bg-[var(--avila-paper)] text-[11px] font-semibold text-[var(--avila-navy-900)]">
                     {session.initials}
                   </AvatarFallback>
                 </Avatar>

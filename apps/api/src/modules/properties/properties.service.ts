@@ -106,7 +106,9 @@ export class PropertiesService {
   private async uniquePublicCode(tenantId: string, excludeId?: string) {
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const code = String(1000 + Math.floor(Math.random() * 9000));
-      if (!(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))) {
+      if (
+        !(await this.properties.isPublicCodeTaken(tenantId, code, excludeId))
+      ) {
         return code;
       }
     }
@@ -135,7 +137,10 @@ export class PropertiesService {
     return slug;
   }
 
-  private needsFriendlySlug(row: { slug?: string | null; publicCode?: string | null }) {
+  private needsFriendlySlug(row: {
+    slug?: string | null;
+    publicCode?: string | null;
+  }) {
     return !row.publicCode || !/-cod-\d+/i.test(row.slug ?? '');
   }
 
@@ -196,7 +201,11 @@ export class PropertiesService {
     });
     const legacySlugs: string[] = [];
     if (dto.slug?.trim()) {
-      const requested = await this.uniqueSlug(user.tenantId, dto.title, dto.slug);
+      const requested = await this.uniqueSlug(
+        user.tenantId,
+        dto.title,
+        dto.slug,
+      );
       if (requested !== slug) legacySlugs.push(requested);
     }
     const images = dto.images ?? [];

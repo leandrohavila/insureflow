@@ -9,6 +9,9 @@ describe("activityEventLabel", () => {
     expect(activityEventLabel("questionnaire_submitted")).toBe(
       "Questionário enviado",
     )
+    expect(activityEventLabel("questionnaire_completed")).toBe(
+      "Questionário concluído pelo cliente",
+    )
     expect(activityEventLabel("quote_updated")).toBe("Cotação atualizada")
     expect(activityEventLabel("quote_compared")).toBe("Comparativo de cotações")
     expect(activityEventLabel("proposal_viewed")).toBe("Proposta visualizada")

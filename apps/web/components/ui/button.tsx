@@ -42,6 +42,10 @@ const buttonVariants = cva(
           "border-border bg-secondary text-secondary-foreground shadow-none hover:bg-muted hover:text-foreground aria-expanded:bg-muted",
         ghost:
           "bg-transparent text-foreground hover:bg-foreground/10 hover:text-foreground aria-expanded:bg-foreground/10",
+        crmPrimary:
+          "rounded-full border-[#10294B] bg-[#10294B] text-white shadow-none hover:border-[#0c2448] hover:bg-[#0c2448] hover:text-white focus-visible:border-[#10294B] focus-visible:ring-2 focus-visible:ring-[#10294B]/30",
+        crmSecondary:
+          "rounded-full border-[#D6CFC4] bg-white text-[#10294B] shadow-none hover:border-[#C09048] hover:bg-[#FBF6EF] hover:text-[#10294B] focus-visible:border-[#10294B] focus-visible:ring-2 focus-visible:ring-[#10294B]/30",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",

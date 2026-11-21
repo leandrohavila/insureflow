@@ -445,7 +445,7 @@ export function PipelineBoard({
 
   const boardContent = (
     <div className={rootClass}>
-      <div className={scrollClass}>
+      <div className={cn(scrollClass, "pipeline-board-scroll")}>
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -473,7 +473,7 @@ export function PipelineBoard({
     >
       <div className={rootClass} data-crm-density={density.dataDensity}>
         <div
-          className={scrollClass}
+          className={cn(scrollClass, "pipeline-board-scroll")}
           role="region"
           aria-label="Pipeline Kanban com arrastar e soltar"
         >

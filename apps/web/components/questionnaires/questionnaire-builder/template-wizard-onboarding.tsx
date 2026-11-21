@@ -26,7 +26,7 @@ export function TemplateWizardOnboarding({
 }: TemplateWizardOnboardingProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-md">
+      <DialogContent className="questionnaire-builder avila-crm-canvas border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-5 text-primary" />

@@ -21,6 +21,7 @@ import type {
   UpdateQuestionnaireFieldInput,
   UpdateQuestionnaireSubmissionInput,
   UpdateQuestionnaireTemplateInput,
+  QuestionnaireShare,
   QuestionnaireTemplateSuggestion,
 } from "./types";
 
@@ -209,8 +210,41 @@ export async function updateQuestionnaireSubmission(
   return normalizeQuestionnaireSubmission(submission);
 }
 
+export async function ensureIntelligentQuestionnaireForm(
+  branch: "auto" | "residencial" | "empresarial",
+) {
+  const template = await apiClient.post<BackendQuestionnaireTemplate>(
+    `/api/questionnaires/intelligent-forms/${branch}`,
+    {},
+  );
+  return normalizeQuestionnaireTemplate(template);
+}
+
 export async function deleteQuestionnaireSubmission(id: string) {
   return apiClient.delete<{ deleted: true; id: string }>(
     `${QUESTIONNAIRE_SUBMISSIONS_PATH}/${id}`,
+  );
+}
+
+export async function fetchQuestionnaireShares(submissionId: string) {
+  return apiClient.get<QuestionnaireShare[]>(
+    `${QUESTIONNAIRE_SUBMISSIONS_PATH}/${submissionId}/shares`,
+  );
+}
+
+export async function createQuestionnaireShare(
+  submissionId: string,
+  expiresInDays: number,
+) {
+  return apiClient.post<QuestionnaireShare>(
+    `${QUESTIONNAIRE_SUBMISSIONS_PATH}/${submissionId}/shares`,
+    { expiresInDays },
+  );
+}
+
+export async function revokeQuestionnaireShare(shareId: string) {
+  return apiClient.post<QuestionnaireShare>(
+    `/api/questionnaires/shares/${shareId}/revoke`,
+    {},
   );
 }

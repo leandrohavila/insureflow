@@ -17,6 +17,7 @@ import {
 } from 'class-validator';
 
 import { INTEREST_CATEGORIES } from '../../../common/constants/interest-categories';
+import { LEAD_LIST_SORTS } from '../lead-list-filters.util';
 
 import { LIST_QUERY_MAX_LIMIT } from '../../../common/dto/pagination.constants';
 import {
@@ -116,6 +117,16 @@ export class ListLeadsQueryDto {
   @IsOptional()
   @IsIn(INTEREST_CATEGORIES)
   interestCategory?: (typeof INTEREST_CATEGORIES)[number];
+
+  @ApiPropertyOptional({
+    enum: LEAD_LIST_SORTS,
+    default: 'recent',
+    description:
+      'Ordenação da listagem. Omisso ou recent mantém os leads mais novos primeiro.',
+  })
+  @IsOptional()
+  @IsIn(LEAD_LIST_SORTS)
+  sort?: (typeof LEAD_LIST_SORTS)[number];
 }
 
 export class FindLeadDuplicatesQueryDto {

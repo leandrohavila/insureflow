@@ -62,6 +62,9 @@ describe('activity-event-kinds', () => {
     expect(activityEventLabel('communication_delivered')).toBe(
       'Comunicação entregue',
     );
+    expect(activityEventLabel('questionnaire_completed')).toBe(
+      'Questionário concluído pelo cliente',
+    );
     expect(ACTIVITY_EVENT_LABELS.proposal_sent).toBe('Proposta enviada');
   });
 

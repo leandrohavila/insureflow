@@ -1,11 +1,13 @@
+import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { Dashboard360Workspace } from "@/components/crm/dashboard-360-workspace"
-import { PageHeader } from "@/components/design-system"
+import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
+import { cn } from "@/lib/utils"
 
 export default function CrmDashboard360Page() {
   return (
-    <div className="flex flex-1 flex-col gap-6 px-4 py-6 md:px-6">
-      <PageHeader
-        compact
+    <div className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL)}>
+      <CrmPageHeader
+        badge="CRM"
         title="Dashboard 360"
         description="Clientes, receita prevista, renovação, cross-sell e conversão por empresa e corretor."
       />

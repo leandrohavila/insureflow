@@ -48,7 +48,7 @@ export function DashboardAgendaPreview({ canCreate = false }: DashboardAgendaPre
       className={cn(
         buttonVariants({ variant: "ghost", size: "sm" }),
         dashboardCardLinkClassName,
-        "h-6 px-1.5 transition-colors duration-[var(--if-duration-base)] hover:text-foreground",
+        "h-6 shrink-0 self-center px-1.5 transition-colors duration-[var(--if-duration-base)] hover:text-foreground",
       )}
     >
       Ver Agenda →
@@ -56,7 +56,7 @@ export function DashboardAgendaPreview({ canCreate = false }: DashboardAgendaPre
   )
 
   const emptyActions = canCreate ? (
-    <Inline wrap className="gap-1">
+    <Inline wrap className="gap-1 sm:justify-end">
       <Link
         href="/crm/agenda"
         className={cn(
@@ -100,13 +100,15 @@ export function DashboardAgendaPreview({ canCreate = false }: DashboardAgendaPre
       action={action}
       loading={activitiesQuery.isLoading}
       emptyState={
-        <div className="space-y-1.5">
-          <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-            Hoje
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Nenhuma atividade programada.
-          </p>
+        <div className="flex flex-col gap-2.5 rounded-lg bg-[var(--avila-ivory)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
+              Hoje
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Nenhuma atividade programada.
+            </p>
+          </div>
           {emptyActions}
         </div>
       }

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { QUESTIONNAIRE_BRANCHES } from '../questionnaire-branches';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -52,6 +53,11 @@ export const QUESTIONNAIRE_SUBMISSION_STATUSES = [
   'submitted',
   'reviewed',
   'archived',
+  'pending_client',
+  'in_progress',
+  'completed',
+  'expired',
+  'cancelled',
 ] as const;
 
 export type QuestionnaireTemplateStatus =
@@ -74,6 +80,11 @@ export class ListQuestionnaireTemplatesQueryDto {
   @IsOptional()
   @IsIn(QUESTIONNAIRE_TEMPLATE_STATUSES)
   status?: QuestionnaireTemplateStatus;
+
+  @ApiPropertyOptional({ enum: QUESTIONNAIRE_BRANCHES })
+  @IsOptional()
+  @IsIn(QUESTIONNAIRE_BRANCHES)
+  branch?: (typeof QUESTIONNAIRE_BRANCHES)[number];
 
   @ApiPropertyOptional({ example: 1, minimum: 1, default: 1 })
   @IsOptional()
@@ -118,6 +129,16 @@ export class CreateQuestionnaireTemplateDto {
   @IsInt()
   @Min(1)
   version?: number;
+
+  @ApiPropertyOptional({ enum: QUESTIONNAIRE_BRANCHES, example: 'auto' })
+  @IsOptional()
+  @IsIn(QUESTIONNAIRE_BRANCHES)
+  branch?: (typeof QUESTIONNAIRE_BRANCHES)[number];
+
+  @ApiPropertyOptional({ example: 'business_unit_cuid' })
+  @IsOptional()
+  @IsString()
+  businessUnitId?: string;
 
   @ApiPropertyOptional({ type: 'object', additionalProperties: true })
   @IsOptional()
@@ -341,4 +362,27 @@ export class UpdateQuestionnaireSubmissionDto extends PartialType(
   @IsOptional()
   @IsDateString()
   expectedUpdatedAt?: string;
+}
+
+export class CreateQuestionnaireShareDto {
+  @ApiPropertyOptional({
+    example: 14,
+    minimum: 1,
+    maximum: 30,
+    default: 14,
+    description:
+      'Validade do link, em dias. O token em claro não é persistido.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(30)
+  expiresInDays?: number;
+}
+
+export class PublicQuestionnaireAnswersDto {
+  @ApiProperty({ type: 'object', additionalProperties: true })
+  @IsObject()
+  answers!: Record<string, unknown>;
 }

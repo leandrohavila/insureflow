@@ -1,10 +1,9 @@
 import type { QuestionnaireField } from '@prisma/client';
 
+/** Trilha de auditoria sem o conteúdo da resposta (dado pessoal). */
 export type QuestionnaireAnswerChange = {
   field: string;
   label: string;
-  oldValue: unknown;
-  newValue: unknown;
 };
 
 function stableJson(value: unknown): string {
@@ -40,9 +39,18 @@ export function buildQuestionnaireAnswerChanges(
       {
         field: field.key,
         label: field.label,
-        oldValue,
-        newValue,
       },
     ];
   });
+}
+
+export function questionnaireAnswersDiffer(
+  previous: Record<string, unknown>,
+  next: Record<string, unknown>,
+) {
+  const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+  for (const key of keys) {
+    if (!isSameAnswer(previous[key], next[key])) return true;
+  }
+  return false;
 }

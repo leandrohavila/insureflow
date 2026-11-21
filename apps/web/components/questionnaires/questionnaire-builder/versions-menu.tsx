@@ -52,7 +52,7 @@ export function VersionsMenu({ template }: VersionsMenuProps) {
         <History className="size-3.5" />
         <span className="hidden sm:inline">Versões</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="questionnaire-builder avila-crm-canvas w-64 border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)]">
         <DropdownMenuLabel>Histórico de versões</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {versions.length === 0 ? (

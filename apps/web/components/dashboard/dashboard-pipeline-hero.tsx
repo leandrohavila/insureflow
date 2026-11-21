@@ -73,7 +73,7 @@ export function DashboardPipelineHero({ className }: DashboardPipelineHeroProps)
     >
       <div className="space-y-1.5">
         <div>
-          <p className="text-2xl font-semibold tracking-tight text-foreground tabular-nums md:text-3xl">
+          <p className="text-2xl font-semibold tracking-tight text-foreground tabular-nums">
             {metrics.pipelineValueFormatted}
           </p>
           {metrics.monthlyTrend.available ? (

@@ -50,16 +50,24 @@ describe('UpsertPortalConfigDto', () => {
     ).toEqual([]);
     expect(
       errorsFor({
-        institutionalVideo: { active: true, url: 'https://youtu.be/dQw4w9WgXcQ' },
+        institutionalVideo: {
+          active: true,
+          url: 'https://youtu.be/dQw4w9WgXcQ',
+        },
       }),
     ).toEqual([]);
   });
 
   it('rejects an active video without an allowed URL and arbitrary iframe origins', () => {
-    expect(errorsFor({ institutionalVideo: { active: true, url: '' } })).toEqual(['institutionalVideo']);
+    expect(
+      errorsFor({ institutionalVideo: { active: true, url: '' } }),
+    ).toEqual(['institutionalVideo']);
     expect(
       errorsFor({
-        institutionalVideo: { active: true, url: 'https://player.vimeo.com/video/1' },
+        institutionalVideo: {
+          active: true,
+          url: 'https://player.vimeo.com/video/1',
+        },
       }),
     ).toEqual(['institutionalVideo']);
   });

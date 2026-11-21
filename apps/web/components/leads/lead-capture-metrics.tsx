@@ -9,6 +9,7 @@ import {
   XCircle,
 } from "lucide-react"
 
+import type { LeadStatus } from "@/lib/data-access/modules/leads"
 import type { LeadCaptureMetrics } from "@/lib/leads/lead-capture-metrics"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,8 @@ type LeadCaptureMetricsGridProps = {
   metrics: LeadCaptureMetrics
   loading?: boolean
   unavailable?: boolean
+  activeStatus?: LeadStatus | "all"
+  onStatusSelect?: (status: LeadStatus) => void
 }
 
 const items = [
@@ -57,6 +60,16 @@ const items = [
   },
 ] as const
 
+type MetricKey = (typeof items)[number]["key"]
+
+const metricStatus: Partial<Record<MetricKey, LeadStatus>> = {
+  novos: "new",
+  emAtendimento: "contacted",
+  cotacaoEnviada: "qualified",
+  fechados: "converted",
+  perdidos: "lost",
+}
+
 function metricValue(
   key: (typeof items)[number]["key"],
   metrics: LeadCaptureMetrics,
@@ -81,6 +94,8 @@ export function LeadCaptureMetricsGrid({
   metrics,
   loading = false,
   unavailable = false,
+  activeStatus = "all",
+  onStatusSelect,
 }: LeadCaptureMetricsGridProps) {
   const showPlaceholder = loading || unavailable
   return (
@@ -93,12 +108,11 @@ export function LeadCaptureMetricsGrid({
     >
       {items.map((item) => {
         const Icon = item.icon
-        return (
-          <div
-            key={item.key}
-            role="listitem"
-            className="flex min-h-[4.75rem] min-w-0 items-center gap-3 rounded-xl border border-border bg-card px-3.5! py-3! shadow-[0_1px_2px_rgb(0_12_36/0.04)]"
-          >
+        const status = metricStatus[item.key]
+        const active = status != null && activeStatus === status
+        const interactive = status != null && onStatusSelect != null
+        const body = (
+          <>
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-xl",
@@ -107,19 +121,43 @@ export function LeadCaptureMetricsGrid({
             >
               <Icon className="size-4" strokeWidth={1.75} aria-hidden />
             </span>
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-xs text-muted-foreground">
+            <div className="flex min-w-0 flex-col text-left">
+              <span className="truncate text-xs text-[#5C6578]">
                 {item.label}
               </span>
               <span
                 className={cn(
-                  "truncate text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground",
+                  "truncate text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#10294B]",
                   showPlaceholder && "text-muted-foreground",
                 )}
               >
                 {showPlaceholder ? "—" : metricValue(item.key, metrics)}
               </span>
             </div>
+          </>
+        )
+        const className = cn(
+          "flex min-h-[4.75rem] min-w-0 items-center gap-3 rounded-xl border bg-white px-3.5! py-3! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)]",
+          active
+            ? "border-[#10294B] bg-[#F6F1E8] ring-2 ring-[#C09048]/35"
+            : "border-[#D6CFC4]",
+          interactive &&
+            "cursor-pointer transition-colors hover:border-[#C09048]",
+        )
+        return (
+          <div key={item.key} role="listitem">
+            {interactive ? (
+              <button
+                type="button"
+                className={cn(className, "w-full")}
+                aria-pressed={active}
+                onClick={() => onStatusSelect(status)}
+              >
+                {body}
+              </button>
+            ) : (
+              <div className={className}>{body}</div>
+            )}
           </div>
         )
       })}

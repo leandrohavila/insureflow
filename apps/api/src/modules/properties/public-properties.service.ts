@@ -94,7 +94,11 @@ export class PublicPropertiesService {
 
   async findByCode(code: string, query: PublicPropertyQueryDto) {
     const ctx = await this.context.resolve(query);
-    const row = await this.properties.findByPublicCode(ctx.tenantId, code, true);
+    const row = await this.properties.findByPublicCode(
+      ctx.tenantId,
+      code,
+      true,
+    );
     if (!row) throw new NotFoundException('Imóvel não encontrado');
     if (ctx.businessUnitId && row.businessUnitId !== ctx.businessUnitId) {
       throw new NotFoundException('Imóvel não encontrado');

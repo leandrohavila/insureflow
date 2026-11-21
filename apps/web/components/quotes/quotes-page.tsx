@@ -172,9 +172,7 @@ export function QuotesPage() {
           {returnTo ? (
             <Button
               type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
+              variant="crmSecondary"
               onClick={handleBack}
             >
               <ArrowLeft className="size-3.5" />

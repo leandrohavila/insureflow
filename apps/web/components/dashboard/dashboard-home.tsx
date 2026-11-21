@@ -9,7 +9,6 @@ import {
   PageActions,
   PageActionsGroup,
   PageContainer,
-  Section,
   Stack,
 } from "@/components/design-system"
 import { DashboardAgendaPreview } from "@/components/dashboard/dashboard-agenda-preview"
@@ -20,26 +19,18 @@ import { DashboardInsuranceIndicators } from "@/components/dashboard/dashboard-i
 import { DashboardPipelineHero } from "@/components/dashboard/dashboard-pipeline-hero"
 import { DashboardPriorities } from "@/components/dashboard/dashboard-priorities"
 import { DashboardQuotesProposals } from "@/components/dashboard/dashboard-quotes-proposals"
-import { DashboardSummary } from "@/components/dashboard/dashboard-summary"
-import { GrupoAvilaExecutiveKpiGrid } from "@/components/dashboard/grupo-avila-kpi-grid"
-import { DashboardCommercialOpsKpis } from "@/components/dashboard/dashboard-commercial-ops-kpis"
+import { DashboardPrimaryIndicators } from "@/components/dashboard/dashboard-primary-indicators"
 import {
   dashboardAnalyticsGridClassName,
   dashboardExecutiveGridClassName,
-  dashboardSectionGapClassName,
   formatDashboardDate,
   getDashboardGreeting,
 } from "@/components/dashboard/dashboard-utils"
 import { useSession, useCanManage } from "@/components/auth/session-provider"
-import {
-  dsContentLayoutVariant,
-  dsLayout,
-  dsTypography,
-} from "@/lib/design-system"
+import { dsContentLayoutVariant, dsTypography } from "@/lib/design-system"
 import { useDashboardKpis } from "@/lib/data-access/modules/dashboard/hooks"
 import { useLeadCaptureMetrics } from "@/lib/leads/use-lead-capture-metrics"
 import { bug010LeadCreateProfiler } from "@/lib/performance/bug010-lead-create"
-import { cn } from "@/lib/utils"
 
 export function DashboardHome() {
   const { session } = useSession()
@@ -60,35 +51,28 @@ export function DashboardHome() {
       id="BUG010.1 Dashboard"
       onRender={bug010LeadCreateProfiler("dashboard")}
     >
-      <PageContainer className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-[var(--if-space-2)] md:py-[var(--if-space-3)]">
+      <PageContainer className="avila-dashboard min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
         <ContentContainer variant={dsContentLayoutVariant.dashboard}>
-          <Stack gap="sm">
-            <header
-              className={cn(
-                dsLayout.pageHeader.compact.className,
-                "gap-[var(--if-space-2)]",
-              )}
-            >
-              <div className={dsLayout.pageHeader.titleRow.className}>
-                <div
-                  className={cn(
-                    dsLayout.pageHeader.content.className,
-                    "space-y-0.5",
-                  )}
-                >
+          <Stack gap="md" className="dashboard-stack">
+            <header className="dashboard-header rounded-2xl border border-[#e4ddd2] bg-[var(--avila-paper)]">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="dashboard-header-copy min-w-0">
                   <p className={dsTypography.role.meta}>
                     {getDashboardGreeting()}
                   </p>
-                  <h1 className="text-xl font-semibold leading-tight tracking-tight text-foreground">
+                  <h1 className="text-2xl font-semibold tracking-tight text-[var(--avila-navy-900)]">
                     Dashboard
                   </h1>
-                </div>
-                <PageActions className="sm:flex-wrap">
-                  <span className="hidden text-sm text-muted-foreground lg:inline">
+                  <p className="text-sm text-muted-foreground">
                     {formatDashboardDate()}
-                  </span>
+                  </p>
+                </div>
+                <PageActions className="w-full sm:w-auto sm:flex-wrap lg:justify-end">
                   <PageActionsGroup className="flex-wrap">
                     <CrmCaptureActions
+                      insuranceLabel="Novo Lead Seguro"
+                      realEstateLabel="Novo Lead Imobiliário"
+                      dealLabel="Novo Negócio"
                       insuranceEnabled={
                         captureMetrics.isLoading ||
                         Boolean(captureMetrics.insuranceBusinessUnitId)
@@ -101,70 +85,47 @@ export function DashboardHome() {
                   </PageActionsGroup>
                 </PageActions>
               </div>
-              <p className={cn(dsTypography.role.meta, "lg:hidden")}>
-                {formatDashboardDate()}
-              </p>
             </header>
 
-            {canLeads ? (
-              <Section className={dashboardSectionGapClassName}>
-                <GrupoAvilaExecutiveKpiGrid
-                  metrics={captureMetrics.metrics}
-                  loading={captureMetrics.isLoading}
-                />
-              </Section>
-            ) : null}
+            <DashboardPrimaryIndicators
+                metrics={captureMetrics.metrics}
+                metricsLoading={captureMetrics.isLoading}
+                kpis={kpis}
+                showLeads={canLeads}
+                showClients={canClients}
+                showCrm={canCrm}
+              />
 
             {canCrm ? (
-              <Section className={dashboardSectionGapClassName}>
-                <DashboardCommercialOpsKpis />
-              </Section>
-            ) : null}
-
-            <Section className={dashboardSectionGapClassName}>
-              <DashboardSummary kpis={kpis} />
-            </Section>
-
-            {canCrm ? (
-              <Section className={dashboardSectionGapClassName}>
-                <div className={dashboardExecutiveGridClassName}>
-                  <DashboardPipelineHero className="min-h-[190px] lg:min-h-[205px]" />
-                  <Stack gap="sm" className="min-w-0">
-                    <DashboardPriorities
-                      kpis={kpis}
-                      crmEnabled={canCrm}
-                      quotesEnabled={canQuotes}
-                      leadsEnabled={canLeads}
-                    />
-                    <DashboardAgendaPreview canCreate={canManageCrm} />
-                  </Stack>
-                </div>
-              </Section>
-            ) : (
-              <Section className={dashboardSectionGapClassName}>
+              <div className={dashboardExecutiveGridClassName}>
+                <DashboardPipelineHero className="border-l-[3px] border-l-[#C09048]" />
                 <DashboardPriorities
                   kpis={kpis}
                   crmEnabled={canCrm}
                   quotesEnabled={canQuotes}
                   leadsEnabled={canLeads}
                 />
-              </Section>
+              </div>
+            ) : (
+              <DashboardPriorities
+                kpis={kpis}
+                crmEnabled={canCrm}
+                quotesEnabled={canQuotes}
+                leadsEnabled={canLeads}
+              />
             )}
 
             {showFunnel ? (
-              <Section className={dashboardSectionGapClassName}>
-                <DashboardCommercialFunnel
-                  kpis={kpis}
-                  leadsEnabled={canLeads}
-                  clientsEnabled={canClients}
-                  quotesEnabled={canQuotes}
-                />
-              </Section>
+              <DashboardCommercialFunnel
+                kpis={kpis}
+                leadsEnabled={canLeads}
+                clientsEnabled={canClients}
+                quotesEnabled={canQuotes}
+              />
             ) : null}
 
             {showAnalytics ? (
-              <Section className={dashboardSectionGapClassName}>
-                <div className={dashboardAnalyticsGridClassName}>
+              <div className={dashboardAnalyticsGridClassName}>
                   {canCrm ? (
                     <DashboardFinancialProduction
                       kpis={kpis}
@@ -176,17 +137,18 @@ export function DashboardHome() {
                     quotesEnabled={canQuotes}
                   />
                   <DashboardCustomers kpis={kpis} enabled={canClients} />
-                </div>
-              </Section>
+              </div>
+            ) : null}
+
+            {canCrm ? (
+              <DashboardAgendaPreview canCreate={canManageCrm} />
             ) : null}
 
             {canQuotes ? (
-              <Section className={dashboardSectionGapClassName}>
-                <DashboardQuotesProposals
-                  kpis={kpis}
-                  canCreateQuotes={canManageQuotes}
-                />
-              </Section>
+              <DashboardQuotesProposals
+                kpis={kpis}
+                canCreateQuotes={canManageQuotes}
+              />
             ) : null}
           </Stack>
         </ContentContainer>

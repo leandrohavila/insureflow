@@ -84,7 +84,7 @@ export function AppTopbar({ session }: AppTopbarProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="glass-panel w-56 border-white/[0.08] p-1"
+            className="glass-panel avila-crm-canvas w-56 border-white/[0.08] p-1"
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="space-y-1 text-xs font-normal">

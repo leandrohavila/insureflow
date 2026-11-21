@@ -2,6 +2,15 @@ import type { Prisma } from '@prisma/client';
 
 export const LEAD_LIST_PERIOD_DAYS = [7, 30, 90] as const;
 
+export const LEAD_LIST_SORTS = [
+  'recent',
+  'oldest',
+  'name',
+  'lastContact',
+] as const;
+
+export type LeadListSort = (typeof LEAD_LIST_SORTS)[number];
+
 export type LeadListPeriodDays = (typeof LEAD_LIST_PERIOD_DAYS)[number];
 
 export const LEAD_SEARCH_ACCENTS_FROM = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
@@ -70,4 +79,24 @@ export function buildLeadAttributeWhere(input: {
     };
   }
   return where;
+}
+
+export function leadListOrderBy(
+  sort?: string,
+): Prisma.LeadOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'oldest':
+      return [{ createdAt: 'asc' }];
+    case 'name':
+      return [{ name: 'asc' }, { createdAt: 'desc' }];
+    case 'lastContact':
+      return [
+        { lastInteractionAt: { sort: 'desc', nulls: 'last' } },
+        { lastContactAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+      ];
+    case 'recent':
+    default:
+      return [{ createdAt: 'desc' }];
+  }
 }

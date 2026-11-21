@@ -7,6 +7,16 @@ describe('Customer360Service', () => {
   const now = new Date('2026-08-20T12:00:00.000Z');
   const earlier = new Date('2026-01-01T12:00:00.000Z');
 
+  // O SLA do negócio é calculado com o relógio real; sem fixar a data, o
+  // fixture vence com o tempo e passa a gerar pendência `sla_overdue`.
+  beforeEach(() => {
+    jest.useFakeTimers({ now, doNotFake: ['nextTick', 'queueMicrotask'] });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   function createService() {
     const empty = () => jest.fn().mockResolvedValue([]);
     const prisma = {

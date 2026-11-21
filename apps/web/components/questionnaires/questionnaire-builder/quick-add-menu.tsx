@@ -33,7 +33,7 @@ export const QuickAddMenu = memo(function QuickAddMenu({
         <Plus className="size-3.5" />
         Campo Personalizado
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-52">
+      <DropdownMenuContent align="start" className="questionnaire-builder avila-crm-canvas w-52 border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)]">
         {quickAddItems.map((item) => {
           const Icon = item.icon
           return (

@@ -78,7 +78,7 @@ export function QuestionnaireTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-background/95 sm:max-w-2xl">
+      <DialogContent className="questionnaire-builder avila-crm-canvas border-[#d6cfc4] bg-[var(--avila-paper)] text-[var(--avila-navy-900)] sm:max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-[var(--if-space-5)]">
           <DialogHeader>
             <DialogTitle>

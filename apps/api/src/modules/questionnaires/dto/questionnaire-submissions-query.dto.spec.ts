@@ -106,7 +106,7 @@ describe('ListQuestionnaireSubmissionsQueryDto', () => {
       }),
     ).rejects.toMatchObject({
       message: expect.arrayContaining([
-        'status must be one of the following values: draft, submitted, reviewed, archived',
+        'status must be one of the following values: draft, submitted, reviewed, archived, pending_client, in_progress, completed, expired, cancelled',
       ]),
     });
 
@@ -117,7 +117,7 @@ describe('ListQuestionnaireSubmissionsQueryDto', () => {
       }),
     ).rejects.toMatchObject({
       message: expect.arrayContaining([
-        'status must be one of the following values: draft, submitted, reviewed, archived',
+        'status must be one of the following values: draft, submitted, reviewed, archived, pending_client, in_progress, completed, expired, cancelled',
       ]),
     });
   });

@@ -82,6 +82,8 @@ export type LeadDuplicate = {
   document?: string | null
 }
 
+export type LeadListSort = "recent" | "oldest" | "name" | "lastContact"
+
 export type LeadListFilters = {
   search?: string
   status?: LeadStatus | "all"
@@ -90,6 +92,7 @@ export type LeadListFilters = {
   businessUnitId?: string
   interestCategory?: InterestCategory | "all"
   createdWithinDays?: 7 | 30 | 90
+  sort?: LeadListSort
   page?: number
   limit?: number
 }

@@ -1,6 +1,7 @@
 import {
   buildLeadAttributeWhere,
   foldLeadSearchText,
+  leadListOrderBy,
   leadPhoneLikePattern,
   leadSearchLikePattern,
 } from './lead-list-filters.util';
@@ -55,5 +56,23 @@ describe('filtros de leads', () => {
     const cleared = buildLeadAttributeWhere({});
     expect(cleared).toEqual({});
     expect(Object.keys(cleared)).toHaveLength(0);
+  });
+
+  it('mantém os mais recentes quando a ordenação vem vazia ou desconhecida', () => {
+    expect(leadListOrderBy()).toEqual([{ createdAt: 'desc' }]);
+    expect(leadListOrderBy('recent')).toEqual([{ createdAt: 'desc' }]);
+    expect(leadListOrderBy('outro')).toEqual([{ createdAt: 'desc' }]);
+  });
+
+  it('ordena por nome e última interação sem perder o desempate', () => {
+    expect(leadListOrderBy('name')).toEqual([
+      { name: 'asc' },
+      { createdAt: 'desc' },
+    ]);
+    expect(leadListOrderBy('lastContact')).toEqual([
+      { lastInteractionAt: { sort: 'desc', nulls: 'last' } },
+      { lastContactAt: { sort: 'desc', nulls: 'last' } },
+      { createdAt: 'desc' },
+    ]);
   });
 });

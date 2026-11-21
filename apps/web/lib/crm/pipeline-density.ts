@@ -7,27 +7,27 @@ import type { CrmDensity } from "./crm-workspace-preferences"
  */
 
 export const PIPELINE_LANE_WIDTH_PX = {
-  compact: 248,
+  compact: 280,
   comfortable: 400,
 } as const
 
 export const PIPELINE_CARD_MIN_HEIGHT_PX = {
-  compact: 72,
-  comfortable: 212,
+  compact: 96,
+  comfortable: 148,
 } as const
 
 export const PIPELINE_CARD_GAP_PX = {
-  compact: 4,
+  compact: 8,
   comfortable: 12,
 } as const
 
 export const PIPELINE_COLUMN_GAP_PX = {
-  compact: 6,
-  comfortable: 14,
+  compact: 12,
+  comfortable: 16,
 } as const
 
 export const PIPELINE_BOARD_GAP_PX = {
-  compact: 8,
+  compact: 12,
   comfortable: 20,
 } as const
 
@@ -51,23 +51,17 @@ export type PipelineDensityField =
 const COMPACT_FIELDS: readonly PipelineDensityField[] = [
   "title",
   "value",
+  "company",
   "unit",
   "ownerAvatar",
+  "ownerName",
+  "nextAction",
+  "product",
 ]
 
 const COMFORTABLE_FIELDS: readonly PipelineDensityField[] = [
   ...COMPACT_FIELDS,
-  "company",
-  "contact",
-  "ownerName",
-  "product",
-  "stage",
-  "score",
-  "priority",
   "questionnaire",
-  "interaction",
-  "phone",
-  "nextAction",
 ]
 
 export type PipelineDensityPresentation = {
@@ -117,7 +111,7 @@ export function resolvePipelineDensity(
     cardGapPx: compact
       ? PIPELINE_CARD_GAP_PX.compact
       : PIPELINE_CARD_GAP_PX.comfortable,
-    cardPadding: compact ? "6px 8px 6px 10px" : "16px 16px 14px 18px",
+    cardPadding: compact ? "14px" : "16px",
     columnGapPx: compact
       ? PIPELINE_COLUMN_GAP_PX.compact
       : PIPELINE_COLUMN_GAP_PX.comfortable,
@@ -160,8 +154,10 @@ export function runPipelineDensityManualValidation(): PipelineDensityManualCheck
     },
     {
       id: "card-height",
-      label: "Card confortável é pelo menos o dobro da altura mínima",
-      pass: comfortable.cardMinHeightPx >= compact.cardMinHeightPx * 2,
+      label: "Card confortável é mais alto, sem dobrar a altura do compacto",
+      pass:
+        comfortable.cardMinHeightPx > compact.cardMinHeightPx &&
+        comfortable.cardMinHeightPx < compact.cardMinHeightPx * 2,
     },
     {
       id: "card-padding",
@@ -185,28 +181,26 @@ export function runPipelineDensityManualValidation(): PipelineDensityManualCheck
     },
     {
       id: "less-info",
-      label: "Compacto esconde empresa, contato, responsável, produto e estágio",
+      label: "Compacto mostra cliente, valor, responsável, próxima ação e ramo",
       pass:
-        !pipelineDensityShows("compact", "company") &&
-        !pipelineDensityShows("compact", "contact") &&
-        !pipelineDensityShows("compact", "ownerName") &&
-        !pipelineDensityShows("compact", "product") &&
-        !pipelineDensityShows("compact", "stage") &&
-        !pipelineDensityShows("compact", "interaction"),
+        pipelineDensityShows("compact", "company") &&
+        pipelineDensityShows("compact", "value") &&
+        pipelineDensityShows("compact", "nextAction") &&
+        pipelineDensityShows("compact", "ownerName") &&
+        pipelineDensityShows("compact", "product") &&
+        !pipelineDensityShows("compact", "phone") &&
+        !pipelineDensityShows("compact", "questionnaire"),
     },
     {
       id: "more-info",
-      label: "Confortável mostra empresa, contato, responsável, produto e interação",
+      label: "Confortável mantém a hierarquia e acrescenta o questionário",
       pass:
         pipelineDensityShows("comfortable", "company") &&
-        pipelineDensityShows("comfortable", "contact") &&
         pipelineDensityShows("comfortable", "ownerName") &&
         pipelineDensityShows("comfortable", "product") &&
-        pipelineDensityShows("comfortable", "interaction") &&
-        pipelineDensityShows("comfortable", "phone") &&
         pipelineDensityShows("comfortable", "nextAction") &&
-        !pipelineDensityShows("compact", "phone") &&
-        !pipelineDensityShows("compact", "nextAction") &&
+        pipelineDensityShows("comfortable", "questionnaire") &&
+        !pipelineDensityShows("comfortable", "phone") &&
         comfortable.visibleFields.length > compact.visibleFields.length,
     },
     {

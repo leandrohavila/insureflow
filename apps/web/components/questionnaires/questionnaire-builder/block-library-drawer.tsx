@@ -21,6 +21,8 @@ import {
   type InsuranceProductId,
 } from "@repo/forms-library"
 import { cn } from "@/lib/utils"
+
+import { builderPortalClass } from "./builder-surfaces"
 import {
   readLibraryFavorites,
   toggleBlockFavorite,
@@ -73,7 +75,7 @@ export const BlockLibraryDrawer = memo(function BlockLibraryDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="flex w-full flex-col border-white/[0.08] bg-background/98 p-0 sm:max-w-lg"
+        className={cn(builderPortalClass, "flex w-full flex-col p-0 sm:max-w-lg")}
       >
         <SheetHeader className="border-b border-white/[0.06] p-[var(--if-space-4)]">
           <SheetTitle className="flex items-center gap-2">

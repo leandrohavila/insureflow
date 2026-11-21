@@ -16,6 +16,7 @@ import { getErrorMessage } from "@/lib/data-access"
 import type { QuestionnaireTemplate } from "@/lib/data-access/modules/questionnaires"
 import { cn } from "@/lib/utils"
 
+import { builderPortalClass } from "./builder-surfaces"
 import { statusLabels, statusStyles } from "./constants"
 import { formatDate } from "./utils"
 
@@ -31,6 +32,19 @@ type QuestionnaireTemplateListProps = {
   onRetry: () => void
   canManage: boolean
   onCreate?: () => void
+}
+
+function branchLabel(template: QuestionnaireTemplate) {
+  const branch =
+    template.settings &&
+    typeof template.settings === "object" &&
+    "branch" in template.settings
+      ? template.settings.branch
+      : null
+  if (branch === "auto") return "Automóvel"
+  if (branch === "residencial") return "Residencial"
+  if (branch === "empresarial") return "Empresarial"
+  return "Personalizado"
 }
 
 function TemplateCard({
@@ -69,8 +83,8 @@ function TemplateCard({
       className={cn(
         "group cursor-pointer rounded-2xl border p-[var(--if-space-4)] transition-[border-color,background-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         selected
-          ? "border-primary/45 border-l-[3px] border-l-primary bg-primary/[0.09] p-[var(--if-space-5)] shadow-if-sm"
-          : "border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.045]",
+          ? "border-[var(--avila-gold-600)] border-l-[3px] bg-[color-mix(in_srgb,var(--avila-gold-600)_12%,var(--avila-paper))] shadow-[0_1px_2px_rgb(16_41_75/0.05)]"
+          : "border-[#e4ddd2] bg-[var(--avila-paper)] shadow-[0_1px_2px_rgb(16_41_75/0.04)] hover:border-[#d6cfc4]",
       )}
     >
       <div className="flex items-start justify-between gap-[var(--if-space-2)]">
@@ -95,13 +109,17 @@ function TemplateCard({
         {canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground opacity-80 outline-none transition-colors hover:bg-white/[0.12] hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100 group-focus-within:opacity-100 data-[state=open]:opacity-100"
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-[#5c6578] outline-none transition-colors hover:bg-[#ebe5dc] hover:text-[var(--avila-navy-900)] focus-visible:ring-2 focus-visible:ring-[var(--avila-gold-600)]"
               aria-label={`Ações do template ${template.name}`}
               onClick={(event) => event.stopPropagation()}
             >
               <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuContent
+              align="end"
+              className={builderPortalClass}
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
               {template.status !== "archived" ? (
                 <DropdownMenuItem onClick={onToggle}>
@@ -129,6 +147,9 @@ function TemplateCard({
         >
           {statusLabels[template.status]}
         </Badge>
+        <span className="text-[10px] font-medium uppercase tracking-wide text-[#5c6578]">
+          {branchLabel(template)}
+        </span>
       </div>
 
       <dl className="mt-[var(--if-space-3)] grid grid-cols-2 gap-x-[var(--if-space-3)] gap-y-[var(--if-space-2)] text-xs">
@@ -184,7 +205,7 @@ export function QuestionnaireTemplateList({
 
       <div className="min-h-0 flex-1 space-y-[var(--if-space-3)] overflow-x-hidden overflow-y-auto overscroll-contain pr-1 md:space-y-[var(--if-space-4)]">
         {loading ? (
-          <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 rounded-xl border border-[#e4ddd2] bg-[var(--avila-paper)] p-4 text-sm text-[#5c6578]">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             Carregando templates...
           </div>
@@ -196,7 +217,7 @@ export function QuestionnaireTemplateList({
             </Button>
           </div>
         ) : templates.length === 0 ? (
-          <div className="rounded-[var(--if-radius-2xl)] border border-dashed border-white/[0.12] bg-white/[0.03] p-6 text-center">
+          <div className="rounded-[var(--if-radius-2xl)] border border-dashed border-[#d6cfc4] bg-[var(--avila-paper)] p-6 text-center">
             <ClipboardList
               className="mx-auto size-7 text-muted-foreground"
               aria-hidden

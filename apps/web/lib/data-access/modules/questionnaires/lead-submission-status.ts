@@ -88,6 +88,12 @@ export function selectLeadQuestionnaireSubmission(
   const draft = scoped.find((item) => item.status === "draft");
   if (draft) return draft;
 
+  const open = scoped.find(
+    (item) =>
+      item.status === "in_progress" || item.status === "pending_client",
+  );
+  if (open) return open;
+
   return [...scoped].sort(
     (a, b) =>
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),

@@ -18,20 +18,31 @@ function httpsUrl(value: string): URL | null {
   if (url.protocol !== 'https:') return null;
   if (url.username || url.password) return null;
   const host = url.hostname.toLowerCase();
-  if (!host || host === 'localhost' || host.endsWith('.local') || host === '0.0.0.0') {
+  if (
+    !host ||
+    host === 'localhost' ||
+    host.endsWith('.local') ||
+    host === '0.0.0.0'
+  ) {
     return null;
   }
   return url;
 }
 
-function youtubeFrom(url: URL): { videoId: string; layout: 'short' | 'wide' } | null {
+function youtubeFrom(
+  url: URL,
+): { videoId: string; layout: 'short' | 'wide' } | null {
   const host = url.hostname.replace(/^www\./, '').toLowerCase();
   const idOf = (value: string) => (YOUTUBE_ID.test(value) ? value : null);
   if (host === 'youtu.be') {
     const videoId = idOf(url.pathname.split('/').filter(Boolean)[0] ?? '');
     return videoId ? { videoId, layout: 'wide' } : null;
   }
-  if (host !== 'youtube.com' && host !== 'm.youtube.com' && host !== 'youtube-nocookie.com') {
+  if (
+    host !== 'youtube.com' &&
+    host !== 'm.youtube.com' &&
+    host !== 'youtube-nocookie.com'
+  ) {
     return null;
   }
   const parts = url.pathname.split('/').filter(Boolean);
@@ -40,21 +51,35 @@ function youtubeFrom(url: URL): { videoId: string; layout: 'short' | 'wide' } | 
     const videoId = idOf(url.searchParams.get('v') ?? '');
     return videoId ? { videoId, layout: 'wide' } : null;
   }
-  if (head === 'shorts' || head === 'embed' || head === 'live' || head === 'v') {
+  if (
+    head === 'shorts' ||
+    head === 'embed' ||
+    head === 'live' ||
+    head === 'v'
+  ) {
     const videoId = idOf(parts[1] ?? '');
-    return videoId ? { videoId, layout: head === 'shorts' ? 'short' : 'wide' } : null;
+    return videoId
+      ? { videoId, layout: head === 'shorts' ? 'short' : 'wide' }
+      : null;
   }
   return null;
 }
 
 /** Aceita somente MP4 em HTTPS ou um vídeo do YouTube. Não aceita iframe arbitrário. */
-export function parseInstitutionalVideoUrl(value: string): InstitutionalVideoSource | null {
+export function parseInstitutionalVideoUrl(
+  value: string,
+): InstitutionalVideoSource | null {
   const url = httpsUrl(value);
   if (!url) return null;
   const youtube = youtubeFrom(url);
   if (youtube) return { kind: 'youtube', ...youtube };
   const host = url.hostname.replace(/^www\./, '').toLowerCase();
-  if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be' || host === 'youtube-nocookie.com') {
+  if (
+    host === 'youtube.com' ||
+    host === 'm.youtube.com' ||
+    host === 'youtu.be' ||
+    host === 'youtube-nocookie.com'
+  ) {
     return null;
   }
   if (url.pathname.toLowerCase().endsWith('.mp4')) {

@@ -49,8 +49,7 @@ export function PaginationControls({
       </span>
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          variant="outline"
-          size="sm"
+          variant="crmSecondary"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         >
@@ -58,22 +57,21 @@ export function PaginationControls({
         </Button>
         {summary ? (
           <span
-            className="inline-flex h-8 min-w-8 items-center justify-center rounded-md bg-primary px-2 text-sm font-medium text-primary-foreground"
+            className="inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-[#10294B] px-2 text-sm font-medium text-white"
             aria-current="page"
           >
             {currentPage}
           </span>
         ) : null}
         <Button
-          variant="outline"
-          size="sm"
+          variant="crmSecondary"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >
           {nextLabel}
         </Button>
         {pageSizeLabel ? (
-          <span className="inline-flex h-8 items-center rounded-md border border-border bg-card px-2.5 text-xs text-foreground">
+          <span className="inline-flex h-9 items-center rounded-full border border-[#D6CFC4] bg-white px-2.5 text-xs text-[#10294B]">
             {pageSizeLabel}
           </span>
         ) : null}

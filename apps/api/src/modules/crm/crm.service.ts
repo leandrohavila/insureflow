@@ -23,7 +23,10 @@ import {
   computeDealScore,
   resolveDealSourceType,
 } from '../../common/utils/deal-score.util';
-import { computeStageSla } from '../../common/utils/deal-pipeline.util';
+import {
+  computeStageSla,
+  stageDurationMs,
+} from '../../common/utils/deal-pipeline.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { serializeQuoteComparisonSummary } from '../quotes/quote-serialize.util';
 import { PipelinesService } from './pipelines.service';
@@ -247,104 +250,116 @@ export class CrmService {
       },
     });
 
-    const deal = await this.prisma.deal.update({
-      where: { id },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.company !== undefined ? { company: dto.company } : {}),
-        ...(dto.value !== undefined
-          ? { value: new Prisma.Decimal(dto.value) }
-          : {}),
-        ...(dto.stage !== undefined ? { stage: dto.stage } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
-        ...(dto.assignedTo !== undefined ? { assignedTo: dto.assignedTo } : {}),
-        ...(dto.pipelineOrder !== undefined
-          ? { pipelineOrder: dto.pipelineOrder }
-          : {}),
-        ...(dto.businessUnitId !== undefined
-          ? { businessUnitId: dto.businessUnitId || null }
-          : {}),
-        ...(dto.productType !== undefined
-          ? { productType: dto.productType }
-          : {}),
-        ...(dto.stage !== undefined &&
-        previous?.stage &&
-        dto.stage !== previous.stage
-          ? { stageEnteredAt: new Date() }
-          : {}),
-      },
-      include: {
-        convertedLead: { select: { id: true } },
-      },
-    });
-
-    if (deal.convertedLead?.id) {
-      await this.prisma.lead.updateMany({
-        where: { id: deal.convertedLead.id, tenantId },
-        data: { lastContactAt: new Date() },
+    const now = new Date();
+    const stageChanged = Boolean(
+      dto.stage !== undefined &&
+      previous?.stage &&
+      dto.stage !== previous.stage,
+    );
+    const deal = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.deal.update({
+        where: { id },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title } : {}),
+          ...(dto.company !== undefined ? { company: dto.company } : {}),
+          ...(dto.value !== undefined
+            ? { value: new Prisma.Decimal(dto.value) }
+            : {}),
+          ...(dto.stage !== undefined ? { stage: dto.stage } : {}),
+          ...(dto.status !== undefined ? { status: dto.status } : {}),
+          ...(dto.assignedTo !== undefined
+            ? { assignedTo: dto.assignedTo }
+            : {}),
+          ...(dto.pipelineOrder !== undefined
+            ? { pipelineOrder: dto.pipelineOrder }
+            : {}),
+          ...(dto.businessUnitId !== undefined
+            ? { businessUnitId: dto.businessUnitId || null }
+            : {}),
+          ...(dto.productType !== undefined
+            ? { productType: dto.productType }
+            : {}),
+          ...(stageChanged ? { stageEnteredAt: now } : {}),
+        },
+        include: {
+          convertedLead: { select: { id: true } },
+        },
       });
-    }
 
-    if (performedById) {
-      const now = new Date();
-      const leadId = deal.convertedLead?.id ?? null;
-
-      if (
-        dto.stage !== undefined &&
-        previous?.stage &&
-        dto.stage !== previous.stage
-      ) {
-        await this.recordStageHistory({
-          tenantId,
-          dealId: id,
-          fromStage: previous.stage,
-          toStage: dto.stage,
-          pipelineId: previous.pipelineId,
-          enteredAt: now,
-          performedById,
-          previousEnteredAt: previous.stageEnteredAt,
-        });
-        await this.activityEngine.publish({
-          tenantId,
-          performedById,
-          operationalEventKind: 'deal_stage_changed',
-          subject: `Estágio alterado — ${deal.title}`,
-          description: `${crmStageLabel(previous.stage)} → ${crmStageLabel(dto.stage)}`,
-          occurredAt: now,
-          dealId: id,
-          leadId,
+      if (updated.convertedLead?.id) {
+        await tx.lead.updateMany({
+          where: { id: updated.convertedLead.id, tenantId },
+          data: { lastContactAt: now },
         });
       }
 
-      if (
-        dto.status !== undefined &&
-        previous?.status &&
-        dto.status !== previous.status &&
-        dto.status !== 'won'
-      ) {
-        const kind =
-          dto.status === 'lost'
-            ? 'deal_lost'
-            : previous.status !== 'open' && dto.status === 'open'
-              ? 'deal_reopened'
-              : 'deal_status_changed';
-        await this.activityEngine.publish({
-          tenantId,
-          performedById,
-          operationalEventKind: kind,
-          subject:
-            kind === 'deal_lost'
-              ? `Negócio perdido — ${deal.title}`
-              : kind === 'deal_reopened'
-                ? `Negócio reaberto — ${deal.title}`
-                : `Status alterado — ${deal.title}`,
-          description: `${crmStatusLabel(previous.status)} → ${crmStatusLabel(dto.status)}`,
-          occurredAt: now,
-          dealId: id,
-          leadId,
-        });
+      if (performedById) {
+        const leadId = updated.convertedLead?.id ?? null;
+
+        if (stageChanged && previous?.stage && dto.stage) {
+          await this.recordStageHistory(
+            {
+              tenantId,
+              dealId: id,
+              fromStage: previous.stage,
+              toStage: dto.stage,
+              pipelineId: previous.pipelineId,
+              enteredAt: now,
+              performedById,
+              previousEnteredAt: previous.stageEnteredAt,
+            },
+            tx,
+          );
+          await this.activityEngine.publish(
+            {
+              tenantId,
+              performedById,
+              operationalEventKind: 'deal_stage_changed',
+              subject: `Estágio alterado — ${updated.title}`,
+              description: `${crmStageLabel(previous.stage)} → ${crmStageLabel(dto.stage)}`,
+              occurredAt: now,
+              dealId: id,
+              leadId,
+            },
+            tx,
+          );
+        }
+
+        if (
+          dto.status !== undefined &&
+          previous?.status &&
+          dto.status !== previous.status &&
+          dto.status !== 'won'
+        ) {
+          const kind =
+            dto.status === 'lost'
+              ? 'deal_lost'
+              : previous.status !== 'open' && dto.status === 'open'
+                ? 'deal_reopened'
+                : 'deal_status_changed';
+          await this.activityEngine.publish(
+            {
+              tenantId,
+              performedById,
+              operationalEventKind: kind,
+              subject:
+                kind === 'deal_lost'
+                  ? `Negócio perdido — ${updated.title}`
+                  : kind === 'deal_reopened'
+                    ? `Negócio reaberto — ${updated.title}`
+                    : `Status alterado — ${updated.title}`,
+              description: `${crmStatusLabel(previous.status)} → ${crmStatusLabel(dto.status)}`,
+              occurredAt: now,
+              dealId: id,
+              leadId,
+            },
+            tx,
+          );
+        }
       }
-    }
+
+      return updated;
+    });
 
     if (dto.status === 'won' && previous?.status !== 'won' && performedById) {
       await this.customerActivation.activateFromWonDeal(
@@ -637,33 +652,33 @@ export class CrmService {
     return andWhere(base, ownershipWhere);
   }
 
-  private async recordStageHistory(params: {
-    tenantId: string;
-    dealId: string;
-    fromStage: string | null;
-    toStage: string;
-    pipelineId: string | null;
-    enteredAt: Date;
-    performedById?: string | null;
-    previousEnteredAt?: Date | null;
-  }) {
-    const open = await this.prisma.dealStageHistory.findFirst({
+  private async recordStageHistory(
+    params: {
+      tenantId: string;
+      dealId: string;
+      fromStage: string | null;
+      toStage: string;
+      pipelineId: string | null;
+      enteredAt: Date;
+      performedById?: string | null;
+      previousEnteredAt?: Date | null;
+    },
+    db: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const open = await db.dealStageHistory.findFirst({
       where: { dealId: params.dealId, exitedAt: null },
       orderBy: { enteredAt: 'desc' },
     });
     if (open) {
-      await this.prisma.dealStageHistory.update({
+      await db.dealStageHistory.update({
         where: { id: open.id },
         data: {
           exitedAt: params.enteredAt,
-          durationMs: Math.max(
-            0,
-            params.enteredAt.getTime() - open.enteredAt.getTime(),
-          ),
+          durationMs: stageDurationMs(open.enteredAt, params.enteredAt),
         },
       });
     } else if (params.fromStage && params.previousEnteredAt) {
-      await this.prisma.dealStageHistory.create({
+      await db.dealStageHistory.create({
         data: {
           tenantId: params.tenantId,
           dealId: params.dealId,
@@ -672,15 +687,15 @@ export class CrmService {
           pipelineId: params.pipelineId,
           enteredAt: params.previousEnteredAt,
           exitedAt: params.enteredAt,
-          durationMs: Math.max(
-            0,
-            params.enteredAt.getTime() - params.previousEnteredAt.getTime(),
+          durationMs: stageDurationMs(
+            params.previousEnteredAt,
+            params.enteredAt,
           ),
           performedById: params.performedById ?? null,
         },
       });
     }
-    await this.prisma.dealStageHistory.create({
+    await db.dealStageHistory.create({
       data: {
         tenantId: params.tenantId,
         dealId: params.dealId,

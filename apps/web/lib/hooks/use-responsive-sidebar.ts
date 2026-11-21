@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react"
 
 export const CRM_RIGHT_SIDEBAR_STORAGE_KEY = "crm:right-sidebar:collapsed"
-export const CRM_RIGHT_SIDEBAR_WIDTH_PX = 320
+export const CRM_RIGHT_SIDEBAR_WIDTH_PX = 360
 
 const MEDIA_WIDE = "(min-width: 1600px)"
 const MEDIA_NOTEBOOK = "(min-width: 1366px)"
@@ -39,6 +39,20 @@ function resolveMode(): ResponsiveSidebarMode {
   return "compact"
 }
 
+/** Painel de atividades: recolhe em qualquer desktop e vira drawer no compacto. */
+export function resolveCrmActivityPanel(input: {
+  mode: ResponsiveSidebarMode
+  collapsed: boolean
+  drawerOpen: boolean
+}) {
+  const inline = input.mode !== "compact" && !input.collapsed
+  return {
+    inline,
+    drawer: input.mode === "compact" && input.drawerOpen,
+    showToggle: true,
+  }
+}
+
 export function useResponsiveSidebar() {
   const [mode, setMode] = useState<ResponsiveSidebarMode>("notebook")
   const [collapsed, setCollapsed] = useState(true)
@@ -71,15 +85,14 @@ export function useResponsiveSidebar() {
     }
   }, [])
 
-  const isInlineOpen = mode === "wide" || (mode === "notebook" && !collapsed)
-
-  const isDrawerOpen = mode === "compact" && drawerOpen
+  const panel = resolveCrmActivityPanel({ mode, collapsed, drawerOpen })
+  const isInlineOpen = panel.inline
+  const isDrawerOpen = panel.drawer
   const isOpen = isInlineOpen || isDrawerOpen
-  const showToggle = mode !== "wide"
+  const showToggle = panel.showToggle
 
   const setOpen = useCallback(
     (open: boolean) => {
-      if (mode === "wide") return
       if (mode === "compact") {
         setDrawerOpen(open)
         return
@@ -92,7 +105,6 @@ export function useResponsiveSidebar() {
   )
 
   const toggle = useCallback(() => {
-    if (mode === "wide") return
     if (mode === "compact") {
       setDrawerOpen((current) => !current)
       return

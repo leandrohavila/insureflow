@@ -26,6 +26,7 @@ import {
   type QuestionnaireTemplateStatus,
 } from "@/lib/data-access/modules/questionnaires"
 
+import { builderPortalClass } from "./builder-surfaces"
 import { statusLabels } from "./constants"
 import {
   WIZARD_BRANCHES,
@@ -185,7 +186,7 @@ export function TemplateWizardDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(92svh,820px)] flex-col border-white/[0.08] bg-background/95 sm:max-w-3xl">
+      <DialogContent className={cn(builderPortalClass, "flex max-h-[min(92svh,820px)] flex-col sm:max-w-3xl")}>
         <form
           onSubmit={handleSubmit}
           className="flex min-h-0 flex-1 flex-col gap-[var(--if-space-4)]"

@@ -26,6 +26,11 @@ type ActivityQuickActionsProps = {
   className?: string
   compact?: boolean
   embedded?: boolean
+  presentation?: "dialog" | "drawer"
+  lockLink?: boolean
+  linkPreference?: "lead" | "deal" | "customer" | "policy"
+  linkTitle?: string
+  linkDetail?: string
 }
 
 type QuickAction = {
@@ -57,6 +62,11 @@ export function ActivityQuickActions({
   className,
   compact,
   embedded = false,
+  presentation = "dialog",
+  lockLink = false,
+  linkPreference,
+  linkTitle,
+  linkDetail,
 }: ActivityQuickActionsProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [presetType, setPresetType] = useState<ActivityType | null>(null)
@@ -109,6 +119,11 @@ export function ActivityQuickActions({
 
         <ActivityFormDialog
           embedded={embedded}
+          presentation={presentation}
+          lockLink={lockLink}
+          linkPreference={linkPreference}
+          linkTitle={linkTitle}
+          linkDetail={linkDetail}
           open={dialogOpen}
           onOpenChange={handleDialogOpenChange}
           initialType={dialogOpen ? (presetType ?? undefined) : undefined}

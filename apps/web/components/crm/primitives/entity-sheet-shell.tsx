@@ -118,6 +118,8 @@ type EntitySheetShellProps = {
   /** Descrição complementar opcional para SR. */
   ariaDescription?: string
   width?: EntitySheetShellWidth
+  /** Força a paleta clara Ávila mesmo quando o documento está no tema navy. */
+  surface?: "workspace" | "light"
   className?: string
   children: ReactNode
 }
@@ -131,6 +133,7 @@ function EntitySheetShellRoot({
   ariaLabel,
   ariaDescription,
   width = "default",
+  surface = "workspace",
   className,
   children,
 }: EntitySheetShellProps) {
@@ -235,15 +238,38 @@ function EntitySheetShellRoot({
           "flex h-full w-full flex-col gap-0 p-0",
           "border-l",
           WIDTH_CLASSES[width],
+          surface === "light" &&
+            "crm-light-sheet text-[#10294B] [color-scheme:light] [&_.glass-panel]:border-[#E4DDD2] [&_.glass-panel]:bg-white [&_[data-slot=glass-card]]:border-[#E4DDD2] [&_[data-slot=glass-card]]:bg-[#FFFCFA]",
           className,
         )}
         style={
-          {
-            // O `SheetContent` base usa `bg-popover`; sobrescrevemos para a
-            // surface base do crm-v2 (consistência com o workspace).
-            backgroundColor: "var(--crm-surface-base)",
-            borderColor: "var(--crm-stroke-default)",
-          } as CSSProperties
+          (surface === "light"
+            ? {
+                backgroundColor: "#F6F1E8",
+                borderColor: "#E4DDD2",
+                color: "#10294B",
+                "--background": "#F6F1E8",
+                "--foreground": "#10294B",
+                "--card": "#FFFCFA",
+                "--card-foreground": "#10294B",
+                "--popover": "#FFFCFA",
+                "--popover-foreground": "#10294B",
+                "--muted-foreground": "#5C6578",
+                "--border": "#D6CFC4",
+                "--input": "#D6CFC4",
+                "--primary": "#10294B",
+                "--primary-foreground": "#FFFCFA",
+                "--ring": "#10294B",
+                "--crm-surface-base": "#F6F1E8",
+                "--crm-stroke-default": "#D6CFC4",
+                "--crm-stroke-faint": "#E4DDD2",
+              }
+            : {
+                // O `SheetContent` base usa `bg-popover`; sobrescrevemos para a
+                // surface base do crm-v2 (consistência com o workspace).
+                backgroundColor: "var(--crm-surface-base)",
+                borderColor: "var(--crm-stroke-default)",
+              }) as CSSProperties
         }
       >
         <SheetTitle className="sr-only">{ariaLabel}</SheetTitle>

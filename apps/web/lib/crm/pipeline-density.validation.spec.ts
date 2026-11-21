@@ -6,10 +6,8 @@
  *
  * No navegador, em /crm/negocios:
  * 1. Clique em Confortável. O botão ativo fica preenchido na hora.
- * 2. Os cards ficam mais altos, com mais respiro, e passam a mostrar
- *    empresa, contato, responsável, produto, estágio e última interação.
- * 3. Clique em Compacto. Os cards encolhem, o vão entre eles diminui
- *    e somem empresa, contato, nome do responsável, produto e estágio.
+ * 2. Os cards confortáveis mostram cliente, valor, ramo, responsável, próxima ação e questionário.
+ * 3. Clique em Compacto. As colunas continuam com pelo menos 280px e os cards mantêm a hierarquia, com menos respiro.
  * 4. Recarregue a página. O último modo continua selecionado
  *    (localStorage `insureflow:crm-workspace-prefs-v1`).
  * 5. Troque para Lista. Compacto usa linhas baixas e menos colunas;

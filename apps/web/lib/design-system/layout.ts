@@ -57,15 +57,15 @@ export const dsLayout = {
   },
   pageActions: {
     className:
-      "flex flex-wrap items-center justify-end gap-[var(--if-layout-page-actions-gap)] sm:flex-nowrap",
+      "flex min-w-0 max-w-full flex-wrap items-center justify-end gap-x-[var(--if-layout-page-actions-gap)] gap-y-[var(--if-layout-button-gap)]",
   },
   pageActionsGroup: {
     className:
-      "flex flex-nowrap items-center gap-[var(--if-layout-page-actions-group-gap)]",
+      "flex min-w-0 max-w-full flex-wrap items-center gap-[var(--if-layout-button-gap)]",
   },
   pageActionsGroupPrimary: {
     className:
-      "flex flex-nowrap items-center gap-[var(--if-layout-page-actions-primary-gap)]",
+      "flex min-w-0 max-w-full flex-wrap items-center gap-[var(--if-layout-button-gap)]",
   },
   filterBar: {
     className:

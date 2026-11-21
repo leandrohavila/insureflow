@@ -95,7 +95,9 @@ export function institutionalVideoIssues(dto: InstitutionalVideoDto) {
   }
   const poster = dto.posterUrl?.trim() ?? '';
   if (poster && !parsePosterUrl(poster)) {
-    issues.push('A capa precisa ser uma imagem HTTPS (PNG, JPEG, WebP, GIF ou AVIF).');
+    issues.push(
+      'A capa precisa ser uma imagem HTTPS (PNG, JPEG, WebP, GIF ou AVIF).',
+    );
   }
   const captions = dto.captionsUrl?.trim() ?? '';
   if (captions && !parseCaptionsUrl(captions)) {

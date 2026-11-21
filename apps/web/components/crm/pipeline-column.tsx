@@ -75,21 +75,21 @@ export function PipelineColumn({
     >
       <header
         className={cn(
-          "pipeline-lane__header shrink-0 sticky top-0 z-[1]",
+          "pipeline-lane__header shrink-0 sticky top-0 z-10",
           density.headerClassName,
         )}
       >
         <div
           className={cn(
-            "flex items-center justify-between gap-2 border-b border-white/10 px-1",
+            "flex items-start justify-between gap-2 border-b border-[#e4ddd2] px-1",
             density.headerPaddingClassName,
           )}
         >
           <div className="flex min-w-0 items-center gap-1.5">
             <h3
               className={cn(
-                "crm-text-title truncate",
-                density.compact ? "text-[12px]" : "text-sm",
+                "crm-text-title min-w-0 text-balance text-[var(--avila-navy-900)]",
+                density.compact ? "text-[13px]" : "text-sm",
               )}
             >
               {label}
@@ -98,7 +98,7 @@ export function PipelineColumn({
           </div>
           <span
             className={cn(
-              "crm-text-metric shrink-0 font-medium tabular-nums text-foreground/70",
+              "crm-text-metric shrink-0 font-semibold tabular-nums text-[var(--avila-navy-900)]",
               density.compact ? "text-[11px]" : "text-[13px]",
             )}
           >
@@ -111,7 +111,7 @@ export function PipelineColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "pipeline-lane__body relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain",
+          "pipeline-lane__body relative flex min-h-0 flex-1 flex-col overflow-visible",
           highlighted && "pipeline-lane__body--highlight",
         )}
         style={{ gap: density.columnGapPx }}

@@ -2,6 +2,7 @@
 
 import { AlignJustify, LayoutList } from "lucide-react"
 
+import { CrmFilterChip, CrmFilterGroup } from "@/components/crm/crm-controls"
 import { useCrmWorkspacePreferences } from "@/lib/hooks/use-crm-workspace-preferences"
 import { cn } from "@/lib/utils"
 
@@ -14,9 +15,32 @@ export function CrmDensityToggle({
 }: {
   className?: string
   /** Visual utilitário no cabeçalho — segmented control discreto. */
-  variant?: "default" | "header"
+  variant?: "default" | "header" | "chips"
 }) {
   const { density, setDensity } = useCrmWorkspacePreferences()
+
+  if (variant === "chips") {
+    return (
+      <CrmFilterGroup label="Densidade operacional" className={className}>
+        <CrmFilterChip
+          pressed={density === "compact"}
+          title="Compacto — alta densidade"
+          onClick={() => setDensity("compact")}
+        >
+          <AlignJustify className="size-3.5" strokeWidth={1.75} />
+          Compacto
+        </CrmFilterChip>
+        <CrmFilterChip
+          pressed={density === "comfortable"}
+          title="Confortável — mais respiro"
+          onClick={() => setDensity("comfortable")}
+        >
+          <LayoutList className="size-3.5" strokeWidth={1.75} />
+          Confortável
+        </CrmFilterChip>
+      </CrmFilterGroup>
+    )
+  }
 
   return (
     <div

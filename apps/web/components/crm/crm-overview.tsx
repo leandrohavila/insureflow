@@ -26,6 +26,7 @@ import {
 } from "@/components/design-system"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { useCreateCrmDeal, useCrmDeals } from "@/lib/data-access/modules/crm"
+import { useBusinessUnitContext } from "@/lib/data-access/modules/business-units"
 import { getErrorMessage } from "@/lib/data-access"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import { useCrmWorkspacePreferences } from "@/lib/hooks/use-crm-workspace-preferences"
@@ -37,6 +38,7 @@ export function CrmOverview() {
   const canManageCrm = useCanManage("crm:view")
   const dealsQuery = useCrmDeals()
   const createDeal = useCreateCrmDeal()
+  const unitContext = useBusinessUnitContext()
   const deals = dealsQuery.data ?? []
   const { density } = useCrmWorkspacePreferences()
   const pipelineDensity = resolvePipelineDensity(density)
@@ -47,20 +49,20 @@ export function CrmOverview() {
         <OperationalPageLayout density="dense">
           <PageHeader
             compact
-            className="shrink-0"
+            className="shrink-0 [&>div]:max-lg:flex-col!"
             title="Visão geral"
             actions={
               <CrmPageHeaderActions
+                navigation={
+                  canManageCrm ? (
+                    <Button variant="crmSecondary">Importar contatos</Button>
+                  ) : undefined
+                }
                 primary={
                   canManageCrm ? (
-                    <>
-                      <Button variant="outline" size="sm" className="h-9">
-                        Importar contatos
-                      </Button>
-                      <Button size="sm" className="h-9" onClick={() => setCreateOpen(true)}>
-                        Novo negócio
-                      </Button>
-                    </>
+                    <Button variant="crmPrimary" onClick={() => setCreateOpen(true)}>
+                      Novo negócio
+                    </Button>
                   ) : undefined
                 }
               />
@@ -81,7 +83,11 @@ export function CrmOverview() {
           ) : (
         <>
           <OperationalWorkspaceMetrics>
-            <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
+            <CrmMetrics
+              deals={deals}
+              density={pipelineDensity.metricsDensity}
+              surface="light"
+            />
           </OperationalWorkspaceMetrics>
 
           <CRMRightSidebar
@@ -97,7 +103,7 @@ export function CrmOverview() {
             }
             header={
               <motion.div className="flex min-w-0 items-center justify-end gap-2">
-                <CRMRightSidebarToggle />
+                <CRMRightSidebarToggle appearance="crm" />
               </motion.div>
             }
             prelude={
@@ -108,8 +114,8 @@ export function CrmOverview() {
                 <Link
                   href="/crm/negocios"
                   className={cn(
-                    buttonVariants({ variant: "ghost", size: "sm" }),
-                    "h-7 shrink-0 gap-1 px-2 text-xs text-primary",
+                    buttonVariants({ variant: "crmSecondary" }),
+                    "shrink-0",
                   )}
                 >
                   Ver funil
@@ -130,6 +136,7 @@ export function CrmOverview() {
 
       <DealFormDialog
         open={canManageCrm && createOpen}
+        businessUnitId={unitContext.data?.currentBusinessUnitId}
         pending={createDeal.isPending}
         error={createDeal.error}
         onOpenChange={setCreateOpen}

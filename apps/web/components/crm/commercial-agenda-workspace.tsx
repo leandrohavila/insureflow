@@ -5,14 +5,50 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 
+import {
+  AlarmClock,
+  CalendarClock,
+  Check,
+  ClipboardCheck,
+  ListFilter,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  RefreshCw,
+  RotateCw,
+  SquarePen,
+  UserRound,
+  UserRoundCheck,
+  Users,
+  type LucideIcon,
+} from "lucide-react"
+
+import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
 import { PermissionGate } from "@/components/auth/permission-gate"
+import { CrmFilterChip, CrmFilterGroup } from "@/components/crm/crm-controls"
+import {
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSection,
+  CrmFormDrawerSubmit,
+  crmDrawerInputClass,
+} from "@/components/crm/crm-form-drawer"
+import { ErrorState, LoadingState } from "@/components/design-system"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { CrmPageHeader } from "@/components/crm/crm-page-header"
-import { FilterChip } from "@/components/crm/primitives"
-import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import { COMMERCIAL_AUTO_REFRESH_MS } from "@/lib/crm/commercial-auto-refresh"
+import { getErrorMessage } from "@/lib/data-access"
 import { queryKeys } from "@/lib/data-access/query-keys"
-import { updateActivity } from "@/lib/data-access/modules/activities"
+import {
+  useCreateActivity,
+  updateActivity,
+  type ActivityType,
+  type CreateActivityInput,
+} from "@/lib/data-access/modules/activities"
 import { updateLeadFollowUp } from "@/lib/data-access/modules/lead-follow-ups"
 import {
   fetchCommercialAgenda,
@@ -20,6 +56,7 @@ import {
   type CommercialAgendaType,
   type CommercialAgendaWindow,
 } from "@/lib/data-access/modules/commercial-agenda/api"
+import { activityKindColors, activityKindFromActivityType, activityKindFromAgendaType, type ActivityVisualKind } from "@/lib/crm/activity-kind-colors"
 import { cn } from "@/lib/utils"
 
 const WINDOWS: { id: CommercialAgendaWindow; label: string }[] = [
@@ -43,19 +80,63 @@ function initialAgendaWindow(raw: string | null): CommercialAgendaWindow {
   return "today"
 }
 
-const TYPES: { id: CommercialAgendaType | ""; label: string }[] = [
-  { id: "", label: "Todos" },
-  { id: "FOLLOW_UP", label: "Follow-up" },
-  { id: "RENEWAL", label: "Renovação" },
-  { id: "REACTIVATION", label: "Reativação" },
-  { id: "SLA", label: "SLA" },
-  { id: "CALL", label: "Ligação" },
-  { id: "WHATSAPP", label: "WhatsApp" },
-  { id: "EMAIL", label: "Email" },
-  { id: "MEETING", label: "Reunião" },
-  { id: "VISIT", label: "Visita" },
-  { id: "TASK", label: "Tarefa" },
+const TYPES: {
+  id: CommercialAgendaType | ""
+  label: string
+  icon: LucideIcon
+}[] = [
+  { id: "", label: "Todos", icon: ListFilter },
+  { id: "FOLLOW_UP", label: "Follow-up", icon: RotateCw },
+  { id: "RENEWAL", label: "Renovação", icon: RefreshCw },
+  { id: "REACTIVATION", label: "Reativação", icon: UserRoundCheck },
+  { id: "SLA", label: "SLA", icon: AlarmClock },
+  { id: "CALL", label: "Ligação", icon: Phone },
+  { id: "WHATSAPP", label: "WhatsApp", icon: MessageCircle },
+  { id: "EMAIL", label: "E-mail", icon: Mail },
+  { id: "MEETING", label: "Reunião", icon: Users },
+  { id: "VISIT", label: "Visita", icon: MapPin },
+  { id: "TASK", label: "Tarefa", icon: ClipboardCheck },
 ]
+
+const QUICK_ACTIONS: { type: ActivityType; label: string; icon: LucideIcon }[] = [
+  { type: "call", label: "Ligar", icon: Phone },
+  { type: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+  { type: "email", label: "Enviar e-mail", icon: Mail },
+  { type: "meeting", label: "Agendar reunião", icon: Users },
+  { type: "visit", label: "Agendar visita", icon: MapPin },
+  { type: "task", label: "Criar tarefa", icon: ClipboardCheck },
+  { type: "follow_up", label: "Novo follow-up", icon: RotateCw },
+]
+
+function AgendaKindIcon({
+  kind,
+  icon: Icon,
+}: {
+  kind: ActivityVisualKind
+  icon: LucideIcon
+}) {
+  const color = activityKindColors[kind]
+  return (
+    <span
+      className="agenda-icon"
+      style={{
+        ["--agenda-icon" as string]: color.icon,
+        ["--agenda-icon-surface" as string]: color.surface,
+      }}
+    >
+      <Icon className="size-3.5" strokeWidth={1.75} aria-hidden />
+    </span>
+  )
+}
+function TypeBadge({ type, label }: { type: string; label: string }) {
+  const icon = TYPES.find((item) => item.id === type)?.icon ?? ListFilter
+  return (
+    <span className="agenda-badge agenda-type-badge">
+      <AgendaKindIcon kind={activityKindFromAgendaType(type)} icon={icon} />
+      {label}
+    </span>
+  )
+}
 
 function formatDateTime(value: string) {
   const parsed = new Date(value)
@@ -73,11 +154,20 @@ function partyName(item: CommercialAgendaItem) {
   return item.customerName ?? item.leadName ?? "—"
 }
 
+function Clip({ value }: { value: string }) {
+  return (
+    <span className="block max-w-[16rem] truncate" title={value}>
+      {value}
+    </span>
+  )
+}
+
 function statusLabel(status: string) {
   const key = status.toLowerCase()
   if (key === "pending") return "Pendente"
   if (key === "completed") return "Concluída"
   if (key === "canceled" || key === "cancelled") return "Cancelada"
+  if (key === "overdue") return "Atrasada"
   return status
 }
 
@@ -128,6 +218,8 @@ export function CommercialAgendaWorkspace() {
   const [resultId, setResultId] = useState<string | null>(null)
   const [resultText, setResultText] = useState("")
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [createMode, setCreateMode] = useState<ActivityType | null>(null)
+  const createActivity = useCreateActivity({})
   const query = useQuery({
     queryKey: queryKeys.commercialAgenda.list({ window, type }),
     queryFn: () => fetchCommercialAgenda({ window, type }),
@@ -175,19 +267,78 @@ export function CommercialAgendaWorkspace() {
     })
   }
 
-  return (
-    <div className={CRM_PAGE_SHELL}>
-      <CrmPageHeader
-        badge="CRM"
-        title="Agenda comercial"
-        description="Ligações, WhatsApp, follow-ups, visitas, reuniões e renovações em um só lugar."
-      />
+  const periodLabel = WINDOWS.find((item) => item.id === window)?.label ?? "Hoje"
 
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+  function openCreate(mode: ActivityType) {
+    setCreateMode(mode)
+  }
+
+  function submitCreate(input: CreateActivityInput) {
+    const label = QUICK_ACTIONS.find((action) => action.type === createMode)?.label
+    createActivity.mutate(input, {
+      onSuccess: () => {
+        setCreateMode(null)
+        setActionMessage(label ? `${label} registrada.` : "Atividade criada.")
+      },
+    })
+  }
+
+  const createLabel = QUICK_ACTIONS.find((action) => action.type === createMode)?.label
+  const rescheduleItem = items.find((item) => item.id === rescheduleId) ?? null
+  const resultItem = items.find((item) => item.id === resultId) ?? null
+
+  return (
+    <div className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL, "avila-agenda-surface")}>
+      <header className="agenda-masthead shrink-0">
+        <div>
+          <p className="agenda-masthead__eyebrow">CRM</p>
+          <h1>Agenda Comercial</h1>
+          <p className="agenda-masthead__subtitle">
+            Gestão de ligações, WhatsApp, follow-ups, visitas, reuniões e renovações.
+          </p>
+        </div>
+      </header>
+
+      <PermissionGate permission="crm:manage">
+        <div className="flex min-w-0 flex-wrap gap-2" role="group" aria-label="Ações rápidas">
+          {QUICK_ACTIONS.map((action) => {
+            const Icon = action.icon
+            return (
+              <Button
+                key={action.type}
+                type="button"
+                variant="crmSecondary"
+                title={action.label}
+                onClick={() => openCreate(action.type)}
+              >
+                <AgendaKindIcon kind={activityKindFromActivityType(action.type)} icon={Icon} />
+                {action.label}
+              </Button>
+            )
+          })}
+        </div>
+      </PermissionGate>
+
+      <section
+        className="grid min-w-0 grid-cols-2 gap-3 min-[768px]:grid-cols-3 min-[1280px]:grid-cols-6"
+        aria-label="Indicadores operacionais"
+      >
         <Kpi label="Atividades hoje" value={metrics?.today} loading={query.isLoading} />
-        <Kpi label="Atrasadas" value={metrics?.overdue} loading={query.isLoading} />
-        <Kpi label="Follow-ups" value={metrics?.followUpsPending} loading={query.isLoading} />
-        <Kpi label="Renovações" value={metrics?.renewalsUpcoming} loading={query.isLoading} />
+        <Kpi
+          label="Atividades atrasadas"
+          value={metrics?.overdue}
+          loading={query.isLoading}
+        />
+        <Kpi
+          label="Follow-ups pendentes"
+          value={metrics?.followUpsPending}
+          loading={query.isLoading}
+        />
+        <Kpi
+          label="Renovações próximas"
+          value={metrics?.renewalsUpcoming}
+          loading={query.isLoading}
+        />
         <Kpi
           label="Reativações hoje"
           value={metrics?.reactivationsToday}
@@ -200,200 +351,287 @@ export function CommercialAgendaWorkspace() {
           loading={query.isLoading}
           href="/crm/reativacoes?window=overdue"
         />
-      </div>
+      </section>
 
       {actionMessage ? (
-        <p className="mb-3 rounded-md border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200" role="status">
+        <p className="agenda-status" role="status">
           {actionMessage}
         </p>
       ) : null}
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {WINDOWS.map((item) => (
-          <FilterChip
-            key={item.id}
-            isActive={window === item.id}
-            label={item.label}
-            onClick={() => setWindow(item.id)}
-          />
-        ))}
-      </div>
-      <div className="mb-4 flex flex-wrap gap-2">
-        {TYPES.map((item) => (
-          <FilterChip
-            key={item.id || "all"}
-            isActive={type === item.id}
-            label={item.label}
-            onClick={() => setType(item.id)}
-          />
-        ))}
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-        <table className="min-w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">Data/Hora</th>
-              <th className="px-3 py-2">Cliente/Lead</th>
-              <th className="px-3 py-2">Tipo</th>
-              <th className="px-3 py-2">Motivo</th>
-              <th className="px-3 py-2">Responsável</th>
-              <th className="px-3 py-2">Prioridade</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {query.isLoading ? (
-              <tr>
-                <td colSpan={8} className="px-3 py-6 text-muted-foreground">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="size-3 animate-pulse rounded-full bg-white/20" />
-                    Carregando agenda…
-                  </span>
-                </td>
-              </tr>
-            ) : null}
-            {!query.isLoading && items.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-3 py-6 text-muted-foreground">
-                  Nenhuma atividade nesta visão.
-                </td>
-              </tr>
-            ) : null}
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                className={cn(
-                  "border-t border-white/[0.04]",
-                  (window === "overdue" || item.priority === "high") &&
-                    "bg-destructive/10 text-destructive",
-                )}
+      <section className="agenda-bars" aria-label="Filtros da agenda">
+        <CrmFilterGroup label="Período">
+          {WINDOWS.map((item) => (
+            <CrmFilterChip
+              key={item.id}
+              pressed={window === item.id}
+              onClick={() => setWindow(item.id)}
+            >
+              {item.label}
+            </CrmFilterChip>
+          ))}
+        </CrmFilterGroup>
+        <CrmFilterGroup
+          label="Tipo de atividade"
+          className="border-t border-[#D6CFC4] pt-3"
+        >
+          {TYPES.map((item) => {
+            const Icon = item.icon
+            const selected = type === item.id
+            const kind = activityKindFromAgendaType(item.id)
+            return (
+              <CrmFilterChip
+                key={item.id || "all"}
+                pressed={selected}
+                title={item.label}
+                onClick={() => setType(item.id)}
               >
-                <td className="px-3 py-2 tabular-nums">{formatDateTime(item.at)}</td>
-                <td className="px-3 py-2">{partyName(item)}</td>
-                <td className="px-3 py-2">{item.typeLabel}</td>
-                <td className="px-3 py-2 text-muted-foreground">{item.origin || "—"}</td>
-                <td className="px-3 py-2">{item.ownerName ?? "—"}</td>
-                <td className="px-3 py-2">{priorityLabel(item.priority)}</td>
-                <td className="px-3 py-2">{statusLabel(item.status)}</td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-1">
-                    <PermissionGate permission="crm:manage">
-                      {item.source === "activity" || item.source === "follow_up" ? (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => complete(item)}
-                          >
-                            Concluir
-                          </Button>
-                          {rescheduleId === item.id ? (
-                            <>
-                              <input
-                                type="datetime-local"
-                                className="h-8 rounded-md border border-white/10 bg-transparent px-2 text-xs"
-                                value={rescheduleAt}
-                                onChange={(event) =>
-                                  setRescheduleAt(event.target.value)
-                                }
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => confirmReschedule(item)}
-                              >
-                                Salvar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setRescheduleId(null)}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setRescheduleId(item.id)
-                                setRescheduleAt(toDatetimeLocal(item.at))
-                              }}
-                            >
-                              Reagendar
-                            </Button>
-                          )}
-                          {resultId === item.id ? (
-                            <>
-                              <input
-                                className="h-8 min-w-[10rem] rounded-md border border-white/10 bg-transparent px-2 text-xs"
-                                placeholder="Resultado do contato"
-                                value={resultText}
-                                onChange={(event) =>
-                                  setResultText(event.target.value)
-                                }
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  complete(item, resultText.trim() || undefined)
-                                }
-                              >
-                                Salvar
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setResultId(null)}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setResultId(item.id)
-                                setResultText("")
-                              }}
-                            >
-                              Registrar resultado
-                            </Button>
-                          )}
-                        </>
-                      ) : null}
-                    </PermissionGate>
-                    {item.leadId ? (
-                      <Link
-                        href={`/leads?lead=${item.leadId}`}
-                        className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
-                      >
-                        Abrir Lead
-                      </Link>
-                    ) : null}
-                    {item.customerId ? (
-                      <Link
-                        href={`/clientes?customerId=${item.customerId}`}
-                        className={cn(buttonVariants({ size: "sm", variant: "ghost" }))}
-                      >
-                        Abrir Cliente
-                      </Link>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                <Icon
+                  className="size-3.5 shrink-0"
+                  strokeWidth={1.75}
+                  aria-hidden
+                  style={selected ? undefined : { color: activityKindColors[kind].icon }}
+                />
+                {item.label}
+              </CrmFilterChip>
+            )
+          })}
+        </CrmFilterGroup>
+      </section>
+
+      <section className="agenda-work" aria-label="Lista de atividades">
+        {query.isLoading ? (
+          <div className="agenda-state">
+            <LoadingState label="Carregando agenda…" />
+          </div>
+        ) : null}
+        {query.isError ? (
+          <div className="agenda-state">
+            <ErrorState
+              title="Não foi possível carregar a agenda."
+              description={getErrorMessage(query.error, "Erro ao carregar as atividades.")}
+              onRetry={() => void query.refetch()}
+            />
+          </div>
+        ) : null}
+        {!query.isLoading && !query.isError && items.length === 0 ? (
+          <div className="agenda-state">
+            <p className="text-base font-semibold text-[var(--avila-navy-900)]">
+              Nenhuma atividade em {periodLabel.toLowerCase()}.
+            </p>
+            <p className="agenda-muted mt-2 max-w-xl text-sm leading-relaxed">
+              Crie uma atividade ou escolha outro período. Os indicadores acima
+              consideram a carteira inteira; esta lista mostra apenas o período
+              e o tipo selecionados.
+            </p>
+            {type || ((metrics?.overdue ?? 0) > 0 && window !== "overdue") ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {type ? (
+                  <Button type="button" variant="crmSecondary" onClick={() => setType("")}>
+                    Ver todos os tipos
+                  </Button>
+                ) : null}
+                {(metrics?.overdue ?? 0) > 0 && window !== "overdue" ? (
+                  <Button type="button" variant="crmSecondary" onClick={() => setWindow("overdue")}>
+                    Ver atrasados
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+        {!query.isLoading && !query.isError && items.length > 0 ? (
+          <div className="agenda-table-scroll">
+            <table className="agenda-table">
+              <thead>
+                <tr>
+                  <th>Data e horário</th>
+                  <th>Cliente/Lead</th>
+                  <th>Tipo</th>
+                  <th>Motivo</th>
+                  <th>Responsável</th>
+                  <th>Prioridade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const party = partyName(item)
+                  const origin = item.origin || "—"
+                  const owner = item.ownerName ?? "—"
+                  return (
+                    <tr key={item.id}>
+                      <td className="tabular-nums whitespace-nowrap">{formatDateTime(item.at)}</td>
+                      <td>
+                        <Clip value={party} />
+                      </td>
+                      <td>
+                        <TypeBadge type={item.type} label={item.typeLabel} />
+                      </td>
+                      <td>
+                        <Clip value={origin} />
+                      </td>
+                      <td>
+                        <Clip value={owner} />
+                      </td>
+                      <td>
+                        <PriorityBadge priority={item.priority} />
+                      </td>
+                      <td>
+                        <StatusBadge status={item.status} />
+                      </td>
+                      <td>
+                        <AgendaActions
+                          item={item}
+                          onComplete={complete}
+                          onStartReschedule={(current) => {
+                            setResultId(null)
+                            setResultText("")
+                            setRescheduleId(current.id)
+                            setRescheduleAt(toDatetimeLocal(current.at))
+                          }}
+                          onStartResult={(current) => {
+                            setRescheduleId(null)
+                            setRescheduleAt("")
+                            setResultId(current.id)
+                            setResultText("")
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </section>
+
+      {createMode ? (
+        <ActivityFormDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setCreateMode(null)
+          }}
+          initialType={createMode ?? undefined}
+          presentation="drawer"
+          title={createLabel ?? "Nova atividade"}
+          description="Confirme o tipo, o vínculo e o horário."
+          pending={createActivity.isPending}
+          error={createActivity.error}
+          onSubmit={submitCreate}
+        />
+      ) : null}
+
+      {rescheduleItem ? (
+        <CrmFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setRescheduleId(null)
+              setRescheduleAt("")
+            }
+          }}
+        >
+          <form
+            className="flex h-full min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void confirmReschedule(rescheduleItem)
+            }}
+          >
+            <CrmFormDrawerHeader
+              icon={CalendarClock}
+              title="Reagendar atividade"
+              description={partyName(rescheduleItem)}
+            />
+            <CrmFormDrawerBody className="gap-4 px-5! py-4!">
+              <CrmFormDrawerSection title="Novo horário" className="gap-4 p-4!">
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[#5C6578]">
+                    Data e horário
+                  </span>
+                  <input
+                    type="datetime-local"
+                    className={crmDrawerInputClass}
+                    value={rescheduleAt}
+                    required
+                    onChange={(event) => setRescheduleAt(event.target.value)}
+                  />
+                </label>
+              </CrmFormDrawerSection>
+            </CrmFormDrawerBody>
+            <CrmFormDrawerFooter>
+              <CrmFormDrawerCancel
+                onClick={() => {
+                  setRescheduleId(null)
+                  setRescheduleAt("")
+                }}
+              />
+              <CrmFormDrawerSubmit disabled={!rescheduleAt}>
+                Salvar
+              </CrmFormDrawerSubmit>
+            </CrmFormDrawerFooter>
+          </form>
+        </CrmFormDrawer>
+      ) : null}
+
+      {resultItem ? (
+        <CrmFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setResultId(null)
+              setResultText("")
+            }
+          }}
+        >
+          <form
+            className="flex h-full min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void complete(resultItem, resultText.trim() || undefined)
+            }}
+          >
+            <CrmFormDrawerHeader
+              icon={SquarePen}
+              title="Registrar resultado"
+              description={partyName(resultItem)}
+            />
+            <CrmFormDrawerBody className="gap-4 px-5! py-4!">
+              <CrmFormDrawerSection title="Resultado do contato" className="gap-4 p-4!">
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[#5C6578]">
+                    Resultado
+                  </span>
+                  <input
+                    className={crmDrawerInputClass}
+                    placeholder="Resultado do contato"
+                    value={resultText}
+                    onChange={(event) => setResultText(event.target.value)}
+                  />
+                </label>
+              </CrmFormDrawerSection>
+            </CrmFormDrawerBody>
+            <CrmFormDrawerFooter>
+              <CrmFormDrawerCancel
+                onClick={() => {
+                  setResultId(null)
+                  setResultText("")
+                }}
+              />
+              <CrmFormDrawerSubmit>Salvar</CrmFormDrawerSubmit>
+            </CrmFormDrawerFooter>
+          </form>
+        </CrmFormDrawer>
+      ) : null}
     </div>
   )
 }
+
+const kpiClassName =
+  "flex min-h-[4.75rem] min-w-0 flex-col justify-center gap-2 rounded-xl border border-[#D6CFC4] bg-white px-3.5! py-3! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)]"
 
 function Kpi({
   label,
@@ -408,10 +646,8 @@ function Kpi({
 }) {
   const body = (
     <>
-      <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-0.5 text-base font-semibold tabular-nums">
+      <p className="text-xs font-medium text-[#5C6578]">{label}</p>
+      <p className="text-2xl font-semibold leading-none tracking-tight text-[#10294B] tabular-nums">
         {loading ? "—" : (value ?? 0)}
       </p>
     </>
@@ -421,7 +657,10 @@ function Kpi({
     return (
       <Link
         href={href}
-        className="rounded-md border border-white/[0.06] px-3 py-2 transition-colors hover:border-white/20 hover:bg-white/[0.03]"
+        className={cn(
+          kpiClassName,
+          "transition-colors hover:border-[#C09048] focus-visible:ring-2 focus-visible:ring-[#10294B]/30 focus-visible:outline-none",
+        )}
         title="Abrir Reativações"
       >
         {body}
@@ -429,7 +668,112 @@ function Kpi({
     )
   }
 
+  return <article className={kpiClassName}>{body}</article>
+}
+
+function statusTone(status: string) {
+  const key = status.toLowerCase()
+  if (key === "completed") return "success"
+  if (key === "overdue") return "danger"
+  if (key === "canceled" || key === "cancelled") return "neutral"
+  if (key === "pending") return "info"
+  return "neutral"
+}
+
+function StatusBadge({ status }: { status: string }) {
   return (
-    <div className="rounded-md border border-white/[0.06] px-3 py-2">{body}</div>
+    <span className={cn("agenda-badge", `agenda-badge--${statusTone(status)}`)}>
+      {statusLabel(status)}
+    </span>
+  )
+}
+
+function PriorityBadge({
+  priority,
+}: {
+  priority: CommercialAgendaItem["priority"] | undefined
+}) {
+  const tone =
+    priority === "high" ? "danger" : priority === "medium" ? "warn" : "success"
+  return (
+    <span className={cn("agenda-badge", `agenda-badge--${tone}`)}>
+      {priorityLabel(priority)}
+    </span>
+  )
+}
+
+const agendaActionClass =
+  "h-9 w-auto max-w-full min-w-0 justify-center gap-1.5 px-2.5! text-xs font-semibold"
+
+function AgendaActions({
+  item,
+  onComplete,
+  onStartReschedule,
+  onStartResult,
+}: {
+  item: CommercialAgendaItem
+  onComplete: (item: CommercialAgendaItem, outcome?: string) => void
+  onStartReschedule: (item: CommercialAgendaItem) => void
+  onStartResult: (item: CommercialAgendaItem) => void
+}) {
+  return (
+    <div className="agenda-actions">
+      <PermissionGate permission="crm:manage">
+        {item.source === "activity" || item.source === "follow_up" ? (
+          <>
+            <Button
+              type="button"
+              variant="crmSecondary"
+              className={agendaActionClass}
+              title="Concluir"
+              onClick={() => onComplete(item)}
+            >
+              <Check className="size-3.5 shrink-0" aria-hidden />
+              Concluir
+            </Button>
+            <Button
+              type="button"
+              variant="crmSecondary"
+              className={agendaActionClass}
+              title="Reagendar"
+              onClick={() => onStartReschedule(item)}
+            >
+              <CalendarClock className="size-3.5 shrink-0" aria-hidden />
+              Reagendar
+            </Button>
+            <Button
+              type="button"
+              variant="crmSecondary"
+              className={agendaActionClass}
+              title="Registrar resultado"
+              onClick={() => onStartResult(item)}
+            >
+              <SquarePen className="size-3.5 shrink-0" aria-hidden />
+              Registrar resultado
+            </Button>
+          </>
+        ) : null}
+      </PermissionGate>
+      {item.leadId ? (
+        <Link
+          href={`/leads?lead=${item.leadId}`}
+          title="Abrir Lead"
+          className={cn(buttonVariants({ variant: "crmSecondary" }), agendaActionClass)}
+        >
+          <UserRound className="size-3.5 shrink-0" aria-hidden />
+          Abrir Lead
+        </Link>
+      ) : null}
+      {item.customerId ? (
+        <Link
+          href={`/clientes?customerId=${item.customerId}`}
+          title="Abrir Cliente"
+          className={cn(buttonVariants({ variant: "crmSecondary" }), agendaActionClass)}
+        >
+          <UserRoundCheck className="size-3.5 shrink-0" aria-hidden />
+          Abrir Cliente
+        </Link>
+      ) : null}
+    </div>
   )
 }

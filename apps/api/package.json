@@ -42,6 +42,7 @@
     "@prisma/client": "6.19.3",
     "@repo/database": "*",
     "@repo/forms-engine": "*",
+    "@repo/forms-library": "*",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.34.10",
     "class-transformer": "^0.5.1",

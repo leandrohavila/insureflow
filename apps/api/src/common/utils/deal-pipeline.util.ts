@@ -197,6 +197,20 @@ export function boardDealStage(
   return canonical;
 }
 
+/** Teto de `deal_stage_history.duration_ms` (PostgreSQL INT4). */
+export const STAGE_DURATION_MS_MAX = 2_147_483_647;
+
+/**
+ * Duração em milissegundos que cabe na coluna INT4.
+ * Permanências acima de ~24,8 dias eram rejeitadas e o PATCH do negócio
+ * respondia 500, mesmo com o estágio já aceito.
+ */
+export function stageDurationMs(from: Date, to: Date): number {
+  const elapsed = to.getTime() - from.getTime();
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return 0;
+  return Math.min(STAGE_DURATION_MS_MAX, Math.floor(elapsed));
+}
+
 export type SlaStatus = 'ok' | 'warning' | 'overdue';
 
 export function computeStageSla(params: {

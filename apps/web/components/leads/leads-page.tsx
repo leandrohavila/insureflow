@@ -46,6 +46,7 @@ import { LeadDetailSheet } from "@/components/leads/lead-detail-sheet"
 import { LeadSheetV2 } from "@/components/leads/lead-sheet-v2"
 import { ActivityFormDialog } from "@/components/activities/activity-form-dialog"
 import { QuestionnaireSubmissionDetailSheet } from "@/components/questionnaires/questionnaire-submission-detail-sheet"
+import { IntelligentFormWizard } from "@/components/questionnaires/intelligent-form-wizard"
 import { QuestionnaireSubmissionDialog } from "@/components/questionnaires/questionnaire-submission-dialog"
 import { ActionToast } from "@/components/shared"
 import {
@@ -86,8 +87,10 @@ import { queryKeys } from "@/lib/data-access/query-keys"
 import type {
   Lead,
   LeadListFilters,
+  LeadListSort,
   LeadStatus,
 } from "@/lib/data-access/modules/leads"
+import type { QuestionnaireSubmission } from "@/lib/data-access/modules/questionnaires"
 import {
   fetchLead,
   LEAD_STATUSES,
@@ -102,6 +105,7 @@ import { resetLeadSaveMutations } from "@/lib/data-access/modules/leads/lead-dia
 import { NEXT_CONTACT_ACTIVITY_OPTIONS } from "@/lib/data-access/modules/leads/lead-next-contact-form"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
+import { CrmFilterChip, crmFilterFieldClass } from "@/components/crm/crm-controls"
 import { useLeadCaptureMetrics } from "@/lib/leads/use-lead-capture-metrics"
 import {
   defaultInterestsForLeadIntent,
@@ -130,6 +134,10 @@ import {
 import { useCreateActivity } from "@/lib/data-access/modules/activities"
 import { activityTypeSubjects } from "@/lib/crm/activity-labels"
 import {
+  LEAD_CONTACT_ACTIVITY_TYPES,
+  LEAD_SCHEDULE_ACTIVITY_TYPES,
+} from "@/lib/leads/lead-detail-view"
+import {
   bug010LeadCreateLog,
   bug010LeadCreateProfiler,
   bug010LeadCreateStart,
@@ -151,6 +159,13 @@ function createLeadIdempotencyKey() {
   return `lead-create-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+const sortLabels: Record<LeadListSort, string> = {
+  recent: "Mais recentes",
+  oldest: "Mais antigos",
+  name: "Nome",
+  lastContact: "Última interação",
+}
+
 const statusLabels: Record<LeadStatus, string> = {
   new: "Novo",
   contacted: "Contatado",
@@ -160,15 +175,15 @@ const statusLabels: Record<LeadStatus, string> = {
 }
 
 const statusStyles: Record<LeadStatus, string> = {
-  new: "border-success/30 bg-success/15 text-success",
-  contacted: "border-info/25 bg-info/12 text-info",
-  qualified: "border-[var(--avila-gold-600)]/45 bg-[var(--avila-gold-600)]/16 text-[var(--avila-navy-900)]",
-  converted: "border-success/25 bg-success/20 text-success",
-  lost: "border-destructive/30 bg-destructive/12 text-destructive",
+  new: "border-[#D6CFC4] bg-white text-[#10294B]",
+  contacted: "border-[#C9C3E4] bg-[#F4F1FA] text-[#3E3570]",
+  qualified: "border-[#C09048] bg-[#FBF6EF] text-[#10294B]",
+  converted: "border-[#B7D7C8] bg-[#E8F5EF] text-[#1F6B4A]",
+  lost: "border-[#E4C4C4] bg-[#F8ECEC] text-[#8C3030]",
 }
 
 const leadActionButtonClass =
-  "h-8 w-full max-w-[9.25rem] justify-center px-2 text-xs font-semibold"
+  "h-9 w-auto max-w-full min-w-0 justify-center gap-1 overflow-hidden px-2.5! text-xs font-semibold"
 
 function LeadIconButton({
   label,
@@ -184,11 +199,11 @@ function LeadIconButton({
   children: ReactNode
 }) {
   const toneClass = {
-    phone: "text-[var(--avila-action-success)] hover:bg-[var(--avila-action-success)]/12",
-    whatsapp: "text-[#128C7E] hover:bg-[var(--avila-action-whatsapp)]/20",
-    schedule: "text-[var(--avila-action-info)] hover:bg-[var(--avila-action-info)]/12",
-    view: "text-[var(--avila-action-primary)] hover:bg-[var(--avila-action-primary)]/10",
-    muted: "text-muted-foreground hover:bg-muted hover:text-foreground",
+    phone: "text-[#1F6B4A]",
+    whatsapp: "text-[#128C7E]",
+    schedule: "text-[#8A6230]",
+    view: "text-[#10294B]",
+    muted: "text-[#5C6578]",
   }[tone]
   return (
     <Tooltip>
@@ -203,7 +218,7 @@ function LeadIconButton({
               onClick()
             }}
             className={cn(
-              "inline-flex size-8 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-[#D6CFC4] bg-white transition-colors hover:bg-[#F6F1E8] focus-visible:ring-2 focus-visible:ring-[#10294B]/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
               toneClass,
             )}
           />
@@ -272,7 +287,7 @@ function BusinessUnitFilter({
       label="Empresa"
       value={value}
       onChange={(event) => onChange(event.target.value)}
-      className="h-9 min-w-[8.5rem] bg-card px-3!"
+      className={cn(crmFilterFieldClass, "min-w-[8.5rem]")}
       options={[
         { value: "all", label: "Todas" },
         ...units.map((unit) => ({ value: unit.id, label: unit.name })),
@@ -294,12 +309,22 @@ export function LeadsPage() {
     InterestCategory | "all"
   >("all")
   const [period, setPeriod] = useState<"all" | "7" | "30" | "90">("all")
+  const [sort, setSort] = useState<LeadListSort>("recent")
   const [mineOnly, setMineOnly] = useState(false)
-  const [scheduleLead, setScheduleLead] = useState<Lead | null>(null)
+  const { data: businessUnits = [] } = useBusinessUnits()
+  const [activityIntent, setActivityIntent] = useState<{
+    lead: Lead
+    mode: "contact" | "schedule"
+  } | null>(null)
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [questionnaireLead, setQuestionnaireLead] = useState<Lead | null>(null)
+  const [intelligentForm, setIntelligentForm] = useState<{
+    lead: Lead
+    templateId: string | null
+    submissionId: string | null
+  } | null>(null)
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     string | null
   >(null)
@@ -350,10 +375,11 @@ export function LeadsPage() {
       interestCategory:
         interestCategory === "all" ? undefined : interestCategory,
       createdWithinDays: period === "all" ? undefined : Number(period) as 7 | 30 | 90,
+      sort,
       page,
       limit: PAGE_SIZE,
     }),
-    [businessUnitId, interestCategory, mineOnly, page, period, search, source, status],
+    [businessUnitId, interestCategory, mineOnly, page, period, search, sort, source, status],
   )
 
   const leadsQuery = useLeads(filters)
@@ -363,7 +389,7 @@ export function LeadsPage() {
   const deleteLead = useDeleteLead(filters)
   const convertLead = useConvertLead(filters)
   const createActivity = useCreateActivity({
-    leadId: scheduleLead?.id,
+    leadId: activityIntent?.lead.id,
   })
   const createLeadResetRef = useRef(createLead.reset)
   const updateLeadResetRef = useRef(updateLead.reset)
@@ -495,6 +521,11 @@ export function LeadsPage() {
     [pathname, router, searchParams],
   )
 
+  const closeLeadDetails = useCallback(() => {
+    setDetailLead(null)
+    if (searchParams.get("lead")) syncLeadUrlParams({ lead: null })
+  }, [searchParams, syncLeadUrlParams])
+
   const closeConvertDialog = useCallback(() => {
     convertDialogEpochRef.current += 1
     setConvertTarget(null)
@@ -591,7 +622,77 @@ export function LeadsPage() {
     (businessUnitId !== "all" ? 1 : 0) +
     (interestCategory !== "all" ? 1 : 0) +
     (period !== "all" ? 1 : 0) +
+    (sort !== "recent" ? 1 : 0) +
     (mineOnly ? 1 : 0)
+  const appliedFilters = useMemo(() => {
+    const unitName = businessUnits.find((unit) => unit.id === businessUnitId)?.name
+    const periodLabel =
+      period === "7" ? "7 dias" : period === "30" ? "30 dias" : period === "90" ? "90 dias" : null
+    return [
+      searchInput.trim()
+        ? {
+            id: "search",
+            label: `Busca: ${searchInput.trim()}`,
+            clear: () => setSearchInput(""),
+          }
+        : null,
+      status !== "all"
+        ? {
+            id: "status",
+            label: `Status: ${statusLabels[status]}`,
+            clear: () => setStatus("all"),
+          }
+        : null,
+      mineOnly
+        ? { id: "mine", label: "Meus leads", clear: () => setMineOnly(false) }
+        : null,
+      source.trim()
+        ? {
+            id: "source",
+            label: `Origem: ${source.trim()}`,
+            clear: () => setSource(""),
+          }
+        : null,
+      interestCategory !== "all"
+        ? {
+            id: "interest",
+            label: INTEREST_CATEGORY_LABELS[interestCategory],
+            clear: () => setInterestCategory("all"),
+          }
+        : null,
+      periodLabel
+        ? {
+            id: "period",
+            label: periodLabel,
+            clear: () => setPeriod("all"),
+          }
+        : null,
+      businessUnitId !== "all"
+        ? {
+            id: "unit",
+            label: unitName ?? "Empresa",
+            clear: () => setBusinessUnitId("all"),
+          }
+        : null,
+      sort !== "recent"
+        ? {
+            id: "sort",
+            label: `Ordem: ${sortLabels[sort]}`,
+            clear: () => setSort("recent"),
+          }
+        : null,
+    ].filter((item) => item != null)
+  }, [
+    businessUnitId,
+    businessUnits,
+    interestCategory,
+    mineOnly,
+    period,
+    searchInput,
+    sort,
+    source,
+    status,
+  ])
 
   useEffect(() => {
     if (!showMineFilter && mineOnly) {
@@ -601,7 +702,7 @@ export function LeadsPage() {
 
   useEffect(() => {
     setPage(1)
-  }, [businessUnitId, interestCategory, mineOnly, period, search, source, status])
+  }, [businessUnitId, interestCategory, mineOnly, period, search, sort, source, status])
 
   async function openLeadById(id: string) {
     const lead = await queryClient.fetchQuery({
@@ -617,12 +718,13 @@ export function LeadsPage() {
         key: "name",
         header: "Lead",
         sticky: "left",
-        className: "w-[14%]",
+        className:
+          "w-[138px] max-w-[138px] overflow-hidden static! left-auto! z-auto! shadow-none! backdrop-blur-none!",
         render: (row) => {
           const priority = deriveLeadPriority(row)
           const badges = deriveLeadOperationalBadges(row)
           return (
-            <div className="flex items-center gap-2.5 py-0.5">
+            <div className="flex w-full min-w-0 items-center gap-2.5 py-0.5">
               <Avatar className="size-9 shrink-0">
                 <AvatarFallback
                   className={cn(
@@ -633,20 +735,26 @@ export function LeadsPage() {
                   {row.initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 leading-tight">
-                <p
-                  className="line-clamp-2 text-sm font-semibold tracking-tight text-foreground"
-                  title={row.name}
-                >
-                  {row.name}
-                </p>
+              <div className="min-w-0 flex-1 leading-tight">
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <p className="line-clamp-2 w-full text-left text-sm font-semibold leading-5 tracking-tight break-words text-foreground" />
+                    }
+                  >
+                    {row.name}
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left whitespace-normal">
+                    {row.name}
+                  </TooltipContent>
+                </Tooltip>
                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
                       "rounded-full px-1.5! py-0.5! text-[10px] font-semibold",
-                      priority === "high" && "bg-destructive/12 text-destructive",
-                      priority === "medium" && "bg-warning/25 text-warning-foreground",
-                      priority === "low" && "bg-muted text-muted-foreground",
+                      priority === "high" && "bg-[#F8ECEC] text-[#8C3030]",
+                      priority === "medium" && "bg-[#FBF6EF] text-[#8A6230]",
+                      priority === "low" && "bg-[#F6F1E8] text-[#5C6578]",
                     )}
                   >
                     {LEAD_PRIORITY_LABEL[priority]}
@@ -674,20 +782,36 @@ export function LeadsPage() {
       {
         key: "contact",
         header: "Contato",
-        className: "w-[13%]",
+        className: "w-[140px] max-w-[140px] overflow-hidden",
         render: (row) => (
-          <div className="flex flex-col justify-center gap-1 text-[13px] leading-none text-foreground">
+          <div className="flex w-full min-w-0 flex-col justify-center gap-1 text-[13px] leading-none text-foreground">
             {row.phone ? (
-              <span className="flex items-center gap-1.5">
-                <Phone className="size-3.5 shrink-0 text-success" />
-                <span className="truncate">{row.phone}</span>
-              </span>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="flex w-full min-w-0 items-center gap-1.5" />
+                  }
+                >
+                  <Phone className="size-3.5 shrink-0 text-success" />
+                  <span className="min-w-0 truncate">{row.phone}</span>
+                </TooltipTrigger>
+                <TooltipContent>{row.phone}</TooltipContent>
+              </Tooltip>
             ) : null}
             {row.email ? (
-              <span className="flex items-center gap-1.5" title={row.email}>
-                <Mail className="size-3.5 shrink-0 text-info" />
-                <span className="truncate">{row.email}</span>
-              </span>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="flex w-full min-w-0 items-center gap-1.5" />
+                  }
+                >
+                  <Mail className="size-3.5 shrink-0 text-info" />
+                  <span className="min-w-0 truncate">{row.email}</span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-left whitespace-normal">
+                  {row.email}
+                </TooltipContent>
+              </Tooltip>
             ) : null}
             {!row.email && !row.phone ? "—" : null}
           </div>
@@ -696,7 +820,7 @@ export function LeadsPage() {
       {
         key: "status",
         header: "Status",
-        className: "w-[8%]",
+        className: "w-[92px] max-w-[92px] overflow-hidden",
         render: (row) => (
           <span
             className={cn(
@@ -712,18 +836,21 @@ export function LeadsPage() {
         key: "owner",
         header: "Responsável",
         hideOnMobile: true,
-        className: "w-[8%]",
-        render: (row) => (
-          <span className="block truncate text-sm text-foreground">
-            {leadOwnerDisplayName(row) || "—"}
-          </span>
-        ),
+        className: "w-[76px] max-w-[76px] overflow-hidden",
+        render: (row) => {
+          const owner = leadOwnerDisplayName(row) || "—"
+          return (
+            <span className="block truncate text-sm text-foreground" title={owner}>
+              {owner}
+            </span>
+          )
+        },
       },
       {
         key: "source",
         header: "Origem",
         hideOnMobile: true,
-        className: "w-[7%]",
+        className: "w-[52px] max-w-[52px] overflow-hidden",
         render: (row) => (
           <span
             className="block max-w-[11rem] truncate text-sm text-foreground"
@@ -737,15 +864,19 @@ export function LeadsPage() {
         key: "lastInteraction",
         header: "Última interação",
         hideOnMobile: true,
-        className: "w-[10%]",
+        className: "w-[92px] max-w-[92px] overflow-hidden",
         render: (row) => {
           const when = formatLeadMoment(
             row.lastInteractionAt ?? row.lastContactAt,
           )
+          const label = when ?? "Sem interação"
           return (
-            <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-foreground">
+            <span
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-sm text-foreground"
+              title={label}
+            >
               <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
-              {when ?? "Sem interação"}
+              <span className="min-w-0 truncate">{label}</span>
             </span>
           )
         },
@@ -753,7 +884,7 @@ export function LeadsPage() {
       {
         key: "pipeline",
         header: "Pipeline",
-        className: "w-[9%]",
+        className: "w-[80px] max-w-[80px] overflow-hidden",
         render: (row) => {
           const stage = row.dealId ? stageByDealId.get(row.dealId) : null
           const view = leadPipelinePresentation(row, stage)
@@ -762,15 +893,19 @@ export function LeadsPage() {
             <div className="flex flex-col gap-0.5">
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 text-sm font-medium",
+                  "inline-flex min-w-0 max-w-full items-center gap-1.5 text-sm font-medium",
                   view.converted ? "text-success" : "text-destructive",
                 )}
+                title={view.statusLabel}
               >
                 <PipelineIcon className="size-3.5 shrink-0" aria-hidden />
-                {view.statusLabel}
+                <span className="min-w-0 truncate">{view.statusLabel}</span>
               </span>
               {view.stageLabel ? (
-                <span className="pl-5 text-[11px] text-muted-foreground">
+                <span
+                  className="block min-w-0 truncate pl-5 text-[11px] text-muted-foreground"
+                  title={view.stageLabel}
+                >
                   {view.stageLabel}
                 </span>
               ) : null}
@@ -781,7 +916,7 @@ export function LeadsPage() {
       {
         key: "pipelineAction",
         header: "Ação",
-        className: "w-[9%]",
+        className: "w-[136px] max-w-[136px] overflow-hidden",
         render: (row) => {
           const view = leadPipelinePresentation(row)
           return (
@@ -789,27 +924,26 @@ export function LeadsPage() {
               {view.showConvert && canConvertLeads ? (
                 <Button
                   type="button"
-                  variant="convert"
-                  size="sm"
+                  variant="crmPrimary"
                   className={leadActionButtonClass}
                   title="Converter em negócio"
                   disabled={convertLead.isPending}
                   onClick={() => openConvertDialog(row)}
                 >
-                  <Briefcase className="size-3.5" />
-                  Converter
+                  <Briefcase className="size-3.5 shrink-0" />
+                  <span className="truncate">Converter</span>
                 </Button>
               ) : null}
               {view.showOpenDeal && canViewDeals && row.dealId ? (
                 <Button
                   type="button"
-                  variant="view"
-                  size="sm"
+                  variant="crmSecondary"
                   className={leadActionButtonClass}
+                  title="Abrir negócio"
                   onClick={() => router.push(`/crm/negocios?deal=${row.dealId}`)}
                 >
-                  <ExternalLink className="size-3.5" />
-                  Abrir negócio
+                  <ExternalLink className="size-3.5 shrink-0" />
+                  <span className="truncate">Abrir negócio</span>
                 </Button>
               ) : null}
               {view.converted && !view.showOpenDeal ? (
@@ -825,7 +959,7 @@ export function LeadsPage() {
         key: "nextAction",
         header: "Próxima ação",
         hideOnMobile: true,
-        className: "w-[11%]",
+        className: "w-[135px] max-w-[135px] overflow-hidden whitespace-nowrap",
         render: (row) => {
           const when = formatLeadMoment(row.nextContactAt)
           const detail =
@@ -842,40 +976,56 @@ export function LeadsPage() {
             row.status !== "lost"
           if (!when && !detail) {
             return (
-              <span className="text-sm text-muted-foreground">
-                — Sem próxima ação
+              <span className="block truncate text-sm leading-5 whitespace-nowrap text-muted-foreground">
+                Sem próxima ação
               </span>
             )
           }
+          const fullLabel = [when ?? "Agendada", detail]
+            .filter(Boolean)
+            .join(" · ")
           return (
-            <div className="flex min-w-0 flex-col gap-0.5">
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-sm font-medium",
-                  overdue ? "text-destructive" : "text-foreground",
-                )}
-              >
-                <Clock
-                  className={cn(
-                    "size-3.5 shrink-0",
-                    overdue ? "text-destructive" : "text-warning-foreground",
-                  )}
-                />
-                {when ?? "Agendada"}
-              </span>
-              {detail ? (
-                <span className="line-clamp-2 pl-5 text-[11px] leading-snug text-muted-foreground">
-                  {detail}
-                </span>
-              ) : null}
-            </div>
+            <TooltipProvider delay={400}>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <div className="block w-full min-w-0 max-w-full overflow-hidden text-left" />
+                  }
+                >
+                  <span
+                    className={cn(
+                      "flex w-full min-w-0 items-center gap-1.5",
+                      overdue ? "text-destructive" : "text-foreground",
+                    )}
+                  >
+                    <Clock
+                      className={cn(
+                        "size-3.5 shrink-0",
+                        overdue ? "text-destructive" : "text-warning-foreground",
+                      )}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium leading-5">
+                      {when ?? "Agendada"}
+                    </span>
+                  </span>
+                  {detail ? (
+                    <span className="mt-0.5 block min-w-0 truncate pl-5 text-[11px] leading-4 whitespace-nowrap text-muted-foreground">
+                      {detail}
+                    </span>
+                  ) : null}
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-left whitespace-normal">
+                  {fullLabel}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )
         },
       },
       {
         key: "quick",
         header: "Ações",
-        className: "w-[11%]",
+        className: "w-[192px] max-w-[192px] px-2! whitespace-nowrap",
         render: (row) => {
           const tel = leadTelHref(row.phone)
           const wa = leadWhatsAppHref(row.phone)
@@ -944,7 +1094,7 @@ export function LeadsPage() {
           return (
             <TooltipProvider delay={400}>
               <div
-                className="flex items-center justify-end gap-0.5"
+                className="inline-flex w-max max-w-full flex-nowrap items-center gap-1"
                 onClick={(event) => event.stopPropagation()}
               >
                 <LeadIconButton
@@ -970,7 +1120,9 @@ export function LeadsPage() {
                 <LeadIconButton
                   label="Agendar"
                   tone="schedule"
-                  onClick={() => setScheduleLead(row)}
+                  onClick={() =>
+                    setActivityIntent({ lead: row, mode: "schedule" })
+                  }
                 >
                   <CalendarClock className="size-3.5" />
                 </LeadIconButton>
@@ -1062,7 +1214,7 @@ export function LeadsPage() {
                 >
                   <PermissionGate permission="leads:manage">
                     <LeadCreateMenu
-                      accent
+                      appearance="crm"
                       onCreate={(intent) => openLeadDialog(null, intent)}
                       insuranceEnabled={
                         captureMetrics.isLoading ||
@@ -1079,10 +1231,7 @@ export function LeadsPage() {
                   <PermissionGate permission="leads:manage">
                     <Link
                       href="/crm/importacoes/leads"
-                      className={cn(
-                        buttonVariants({ variant: "import", size: "sm" }),
-                        "h-9 gap-1.5 px-3!",
-                      )}
+                      className={cn(buttonVariants({ variant: "crmSecondary" }), "gap-1.5")}
                     >
                       <Upload className="size-3.5" strokeWidth={1.5} />
                       Importar
@@ -1102,27 +1251,31 @@ export function LeadsPage() {
                 metrics={captureMetrics.metrics}
                 loading={captureMetrics.isLoading}
                 unavailable={captureMetrics.isError}
+                activeStatus={status}
+                onStatusSelect={(next) =>
+                  setStatus((current) => (current === next ? "all" : next))
+                }
               />
             </Profiler>
           </OperationalWorkspaceMetrics>
 
           <OperationalWorkspace className="overflow-visible">
             <OperationalWorkspaceToolbar dense>
-            <div className="rounded-xl border border-border bg-card p-3! shadow-[0_1px_2px_rgb(0_12_36/0.04)]">
+            <div className="rounded-xl border border-[#D6CFC4] bg-white p-3! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)] [&_label>span]:text-[#5C6578]">
             <FilterBar className="items-end">
               <FilterSearch
                 label="Buscar leads"
                 placeholder="Nome, telefone, e-mail, origem…"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                containerClassName="w-full min-w-[14rem] max-w-full basis-full sm:w-auto sm:max-w-[18rem] sm:basis-[16rem] sm:flex-1"
-                className="h-9 bg-background pr-3!"
+                containerClassName="w-full min-w-[14rem] max-w-full basis-full sm:w-auto sm:min-w-[16.25rem] sm:max-w-[18rem] sm:basis-[16rem] sm:flex-1"
+                className={cn(crmFilterFieldClass, "pl-10! pr-3!")}
               />
               <FilterSelect
                 showLabel
                 label="Status"
                 value={status}
-                className="h-9 min-w-[7.5rem] bg-card px-3!"
+                className={cn(crmFilterFieldClass, "min-w-[7.5rem]")}
                 onChange={(event) =>
                   setStatus(event.target.value as LeadStatus | "all")
                 }
@@ -1138,7 +1291,7 @@ export function LeadsPage() {
                 showLabel
                 label="Responsável"
                 value={mineOnly ? "mine" : "all"}
-                className="h-9 min-w-[7.5rem] bg-card px-3!"
+                className={cn(crmFilterFieldClass, "min-w-[7.5rem]")}
                 onChange={(event) =>
                   setMineOnly(event.target.value === "mine")
                 }
@@ -1153,13 +1306,13 @@ export function LeadsPage() {
                 value={source}
                 onChange={(event) => setSource(event.target.value)}
                 placeholder="Todas"
-                className="h-9 min-w-[7.5rem] bg-card px-3!"
+                className={cn(crmFilterFieldClass, "min-w-[7.5rem]")}
               />
               <FilterSelect
                 showLabel
                 label="Tipo de Seguro"
                 value={interestCategory}
-                className="h-9 min-w-[8.5rem] bg-card px-3!"
+                className={cn(crmFilterFieldClass, "min-w-[8.5rem]")}
                 onChange={(event) =>
                   setInterestCategory(
                     event.target.value as InterestCategory | "all",
@@ -1177,7 +1330,7 @@ export function LeadsPage() {
                 showLabel
                 label="Período"
                 value={period}
-                className="h-9 min-w-[7rem] bg-card px-3!"
+                className={cn(crmFilterFieldClass, "min-w-[7rem]")}
                 onChange={(event) =>
                   setPeriod(event.target.value as "all" | "7" | "30" | "90")
                 }
@@ -1192,11 +1345,25 @@ export function LeadsPage() {
                 value={businessUnitId}
                 onChange={setBusinessUnitId}
               />
+              <FilterSelect
+                showLabel
+                label="Ordenar"
+                value={sort}
+                className={cn(crmFilterFieldClass, "min-w-[8.5rem]")}
+                onChange={(event) =>
+                  setSort(event.target.value as LeadListSort)
+                }
+                options={(
+                  Object.keys(sortLabels) as LeadListSort[]
+                ).map((item) => ({
+                  value: item,
+                  label: sortLabels[item],
+                }))}
+              />
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-9 self-end"
+                variant="crmSecondary"
+                className="self-end"
                 disabled={activeFilterCount === 0}
                 onClick={() => {
                   setSearchInput("")
@@ -1205,12 +1372,29 @@ export function LeadsPage() {
                   setBusinessUnitId("all")
                   setInterestCategory("all")
                   setPeriod("all")
+                  setSort("recent")
                   setMineOnly(false)
                 }}
               >
                 Limpar
               </Button>
             </FilterBar>
+            {appliedFilters.length > 0 ? (
+              <div
+                className="mt-3! flex flex-wrap gap-2"
+                aria-label="Filtros aplicados"
+              >
+                {appliedFilters.map((item) => (
+                  <CrmFilterChip
+                    key={item.id}
+                    pressed
+                    onClick={item.clear}
+                  >
+                    {item.label}
+                  </CrmFilterChip>
+                ))}
+              </div>
+            ) : null}
             </div>
             </OperationalWorkspaceToolbar>
 
@@ -1218,9 +1402,9 @@ export function LeadsPage() {
             <DataTable
               density="default"
               className="w-full"
-              cellClassName="px-3! py-2.5! align-middle whitespace-normal"
-              headerCellClassName="px-3! py-2.5! whitespace-normal"
-              tableClassName="w-full table-fixed max-lg:min-w-[64rem]"
+              cellClassName="px-2! py-2.5! align-middle whitespace-normal"
+              headerCellClassName="px-2! py-2.5! whitespace-normal"
+              tableClassName="w-full table-fixed min-w-[1135px]"
               data={visibleLeads}
               columns={columns}
               getRowId={(row) => row.id}
@@ -1236,6 +1420,7 @@ export function LeadsPage() {
               emptyAction={
                 <PermissionGate permission="leads:manage">
                   <LeadCreateEmptyActions
+                    appearance="crm"
                     onCreate={(intent) => openLeadDialog(null, intent)}
                     insuranceEnabled={
                       captureMetrics.isLoading ||
@@ -1262,11 +1447,14 @@ export function LeadsPage() {
                   total: meta?.total,
                 },
                 onPageChange: setPage,
-                summary: `Mostrando ${
-                  (meta?.total ?? leads.length) === 0
-                    ? 0
-                    : (page - 1) * PAGE_SIZE + 1
-                } a ${Math.min(page * PAGE_SIZE, meta?.total ?? leads.length)} de ${meta?.total ?? leads.length} leads`,
+                summary:
+                  leadsQuery.isError && meta?.total == null
+                    ? "Contagem indisponível"
+                    : `Mostrando ${
+                        (meta?.total ?? leads.length) === 0
+                          ? 0
+                          : (page - 1) * PAGE_SIZE + 1
+                      } a ${Math.min(page * PAGE_SIZE, meta?.total ?? leads.length)} de ${meta?.total ?? leads.length} leads`,
                 pageSizeLabel: `${PAGE_SIZE} por página`,
               }}
             />
@@ -1296,22 +1484,52 @@ export function LeadsPage() {
         e evita stacking entre Sheet (lateral) e Dialog (centro).
       */}
           <ActivityFormDialog
-            open={Boolean(scheduleLead)}
+            presentation="drawer"
+            lockLink
+            linkPreference="lead"
+            linkTitle={activityIntent?.lead.name}
+            linkDetail={activityIntent?.lead.phone ?? undefined}
+            open={Boolean(activityIntent)}
             onOpenChange={(open) => {
-              if (!open) setScheduleLead(null)
+              if (!open) setActivityIntent(null)
             }}
-            initialType="follow_up"
-            leadId={scheduleLead?.id}
+            initialType={
+              activityIntent?.mode === "schedule" ? "follow_up" : undefined
+            }
+            allowedTypes={
+              activityIntent?.mode === "schedule"
+                ? LEAD_SCHEDULE_ACTIVITY_TYPES
+                : LEAD_CONTACT_ACTIVITY_TYPES
+            }
+            requireNextFollowUp={activityIntent?.mode === "schedule"}
+            title={
+              activityIntent?.mode === "schedule"
+                ? "Agendar próximo passo"
+                : "Registrar contato"
+            }
+            description={
+              activityIntent?.mode === "schedule"
+                ? "O próximo passo fica neste lead e aparece na Agenda, sem um segundo registro."
+                : "Registra um contato já realizado. Abrir telefone ou WhatsApp não grava a interação."
+            }
+            leadId={activityIntent?.lead.id}
             pending={createActivity.isPending}
             error={createActivity.error}
             onSubmit={(input) => {
+              if (!activityIntent) return
               const subject =
                 input.subject.trim() ||
                 activityTypeSubjects[input.type] ||
                 "Atividade"
               createActivity.mutate(
-                { ...input, subject, leadId: scheduleLead?.id },
-                { onSuccess: () => setScheduleLead(null) },
+                {
+                  ...input,
+                  subject,
+                  leadId: activityIntent.lead.id,
+                  status:
+                    activityIntent.mode === "contact" ? "completed" : "pending",
+                },
+                { onSuccess: () => setActivityIntent(null) },
               )
             }}
           />
@@ -1337,6 +1555,17 @@ export function LeadsPage() {
             onSubmitLockedChange={(locked) => {
               leadDialogSubmitLockedRef.current = locked
             }}
+            onMarkLost={
+              editingLead
+                ? async (input) => {
+                    const updated = await updateLead.mutateAsync({
+                      id: editingLead.id,
+                      input,
+                    })
+                    setEditingLead(updated)
+                  }
+                : undefined
+            }
             onOpenChange={(open) => {
               setDialogOpen(open)
               if (!open) {
@@ -1352,6 +1581,9 @@ export function LeadsPage() {
             onSubmit={async (input) => {
               if (editingLead) {
                 await updateLead.mutateAsync({ id: editingLead.id, input })
+                setLeadCreateToast(
+                  `Alterações de ${input.name.trim()} salvas.`,
+                )
                 setDialogOpen(false)
                 setForceLegacyForm(false)
                 return
@@ -1490,27 +1722,52 @@ export function LeadsPage() {
                 ? stageByDealId.get(detailLead.dealId)
                 : null
             }
+            canEdit={canManageLeads}
             canConvert={canConvertLeads}
+            canReactivate={canConvertLeads}
             canViewDeals={canViewDeals}
             canSchedule
             onOpenChange={(open) => {
-              if (!open) setDetailLead(null)
+              if (!open) closeLeadDetails()
             }}
             onEdit={(lead) => {
-              setDetailLead(null)
+              closeLeadDetails()
               openLeadDialog(lead)
             }}
             onConvert={(lead) => {
               setDetailLead(null)
               openConvertDialog(lead)
             }}
-            onSchedule={(lead) => {
-              setDetailLead(null)
-              setScheduleLead(lead)
-            }}
+            onRegisterContact={(lead) =>
+              setActivityIntent({ lead, mode: "contact" })
+            }
+            onSchedule={(lead) =>
+              setActivityIntent({ lead, mode: "schedule" })
+            }
             onOpenDeal={(dealId) => {
-              setDetailLead(null)
+              closeLeadDetails()
               router.push(`/crm/negocios?deal=${dealId}`)
+            }}
+            onStartIntelligentQuestionnaire={(lead) =>
+              setIntelligentForm({
+                lead,
+                templateId: null,
+                submissionId: null,
+              })
+            }
+            onContinueIntelligentQuestionnaire={(
+              lead,
+              submission: QuestionnaireSubmission,
+            ) =>
+              setIntelligentForm({
+                lead,
+                templateId: submission.templateId,
+                submissionId: submission.id,
+              })
+            }
+            onViewQuestionnaire={(submissionId) => {
+              closeLeadDetails()
+              setSelectedSubmissionId(submissionId)
             }}
           />
           <ConvertLeadDialog
@@ -1540,6 +1797,17 @@ export function LeadsPage() {
             onContinueQuestionnaire={(lead) => {
               closeConvertDialog()
               setQuestionnaireLead(lead)
+            }}
+          />
+
+          <IntelligentFormWizard
+            open={canManageQuestionnaires && intelligentForm !== null}
+            leadId={intelligentForm?.lead.id ?? null}
+            leadName={intelligentForm?.lead.name}
+            templateId={intelligentForm?.templateId}
+            submissionId={intelligentForm?.submissionId}
+            onOpenChange={(open) => {
+              if (!open) setIntelligentForm(null)
             }}
           />
 

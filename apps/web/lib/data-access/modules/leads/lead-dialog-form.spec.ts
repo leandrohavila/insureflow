@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from "vitest"
 import {
   buildLeadDialogFormState,
   collectLeadDialogUnitIds,
+  leadDialogAcceptsSubmit,
   leadDialogCanSubmit,
+  leadDialogFieldErrors,
   leadDialogUnitFields,
   EMPTY_LEAD_DIALOG_FORM,
   getLeadDialogSessionKey,
@@ -54,7 +56,13 @@ describe("buildLeadDialogFormState", () => {
     const form = buildLeadDialogFormState(sampleLead, "Operador")
     expect(form.name).toBe("Marina Costa")
     expect(form.email).toBe("marina@email.com")
+    expect(form.phone).toBe("(11) 99999-9999")
+    expect(form.company).toBe("Acme")
+    expect(form.source).toBe("whatsapp")
+    expect(form.document).toBe("529.982.247-25")
+    expect(form.notes).toBe("Nota")
     expect(form.assignedTo).toBe("Ana Costa")
+    expect(form).not.toHaveProperty("status")
   })
 
   it("sugere D-60/D-30/D-15 ao hidratar vencimento de apólice", () => {
@@ -166,6 +174,74 @@ describe("leadDialogCanSubmit", () => {
         name: "  ",
         businessUnitIds: ["bu-1"],
       }),
+    ).toBe(false)
+  })
+})
+
+describe("leadDialogFieldErrors", () => {
+  const valid = {
+    name: "Marina Costa",
+    email: "marina@email.com",
+    phone: "(11) 98888-7777",
+    document: "",
+    documentType: "cpf" as const,
+    businessUnitIds: ["bu-1"],
+    assignedTo: "Ana Costa",
+  }
+
+  it("aceita cadastro com nome, empresa e responsável", () => {
+    expect(leadDialogFieldErrors(valid)).toEqual({})
+  })
+
+  it("exige nome, empresa e responsável", () => {
+    expect(
+      leadDialogFieldErrors({
+        ...valid,
+        name: "  ",
+        businessUnitIds: [],
+        assignedTo: "",
+      }),
+    ).toEqual({
+      name: "Informe o nome completo.",
+      businessUnitIds: "Selecione ao menos uma unidade.",
+      assignedTo: "Informe o responsável.",
+    })
+  })
+
+  it("valida e-mail, telefone e documento só quando preenchidos", () => {
+    expect(
+      leadDialogFieldErrors({
+        ...valid,
+        email: "marina",
+        phone: "1199",
+        document: "111.111.111-11",
+      }),
+    ).toMatchObject({
+      email: "Informe um e-mail válido.",
+      phone: "Informe um telefone com DDD.",
+      document: "Informe um CPF válido.",
+    })
+    expect(
+      leadDialogFieldErrors({
+        ...valid,
+        email: "",
+        phone: "",
+        document: "",
+      }),
+    ).toEqual({})
+  })
+})
+
+describe("leadDialogAcceptsSubmit", () => {
+  it("permite um cadastro válido e bloqueia o envio duplicado", () => {
+    expect(
+      leadDialogAcceptsSubmit({ pending: false, submitLocked: false }),
+    ).toBe(true)
+    expect(
+      leadDialogAcceptsSubmit({ pending: true, submitLocked: false }),
+    ).toBe(false)
+    expect(
+      leadDialogAcceptsSubmit({ pending: false, submitLocked: true }),
     ).toBe(false)
   })
 })

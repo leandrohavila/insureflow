@@ -14,6 +14,7 @@ import {
   TimerOff,
 } from "lucide-react"
 
+import { CrmFilterChip, CrmFilterGroup } from "@/components/crm/crm-controls"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { StatusPill } from "@/components/crm/primitives"
 import {
@@ -150,7 +151,7 @@ export function ProposalsPage() {
           {returnTo ? (
             <Link
               href={returnTo}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
+              className={cn(buttonVariants({ variant: "crmSecondary" }))}
             >
               <ArrowLeft className="size-3.5" />
               Voltar
@@ -158,32 +159,30 @@ export function ProposalsPage() {
           ) : null}
         </CrmPageHeader>
 
-        <div className="mb-4 flex flex-wrap gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={status === "all" ? "default" : "outline"}
-            onClick={() => {
-              setStatus("all")
-              setPage(1)
-            }}
-          >
-            Todas
-          </Button>
-          {PROPOSAL_STATUSES.map((item) => (
-            <Button
-              key={item}
-              type="button"
-              size="sm"
-              variant={status === item ? "default" : "outline"}
+        <div className="mb-4 rounded-xl border border-[#D6CFC4] bg-white p-3!">
+          <CrmFilterGroup label="Status da proposta">
+            <CrmFilterChip
+              pressed={status === "all"}
               onClick={() => {
-                setStatus(item)
+                setStatus("all")
                 setPage(1)
               }}
             >
-              {proposalStatusLabel(item)}
-            </Button>
-          ))}
+              Todas
+            </CrmFilterChip>
+            {PROPOSAL_STATUSES.map((item) => (
+              <CrmFilterChip
+                key={item}
+                pressed={status === item}
+                onClick={() => {
+                  setStatus(item)
+                  setPage(1)
+                }}
+              >
+                {proposalStatusLabel(item)}
+              </CrmFilterChip>
+            ))}
+          </CrmFilterGroup>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -361,12 +360,11 @@ function ProposalDetailPanel({
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-[var(--if-layout-button-gap)]">
         <Button
           type="button"
           variant="info"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={busy}
           onClick={onGeneratePdf}
         >
@@ -380,8 +378,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="info"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={!proposal.hasPdf}
           onClick={onDownloadPdf}
         >
@@ -391,8 +388,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="info"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={busy || proposal.status !== "draft"}
           onClick={onSend}
         >
@@ -402,8 +398,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="info"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={
             busy ||
             (proposal.status !== "sent" && proposal.status !== "viewed")
@@ -416,8 +411,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="success"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={busy || proposal.status === "accepted"}
           onClick={onAccept}
         >
@@ -427,8 +421,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="danger"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={busy || proposal.status === "rejected"}
           onClick={onReject}
         >
@@ -437,8 +430,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="warning"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           disabled={
             busy ||
             proposal.status === "accepted" ||
@@ -453,8 +445,7 @@ function ProposalDetailPanel({
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="justify-start"
+          className="h-9 justify-start"
           onClick={onOpenComparison}
         >
           Abrir comparativo de cotações

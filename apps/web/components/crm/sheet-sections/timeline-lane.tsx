@@ -186,6 +186,8 @@ export function TimelineLane({
               showHeading={false}
               suppressEmptyState
               filterType={activeFilter}
+              presentation="drawer"
+              lockLink
             />
           </div>
         ) : null}

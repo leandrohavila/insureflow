@@ -4,12 +4,37 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { CalendarClock, MapPin } from "lucide-react"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  CrmBadge,
+  CrmFilterChip,
+  CrmFilterGroup,
+  crmFilterCardClass,
+  crmFilterFieldClass,
+  crmStatCardClass,
+} from "@/components/crm/crm-controls"
+import {
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSection,
+  CrmFormDrawerSubmit,
+  crmDrawerInputClass,
+} from "@/components/crm/crm-form-drawer"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
-import { FilterChip } from "@/components/crm/primitives"
-import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import {
+  DataTable,
+  FilterSelect,
+  FilterText,
+  StatCard,
+  type DataTableColumn,
+} from "@/components/design-system"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import { fetchLeadLossReasons } from "@/lib/data-access/modules/lead-loss-reasons/api"
 import {
@@ -50,6 +75,12 @@ function formatRelative(value: string | null) {
   if (days === 1) return "há 1 dia"
   return `há ${days} dias`
 }
+
+const rowActionClass =
+  "h-9 w-auto max-w-full min-w-0 justify-center gap-1.5 px-2.5! text-xs font-semibold"
+
+const feedbackClass =
+  "rounded-xl border px-3! py-2! text-sm font-medium"
 
 export function CommercialReactivationsWorkspace() {
   const queryClient = useQueryClient()
@@ -160,277 +191,340 @@ export function CommercialReactivationsWorkspace() {
     }
   }
 
+  function closePostpone() {
+    setPostponeLead(null)
+    setActionError(null)
+  }
+
+  const columns: DataTableColumn<ReactivationQueueItem>[] = [
+      {
+        key: "lead",
+        header: "Lead",
+        className: "min-w-[8rem] font-semibold text-[#10294B]",
+        render: (item) => item.name,
+      },
+      {
+        key: "phone",
+        header: "Telefone",
+        className: "whitespace-nowrap tabular-nums",
+        render: (item) => item.phone || "—",
+      },
+      {
+        key: "owner",
+        header: "Responsável",
+        render: (item) => item.ownerName || "—",
+      },
+      {
+        key: "reason",
+        header: "Motivo da perda",
+        render: (item) => item.lossReasonName || item.lostReason || "—",
+      },
+      {
+        key: "expected",
+        header: "Data prevista",
+        className: "whitespace-nowrap tabular-nums",
+        render: (item) => formatDate(item.nextReactivationAt),
+      },
+      {
+        key: "overdue",
+        header: "Dias em atraso",
+        className: "whitespace-nowrap tabular-nums",
+        render: (item) =>
+          item.windowStatus === "overdue" ? (
+            <CrmBadge tone="danger">{item.daysOverdue}</CrmBadge>
+          ) : (
+            item.daysOverdue
+          ),
+      },
+      {
+        key: "lastContact",
+        header: "Último contato",
+        className: "whitespace-nowrap",
+        render: (item) => formatRelative(item.lastContactAt),
+      },
+      {
+        key: "nextContact",
+        header: "Próximo contato",
+        className: "whitespace-nowrap tabular-nums",
+        render: (item) => formatDate(item.nextContactAt),
+      },
+      {
+        key: "actions",
+        header: "Ações",
+        className: "min-w-[15rem]",
+        render: (item) => (
+          <div className="flex flex-wrap items-center gap-[var(--if-layout-button-gap)]">
+            <Link
+              href={`/leads?lead=${item.id}`}
+              className={cn(
+                buttonVariants({ variant: "crmSecondary" }),
+                rowActionClass,
+              )}
+            >
+              Abrir Lead
+            </Link>
+            <PermissionGate permission="leads:manage">
+              <Button
+                type="button"
+                variant="crmSecondary"
+                className={rowActionClass}
+                disabled={busyId === item.id}
+                onClick={() => onReactivate(item)}
+              >
+                Reativar
+              </Button>
+              <Button
+                type="button"
+                variant="crmSecondary"
+                className={rowActionClass}
+                disabled={busyId === item.id}
+                onClick={() => {
+                  setPostponeLead(item)
+                  setPostponeDays(7)
+                  setPostponeAt("")
+                  setPostponeReason("")
+                  setActionError(null)
+                }}
+              >
+                Adiar
+              </Button>
+            </PermissionGate>
+          </div>
+        ),
+      },
+    ]
+
   return (
-    <div className={CRM_PAGE_SHELL}>
+    <div className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL)}>
       <CrmPageHeader
         badge="CRM"
         title="Reativações"
         description="Fila operacional — recuperar leads perdidos no momento certo."
       />
 
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Kpi label="Hoje" value={metrics?.today} loading={query.isLoading} />
-        <Kpi
+      <section
+        className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3"
+        aria-label="Indicadores de reativação"
+      >
+        <StatCard
+          surface="light"
+          density="compact"
+          className={crmStatCardClass}
+          label="Hoje"
+          value={metrics?.today ?? 0}
+          loading={query.isLoading}
+        />
+        <StatCard
+          surface="light"
+          density="compact"
+          className={crmStatCardClass}
           label="Atrasadas"
-          value={metrics?.overdue}
+          value={metrics?.overdue ?? 0}
           loading={query.isLoading}
         />
-        <Kpi
+        <StatCard
+          surface="light"
+          density="compact"
+          className={crmStatCardClass}
           label="Próximos 7 dias"
-          value={metrics?.next7}
+          value={metrics?.next7 ?? 0}
           loading={query.isLoading}
         />
-      </div>
+      </section>
 
       {actionMessage ? (
         <p
-          className="mb-3 rounded-md border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200"
+          className={cn(
+            feedbackClass,
+            "border-[#BFD9C8] bg-[#E7F3EA] text-[#1F6B3A]",
+          )}
           role="status"
         >
           {actionMessage}
         </p>
       ) : null}
-      {actionError ? (
+      {actionError && !postponeLead ? (
         <p
-          className="mb-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className={cn(
+            feedbackClass,
+            "border-[#E5C2BE] bg-[#F8E8E6] text-[#9F2D2D]",
+          )}
           role="alert"
         >
           {actionError}
         </p>
       ) : null}
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {WINDOWS.map((item) => (
-          <FilterChip
-            key={item.id}
-            isActive={window === item.id}
-            label={item.label}
-            onClick={() => setWindow(item.id)}
-          />
-        ))}
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Responsável
-          <select
-            className="h-9 min-w-[10rem] rounded-md border border-white/10 bg-transparent px-2 text-sm text-foreground"
+      <section
+        className={cn(crmFilterCardClass, "flex min-w-0 flex-col gap-3")}
+        aria-label="Filtros de reativação"
+      >
+        <CrmFilterGroup label="Período">
+          {WINDOWS.map((item) => (
+            <CrmFilterChip
+              key={item.id}
+              pressed={window === item.id}
+              onClick={() => setWindow(item.id)}
+            >
+              {item.label}
+            </CrmFilterChip>
+          ))}
+        </CrmFilterGroup>
+        <div className="flex min-w-0 flex-wrap items-end gap-[var(--if-layout-control-gap)] border-t border-[#D6CFC4] pt-3">
+          <FilterSelect
+            showLabel
+            label="Responsável"
+            containerClassName="gap-2"
+            className={cn(crmFilterFieldClass, "min-w-[10rem]")}
             value={ownerUserId}
             onChange={(event) => setOwnerUserId(event.target.value)}
-          >
-            <option value="">Todos</option>
-            {owners.map(([id, name]) => (
-              <option key={id} value={id}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Motivo
-          <select
-            className="h-9 min-w-[12rem] rounded-md border border-white/10 bg-transparent px-2 text-sm text-foreground"
+            options={[
+              { value: "", label: "Todos" },
+              ...owners.map(([id, name]) => ({ value: id, label: name })),
+            ]}
+          />
+          <FilterSelect
+            showLabel
+            label="Motivo"
+            containerClassName="gap-2"
+            className={cn(crmFilterFieldClass, "min-w-[12rem]")}
             value={lossReasonId}
             onChange={(event) => setLossReasonId(event.target.value)}
-          >
-            <option value="">Todos</option>
-            {(reasonsQuery.data ?? []).map((reason) => (
-              <option key={reason.id} value={reason.id}>
-                {reason.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-          Origem
-          <input
-            className="h-9 min-w-[10rem] rounded-md border border-white/10 bg-transparent px-2 text-sm text-foreground"
+            options={[
+              { value: "", label: "Todos" },
+              ...(reasonsQuery.data ?? []).map((reason) => ({
+                value: reason.id,
+                label: reason.name,
+              })),
+            ]}
+          />
+          <FilterText
+            showLabel
+            label="Origem"
+            containerClassName="gap-2"
+            icon={<MapPin className="size-4" strokeWidth={1.75} />}
+            className={cn(crmFilterFieldClass, "min-w-[12rem]")}
             placeholder="Ex.: site, indicação"
             value={source}
             onChange={(event) => setSource(event.target.value)}
           />
-        </label>
-      </div>
+        </div>
+      </section>
 
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-        <table className="min-w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">Lead</th>
-              <th className="px-3 py-2">Telefone</th>
-              <th className="px-3 py-2">Responsável</th>
-              <th className="px-3 py-2">Motivo da perda</th>
-              <th className="px-3 py-2">Data prevista</th>
-              <th className="px-3 py-2">Dias em atraso</th>
-              <th className="px-3 py-2">Último contato</th>
-              <th className="px-3 py-2">Próximo contato</th>
-              <th className="px-3 py-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {query.isLoading ? (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-muted-foreground">
-                  Carregando fila de reativação…
-                </td>
-              </tr>
-            ) : null}
-            {!query.isLoading && items.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-muted-foreground">
-                  Nenhum lead nesta visão.
-                </td>
-              </tr>
-            ) : null}
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                className={cn(
-                  "border-t border-white/[0.04]",
-                  item.windowStatus === "overdue" &&
-                    "bg-destructive/10 text-destructive",
-                )}
-              >
-                <td className="px-3 py-2 font-medium">{item.name}</td>
-                <td className="px-3 py-2 tabular-nums">{item.phone || "—"}</td>
-                <td className="px-3 py-2">{item.ownerName || "—"}</td>
-                <td className="px-3 py-2">
-                  {item.lossReasonName || item.lostReason || "—"}
-                </td>
-                <td className="px-3 py-2 tabular-nums">
-                  {formatDate(item.nextReactivationAt)}
-                </td>
-                <td className="px-3 py-2 tabular-nums">{item.daysOverdue}</td>
-                <td className="px-3 py-2">
-                  {formatRelative(item.lastContactAt)}
-                </td>
-                <td className="px-3 py-2 tabular-nums">
-                  {formatDate(item.nextContactAt)}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap items-center gap-1">
-                    <Link
-                      href={`/leads?lead=${item.id}`}
-                      className={cn(
-                        buttonVariants({ size: "sm", variant: "ghost" }),
-                      )}
-                    >
-                      Abrir Lead
-                    </Link>
-                    <PermissionGate permission="leads:manage">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === item.id}
-                        onClick={() => onReactivate(item)}
-                      >
-                        Reativar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === item.id}
-                        onClick={() => {
-                          setPostponeLead(item)
-                          setPostponeDays(7)
-                          setPostponeAt("")
-                          setPostponeReason("")
-                          setActionError(null)
-                        }}
-                      >
-                        Adiar
-                      </Button>
-                    </PermissionGate>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        density="default"
+        className="w-full"
+        cellClassName="px-2! py-3! align-middle whitespace-normal text-[#10294B]"
+        headerCellClassName="px-2! whitespace-normal"
+        tableClassName="w-full min-w-[1040px]"
+        data={items}
+        columns={columns}
+        getRowId={(item) => item.id}
+        getRowClassName={(item) =>
+          item.windowStatus === "overdue" ? "bg-[#FDF4F2]" : undefined
+        }
+        loading={query.isLoading}
+        loadingLabel="Carregando fila de reativação…"
+        error={query.isError ? query.error : null}
+        errorTitle="Não foi possível carregar a fila de reativação."
+        onRetry={() => void query.refetch()}
+        emptyIcon={CalendarClock}
+        emptyTitle="Nenhum lead nesta visão."
+        emptyDescription="Escolha outro período ou ajuste os filtros de responsável, motivo e origem."
+      />
 
       {postponeLead ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-white/10 bg-background p-4 shadow-xl">
-            <h2 className="text-base font-semibold">Adiar reativação</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {postponeLead.name} · prevista{" "}
-              {formatDate(postponeLead.nextReactivationAt)}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {([7, 15, 30] as const).map((days) => (
-                <FilterChip
-                  key={days}
-                  isActive={postponeDays === days}
-                  label={`+${days} dias`}
-                  onClick={() => setPostponeDays(days)}
-                />
-              ))}
-              <FilterChip
-                isActive={postponeDays === "custom"}
-                label="Data personalizada"
-                onClick={() => setPostponeDays("custom")}
-              />
-            </div>
-            {postponeDays === "custom" ? (
-              <input
-                type="datetime-local"
-                className="mt-3 h-9 w-full rounded-md border border-white/10 bg-transparent px-2 text-sm"
-                value={postponeAt}
-                onChange={(event) => setPostponeAt(event.target.value)}
-              />
-            ) : null}
-            <label className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
-              Motivo do adiamento *
-              <textarea
-                className="min-h-[4.5rem] rounded-md border border-white/10 bg-transparent px-2 py-1.5 text-sm text-foreground"
-                value={postponeReason}
-                onChange={(event) => setPostponeReason(event.target.value)}
-                placeholder="Ex.: Cliente viajou; retomar na próxima quinzena"
-              />
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setPostponeLead(null)}
+        <CrmFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open && busyId !== postponeLead.id) closePostpone()
+          }}
+        >
+          <form
+            className="flex h-full min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void onConfirmPostpone()
+            }}
+          >
+            <CrmFormDrawerHeader
+              icon={CalendarClock}
+              title="Adiar reativação"
+              description={`${postponeLead.name} · prevista ${formatDate(postponeLead.nextReactivationAt)}`}
+            />
+            <CrmFormDrawerBody className="gap-4 px-5! py-4!">
+              <CrmFormDrawerSection title="Novo prazo" className="gap-4 p-4!">
+                <CrmFilterGroup label="Prazo do adiamento">
+                  {([7, 15, 30] as const).map((days) => (
+                    <CrmFilterChip
+                      key={days}
+                      pressed={postponeDays === days}
+                      onClick={() => setPostponeDays(days)}
+                    >
+                      {`+${days} dias`}
+                    </CrmFilterChip>
+                  ))}
+                  <CrmFilterChip
+                    pressed={postponeDays === "custom"}
+                    onClick={() => setPostponeDays("custom")}
+                  >
+                    Data personalizada
+                  </CrmFilterChip>
+                </CrmFilterGroup>
+                {postponeDays === "custom" ? (
+                  <label className="flex flex-col gap-2">
+                    <span className="text-xs font-semibold text-[#5C6578]">
+                      Data e horário
+                    </span>
+                    <input
+                      type="datetime-local"
+                      className={crmDrawerInputClass}
+                      value={postponeAt}
+                      onChange={(event) => setPostponeAt(event.target.value)}
+                    />
+                  </label>
+                ) : null}
+              </CrmFormDrawerSection>
+              <CrmFormDrawerSection title="Justificativa" className="gap-4 p-4!">
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[#5C6578]">
+                    Motivo do adiamento *
+                  </span>
+                  <textarea
+                    className="min-h-[5.5rem] w-full rounded-lg border border-[#D6CFC4] bg-white px-3! py-2! text-sm text-[#10294B] outline-none placeholder:text-[#5C6578] focus-visible:border-[#10294B] focus-visible:ring-2 focus-visible:ring-[#10294B]/20"
+                    value={postponeReason}
+                    onChange={(event) => setPostponeReason(event.target.value)}
+                    placeholder="Ex.: Cliente viajou; retomar na próxima quinzena"
+                  />
+                </label>
+              </CrmFormDrawerSection>
+              {actionError ? (
+                <p
+                  className={cn(
+                    feedbackClass,
+                    "border-[#E5C2BE] bg-[#F8E8E6] text-[#9F2D2D]",
+                  )}
+                  role="alert"
+                >
+                  {actionError}
+                </p>
+              ) : null}
+            </CrmFormDrawerBody>
+            <CrmFormDrawerFooter>
+              <CrmFormDrawerCancel
                 disabled={busyId === postponeLead.id}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={onConfirmPostpone}
-                disabled={
-                  busyId === postponeLead.id ||
-                  (postponeDays === "custom" && !postponeAt)
-                }
+                onClick={closePostpone}
+              />
+              <CrmFormDrawerSubmit
+                pending={busyId === postponeLead.id}
+                disabled={postponeDays === "custom" && !postponeAt}
               >
                 Confirmar adiamento
-              </Button>
-            </div>
-          </div>
-        </div>
+              </CrmFormDrawerSubmit>
+            </CrmFormDrawerFooter>
+          </form>
+        </CrmFormDrawer>
       ) : null}
-    </div>
-  )
-}
-
-function Kpi({
-  label,
-  value,
-  loading,
-}: {
-  label: string
-  value?: number
-  loading?: boolean
-}) {
-  return (
-    <div className="rounded-md border border-white/[0.06] px-3 py-2">
-      <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-0.5 text-base font-semibold tabular-nums">
-        {loading ? "—" : (value ?? 0)}
-      </p>
     </div>
   )
 }

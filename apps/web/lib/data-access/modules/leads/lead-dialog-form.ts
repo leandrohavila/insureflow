@@ -3,6 +3,7 @@ import {
   formatCnpjMask,
   formatCpfMask,
   formatStoredPhone,
+  normalizeDocument,
 } from "../../../documents/document"
 import type { InterestCategory } from "@/lib/business-units/constants"
 import type { Lead } from "./types"
@@ -143,6 +144,64 @@ export function leadDialogCanSubmit(input: {
 }) {
   if (!input.name.trim()) return false
   return input.businessUnitIds.some((id) => id.trim())
+}
+
+/** Impede um segundo envio enquanto o salvamento ainda não terminou. */
+export function leadDialogAcceptsSubmit(input: {
+  pending: boolean
+  submitLocked: boolean
+}) {
+  return !input.pending && !input.submitLocked
+}
+
+export type LeadDialogFieldErrorKey =
+  | "name"
+  | "email"
+  | "phone"
+  | "document"
+  | "businessUnitIds"
+  | "assignedTo"
+
+const LEAD_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Mensagens do formulário. Campos vazios opcionais não geram erro. */
+export function leadDialogFieldErrors(input: {
+  name: string
+  email: string
+  phone: string
+  document: string
+  documentType: LeadDocumentType
+  businessUnitIds: string[]
+  assignedTo: string
+}): Partial<Record<LeadDialogFieldErrorKey, string>> {
+  const errors: Partial<Record<LeadDialogFieldErrorKey, string>> = {}
+  if (!input.name.trim()) errors.name = "Informe o nome completo."
+  if (!input.businessUnitIds.some((id) => id.trim())) {
+    errors.businessUnitIds = "Selecione ao menos uma unidade."
+  }
+  if (!input.assignedTo.trim()) errors.assignedTo = "Informe o responsável."
+
+  const email = input.email.trim()
+  if (email && !LEAD_EMAIL_PATTERN.test(email)) {
+    errors.email = "Informe um e-mail válido."
+  }
+
+  const phoneDigits = input.phone.replace(/\D/g, "")
+  if (phoneDigits && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
+    errors.phone = "Informe um telefone com DDD."
+  }
+
+  if (
+    input.document.trim() &&
+    !normalizeDocument(input.documentType, input.document)
+  ) {
+    errors.document =
+      input.documentType === "cpf"
+        ? "Informe um CPF válido."
+        : "Informe um CNPJ válido."
+  }
+
+  return errors
 }
 
 export type BuildLeadDialogFormOptions = {

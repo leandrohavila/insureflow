@@ -213,7 +213,7 @@ export function LeadSheetV2({
             <a
               href={`/crm/negocios?deal=${lead.dealId}`}
               className={cn(
-                buttonVariants({ variant: "default", size: "sm" }),
+                buttonVariants({ variant: "crmSecondary" }),
                 "shrink-0 gap-2",
               )}
               aria-label="Abrir negócio gerado a partir deste lead"
@@ -229,7 +229,7 @@ export function LeadSheetV2({
           ) : (
             <Button
               type="button"
-              size="sm"
+              variant="crmPrimary"
               className="shrink-0 gap-2"
               disabled={isConverting}
               onClick={() => onConvert(lead)}
@@ -273,13 +273,17 @@ export function LeadSheetV2({
             leadId={lead.id}
             dealId={lead.dealId}
             compact
+            presentation="drawer"
+            lockLink
+            linkPreference="lead"
+            linkTitle={lead.name}
+            linkDetail={lead.phone ?? undefined}
           />
           {onEdit ? (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 w-fit gap-1.5 px-2 text-xs text-foreground/65 hover:text-foreground"
+              variant="crmSecondary"
+              className="w-fit gap-1.5"
               onClick={() => onEdit(lead)}
             >
               <Edit3 className="size-3" strokeWidth={1.75} />
