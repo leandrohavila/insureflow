@@ -344,7 +344,8 @@ describe('CommercialReactivationCampaignsService', () => {
     expect(
       enqueue.mock.calls.filter(
         (call: unknown[]) =>
-          (call[0] as { action: string }).action === 'campaign_followup_created',
+          (call[0] as { action: string }).action ===
+          'campaign_followup_created',
       ),
     ).toHaveLength(3);
 
@@ -369,19 +370,15 @@ describe('CommercialReactivationCampaignsService', () => {
     expect(
       enqueue.mock.calls.filter(
         (call: unknown[]) =>
-          (call[0] as { action: string }).action === 'campaign_followup_created',
+          (call[0] as { action: string }).action ===
+          'campaign_followup_created',
       ),
     ).toHaveLength(0);
   });
 
   it('encerra campanha e registra campaign_finished', async () => {
-    const {
-      service,
-      campaignFindFirst,
-      campaignUpdate,
-      publish,
-      enqueue,
-    } = createService();
+    const { service, campaignFindFirst, campaignUpdate, publish, enqueue } =
+      createService();
     campaignFindFirst.mockResolvedValue({
       ...baseCampaign,
       status: 'IN_PROGRESS',

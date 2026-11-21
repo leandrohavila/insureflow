@@ -23,7 +23,9 @@ export function buildFriendlyPropertySlug(input: {
       : null;
   const codeSuffix = `-cod-${slugifyTitle(input.publicCode, 12)}`;
   const head = slugifyTitle(
-    [typeSlug, input.neighborhood, input.city, bedrooms].filter(Boolean).join(' '),
+    [typeSlug, input.neighborhood, input.city, bedrooms]
+      .filter(Boolean)
+      .join(' '),
     Math.max(12, 140 - codeSuffix.length),
   );
   return `${head}${codeSuffix}`;

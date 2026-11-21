@@ -41,7 +41,8 @@ function portalLeadNotes(
 }
 
 function interestForPurpose(purpose?: string | null) {
-  if (purpose === 'RENT' || purpose === 'SEASONAL') return 'PROPERTY_RENT' as const;
+  if (purpose === 'RENT' || purpose === 'SEASONAL')
+    return 'PROPERTY_RENT' as const;
   return 'PROPERTY_BUY' as const;
 }
 

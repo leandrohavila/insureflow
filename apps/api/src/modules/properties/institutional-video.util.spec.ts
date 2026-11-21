@@ -17,11 +17,19 @@ describe('parseInstitutionalVideoUrl', () => {
     ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
     ['https://youtu.be/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
     ['https://www.youtube.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
-    ['https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'wide'],
+    [
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+      'dQw4w9WgXcQ',
+      'wide',
+    ],
     ['https://m.youtube.com/shorts/dQw4w9WgXcQ', 'dQw4w9WgXcQ', 'short'],
     ['https://youtube.com/shorts/PepqDgdLHzA', 'PepqDgdLHzA', 'short'],
   ])('accepts YouTube %s', (value, videoId, layout) => {
-    expect(parseInstitutionalVideoUrl(value)).toEqual({ kind: 'youtube', videoId, layout });
+    expect(parseInstitutionalVideoUrl(value)).toEqual({
+      kind: 'youtube',
+      videoId,
+      layout,
+    });
   });
 
   it.each([
@@ -41,8 +49,12 @@ describe('parseInstitutionalVideoUrl', () => {
 
 describe('poster and captions', () => {
   it('accepts image and webvtt urls', () => {
-    expect(parsePosterUrl('https://cdn.example.com/capa.png')).toContain('capa.png');
-    expect(parseCaptionsUrl('https://cdn.example.com/legenda.vtt')).toContain('legenda.vtt');
+    expect(parsePosterUrl('https://cdn.example.com/capa.png')).toContain(
+      'capa.png',
+    );
+    expect(parseCaptionsUrl('https://cdn.example.com/legenda.vtt')).toContain(
+      'legenda.vtt',
+    );
   });
 
   it('rejects non-image posters and non-vtt captions', () => {
@@ -62,8 +74,14 @@ describe('youtubeEmbedUrl', () => {
   });
 
   it('keeps the official Ávila short on the nocookie embed path', () => {
-    const parsed = parseInstitutionalVideoUrl('https://youtube.com/shorts/PepqDgdLHzA');
-    expect(parsed).toEqual({ kind: 'youtube', videoId: 'PepqDgdLHzA', layout: 'short' });
+    const parsed = parseInstitutionalVideoUrl(
+      'https://youtube.com/shorts/PepqDgdLHzA',
+    );
+    expect(parsed).toEqual({
+      kind: 'youtube',
+      videoId: 'PepqDgdLHzA',
+      layout: 'short',
+    });
     if (parsed?.kind !== 'youtube') return;
     const url = new URL(youtubeEmbedUrl(parsed.videoId, true));
     expect(url.href).toBe(

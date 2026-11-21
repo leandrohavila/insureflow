@@ -190,7 +190,11 @@ export class PropertiesRepository {
     return Boolean(row);
   }
 
-  async isPublicCodeTaken(tenantId: string, publicCode: string, excludeId?: string) {
+  async isPublicCodeTaken(
+    tenantId: string,
+    publicCode: string,
+    excludeId?: string,
+  ) {
     const row = await this.prisma.property.findFirst({
       where: {
         tenantId,

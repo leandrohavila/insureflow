@@ -165,7 +165,15 @@ describe('PropertyLeadsService.createPublic', () => {
       activityEngine as never,
       prisma as never,
     );
-    return { service, leads, properties, context, crmLeads, activityEngine, prisma };
+    return {
+      service,
+      leads,
+      properties,
+      context,
+      crmLeads,
+      activityEngine,
+      prisma,
+    };
   }
 
   it('rejeita imóvel não publicado', async () => {
