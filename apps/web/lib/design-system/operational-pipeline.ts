@@ -10,15 +10,15 @@ export const dsPipeline = {
   /** Único scroll horizontal — encostado no rodapé do painel. */
   scroll: {
     className:
-      "w-full min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/10",
+      "w-full min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:#c4bbae_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#c4bbae]",
   },
   /** Fileira de colunas — inline-flex + w-max evita compressão; stretch em altura. */
   columns: {
     className:
-      "pipeline-board-v2 inline-flex h-full min-h-full w-max flex-nowrap items-stretch px-0.5",
+      "pipeline-board-v2 inline-flex h-max min-h-full w-max flex-nowrap items-stretch px-0.5",
   },
   laneWidthPx: 400,
-  laneMinWidthPx: 248,
-  laneCompactWidthPx: 248,
+  laneMinWidthPx: 280,
+  laneCompactWidthPx: 280,
   laneComfortableWidthPx: 400,
 } as const

@@ -10,9 +10,13 @@
     --if-layout-page-y: var(--if-space-6);
     --if-layout-section-gap: var(--if-space-6);
     --if-layout-control-gap: var(--if-space-3);
+    /* 8px entre botões do mesmo grupo e entre linhas quando o grupo quebra. */
+    --if-layout-button-gap: var(--if-space-2);
+    /* 16px entre grupos de ações quando o intervalo de 24px do cabeçalho é largo demais. */
+    --if-layout-cluster-gap: var(--if-space-4);
     --if-layout-page-actions-gap: var(--if-space-6);
-    --if-layout-page-actions-group-gap: var(--if-space-2);
-    --if-layout-page-actions-primary-gap: var(--if-space-3);
+    --if-layout-page-actions-group-gap: var(--if-layout-button-gap);
+    --if-layout-page-actions-primary-gap: var(--if-layout-button-gap);
     --if-layout-header-padding-x: var(--if-layout-page-x);
     --if-layout-header-padding-right: var(--if-layout-page-x);
     --if-control-height-md: 2.5rem;

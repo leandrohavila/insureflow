@@ -198,30 +198,53 @@ const filterControlClassName = cn(
 export type FilterTextProps = Omit<ComponentProps<"input">, "type"> & {
   label: string
   showLabel?: boolean
+  /** Ícone à esquerda; reserva o recuo do texto (40px) mesmo com `px-*!` no campo. */
+  icon?: ReactNode
+  /** Classes do `<label>` externo (ex.: `gap-2` para 8px entre rótulo e campo). */
+  containerClassName?: string
 }
 
 /** Filtro de texto livre com a mesma aparência de `FilterSelect`. */
 export function FilterText({
   label,
   showLabel = false,
+  icon,
+  containerClassName,
   className,
   ...props
 }: FilterTextProps) {
+  const input = (
+    <input
+      type="search"
+      className={cn(
+        filterControlClassName,
+        "w-[var(--if-control-min-width)] placeholder:text-foreground",
+        className,
+        icon ? "w-full pl-10!" : null,
+      )}
+      aria-label={label}
+      {...props}
+    />
+  )
+
   return (
-    <label className="grid gap-[var(--if-space-1)]">
+    <label className={cn("grid gap-[var(--if-space-1)]", containerClassName)}>
       <span className={showLabel ? "text-[11px] font-medium text-muted-foreground" : "sr-only"}>
         {label}
       </span>
-      <input
-        type="search"
-        className={cn(
-          filterControlClassName,
-          "w-[var(--if-control-min-width)] placeholder:text-foreground",
-          className,
-        )}
-        aria-label={label}
-        {...props}
-      />
+      {icon ? (
+        <span className="relative block min-w-0">
+          <span
+            className="pointer-events-none absolute left-3 top-1/2 flex size-4 -translate-y-1/2 items-center justify-center text-[#5C6578]"
+            aria-hidden
+          >
+            {icon}
+          </span>
+          {input}
+        </span>
+      ) : (
+        input
+      )}
     </label>
   )
 }
@@ -235,17 +258,20 @@ export type FilterSelectProps = Omit<ComponentProps<"select">, "children"> & {
   label: string
   options: FilterSelectOption[]
   showLabel?: boolean
+  /** Classes do `<label>` externo (ex.: `gap-2` para 8px entre rótulo e campo). */
+  containerClassName?: string
 }
 
 export function FilterSelect({
   label,
   options,
   showLabel = false,
+  containerClassName,
   className,
   ...props
 }: FilterSelectProps) {
   return (
-    <label className="grid gap-[var(--if-space-1)]">
+    <label className={cn("grid gap-[var(--if-space-1)]", containerClassName)}>
       <span className={showLabel ? "text-[11px] font-medium text-muted-foreground" : "sr-only"}>
         {label}
       </span>

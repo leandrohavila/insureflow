@@ -10,7 +10,7 @@
   --avila-navy-800: #0c2448;
   --avila-gold-600: #c09048;
   --avila-gold-400: #deae5d;
-  --avila-ivory: #f6f1e8;
+  --avila-ivory: #f5f0e7;
   --avila-paper: #fffcfa;
 
   /* Ações semânticas. Mesma cor no claro e no escuro, para o botão
@@ -125,6 +125,22 @@
   }
 }
 
+/*
+ * Navegação principal do dashboard. Fica fora de @layer para vencer
+ * o bloco .dark, que também define --sidebar. Login e o portal
+ * público não montam o shell e não recebem a classe.
+ */
+html.avila-nav-chrome {
+  --sidebar: var(--avila-ivory);
+  --sidebar-foreground: var(--avila-navy-900);
+  --sidebar-primary: var(--avila-navy-900);
+  --sidebar-primary-foreground: var(--avila-ivory);
+  --sidebar-accent: color-mix(in srgb, var(--avila-navy-900) 8%, var(--avila-ivory));
+  --sidebar-accent-foreground: var(--avila-navy-900);
+  --sidebar-border: #e4ddd2;
+  --sidebar-ring: var(--avila-gold-600);
+}
+
 @layer utilities {
   .avila-sidebar {
     background: var(--avila-navy-950);
@@ -135,6 +151,59 @@
   .avila-sidebar-nav-active {
     box-shadow: inset 2px 0 0 0 var(--avila-gold-600);
     background: var(--avila-navy-900);
+  }
+
+  html.avila-nav-chrome .avila-sidebar,
+  html.avila-nav-chrome [data-slot="sidebar-inner"],
+  html.avila-nav-chrome [data-mobile="true"][data-slot="sidebar"] {
+    background: var(--avila-ivory);
+    color: var(--avila-navy-900);
+    border-color: var(--sidebar-border);
+    box-shadow: none;
+  }
+
+  html.avila-nav-chrome .avila-sidebar-nav-active {
+    background: var(--sidebar-accent);
+    color: var(--avila-navy-900);
+    box-shadow: inset 2px 0 0 0 var(--avila-gold-600);
+  }
+
+  html.avila-nav-chrome .avila-sidebar [class*="text-violet-200"] { color: #5b21b6; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-indigo-200"] { color: #3730a3; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-emerald-200"] { color: #166534; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-cyan-200"] { color: #155e75; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-amber-200"] { color: #92400e; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-orange-200"] { color: #9a3412; }
+  html.avila-nav-chrome .avila-sidebar [class*="text-sky-200"] { color: #075985; }
+
+  html.dark.avila-nav-chrome .avila-topbar {
+    background: var(--avila-ivory);
+    border-bottom: 1px solid #e4ddd2;
+    color: var(--avila-navy-900);
+    --foreground: var(--avila-navy-900);
+    --muted-foreground: #5c6578;
+    --background: var(--avila-paper);
+    --border: #d6cfc4;
+    --ring: var(--avila-gold-600);
+    backdrop-filter: none;
+  }
+
+  html.avila-nav-chrome .avila-topbar [class*="border-white/"] {
+    border-color: #d6cfc4;
+  }
+
+  html.avila-nav-chrome .avila-topbar [class*="bg-white/"] {
+    background-color: color-mix(in srgb, var(--avila-navy-900) 4%, var(--avila-paper));
+    color: var(--avila-navy-900);
+  }
+
+  html.avila-nav-chrome .avila-topbar [class*="hover:bg-white/"]:hover {
+    background-color: color-mix(in srgb, var(--avila-navy-900) 7%, var(--avila-paper));
+    color: var(--avila-navy-900);
+  }
+
+  html.avila-nav-chrome .avila-topbar [class*="hover:border-white/"]:hover {
+    border-color: #c4bbae;
   }
 
   .avila-topbar {
@@ -199,13 +268,14 @@
  * Superfície clara do miolo CRM. O <html> permanece .dark.
  * Os tokens abaixo repetem o bloco claro de :root deste arquivo
  * e os semânticos claros de insureflow.css — sem paleta nova.
- * A sidebar e o topbar ficam fora deste escopo.
+ * A navegação do shell usa html.avila-nav-chrome e não depende destas rotas.
  */
 /* Pipeline: superfícies do Kanban herdam o canvas claro, sem mudar o tema global. */
 .avila-pipeline-surface {
+  overflow-x: clip;
   --crm-surface-base: var(--avila-ivory);
   --crm-surface-panel: #ffffff;
-  --crm-surface-panel-hover: #f6f1e8;
+  --crm-surface-panel-hover: var(--avila-ivory);
   --crm-surface-raised: #ffffff;
   --crm-surface-overlay: #ffffff;
   --crm-stroke-faint: #e4ddd2;
@@ -216,6 +286,94 @@
 
 .avila-pipeline-surface .deal-card-v2 {
   border-color: #e4ddd2;
+}
+
+.avila-pipeline-surface .pipeline-lane {
+  border: 1px solid #e4ddd2;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--avila-paper) 78%, var(--avila-ivory));
+  box-shadow: 0 1px 2px rgb(16 41 75 / 0.05);
+}
+
+.avila-pipeline-surface .pipeline-lane__header,
+.avila-pipeline-surface .pipeline-lane__header--compact,
+.avila-pipeline-surface .pipeline-lane__header--comfortable {
+  background: var(--avila-paper);
+  backdrop-filter: none;
+  border-top: 2px solid var(--avila-gold-600);
+  border-radius: 13px 13px 0 0;
+}
+
+.avila-pipeline-surface .pipeline-lane__body {
+  padding: 12px 10px 8px;
+  border-left-color: transparent;
+}
+
+.avila-pipeline-surface .deal-card-v2 {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(16 41 75 / 0.05);
+}
+
+.avila-pipeline-surface .deal-card-v2__value {
+  color: var(--avila-navy-900);
+  font-weight: 650;
+}
+
+.avila-pipeline-surface .deal-card-v2__title {
+  color: var(--avila-navy-900);
+}
+
+.avila-pipeline-surface .pipeline-masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.avila-pipeline-surface .pipeline-masthead__eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--avila-gold-600);
+}
+
+.avila-pipeline-surface .pipeline-masthead__title h1 {
+  margin: 2px 0 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--avila-navy-900);
+}
+
+.avila-pipeline-surface .pipeline-metrics {
+  padding: 12px;
+  border: 1px solid #e4ddd2;
+  border-radius: 16px;
+  background: var(--avila-paper);
+  box-shadow: 0 1px 2px rgb(16 41 75 / 0.04);
+}
+
+.avila-pipeline-surface .pipeline-board-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .avila-pipeline-surface .pipeline-board-scroll {
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 12px;
+  }
+
+  .avila-pipeline-surface .pipeline-board-v2 {
+    padding-inline: 12px;
+  }
+
+  .avila-pipeline-surface .pipeline-lane {
+    scroll-snap-align: start;
+  }
 }
 
 .avila-pipeline-surface .pipeline-lane__count {
@@ -305,7 +463,7 @@
   color: var(--foreground);
   --crm-surface-base: var(--avila-paper);
   --crm-surface-panel: #ffffff;
-  --crm-surface-panel-hover: #f6f1e8;
+  --crm-surface-panel-hover: var(--avila-ivory);
   --crm-surface-raised: #ffffff;
   --crm-surface-overlay: #ffffff;
   --crm-stroke-faint: #e4ddd2;
@@ -400,7 +558,7 @@
   --border: #d6cfc4;
   --crm-surface-base: var(--avila-ivory);
   --crm-surface-panel: #ffffff;
-  --crm-surface-panel-hover: #f6f1e8;
+  --crm-surface-panel-hover: var(--avila-ivory);
   --crm-surface-raised: #ffffff;
   --crm-surface-overlay: #ffffff;
   --crm-surface-selected: color-mix(in srgb, var(--avila-navy-900) 8%, var(--avila-paper));
@@ -418,7 +576,7 @@
 }
 
 .entity-sheet-shell.avila-lead-surface nav[role="tablist"] {
-  background: #f6f1e8 !important;
+  background: var(--avila-ivory) !important;
   border-color: #e4ddd2 !important;
   padding: 0.5rem !important;
 }
@@ -479,8 +637,12 @@
 
 .avila-crm-canvas [class~="bg-white/[0.015]"],
 .avila-crm-canvas [class~="bg-white/[0.02]"],
+.avila-crm-canvas [class~="bg-white/[0.03]"],
+.avila-crm-canvas [class~="bg-white/[0.035]"],
 .avila-crm-canvas [class~="bg-white/[0.04]"],
+.avila-crm-canvas [class~="bg-white/[0.05]"],
 .avila-crm-canvas [class~="bg-white/[0.06]"],
+.avila-crm-canvas [class~="bg-white/[0.08]"],
 .avila-crm-canvas [class~="bg-white/35"] {
   background-color: color-mix(in srgb, var(--avila-navy-900) 5%, transparent);
 }
@@ -510,4 +672,417 @@
 
 .avila-crm-canvas [class*="text-sky-2"] {
   color: var(--info);
+}
+
+/*
+ * Builder de questionários. A classe vai na página e nos portais
+ * (dialog, drawer, menu), que renderizam fora do miolo do dashboard.
+ */
+.questionnaire-builder {
+  color-scheme: light;
+}
+
+.questionnaire-builder [data-slot="input"],
+.questionnaire-builder select,
+.questionnaire-builder textarea {
+  border-color: #d6cfc4;
+  background: var(--avila-paper);
+  color: var(--avila-navy-900);
+  box-shadow: none;
+}
+
+.questionnaire-builder [data-slot="input"]:focus-visible,
+.questionnaire-builder select:focus-visible,
+.questionnaire-builder textarea:focus-visible {
+  border-color: var(--avila-gold-600);
+  box-shadow: 0 0 0 3px rgb(192 144 72 / 0.22);
+}
+
+.questionnaire-builder[data-slot="dialog-content"],
+.questionnaire-builder[data-slot="sheet-content"],
+.questionnaire-builder[data-slot="dropdown-menu-content"] {
+  background: var(--avila-paper);
+  color: var(--avila-navy-900);
+  border-color: #d6cfc4;
+}
+
+/*
+ * Dashboard principal. Os cards usam o mesmo paper do canvas,
+ * com sombra leve para leitura gerencial.
+ */
+.avila-dashboard {
+  padding: 16px 16px 24px;
+}
+
+@media (min-width: 768px) {
+  .avila-dashboard {
+    padding: 20px 20px 28px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .avila-dashboard {
+    padding: 24px 24px 32px;
+  }
+}
+
+.avila-dashboard .dashboard-stack {
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .avila-dashboard .dashboard-stack {
+    gap: 20px;
+  }
+}
+
+.avila-dashboard .dashboard-header,
+.avila-dashboard .dashboard-board,
+.avila-dashboard article {
+  background-color: var(--avila-paper);
+  border-color: #e4ddd2;
+  box-shadow:
+    0 1px 2px rgb(16 41 75 / 0.05),
+    0 12px 28px -20px rgb(16 41 75 / 0.18);
+}
+
+.avila-dashboard .dashboard-header,
+.avila-dashboard .dashboard-board {
+  padding: 16px;
+}
+
+.avila-dashboard article {
+  padding: 14px 16px;
+}
+
+@media (min-width: 768px) {
+  .avila-dashboard .dashboard-header,
+  .avila-dashboard .dashboard-board,
+  .avila-dashboard article {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .avila-dashboard .dashboard-header,
+  .avila-dashboard .dashboard-board,
+  .avila-dashboard article {
+    padding: 18px 20px;
+  }
+}
+
+.avila-dashboard .dashboard-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.avila-dashboard article > div {
+  gap: 12px;
+}
+
+.avila-dashboard .dashboard-split,
+.avila-dashboard .dashboard-analytics,
+.avila-dashboard .dashboard-metric-grid,
+.avila-dashboard .dashboard-tile-grid {
+  gap: 16px;
+}
+
+.avila-dashboard .dashboard-metric-group + .dashboard-metric-group {
+  margin-top: 20px;
+}
+
+.avila-dashboard .dashboard-metric-group h2 {
+  margin: 0 0 10px;
+}
+
+.avila-dashboard .dashboard-metric,
+.avila-dashboard .dashboard-tile {
+  padding: 14px 16px;
+}
+
+@media (min-width: 768px) {
+  .avila-dashboard .dashboard-metric,
+  .avila-dashboard .dashboard-tile {
+    padding: 16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .avila-dashboard .dashboard-metric,
+  .avila-dashboard .dashboard-tile {
+    padding: 18px 20px;
+  }
+}
+
+.avila-dashboard .dashboard-metric p + p,
+.avila-dashboard .dashboard-tile p + p {
+  margin-top: 6px;
+}
+
+/*
+ * Rótulos dos cards analíticos quebram em vez de cortar.
+ * A grade interna só muda com a largura do próprio card.
+ */
+.avila-dashboard .dashboard-tile-label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.avila-dashboard .dashboard-finance,
+.avila-dashboard .dashboard-insurance,
+.avila-dashboard .dashboard-customers {
+  container-type: inline-size;
+}
+
+.avila-dashboard .dashboard-finance .dashboard-tile-grid,
+.avila-dashboard .dashboard-customers .dashboard-tile-grid,
+.avila-dashboard .dashboard-insurance-metrics {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.avila-dashboard .dashboard-customers .dashboard-tile:last-child {
+  grid-column: 1 / -1;
+}
+
+.avila-dashboard .dashboard-insurance-metrics {
+  display: grid;
+  flex: 1;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 16px;
+  align-content: stretch;
+}
+
+@container (min-width: 19rem) {
+  .avila-dashboard .dashboard-finance .dashboard-tile-grid,
+  .avila-dashboard .dashboard-customers .dashboard-tile-grid,
+  .avila-dashboard .dashboard-insurance-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .avila-dashboard .dashboard-insurance-metrics > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 8px);
+  }
+}
+
+@container (min-width: 28rem) {
+  .avila-dashboard .dashboard-finance .dashboard-tile-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 40rem) {
+  .avila-dashboard .dashboard-insurance-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .avila-dashboard .dashboard-insurance-metrics > :last-child:nth-child(odd) {
+    grid-column: auto;
+    justify-self: stretch;
+    width: auto;
+  }
+}
+
+.avila-agenda-surface {
+  overflow-x: clip;
+  color: var(--avila-navy-900);
+}
+
+.avila-agenda-surface .agenda-masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.avila-agenda-surface .agenda-masthead__eyebrow {
+  margin: 0;
+  color: var(--avila-gold-600);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.avila-agenda-surface .agenda-masthead h1 {
+  margin: 2px 0 0;
+  color: var(--avila-navy-900);
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.avila-agenda-surface .agenda-masthead__subtitle {
+  max-width: 42rem;
+  margin: 6px 0 0;
+  color: color-mix(in srgb, var(--avila-navy-900) 68%, white);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.avila-agenda-surface .agenda-masthead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.avila-agenda-surface .agenda-bars {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #d6cfc4;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 12px;
+  box-shadow: 0 1px 2px rgb(16 41 75 / 4%);
+}
+
+.avila-agenda-surface .agenda-icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--agenda-icon-surface);
+  color: var(--agenda-icon);
+}
+
+.avila-agenda-surface .agenda-work {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid #d6cfc4;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(16 41 75 / 4%);
+}
+
+.avila-agenda-surface .agenda-table-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: min(70vh, 44rem);
+  overflow: auto;
+}
+
+.avila-agenda-surface .agenda-table {
+  width: max-content;
+  min-width: max(100%, 64rem);
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.avila-agenda-surface .agenda-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid #d6cfc4;
+  background: #f6f1e8;
+  padding: 12px 14px;
+  color: #10294b;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.avila-agenda-surface .agenda-table tbody td {
+  border-top: 1px solid #e8e1d6;
+  padding: 14px;
+  vertical-align: middle;
+  color: #10294b;
+  line-height: 1.35;
+}
+
+.avila-agenda-surface .agenda-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--avila-ivory) 55%, white);
+}
+
+.avila-agenda-surface .agenda-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.avila-agenda-surface .agenda-type-badge {
+  gap: 6px;
+  border: 1px solid #d6cfc4;
+  background: #fff;
+  padding: 2px 8px 2px 4px;
+  color: #10294b;
+}
+
+.avila-agenda-surface .agenda-badge--neutral {
+  background: #f3eee6;
+  color: var(--avila-navy-900);
+}
+
+.avila-agenda-surface .agenda-badge--info {
+  background: #e7eef6;
+  color: #1d3f68;
+}
+
+.avila-agenda-surface .agenda-badge--success {
+  background: #e7f3ea;
+  color: #1f6b3a;
+}
+
+.avila-agenda-surface .agenda-badge--warn {
+  background: #f8efdf;
+  color: #8a6230;
+}
+
+.avila-agenda-surface .agenda-badge--danger {
+  background: #f8e8e6;
+  color: #9f2d2d;
+}
+
+.avila-agenda-surface .agenda-actions {
+  display: flex;
+  min-width: 16rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.avila-agenda-surface .agenda-muted {
+  color: color-mix(in srgb, var(--avila-navy-900) 70%, white);
+}
+
+.avila-agenda-surface .agenda-status {
+  border: 1px solid #d7efe0;
+  border-radius: 12px;
+  background: #f3faf5;
+  color: #1f6b3a;
+  padding: 10px 12px;
+  font-size: 0.875rem;
+}
+
+.avila-agenda-surface .agenda-state {
+  padding: 28px 20px;
+}
+
+@media (max-width: 767px) {
+  .avila-agenda-surface .agenda-masthead__actions {
+    justify-content: flex-start;
+  }
 }
