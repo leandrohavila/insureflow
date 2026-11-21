@@ -238,9 +238,11 @@ model Tenant {
   customers                Customer[]
   leads                    Lead[]
   policies                 Policy[]
-  questionnaireTemplates   QuestionnaireTemplate[]
-  questionnaireFields      QuestionnaireField[]
-  questionnaireSubmissions QuestionnaireSubmission[]
+  questionnaireTemplates        QuestionnaireTemplate[]
+  questionnaireTemplateVersions QuestionnaireTemplateVersion[]
+  questionnaireFields           QuestionnaireField[]
+  questionnaireSubmissions      QuestionnaireSubmission[]
+  questionnaireShares           QuestionnaireShare[]
   activities               Activity[]
   teams                    Team[]
   quoteComparisons         QuoteComparison[]
@@ -302,7 +304,10 @@ model User {
   leadsSharedWith                 LeadShare[]               @relation("LeadSharedWith")
   leadsSharedBy                   LeadShare[]               @relation("LeadSharedBy")
   quoteComparisons                QuoteComparison[]         @relation("QuoteComparisonAssignee")
-  updatedQuestionnaireSubmissions QuestionnaireSubmission[] @relation("QuestionnaireSubmissionUpdatedBy")
+  updatedQuestionnaireSubmissions     QuestionnaireSubmission[]     @relation("QuestionnaireSubmissionUpdatedBy")
+  responsibleQuestionnaireSubmissions QuestionnaireSubmission[]     @relation("QuestionnaireSubmissionResponsible")
+  publishedQuestionnaireVersions      QuestionnaireTemplateVersion[] @relation("QuestionnaireVersionPublisher")
+  createdQuestionnaireShares          QuestionnaireShare[]          @relation("QuestionnaireShareCreatedBy")
   createdLeadFollowUps            LeadFollowUp[]            @relation("FollowUpCreatedBy")
   assignedLeadFollowUps           LeadFollowUp[]            @relation("FollowUpAssignee")
   assignedPolicyRenewals          PolicyRenewal[]           @relation("PolicyRenewalAssignee")
@@ -798,26 +803,52 @@ enum QuestionnaireSubmissionStatus {
   submitted
   reviewed
   archived
+  pending_client
+  in_progress
+  completed
+  expired
+  cancelled
+}
+
+/// Ramos iniciais do Questionário Inteligente. Vida e demais produtos
+/// continuam apenas em `settings`, sem este enum.
+enum QuestionnaireBranch {
+  auto
+  residencial
+  empresarial
+}
+
+enum QuestionnaireShareStatus {
+  active
+  revoked
+  expired
 }
 
 model QuestionnaireTemplate {
-  id          String                      @id @default(cuid())
-  tenantId    String
-  tenant      Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  status      QuestionnaireTemplateStatus @default(draft)
-  version     Int                         @default(1)
-  settings    Json                        @default("{}")
-  createdAt   DateTime                    @default(now())
-  updatedAt   DateTime                    @updatedAt
+  id             String                      @id @default(cuid())
+  tenantId       String
+  tenant         Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         QuestionnaireTemplateStatus @default(draft)
+  version        Int                         @default(1)
+  /// Ramo do Questionário Inteligente. Templates legados permanecem nulos.
+  branch         QuestionnaireBranch?
+  businessUnitId String?                     @map("business_unit_id")
+  businessUnit   BusinessUnit?               @relation("QuestionnaireTemplateBusinessUnit", fields: [businessUnitId], references: [id], onDelete: SetNull)
+  settings       Json                        @default("{}")
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
 
   fields      QuestionnaireField[]
+  versions    QuestionnaireTemplateVersion[]
   submissions QuestionnaireSubmission[]
 
   @@unique([tenantId, name, version])
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, branch])
+  @@index([tenantId, businessUnitId])
   @@index([tenantId, createdAt])
   @@map("questionnaire_templates")
 }
@@ -849,40 +880,103 @@ model QuestionnaireField {
 }
 
 model QuestionnaireSubmission {
-  id          String                        @id @default(cuid())
-  tenantId    String
-  tenant      Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  templateId  String
-  template    QuestionnaireTemplate         @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  mode        QuestionnaireSubmissionMode   @default(INTERNAL)
-  origin      QuestionnaireOrigin           @default(INTERNAL)
-  status      QuestionnaireSubmissionStatus @default(draft)
-  answers     Json                          @default("{}")
-  metadata    Json?
-  leadId      String?
-  lead        Lead?                         @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  customerId  String?
-  customer    Customer?                     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  dealId      String?
-  deal        Deal?                         @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  submittedAt DateTime?
-  updatedById String?                       @map("updated_by_id")
-  updatedBy   User?                         @relation("QuestionnaireSubmissionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  createdAt   DateTime                      @default(now())
-  updatedAt   DateTime                      @updatedAt
+  id                String                        @id @default(cuid())
+  tenantId          String
+  tenant            Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId        String
+  template          QuestionnaireTemplate         @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateVersionId String?                       @map("template_version_id")
+  templateVersion   QuestionnaireTemplateVersion? @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  branch            QuestionnaireBranch?
+  mode              QuestionnaireSubmissionMode   @default(INTERNAL)
+  origin            QuestionnaireOrigin           @default(INTERNAL)
+  status            QuestionnaireSubmissionStatus @default(draft)
+  /// Documento de respostas por chave de campo. Não há tabela de respostas
+  /// individual: o JSON preserva o contrato já usado pelo módulo.
+  answers           Json                          @default("{}")
+  metadata          Json?
+  leadId            String?
+  lead              Lead?                         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customerId        String?
+  customer          Customer?                     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  dealId            String?
+  deal              Deal?                         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  businessUnitId    String?                       @map("business_unit_id")
+  businessUnit      BusinessUnit?                 @relation("QuestionnaireSubmissionBusinessUnit", fields: [businessUnitId], references: [id], onDelete: SetNull)
+  responsibleUserId String?                       @map("responsible_user_id")
+  responsibleUser   User?                         @relation("QuestionnaireSubmissionResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  startedAt         DateTime?                     @map("started_at")
+  submittedAt       DateTime?
+  completedAt       DateTime?                     @map("completed_at")
+  updatedById       String?                       @map("updated_by_id")
+  updatedBy         User?                         @relation("QuestionnaireSubmissionUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
 
   quoteComparisons QuoteComparison[]
+  shares           QuestionnaireShare[]
 
   @@index([tenantId])
   @@index([tenantId, templateId])
+  @@index([tenantId, templateVersionId])
+  @@index([tenantId, branch])
   @@index([tenantId, status])
   @@index([tenantId, origin])
   @@index([tenantId, leadId])
   @@index([tenantId, customerId])
   @@index([tenantId, dealId])
+  @@index([tenantId, businessUnitId])
+  @@index([tenantId, responsibleUserId])
   @@index([tenantId, updatedById])
   @@index([tenantId, createdAt])
   @@map("questionnaire_submissions")
+}
+
+/// Versão imutável do modelo. Respostas antigas permanecem neste registro.
+model QuestionnaireTemplateVersion {
+  id            String                @id @default(cuid())
+  tenantId      String
+  tenant        Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId    String
+  template      QuestionnaireTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  /// Seções e fotografia dos campos no momento da publicação.
+  definition    Json
+  publishedAt   DateTime              @default(now())
+  publishedById String?               @map("published_by_id")
+  publishedBy   User?                 @relation("QuestionnaireVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime              @default(now())
+
+  submissions QuestionnaireSubmission[]
+
+  @@unique([templateId, versionNumber])
+  @@index([tenantId])
+  @@index([tenantId, templateId])
+  @@index([publishedById])
+  @@map("questionnaire_template_versions")
+}
+
+/// Compartilhamento externo. Persiste só o hash do token; o valor aleatório
+/// é devolvido uma única vez e não entra em log.
+model QuestionnaireShare {
+  id           String                    @id @default(cuid())
+  tenantId     String
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  submissionId String
+  submission   QuestionnaireSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  tokenHash    String                    @unique @map("token_hash")
+  expiresAt    DateTime                  @map("expires_at")
+  revokedAt    DateTime?                 @map("revoked_at")
+  status       QuestionnaireShareStatus  @default(active)
+  createdById  String?                   @map("created_by_id")
+  createdBy    User?                     @relation("QuestionnaireShareCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime                  @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, submissionId])
+  @@index([tenantId, status])
+  @@index([createdById])
+  @@map("questionnaire_shares")
 }
 
 /// Fluxo comercial de cotação (agrupa comparativo multi-seguradora)
@@ -1034,7 +1128,9 @@ model BusinessUnit {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  originLeads      Lead[]                 @relation("LeadOriginBusinessUnit")
+  originLeads              Lead[]                    @relation("LeadOriginBusinessUnit")
+  questionnaireTemplates   QuestionnaireTemplate[]   @relation("QuestionnaireTemplateBusinessUnit")
+  questionnaireSubmissions QuestionnaireSubmission[] @relation("QuestionnaireSubmissionBusinessUnit")
   leadLinks        LeadBusinessUnit[]
   originCustomers  Customer[]             @relation("CustomerOriginBusinessUnit")
   customerLinks    CustomerBusinessUnit[]
