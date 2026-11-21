@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils"
 
 type CRMRightSidebarToggleProps = {
   className?: string
+  appearance?: "default" | "crm"
 }
 
 export function CRMRightSidebarToggle({
   className,
+  appearance = "default",
 }: CRMRightSidebarToggleProps) {
   const { showToggle, isOpen, toggle, hydrated } = useCRMRightSidebar()
 
@@ -20,17 +22,17 @@ export function CRMRightSidebarToggle({
   return (
     <Button
       type="button"
-      variant={isOpen ? "secondary" : "outline"}
-      size="sm"
-      className={cn("shrink-0 gap-2", className)}
+      variant={appearance === "crm" ? "crmSecondary" : isOpen ? "secondary" : "outline"}
+      size={appearance === "crm" ? "default" : "sm"}
+      className={cn("shrink-0 gap-2", appearance === "default" && "h-8", className)}
       onClick={toggle}
       aria-expanded={isOpen}
       aria-controls="crm-right-sidebar"
-      aria-label={isOpen ? "Recolher painel de contexto" : "Abrir painel de contexto"}
+      aria-label={isOpen ? "Recolher atividades" : "Abrir atividades"}
       disabled={!hydrated}
     >
       <PanelRight className="size-3.5" strokeWidth={1.5} />
-      Contexto
+      Atividades
     </Button>
   )
 }

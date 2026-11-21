@@ -135,6 +135,7 @@ export function DealSheetV2({
       ariaLabel={`Negócio: ${deal.title}`}
       ariaDescription={`Workspace operacional do negócio ${deal.title}, no estágio ${stageLabel}.`}
       width="wide"
+      surface="light"
       className="avila-lead-surface"
     >
       {/* -------------------------------------------------------------- */}
@@ -191,7 +192,16 @@ export function DealSheetV2({
             marginTop: "0.125rem",
           }}
         >
-          <ActivityQuickActions dealId={deal.id} leadId={leadId} compact />
+          <ActivityQuickActions
+            dealId={deal.id}
+            leadId={leadId}
+            compact
+            presentation="drawer"
+            lockLink
+            linkPreference="deal"
+            linkTitle={deal.title}
+            linkDetail={deal.company}
+          />
         </div>
       </EntitySheetShell.Header>
 

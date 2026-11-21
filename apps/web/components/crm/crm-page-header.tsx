@@ -63,28 +63,32 @@ export function CrmPageHeader({
           </div>
 
           {(children || secondaryAction || primaryAction) && (
-            <div className="flex shrink-0 flex-wrap items-center gap-2 sm:pt-0.5 sm:justify-end">
-              {children}
-              {secondaryAction ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0 text-sm"
-                  onClick={secondaryAction.onClick}
-                >
-                  {secondaryAction.label}
-                </Button>
+            <div className="flex min-w-0 max-w-full shrink-0 flex-wrap items-center justify-end gap-x-[var(--if-layout-page-actions-gap)] gap-y-[var(--if-layout-button-gap)]">
+              {children ? (
+                <div className="flex min-w-0 max-w-full flex-wrap items-center gap-[var(--if-layout-button-gap)]">
+                  {children}
+                </div>
               ) : null}
-              {primaryAction ? (
-                <Button
-                  variant="create"
-                  size="sm"
-                  className="h-8 shrink-0 text-sm"
-                  onClick={primaryAction.onClick}
-                >
-                  <Plus className="size-3.5" strokeWidth={1.5} />
-                  {primaryAction.label}
-                </Button>
+              {secondaryAction || primaryAction ? (
+                <div className="flex min-w-0 max-w-full flex-wrap items-center gap-[var(--if-layout-button-gap)]">
+                  {secondaryAction ? (
+                    <Button
+                      variant="crmSecondary"
+                      onClick={secondaryAction.onClick}
+                    >
+                      {secondaryAction.label}
+                    </Button>
+                  ) : null}
+                  {primaryAction ? (
+                    <Button
+                      variant="crmPrimary"
+                      onClick={primaryAction.onClick}
+                    >
+                      <Plus className="size-3.5" strokeWidth={1.5} />
+                      {primaryAction.label}
+                    </Button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           )}

@@ -12,11 +12,17 @@ const CREATE_DEAL_BODY_KEYS = [
   "stage",
   "status",
   "assignedTo",
+  "businessUnitId",
 ] as const satisfies readonly (keyof CreateCrmDealInput)[]
 
 /** Campos aceitos pelo PATCH /api/crm/deals/:id para edição de formulário. */
 const UPDATE_DEAL_BODY_KEYS = [
-  ...CREATE_DEAL_BODY_KEYS,
+  "title",
+  "company",
+  "value",
+  "stage",
+  "status",
+  "assignedTo",
 ] as const satisfies readonly (keyof UpdateCrmDealInput)[]
 
 /** Campos aceitos pelo PATCH /api/crm/deals/:id para movimento no Kanban. */
@@ -48,6 +54,10 @@ export function toCreateDealPayload(input: CreateCrmDealInput) {
   } else {
     payload.assignedTo = assignedTo
   }
+  const businessUnitId =
+    typeof payload.businessUnitId === "string" ? payload.businessUnitId.trim() : ""
+  if (!businessUnitId) delete payload.businessUnitId
+  else payload.businessUnitId = businessUnitId
   return payload
 }
 

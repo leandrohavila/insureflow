@@ -11,6 +11,67 @@ export type DealCardSignal =
   | "no-interaction"
   | "questionnaire-pending"
 
+export type DealCardNextAction = {
+  label: string
+  overdue: boolean
+}
+
+export type DealCardFacts = {
+  client: string | null
+  branch: string | null
+  owner: string | null
+  next: DealCardNextAction | null
+}
+
+function present(value?: string | null) {
+  const text = value?.trim()
+  if (!text || text === "Sem responsável") return null
+  return text
+}
+
+function formatCardDate(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+}
+
+/** Só exibe o que o negócio já tem. Ramo vem da unidade; sem unidade, não há ramo. */
+export function dealCardFacts(
+  deal: Pick<
+    CrmDeal,
+    "company" | "contact" | "owner" | "assignedTo" | "businessUnit" | "sla"
+  >,
+): DealCardFacts {
+  const company = present(deal.company)
+  const contact = present(deal.contact)
+  const client = company ?? (contact && contact !== company ? contact : null)
+  const branch =
+    deal.businessUnit?.type === "REAL_ESTATE"
+      ? "Imóvel"
+      : deal.businessUnit?.type === "INSURANCE"
+        ? "Seguro"
+        : null
+  const due = deal.sla?.dueAt ? formatCardDate(deal.sla.dueAt) : null
+  let next: DealCardNextAction | null = null
+  if (deal.sla?.status === "overdue") {
+    next = {
+      label: due ? `Atrasada · ${due}` : "Atividade atrasada",
+      overdue: true,
+    }
+  } else if (due) {
+    next = { label: due, overdue: false }
+  } else if (deal.sla?.status === "warning") {
+    next = { label: "Em alerta", overdue: false }
+  }
+
+  return {
+    client,
+    branch,
+    owner: present(deal.assignedTo) ?? present(deal.owner),
+    next,
+  }
+}
+
 export type DealCardSignals = {
   accentVar: string
   priorityAccentVar: string

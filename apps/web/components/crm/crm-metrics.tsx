@@ -12,6 +12,8 @@ type CrmMetricsProps = {
   deals: CrmDeal[]
   /** `compact` — linha única densa; detalhes secundários recolhíveis. */
   density?: StatCardDensity
+  /** Visão Geral usa cartões brancos. O Pipeline mantém o padrão atual. */
+  surface?: "default" | "light"
 }
 
 type MetricItem = {
@@ -22,7 +24,11 @@ type MetricItem = {
   tone: StatCardTone
 }
 
-export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
+export function CrmMetrics({
+  deals,
+  density = "default",
+  surface = "default",
+}: CrmMetricsProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const openDeals = deals.filter((deal) => deal.status === "open")
   const wonDeals = deals.filter((deal) => deal.status === "won")
@@ -77,15 +83,16 @@ export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
               value={metric.value}
               description={metric.sub}
               tone={metric.tone}
+              surface={surface}
             />
           ))}
         </div>
         <div className="flex min-w-0 items-center justify-end">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs"
+            variant={surface === "light" ? "crmSecondary" : "outline"}
+            size={surface === "light" ? "default" : "sm"}
+            className={surface === "light" ? undefined : "text-xs"}
             aria-expanded={detailsOpen}
             onClick={() => setDetailsOpen((open) => !open)}
           >
@@ -118,6 +125,7 @@ export function CrmMetrics({ deals, density = "default" }: CrmMetricsProps) {
           value={metric.value}
           description={metric.sub}
           tone={metric.tone}
+          surface={surface}
         />
       ))}
     </Grid>

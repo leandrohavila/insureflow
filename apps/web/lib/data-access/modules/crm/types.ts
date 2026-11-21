@@ -105,6 +105,8 @@ export type CreateCrmDealInput = {
   stage: CrmStageId
   status: CrmDealStatus
   assignedTo?: string
+  /** Unidade ativa no momento do cadastro. O PATCH do formulário não reenvia este campo. */
+  businessUnitId?: string
   /** Reservado — não enviado no POST; o backend atribui ordem no estágio. */
   pipelineOrder?: number
 }

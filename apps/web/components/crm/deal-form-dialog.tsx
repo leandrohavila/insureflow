@@ -1,8 +1,23 @@
 "use client"
 
 import { useEffect, useState, type FormEvent } from "react"
-import { Loader2, X } from "lucide-react"
+import { Briefcase } from "lucide-react"
 
+import {
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSection,
+  CrmFormDrawerSubmit,
+  crmDrawerInputClass,
+} from "@/components/crm/crm-form-drawer"
+import {
+  formatDealValueFromNumber,
+  maskDealValue,
+  parseDealValue,
+} from "@/components/crm/deal-form-money"
 import {
   pipelineStages,
   type CreateCrmDealInput,
@@ -10,17 +25,16 @@ import {
   type CrmStageId,
 } from "@/lib/data-access/modules/crm"
 import { getErrorMessage } from "@/lib/data-access"
-import { FormSelect } from "@/components/design-system/forms"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+
+const stageDotClass: Partial<Record<CrmStageId, string>> = {
+  novo: "bg-[#5B8DEF]",
+  contato: "bg-[#8B7CC8]",
+  cotacao: "bg-[#10294B]",
+  proposta: "bg-[#C09048]",
+  fechamento: "bg-[#3E8F6E]",
+}
 
 type NewDealForm = {
   title: string
@@ -35,6 +49,7 @@ export function DealFormDialog({
   open,
   pending,
   error,
+  businessUnitId,
   onOpenChange,
   onSubmit,
 }: {
@@ -42,6 +57,7 @@ export function DealFormDialog({
   open: boolean
   pending: boolean
   error: unknown
+  businessUnitId?: string | null
   onOpenChange: (open: boolean) => void
   onSubmit: (input: CreateCrmDealInput) => void
 }) {
@@ -58,7 +74,7 @@ export function DealFormDialog({
     setForm({
       title: deal?.title ?? "",
       company: deal?.company ?? "",
-      value: deal ? String(deal.value) : "",
+      value: deal ? formatDealValueFromNumber(deal.value) : "",
       stage: deal?.stage ?? "novo",
       assignedTo: deal?.assignedTo ?? "",
     })
@@ -70,10 +86,10 @@ export function DealFormDialog({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const value = Number(form.value)
-    if (!form.title.trim() || !form.company.trim() || Number.isNaN(value))
-      return
+    const value = parseDealValue(form.value)
+    if (!form.title.trim() || !form.company.trim() || value == null) return
 
+    const activeUnit = businessUnitId?.trim()
     onSubmit({
       title: form.title.trim(),
       company: form.company.trim(),
@@ -81,105 +97,144 @@ export function DealFormDialog({
       stage: form.stage,
       status: deal?.status ?? "open",
       assignedTo: form.assignedTo.trim() || undefined,
+      businessUnitId: deal || !activeUnit ? undefined : activeUnit,
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="avila-lead-surface gap-0 border-[#d6cfc4] bg-[var(--avila-ivory)] p-0! text-[var(--avila-navy-900)] sm:max-w-lg">
-        <form onSubmit={handleSubmit} className="flex max-h-[min(90vh,760px)] flex-col">
-          <DialogHeader className="border-b border-[#e4ddd2] bg-white px-6! py-4! pr-12!">
-            <DialogTitle>{deal ? "Editar negócio" : "Novo negócio"}</DialogTitle>
-            <DialogDescription>
-              {deal
-                ? "Atualize os dados do negócio sem alterar o contrato do backend."
-                : "Crie uma oportunidade real no backend e atualize o pipeline automaticamente."}
-            </DialogDescription>
-          </DialogHeader>
+    <CrmFormDrawer open={open} onOpenChange={onOpenChange}>
+      <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
+        <CrmFormDrawerHeader
+          icon={Briefcase}
+          title={deal ? "Editar negócio" : "Novo negócio"}
+          description={
+            deal
+              ? "Atualize os dados do negócio sem alterar o contrato do backend."
+              : "Crie uma oportunidade real no backend e atualize o pipeline automaticamente."
+          }
+        />
 
-          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6! py-5! sm:grid-cols-2">
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium">Título</span>
-              <Input
-                required
-                value={form.title}
-                onChange={(event) => update("title", event.target.value)}
-                placeholder="Ex.: Frota corporativa"
-              />
-            </label>
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium">Empresa</span>
-              <Input
-                required
-                value={form.company}
-                onChange={(event) => update("company", event.target.value)}
-                placeholder="Ex.: Transportes Sul"
-              />
-            </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Valor</span>
-              <Input
-                required
-                min={0}
-                step="0.01"
-                type="number"
-                value={form.value}
-                onChange={(event) => update("value", event.target.value)}
-                placeholder="67000"
-              />
-            </label>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Estágio</span>
-              <FormSelect
-                value={form.stage}
-                onChange={(event) =>
-                  update("stage", event.target.value as CrmStageId)
-                }
-                options={pipelineStages.map((stage) => ({
-                  value: stage.id,
-                  label: stage.label,
-                }))}
-              />
-            </label>
-            <label className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-sm font-medium">Responsável</span>
-              <Input
-                value={form.assignedTo}
-                onChange={(event) => update("assignedTo", event.target.value)}
-                placeholder="Ex.: Ana Costa"
-              />
-            </label>
-          </div>
+        <CrmFormDrawerBody className="gap-4 px-5! py-4!">
+          <CrmFormDrawerSection title="Identificação" className="gap-4 p-4!">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-[#10294B]">Título</span>
+                <Input
+                  required
+                  className={crmDrawerInputClass}
+                  value={form.title}
+                  onChange={(event) => update("title", event.target.value)}
+                  placeholder="Ex.: Frota corporativa"
+                />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-[#10294B]">Empresa</span>
+                <Input
+                  required
+                  className={crmDrawerInputClass}
+                  value={form.company}
+                  onChange={(event) => update("company", event.target.value)}
+                  placeholder="Ex.: Transportes Sul"
+                />
+              </label>
+            </div>
+          </CrmFormDrawerSection>
 
-          {error ? (
-            <p className="mx-6! rounded-lg border border-destructive/30 bg-destructive/10 px-3! py-2! text-sm text-destructive">
-              {getErrorMessage(error, "Erro ao salvar negócio")}
-            </p>
-          ) : null}
+          <CrmFormDrawerSection title="Condições comerciais" className="gap-4 p-4!">
+            <div className="grid gap-5">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-[#10294B]">Valor</span>
+                <Input
+                  required
+                  className={crmDrawerInputClass}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={form.value}
+                  onChange={(event) =>
+                    update("value", maskDealValue(event.target.value))
+                  }
+                  onBlur={(event) => {
+                    const parsed = parseDealValue(event.currentTarget.value)
+                    if (parsed == null) return
+                    update("value", formatDealValueFromNumber(parsed))
+                  }}
+                  placeholder="R$ 67.000,00"
+                />
+              </label>
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-sm font-medium text-[#10294B]">
+                  Estágio
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {pipelineStages.map((stage) => {
+                    const selected = form.stage === stage.id
+                    return (
+                      <label
+                        key={stage.id}
+                        className={cn(
+                          "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-sm leading-none font-medium whitespace-nowrap",
+                          selected
+                            ? "border-[#10294B] bg-[#10294B] text-white"
+                            : "border-[#D6CFC4] bg-white text-[#10294B] hover:bg-[#F6F1E8]",
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="deal-stage"
+                          value={stage.id}
+                          checked={selected}
+                          onChange={() => update("stage", stage.id)}
+                          className="sr-only"
+                        />
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "size-2 shrink-0 rounded-full",
+                            selected
+                              ? "bg-[#F6F1E8]"
+                              : (stageDotClass[stage.id] ?? "bg-[#10294B]"),
+                          )}
+                        />
+                        {stage.label}
+                      </label>
+                    )
+                  })}
+                </div>
+              </fieldset>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-[#10294B]">
+                  Responsável
+                </span>
+                <Input
+                  className={crmDrawerInputClass}
+                  value={form.assignedTo}
+                  onChange={(event) => update("assignedTo", event.target.value)}
+                  placeholder="Ex.: Ana Costa"
+                />
+              </label>
+            </div>
+          </CrmFormDrawerSection>
+        </CrmFormDrawerBody>
 
-          <DialogFooter className="mx-0! mb-0! border-t border-[#e4ddd2] bg-white px-6! py-4!">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="size-4" />
-              Cancelar
-            </Button>
-            <Button type="submit" variant="save" disabled={pending}>
-              {pending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Salvando…
-                </>
-              ) : (
-                deal ? "Salvar alterações" : "Salvar negócio"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {error ? (
+          <p
+            className="mx-4 mb-3 shrink-0 rounded-lg border border-[#e7c4c4] bg-[#fdf3f2] px-3 py-2 text-sm text-[#9f2d2d]"
+            role="alert"
+          >
+            {getErrorMessage(error, "Erro ao salvar negócio")}
+          </p>
+        ) : null}
+
+        <CrmFormDrawerFooter>
+          <CrmFormDrawerCancel
+            disabled={pending}
+            onClick={() => onOpenChange(false)}
+          />
+          <CrmFormDrawerSubmit pending={pending}>
+            {deal ? "Salvar alterações" : "Criar negócio"}
+          </CrmFormDrawerSubmit>
+        </CrmFormDrawerFooter>
+      </form>
+    </CrmFormDrawer>
   )
 }

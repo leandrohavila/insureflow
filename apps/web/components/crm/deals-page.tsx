@@ -12,8 +12,8 @@ import {
 } from "lucide-react"
 
 import { CrmMetrics } from "@/components/crm/crm-metrics"
-import { CrmPageHeaderActions } from "@/components/crm/crm-page-header-actions"
 import { CrmCaptureActions } from "@/components/crm/crm-capture-actions"
+import { CrmDensityToggle } from "@/components/crm/interaction"
 import { PipelineBoard } from "@/components/crm/pipeline-board"
 import { PipelineConversionEmpty } from "@/components/crm/pipeline-conversion-empty"
 import { CrmDealsList } from "@/components/crm/crm-deals-list"
@@ -26,17 +26,14 @@ import { PermissionGate } from "@/components/auth/permission-gate"
 import { useCanManage } from "@/components/auth/session-provider"
 import {
   ContentContainer,
-  FilterBar,
   FilterSearch,
-  Inline,
   OperationalPageLayout,
   OperationalWorkspaceMetrics,
   PageContainer,
-  PageHeader,
   ErrorState,
   LoadingState,
 } from "@/components/design-system"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/data-access"
 import { dsContentLayoutVariant } from "@/lib/design-system"
 import type { CrmDeal, CrmStageId, DealPipelineUpdateInput } from "@/lib/data-access/modules/crm"
@@ -51,6 +48,7 @@ import {
   useUpdateCrmDealPipeline,
 } from "@/lib/data-access/modules/crm"
 import { boardDealStage } from "@/lib/crm/deal-pipeline"
+import { useBusinessUnitContext } from "@/lib/data-access/modules/business-units"
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value"
 import { useFocusReturn } from "@/lib/hooks/use-focus-return"
 import {
@@ -61,11 +59,12 @@ import { resolvePipelineDensity } from "@/lib/crm/pipeline-density"
 import { easeOut } from "@/lib/motion"
 import { buildCrmReturnHref } from "@/lib/questionnaires/questionnaire-crm-navigation"
 import { closeEntitySheetNavigation } from "@/lib/crm/entity-sheet-navigation"
+import { CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import {
-  CRM_PAGE_SHELL_SCROLL,
-  crmViewToggleButton,
-  CRM_VIEW_TOGGLE_WRAP,
-} from "@/lib/crm/crm-layout-classes"
+  CrmFilterChip,
+  CrmFilterGroup,
+  crmFilterChipClass,
+} from "@/components/crm/crm-controls"
 import { cn } from "@/lib/utils"
 
 type ViewMode = "board" | "list"
@@ -101,6 +100,7 @@ export function DealsPage() {
   const dealsQuery = useCrmDeals()
   const pipelinesQuery = useCrmPipelines()
   const createDeal = useCreateCrmDeal()
+  const unitContext = useBusinessUnitContext()
   const updateDeal = useUpdateCrmDeal()
   const updateDealPipeline = useUpdateCrmDealPipeline()
   const deleteDeal = useDeleteCrmDeal()
@@ -245,16 +245,26 @@ export function DealsPage() {
   }
 
   const dealsToolbar = (
-    <FilterBar>
-      <FilterSearch
-        label="Filtrar negócios"
-        placeholder="Filtrar negócios, empresas ou contatos…"
-        value={queryInput}
-        onChange={(event) => setQueryInput(event.target.value)}
-        className="h-8 border-[#d6cfc4] bg-white shadow-none"
-      />
-      <Inline className="min-w-0 max-w-full">
-        <div className={CRM_VIEW_TOGGLE_WRAP} role="group" aria-label="Unidade de negócio">
+    <div
+      className="rounded-xl border border-[#D6CFC4] bg-white p-3! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)] [&_label>span]:text-[#5C6578]"
+      role="toolbar"
+      aria-label="Navegação e filtros do pipeline"
+    >
+      <div className="flex min-w-0 w-full flex-wrap items-center gap-x-[var(--if-layout-page-actions-gap)] gap-y-2">
+      <CrmFilterGroup label="Navegação do pipeline">
+        <Link href="/crm" className={crmFilterChipClass(false)}>
+          Visão geral
+        </Link>
+        <CrmFilterChip pressed={view === "board"} onClick={() => setView("board")}>
+          <Kanban className="size-3.5" strokeWidth={1.75} />
+          Kanban
+        </CrmFilterChip>
+        <CrmFilterChip pressed={view === "list"} onClick={() => setView("list")}>
+          <List className="size-3.5" strokeWidth={1.75} />
+          Lista
+        </CrmFilterChip>
+      </CrmFilterGroup>
+      <CrmFilterGroup label="Unidade de negócio">
         {(
           [
             ["all", "Todas"],
@@ -262,96 +272,74 @@ export function DealsPage() {
             ["REAL_ESTATE", "Imobiliária"],
           ] as const
         ).map(([id, label]) => (
-          <button
+          <CrmFilterChip
             key={id}
-            type="button"
-            aria-pressed={unitFilter === id}
+            pressed={unitFilter === id}
             onClick={() => setUnitFilter(id)}
-            className={crmViewToggleButton(unitFilter === id)}
           >
             {label}
-          </button>
+          </CrmFilterChip>
         ))}
-        </div>
-        <CRMRightSidebarToggle />
-        <Button variant="outline" size="sm" className="h-8 shrink-0">
-          <SlidersHorizontal className="size-3.5" strokeWidth={1.5} />
+      </CrmFilterGroup>
+      <FilterSearch
+        label="Filtrar negócios"
+        placeholder="Buscar negócios, clientes ou empresas…"
+        value={queryInput}
+        onChange={(event) => setQueryInput(event.target.value)}
+        containerClassName="w-full min-w-[14rem] max-w-full basis-full sm:w-auto sm:max-w-[18rem] sm:basis-[16rem] sm:flex-1"
+        className="h-9! border-[#D6CFC4]! bg-white! text-sm! text-[#10294B]! shadow-none placeholder:text-[#5C6578] dark:bg-white!"
+      />
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2">
+        <Button variant="crmSecondary" className="shrink-0">
+          <SlidersHorizontal className="size-3.5" strokeWidth={1.75} />
           Filtros
         </Button>
-        <div className={CRM_VIEW_TOGGLE_WRAP}>
-          <button
-            type="button"
-            aria-pressed={view === "board"}
-            onClick={() => setView("board")}
-            className={crmViewToggleButton(view === "board")}
-          >
-            <Kanban className="size-3.5" strokeWidth={1.5} />
-            Kanban
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === "list"}
-            onClick={() => setView("list")}
-            className={crmViewToggleButton(view === "list")}
-          >
-            <List className="size-3.5" strokeWidth={1.5} />
-            Lista
-          </button>
-        </div>
-      </Inline>
-    </FilterBar>
+        <CrmDensityToggle variant="chips" />
+        <CRMRightSidebarToggle appearance="crm" />
+      </div>
+      </div>
+    </div>
   )
 
   return (
     <PageContainer fillHeight className="avila-pipeline-surface">
       <ContentContainer variant={dsContentLayoutVariant.crmDeals}>
         <OperationalPageLayout density="dense">
-          <PageHeader
-            compact
-            className="pipeline-page-header shrink-0"
-            title="Negócios"
-            actions={
-              <CrmPageHeaderActions
-                navigation={
-                  <Link
-                    href="/crm"
-                    className={cn(
-                      buttonVariants({ variant: "outline", size: "sm" }),
-                      "h-8",
-                    )}
-                  >
-                    Visão geral
-                  </Link>
-                }
-                primary={
-                  <>
-                    <PermissionGate permission="crm:manage">
-                      <Button variant="import" size="sm" className="h-8">
-                        <Upload className="size-3.5" strokeWidth={1.5} />
-                        Importar
-                      </Button>
-                    </PermissionGate>
-                    <CrmCaptureActions
-                      onCreateDeal={() => {
-                        setEditingDeal(null)
-                        setCreateOpen(true)
-                      }}
-                    />
-                  </>
-                }
-              />
-            }
-          />
+          <header className="pipeline-masthead shrink-0">
+            <div className="pipeline-masthead__title">
+              <p className="pipeline-masthead__eyebrow">CRM</p>
+              <h1>Pipeline Comercial</h1>
+            </div>
+            <CrmCaptureActions
+              appearance="crm"
+              insuranceLabel="Novo Lead Seguro"
+              realEstateLabel="Novo Lead Imobiliário"
+              dealLabel="Novo Negócio"
+              onCreateDeal={() => {
+                setEditingDeal(null)
+                setCreateOpen(true)
+              }}
+              leading={
+                <PermissionGate permission="crm:manage">
+                  <Button variant="crmSecondary">
+                    <Upload className="size-3.5" strokeWidth={1.75} />
+                    Importar
+                  </Button>
+                </PermissionGate>
+              }
+            />
+          </header>
 
-          <OperationalWorkspaceMetrics>
+          <OperationalWorkspaceMetrics className="pipeline-metrics">
             <CrmMetrics deals={deals} density={pipelineDensity.metricsDensity} />
           </OperationalWorkspaceMetrics>
 
           <CRMRightSidebar
-        toolbarDense
-        sidebar={<CrmActivityFeed />}
-        header={dealsToolbar}
-      >
+            overlayBelowWide
+            toolbarDense
+            sidebar={<CrmActivityFeed />}
+            header={dealsToolbar}
+          >
         {dealsQuery.isLoading ? (
           <LoadingState label="Carregando negócios do CRM…" />
         ) : dealsQuery.isError ? (
@@ -447,6 +435,7 @@ export function DealsPage() {
       <DealFormDialog
         open={canManageCrm && createOpen}
         deal={editingDeal}
+        businessUnitId={unitContext.data?.currentBusinessUnitId}
         pending={createDeal.isPending || updateDeal.isPending}
         error={createDeal.error ?? updateDeal.error}
         onOpenChange={(open) => {

@@ -23,9 +23,9 @@ export function CrmPageHeaderActions({
   primary,
 }: CrmPageHeaderActionsProps) {
   return (
-    <PageActions className="sm:flex-wrap">
+    <PageActions>
       <PageActionsGroup aria-label="Preferências da tela">
-        <CrmDensityToggle variant="header" />
+        <CrmDensityToggle variant="chips" />
       </PageActionsGroup>
       {navigation ? (
         <PageActionsGroup aria-label="Navegação">{navigation}</PageActionsGroup>

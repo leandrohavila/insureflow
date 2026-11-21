@@ -1,26 +1,50 @@
 "use client"
 
 import { useMemo, useState } from "react"
-
-import { FormSelect } from "@/components/design-system"
 import {
-  DashboardKpiTile,
-  DashboardKpiTileGrid,
-} from "@/components/dashboard/dashboard-kpi-tile"
+  Layers,
+  Percent,
+  RefreshCw,
+  Target,
+  UserCheck,
+  UserMinus,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react"
+
+import {
+  CrmFilterChip,
+  CrmFilterGroup,
+  crmFilterCardClass,
+  crmFilterFieldClass,
+  crmStatCardClass,
+} from "@/components/crm/crm-controls"
+import { ErrorState, FilterSelect, StatCard } from "@/components/design-system"
+import type { StatCardTone } from "@/components/design-system"
 import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
 import { useDashboard360 } from "@/lib/data-access/modules/customer-360"
 import { formatCurrency } from "@/lib/data-access/modules/crm"
+import { getErrorMessage } from "@/lib/data-access"
+import { cn } from "@/lib/utils"
 
 const PERIODS = [
+  { id: "7", label: "7 dias" },
   { id: "30", label: "30 dias" },
   { id: "90", label: "90 dias" },
-  { id: "7", label: "7 dias" },
 ] as const
 
 function periodRange(days: string) {
   const to = new Date()
   const from = new Date(to.getTime() - Number(days) * 86_400_000)
   return { from: from.toISOString(), to: to.toISOString() }
+}
+
+type Indicator = {
+  label: string
+  value: string | number
+  icon: LucideIcon
+  tone?: StatCardTone
 }
 
 export function Dashboard360Workspace() {
@@ -36,91 +60,129 @@ export function Dashboard360Workspace() {
   })
   const metrics = query.data
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {PERIODS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`rounded-md border px-3 py-1.5 text-sm ${
-              period === item.id
-                ? "border-primary/40 bg-primary/12 text-primary"
-                : "border-white/[0.08] text-muted-foreground"
-            }`}
-            onClick={() => setPeriod(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-        <FormSelect
-          className="w-52"
-          value={businessUnitId}
-          onChange={(event) => setBusinessUnitId(event.target.value)}
-          options={[
-            { value: "", label: "Todas as empresas" },
-            ...units.map((unit) => ({ value: unit.id, label: unit.name })),
-          ]}
-        />
-        <FormSelect
-          className="w-52"
-          value={userId}
-          onChange={(event) => setUserId(event.target.value)}
-          options={[
-            { value: "", label: "Todos os corretores" },
-            ...(metrics?.brokers ?? []).map((user) => ({
-              value: user.id,
-              label: user.name,
-            })),
-          ]}
-        />
-      </div>
+  const indicators: Indicator[] = [
+    {
+      label: "Clientes ativos",
+      value: metrics?.activeCustomers ?? 0,
+      icon: Users,
+      tone: "success",
+    },
+    {
+      label: "Clientes inativos",
+      value: metrics?.inactiveCustomers ?? 0,
+      icon: UserMinus,
+    },
+    {
+      label: "Clientes reativados",
+      value: metrics?.reactivatedCustomers ?? 0,
+      icon: UserCheck,
+    },
+    {
+      label: "Receita prevista",
+      value: formatCurrency(metrics?.predictedRevenue ?? 0),
+      icon: Wallet,
+      tone: "primary",
+    },
+    {
+      label: "Receita renovação",
+      value: formatCurrency(metrics?.renewalRevenue ?? 0),
+      icon: RefreshCw,
+    },
+    {
+      label: "Receita cross-sell",
+      value: formatCurrency(metrics?.crossSellRevenue ?? 0),
+      icon: Layers,
+    },
+    {
+      label: "Oportunidades abertas",
+      value: metrics?.openOpportunities ?? 0,
+      icon: Target,
+    },
+    {
+      label: "Taxa de conversão",
+      value: `${metrics?.conversionRate ?? 0}%`,
+      icon: Percent,
+      tone: "success",
+    },
+  ]
 
-      <DashboardKpiTileGrid className="sm:grid-cols-4">
-        <DashboardKpiTile
-          label="Clientes ativos"
-          value={metrics?.activeCustomers ?? 0}
-          loading={query.isLoading}
-          tone="success"
+  return (
+    <>
+      <section
+        className={cn(crmFilterCardClass, "flex min-w-0 flex-col gap-3")}
+        aria-label="Filtros do Dashboard 360"
+      >
+        <CrmFilterGroup label="Período">
+          {PERIODS.map((item) => (
+            <CrmFilterChip
+              key={item.id}
+              pressed={period === item.id}
+              onClick={() => setPeriod(item.id)}
+            >
+              {item.label}
+            </CrmFilterChip>
+          ))}
+        </CrmFilterGroup>
+        <div className="flex min-w-0 flex-wrap items-end gap-[var(--if-layout-control-gap)] border-t border-[#D6CFC4] pt-3">
+          <FilterSelect
+            showLabel
+            label="Empresa"
+            containerClassName="gap-2"
+            className={cn(crmFilterFieldClass, "min-w-[13rem]")}
+            value={businessUnitId}
+            onChange={(event) => setBusinessUnitId(event.target.value)}
+            options={[
+              { value: "", label: "Todas as empresas" },
+              ...units.map((unit) => ({ value: unit.id, label: unit.name })),
+            ]}
+          />
+          <FilterSelect
+            showLabel
+            label="Corretor"
+            containerClassName="gap-2"
+            className={cn(crmFilterFieldClass, "min-w-[13rem]")}
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+            options={[
+              { value: "", label: "Todos os corretores" },
+              ...(metrics?.brokers ?? []).map((user) => ({
+                value: user.id,
+                label: user.name,
+              })),
+            ]}
+          />
+        </div>
+      </section>
+
+      {query.isError ? (
+        <ErrorState
+          title="Não foi possível carregar o Dashboard 360."
+          description={getErrorMessage(
+            query.error,
+            "Erro ao carregar os indicadores.",
+          )}
+          onRetry={() => void query.refetch()}
         />
-        <DashboardKpiTile
-          label="Clientes inativos"
-          value={metrics?.inactiveCustomers ?? 0}
-          loading={query.isLoading}
-        />
-        <DashboardKpiTile
-          label="Clientes reativados"
-          value={metrics?.reactivatedCustomers ?? 0}
-          loading={query.isLoading}
-        />
-        <DashboardKpiTile
-          label="Receita prevista"
-          value={formatCurrency(metrics?.predictedRevenue ?? 0)}
-          loading={query.isLoading}
-          tone="primary"
-        />
-        <DashboardKpiTile
-          label="Receita renovação"
-          value={formatCurrency(metrics?.renewalRevenue ?? 0)}
-          loading={query.isLoading}
-        />
-        <DashboardKpiTile
-          label="Receita cross-sell"
-          value={formatCurrency(metrics?.crossSellRevenue ?? 0)}
-          loading={query.isLoading}
-        />
-        <DashboardKpiTile
-          label="Oportunidades abertas"
-          value={metrics?.openOpportunities ?? 0}
-          loading={query.isLoading}
-        />
-        <DashboardKpiTile
-          label="Taxa de conversão"
-          value={`${metrics?.conversionRate ?? 0}%`}
-          loading={query.isLoading}
-          tone="success"
-        />
-      </DashboardKpiTileGrid>
-    </div>
+      ) : (
+        <section
+          className="grid min-w-0 grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-4"
+          aria-label="Indicadores do Dashboard 360"
+        >
+          {indicators.map((indicator) => (
+            <StatCard
+              key={indicator.label}
+              surface="light"
+              density="compact"
+              className={crmStatCardClass}
+              label={indicator.label}
+              value={indicator.value}
+              icon={indicator.icon}
+              tone={indicator.tone}
+              loading={query.isLoading}
+            />
+          ))}
+        </section>
+      )}
+    </>
   )
 }

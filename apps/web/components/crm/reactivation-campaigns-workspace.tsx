@@ -1,16 +1,34 @@
 "use client"
 
-import { Fragment, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Megaphone, Plus } from "lucide-react"
 
 import { PermissionGate } from "@/components/auth/permission-gate"
-import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  CrmBadge,
+  CrmFilterChip,
+  CrmFilterGroup,
+  crmFilterCardClass,
+  type CrmBadgeTone,
+} from "@/components/crm/crm-controls"
+import {
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSection,
+  CrmFormDrawerSubmit,
+  crmDrawerInputClass,
+} from "@/components/crm/crm-form-drawer"
 import { CrmPageHeader } from "@/components/crm/crm-page-header"
 import { ReactivationCampaignEditForm } from "@/components/crm/reactivation-campaign-edit-form"
-import { FilterChip } from "@/components/crm/primitives"
-import { CRM_PAGE_SHELL } from "@/lib/crm/crm-layout-classes"
+import { DataTable, type DataTableColumn } from "@/components/design-system"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL } from "@/lib/crm/crm-layout-classes"
 import {
   canEditReactivationCampaign,
   COMMERCIAL_AUTO_REFRESH_MS,
@@ -21,6 +39,7 @@ import {
   createReactivationCampaign,
   fetchReactivationCampaigns,
   type CampaignStatus,
+  type ReactivationCampaign,
 } from "@/lib/data-access/modules/commercial-reactivation-campaigns/api"
 import { cn } from "@/lib/utils"
 
@@ -37,11 +56,20 @@ function statusLabel(status: CampaignStatus) {
   return "Encerrada"
 }
 
+function statusTone(status: CampaignStatus): CrmBadgeTone {
+  if (status === "DRAFT") return "neutral"
+  if (status === "IN_PROGRESS") return "info"
+  return "success"
+}
+
 function formatDate(value: string) {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.getTime())) return "—"
   return parsed.toLocaleDateString("pt-BR")
 }
+
+const rowActionClass =
+  "h-9 w-auto max-w-full min-w-0 justify-center gap-1.5 px-2.5! text-xs font-semibold"
 
 export function ReactivationCampaignsWorkspace() {
   const router = useRouter()
@@ -65,6 +93,7 @@ export function ReactivationCampaignsWorkspace() {
   })
 
   const items = query.data?.data ?? []
+  const editingItem = items.find((item) => item.id === editingId) ?? null
 
   async function onCreate() {
     if (name.trim().length < 3) {
@@ -89,160 +118,224 @@ export function ReactivationCampaignsWorkspace() {
     }
   }
 
+  function closeCreate() {
+    setCreating(false)
+    setError(null)
+  }
+
+  const columns: DataTableColumn<ReactivationCampaign>[] = [
+    {
+      key: "name",
+      header: "Nome",
+      className: "font-semibold text-[#10294B]",
+      render: (item) => item.name,
+    },
+    {
+      key: "createdAt",
+      header: "Criação",
+      className: "whitespace-nowrap tabular-nums",
+      render: (item) => formatDate(item.createdAt),
+    },
+    {
+      key: "owner",
+      header: "Responsável",
+      render: (item) => item.ownerName,
+    },
+    {
+      key: "total",
+      header: "Total",
+      className: "tabular-nums",
+      render: (item) => item.totalLeads,
+    },
+    {
+      key: "contacted",
+      header: "Contatados",
+      className: "tabular-nums",
+      render: (item) => item.contacted,
+    },
+    {
+      key: "reactivated",
+      header: "Reativados",
+      className: "tabular-nums",
+      render: (item) => item.reactivated,
+    },
+    {
+      key: "rate",
+      header: "Taxa",
+      className: "whitespace-nowrap tabular-nums",
+      render: (item) => `${item.conversionRate.toFixed(1)}%`,
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (item) => (
+        <CrmBadge tone={statusTone(item.status)}>
+          {statusLabel(item.status)}
+        </CrmBadge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      className: "min-w-[11rem]",
+      render: (item) => (
+        <div className="flex flex-wrap items-center gap-[var(--if-layout-button-gap)]">
+          <Link
+            href={reactivationCampaignPath(item.id)}
+            className={cn(
+              buttonVariants({ variant: "crmSecondary" }),
+              rowActionClass,
+            )}
+          >
+            Abrir
+          </Link>
+          {canEditReactivationCampaign(item.status) ? (
+            <PermissionGate permission="crm:manage">
+              <Button
+                type="button"
+                variant="crmSecondary"
+                className={rowActionClass}
+                onClick={() => setEditingId(item.id)}
+              >
+                Editar
+              </Button>
+            </PermissionGate>
+          ) : null}
+        </div>
+      ),
+    },
+  ]
+
   return (
-    <div className={CRM_PAGE_SHELL}>
+    <div className={cn(CRM_PAGE_SHELL, CRM_PAGE_SHELL_SCROLL)}>
       <CrmPageHeader
         badge="CRM · Comercial"
         title="Campanhas de Reativação"
         description="Selecione grupos de leads perdidos e opere a lista de contato — sem disparo automático."
-      />
-
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
-          {STATUS_FILTERS.map((item) => (
-            <FilterChip
-              key={item.id || "all"}
-              isActive={status === item.id}
-              label={item.label}
-              onClick={() => setStatus(item.id)}
-            />
-          ))}
-        </div>
+      >
         <PermissionGate permission="crm:manage">
-          <Button size="sm" onClick={() => setCreating((value) => !value)}>
-            {creating ? "Cancelar" : "Nova campanha"}
+          <Button
+            type="button"
+            variant="crmPrimary"
+            onClick={() => setCreating(true)}
+          >
+            <Plus className="size-3.5" strokeWidth={1.5} />
+            Nova campanha
           </Button>
         </PermissionGate>
-      </div>
+      </CrmPageHeader>
+
+      <section
+        className={cn(crmFilterCardClass, "min-w-0")}
+        aria-label="Filtros de campanhas"
+      >
+        <CrmFilterGroup label="Status da campanha">
+          {STATUS_FILTERS.map((item) => (
+            <CrmFilterChip
+              key={item.id || "all"}
+              pressed={status === item.id}
+              onClick={() => setStatus(item.id)}
+            >
+              {item.label}
+            </CrmFilterChip>
+          ))}
+        </CrmFilterGroup>
+      </section>
+
+      <DataTable
+        density="default"
+        className="w-full"
+        cellClassName="px-3! py-3! align-middle whitespace-normal text-[#10294B]"
+        headerCellClassName="px-3! whitespace-nowrap"
+        tableClassName="w-full min-w-[960px]"
+        data={items}
+        columns={columns}
+        getRowId={(item) => item.id}
+        loading={query.isLoading}
+        loadingLabel="Carregando campanhas…"
+        error={query.isError ? query.error : null}
+        errorTitle="Não foi possível carregar as campanhas."
+        onRetry={() => void query.refetch()}
+        emptyIcon={Megaphone}
+        emptyTitle="Nenhuma campanha nesta visão."
+        emptyDescription="Crie uma campanha ou escolha outro status."
+      />
 
       {creating ? (
-        <div className="mb-4 rounded-xl border border-white/[0.06] p-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Nome *
-              <input
-                className="h-9 rounded-md border border-white/10 bg-transparent px-2 text-sm text-foreground"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Ex.: Reativação Q3 — Sem retorno"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground sm:col-span-2">
-              Descrição
-              <textarea
-                className="min-h-[4rem] rounded-md border border-white/10 bg-transparent px-2 py-1.5 text-sm text-foreground"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </label>
-          </div>
-          {error ? (
-            <p className="mt-2 text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <div className="mt-3 flex justify-end">
-            <Button onClick={onCreate} disabled={busy}>
-              Criar campanha
-            </Button>
-          </div>
-        </div>
+        <CrmFormDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open && !busy) closeCreate()
+          }}
+        >
+          <form
+            className="flex h-full min-h-0 flex-col"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void onCreate()
+            }}
+          >
+            <CrmFormDrawerHeader
+              icon={Megaphone}
+              title="Nova campanha"
+              description="Defina o nome e a descrição; os leads são selecionados depois."
+            />
+            <CrmFormDrawerBody className="gap-4 px-5! py-4!">
+              <CrmFormDrawerSection title="Dados da campanha" className="gap-4 p-4!">
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[#5C6578]">
+                    Nome *
+                  </span>
+                  <input
+                    className={crmDrawerInputClass}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder="Ex.: Reativação Q3 — Sem retorno"
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[#5C6578]">
+                    Descrição
+                  </span>
+                  <textarea
+                    className="min-h-[5.5rem] w-full rounded-lg border border-[#D6CFC4] bg-white px-3! py-2! text-sm text-[#10294B] outline-none placeholder:text-[#5C6578] focus-visible:border-[#10294B] focus-visible:ring-2 focus-visible:ring-[#10294B]/20"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                  />
+                </label>
+              </CrmFormDrawerSection>
+              {error ? (
+                <p
+                  className="rounded-xl border border-[#E5C2BE] bg-[#F8E8E6] px-3! py-2! text-sm font-medium text-[#9F2D2D]"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              ) : null}
+            </CrmFormDrawerBody>
+            <CrmFormDrawerFooter>
+              <CrmFormDrawerCancel disabled={busy} onClick={closeCreate} />
+              <CrmFormDrawerSubmit pending={busy} pendingLabel="Criando…">
+                Criar campanha
+              </CrmFormDrawerSubmit>
+            </CrmFormDrawerFooter>
+          </form>
+        </CrmFormDrawer>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-        <table className="min-w-full text-sm">
-          <thead className="bg-white/[0.03] text-left text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2">Nome</th>
-              <th className="px-3 py-2">Criação</th>
-              <th className="px-3 py-2">Responsável</th>
-              <th className="px-3 py-2">Total</th>
-              <th className="px-3 py-2">Contatados</th>
-              <th className="px-3 py-2">Reativados</th>
-              <th className="px-3 py-2">Taxa</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {query.isLoading ? (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-muted-foreground">
-                  Carregando campanhas…
-                </td>
-              </tr>
-            ) : null}
-            {!query.isLoading && items.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-3 py-6 text-muted-foreground">
-                  Nenhuma campanha nesta visão.
-                </td>
-              </tr>
-            ) : null}
-            {items.map((item) => (
-              <Fragment key={item.id}>
-                <tr className="border-t border-white/[0.04]">
-                  <td className="px-3 py-2 font-medium">{item.name}</td>
-                  <td className="px-3 py-2 tabular-nums">
-                    {formatDate(item.createdAt)}
-                  </td>
-                  <td className="px-3 py-2">{item.ownerName}</td>
-                  <td className="px-3 py-2 tabular-nums">{item.totalLeads}</td>
-                  <td className="px-3 py-2 tabular-nums">{item.contacted}</td>
-                  <td className="px-3 py-2 tabular-nums">{item.reactivated}</td>
-                  <td className="px-3 py-2 tabular-nums">
-                    {item.conversionRate.toFixed(1)}%
-                  </td>
-                  <td className="px-3 py-2">{statusLabel(item.status)}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      <Link
-                        href={reactivationCampaignPath(item.id)}
-                        className={cn(
-                          buttonVariants({ size: "sm", variant: "ghost" }),
-                        )}
-                      >
-                        Abrir
-                      </Link>
-                      {canEditReactivationCampaign(item.status) ? (
-                        <PermissionGate permission="crm:manage">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              setEditingId((current) =>
-                                current === item.id ? null : item.id,
-                              )
-                            }
-                          >
-                            {editingId === item.id ? "Fechar" : "Editar"}
-                          </Button>
-                        </PermissionGate>
-                      ) : null}
-                    </div>
-                  </td>
-                </tr>
-                {editingId === item.id ? (
-                  <tr className="border-t border-white/[0.04]">
-                    <td colSpan={9} className="px-3 py-3">
-                      <ReactivationCampaignEditForm
-                        campaign={item}
-                        onSaved={async () => {
-                          setEditingId(null)
-                          await queryClient.invalidateQueries({
-                            queryKey:
-                              queryKeys.commercialReactivationCampaigns.all,
-                          })
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ) : null}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {editingItem ? (
+        <ReactivationCampaignEditForm
+          presentation="drawer"
+          campaign={editingItem}
+          onCancel={() => setEditingId(null)}
+          onSaved={async () => {
+            setEditingId(null)
+            await queryClient.invalidateQueries({
+              queryKey: queryKeys.commercialReactivationCampaigns.all,
+            })
+          }}
+        />
+      ) : null}
     </div>
   )
 }

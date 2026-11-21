@@ -18,7 +18,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { useResponsiveSidebar } from "@/lib/hooks/use-responsive-sidebar"
+import { cn } from "@/lib/utils"
+import {
+  CRM_RIGHT_SIDEBAR_WIDTH_PX,
+  useResponsiveSidebar,
+} from "@/lib/hooks/use-responsive-sidebar"
 
 type CRMRightSidebarProps = {
   children: ReactNode
@@ -29,6 +33,11 @@ type CRMRightSidebarProps = {
   prelude?: ReactNode
   /** Toolbar com margem inferior reduzida. */
   toolbarDense?: boolean
+  /**
+   * No Pipeline, o painel só ocupa coluna a partir de 1600px.
+   * Abaixo disso abre como overlay e a preferência de abertura continua salva.
+   */
+  overlayBelowWide?: boolean
   className?: string
 }
 
@@ -50,10 +59,22 @@ export function CRMRightSidebar({
   header,
   prelude,
   toolbarDense = false,
+  overlayBelowWide = false,
   className,
 }: CRMRightSidebarProps) {
   const state = useResponsiveSidebar()
-  const { isInlineOpen, isDrawerOpen, setDrawerOpen, mode } = state
+  const {
+    isInlineOpen,
+    isDrawerOpen,
+    setDrawerOpen,
+    setOpen,
+    mode,
+    collapsed,
+    hydrated,
+  } = state
+  const kanbanOverlay = overlayBelowWide && mode === "notebook"
+  const asideInline = !kanbanOverlay && mode !== "compact" && isInlineOpen
+  const sheetOpen = kanbanOverlay ? hydrated && !collapsed : isDrawerOpen
 
   return (
     <CRMRightSidebarContext.Provider value={state}>
@@ -68,21 +89,43 @@ export function CRMRightSidebar({
           <div className="w-full min-w-0 shrink-0">{prelude}</div>
         ) : null}
 
-        <OperationalWorkspaceGrid asideOpen={isInlineOpen}>
+        <OperationalWorkspaceGrid
+          asideOpen={!kanbanOverlay && mode !== "compact"}
+          asideWidthPx={asideInline ? CRM_RIGHT_SIDEBAR_WIDTH_PX : 0}
+          className={cn(
+            "motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out",
+            !kanbanOverlay && mode !== "compact" && !isInlineOpen && "!gap-0 min-[1366px]:!gap-0",
+          )}
+        >
           <OperationalWorkspaceMain>{children}</OperationalWorkspaceMain>
 
-          {isInlineOpen ? (
-            <OperationalWorkspaceAside aria-label="Contexto operacional">
+          {!kanbanOverlay && mode !== "compact" ? (
+            <OperationalWorkspaceAside
+              aria-label="Atividades"
+              aria-hidden={!isInlineOpen}
+              className={cn(
+                !isInlineOpen && "pointer-events-none opacity-0",
+              )}
+            >
               <SidebarPanels>{sidebar}</SidebarPanels>
             </OperationalWorkspaceAside>
           ) : null}
         </OperationalWorkspaceGrid>
 
-        {mode === "compact" && (
-          <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+        {(mode === "compact" || kanbanOverlay) && (
+          <Sheet
+            open={sheetOpen}
+            onOpenChange={(open) => {
+              if (kanbanOverlay) {
+                setOpen(open)
+                return
+              }
+              setDrawerOpen(open)
+            }}
+          >
             <SheetContent
               side="right"
-              className="flex w-[min(100vw-1rem,340px)] max-w-[320px] flex-col gap-0 border-white/10 bg-background p-0 sm:max-w-[320px]"
+              className="avila-crm-canvas flex w-[min(100vw-1rem,380px)] max-w-none flex-col gap-0 border-border bg-[var(--avila-ivory)] p-0 sm:max-w-[380px]"
             >
               <SheetHeader className="sr-only">
                 <SheetTitle>Contexto operacional</SheetTitle>

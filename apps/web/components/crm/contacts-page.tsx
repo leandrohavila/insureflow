@@ -191,7 +191,7 @@ export function ContactsPage() {
         }
       >
         <PermissionGate permission="crm:manage">
-          <Button variant="import" size="sm">
+          <Button variant="crmSecondary">
             <Upload className="size-3.5" strokeWidth={1.5} />
             Importar
           </Button>
@@ -209,7 +209,7 @@ export function ContactsPage() {
           />
         </div>
         <PermissionGate permission="crm:manage">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button variant="crmSecondary">
             <Mail className="size-3.5" />
             Campanha
           </Button>

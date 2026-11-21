@@ -7,9 +7,6 @@ import { PermissionGate } from "@/components/auth/permission-gate"
 import { AppCard, EmptyState } from "@/components/design-system"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
-  CRM_SECTION_TITLE,
-} from "@/lib/crm/crm-layout-classes"
-import {
   formatCurrency,
   type CrmDeal,
 } from "@/lib/data-access/modules/crm"
@@ -27,14 +24,13 @@ export function CrmUpcomingActions({
   const openDeals = deals.filter((deal) => deal.status === "open")
 
   return (
-    <AppCard>
+    <AppCard className="border-[#D6CFC4]! bg-white! text-[#10294B] shadow-[0_1px_2px_rgb(16_41_75/0.04)]">
       <div className="mb-2.5 flex items-center justify-between">
-        <h2 className={CRM_SECTION_TITLE}>Próximas ações</h2>
+        <h2 className="text-sm font-semibold tracking-tight text-[#10294B]">Próximas ações</h2>
         <PermissionGate permission="crm:manage">
           <Button
-            variant="ghost"
-            size="icon-xs"
-            className="size-7"
+            variant="crmSecondary"
+            size="icon"
             aria-label="Novo negócio"
             onClick={onCreateDeal}
           >
@@ -54,12 +50,12 @@ export function CrmUpcomingActions({
           openDeals.slice(0, 4).map((deal) => (
             <li
               key={deal.id}
-              className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-2"
+              className="rounded-lg border border-[#D6CFC4] bg-white px-2.5 py-2"
             >
-              <p className="truncate text-sm font-medium leading-snug text-foreground">
+              <p className="truncate text-sm font-medium leading-snug text-[#10294B]">
                 {deal.title}
               </p>
-              <p className="mt-0.5 truncate text-sm text-foreground/60">
+              <p className="mt-0.5 truncate text-sm text-[#5C6578]">
                 {deal.company} · {formatCurrency(deal.value)}
               </p>
             </li>
@@ -70,7 +66,7 @@ export function CrmUpcomingActions({
         href="/crm/negocios"
         className={cn(
           buttonVariants({ variant: "link", size: "sm" }),
-          "mt-2 h-auto p-0 text-sm text-primary",
+          "mt-2 h-auto p-0 text-sm text-[#10294B]",
         )}
       >
         Ver todos os negócios

@@ -261,6 +261,11 @@ export function DealCardMenu({
         </DropdownMenu>
 
         <ActivityFormDialog
+          presentation="drawer"
+          lockLink
+          linkPreference="deal"
+          linkTitle={deal.title}
+          linkDetail={deal.company}
           open={dialogMode === "register"}
           onOpenChange={(open) => {
             if (!open) setDialogMode(null)
@@ -273,6 +278,11 @@ export function DealCardMenu({
         />
 
         <ActivityFormDialog
+          presentation="drawer"
+          lockLink
+          linkPreference="deal"
+          linkTitle={deal.title}
+          linkDetail={deal.company}
           open={dialogMode === "reschedule"}
           onOpenChange={(open) => {
             if (!open) setDialogMode(null)

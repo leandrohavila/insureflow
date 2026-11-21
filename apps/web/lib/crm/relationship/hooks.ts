@@ -5,6 +5,7 @@ import { useQueries, useQueryClient } from "@tanstack/react-query"
 
 import { ACTIVITY_TIMELINE_PAGE_LIMIT } from "@/lib/crm/commercial-timeline"
 import { fetchActivities } from "@/lib/data-access/modules/activities/api"
+import { activityTimelineQueryOptions } from "@/lib/data-access/modules/activities/timeline-refetch"
 import type { Activity } from "@/lib/data-access/modules/activities"
 import { queryKeys } from "@/lib/data-access/query-keys"
 import { useCrmDeals } from "@/lib/data-access/modules/crm"
@@ -100,26 +101,28 @@ export function useMergedActivityTimeline({
 
   const queries = useQueries({
     queries: [
-      ...uniqueLeadIds.map((leadId) => ({
-        queryKey: queryKeys.activities.list({
-          leadId,
-          limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+      ...uniqueLeadIds.map((leadId) =>
+        activityTimelineQueryOptions({
+          queryKey: queryKeys.activities.list({
+            leadId,
+            limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+          }),
+          queryFn: () =>
+            fetchActivities({ leadId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
+          enabled: enabled && Boolean(leadId),
         }),
-        queryFn: () =>
-          fetchActivities({ leadId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
-        enabled: enabled && Boolean(leadId),
-        staleTime: 30_000,
-      })),
-      ...uniqueDealIds.map((dealId) => ({
-        queryKey: queryKeys.activities.list({
-          dealId,
-          limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+      ),
+      ...uniqueDealIds.map((dealId) =>
+        activityTimelineQueryOptions({
+          queryKey: queryKeys.activities.list({
+            dealId,
+            limit: ACTIVITY_TIMELINE_PAGE_LIMIT,
+          }),
+          queryFn: () =>
+            fetchActivities({ dealId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
+          enabled: enabled && Boolean(dealId),
         }),
-        queryFn: () =>
-          fetchActivities({ dealId, limit: ACTIVITY_TIMELINE_PAGE_LIMIT }),
-        enabled: enabled && Boolean(dealId),
-        staleTime: 30_000,
-      })),
+      ),
     ],
   })
 

@@ -194,7 +194,7 @@ export function CompaniesPage() {
         }
       >
         <PermissionGate permission="crm:manage">
-          <Button variant="import" size="sm">
+          <Button variant="crmSecondary">
             <Upload className="size-3.5" strokeWidth={1.5} />
             Importar
           </Button>
