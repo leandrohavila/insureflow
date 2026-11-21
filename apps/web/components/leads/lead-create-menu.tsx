@@ -19,6 +19,8 @@ type LeadCreateMenuProps = {
   align?: "start" | "end"
   /** Ação de criação na lista de Leads: verde de sucesso. */
   accent?: boolean
+  /** Lista de Leads: primário navy e secundário branco, 36px. */
+  appearance?: "default" | "crm"
 }
 
 export function LeadCreateMenu({
@@ -27,6 +29,7 @@ export function LeadCreateMenu({
   realEstateEnabled = true,
   align = "end",
   accent = false,
+  appearance = "default",
 }: LeadCreateMenuProps) {
   const canCreate = insuranceEnabled || realEstateEnabled
 
@@ -36,8 +39,11 @@ export function LeadCreateMenu({
         disabled={!canCreate}
         aria-label="Novo lead"
         className={cn(
-          buttonVariants({ variant: accent ? "create" : "primary", size: "sm" }),
-          "h-9 gap-1.5 px-3!",
+          buttonVariants({
+            variant: appearance === "crm" ? "crmPrimary" : accent ? "create" : "primary",
+            size: appearance === "crm" ? "default" : "sm",
+          }),
+          appearance === "crm" ? "gap-1.5" : "h-9 gap-1.5 px-3!",
         )}
       >
         <Plus className="size-3.5" strokeWidth={1.5} />
@@ -73,13 +79,15 @@ export function LeadCreateEmptyActions({
   onCreate,
   insuranceEnabled = true,
   realEstateEnabled = true,
+  appearance = "default",
 }: LeadCreateEmptyActionsProps) {
+  const variant = appearance === "crm" ? "crmSecondary" : "outline"
   return (
     <div className="flex flex-wrap justify-center gap-2">
       <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1.5"
+        size={appearance === "crm" ? "default" : "sm"}
+        variant={variant}
+        className={appearance === "crm" ? "gap-1.5" : "h-8 gap-1.5"}
         disabled={!insuranceEnabled}
         onClick={() => onCreate("insurance")}
       >
@@ -87,9 +95,9 @@ export function LeadCreateEmptyActions({
         Lead Seguro
       </Button>
       <Button
-        size="sm"
-        variant="outline"
-        className="h-8 gap-1.5"
+        size={appearance === "crm" ? "default" : "sm"}
+        variant={variant}
+        className={appearance === "crm" ? "gap-1.5" : "h-8 gap-1.5"}
         disabled={!realEstateEnabled}
         onClick={() => onCreate("real-estate")}
       >

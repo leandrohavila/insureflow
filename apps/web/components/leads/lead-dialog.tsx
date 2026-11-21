@@ -1,28 +1,28 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
-import { Check, Loader2, X } from "lucide-react"
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
+import { Building2, Pencil, Shield } from "lucide-react"
 
 import { ActivityQuickActions } from "@/components/activities/activity-quick-actions"
 import { ActivityTimeline } from "@/components/activities/activity-timeline"
 import { CommercialWarningBanner } from "@/components/crm/commercial-warning-banner"
+import { LeadMarkLostSection } from "@/components/leads/lead-mark-lost-section"
+import {
+  CrmFormDrawer,
+  CrmFormDrawerBody,
+  CrmFormDrawerCancel,
+  CrmFormDrawerFooter,
+  CrmFormDrawerHeader,
+  CrmFormDrawerSubmit,
+} from "@/components/crm/crm-form-drawer"
 import { useSession } from "@/components/auth/session-provider"
 import { FormSelect } from "@/components/design-system"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { getErrorMessage } from "@/lib/data-access"
 import {
   formatDocumentMask,
   formatPhoneBrMask,
-  LEAD_DOCUMENT_TYPES,
   normalizeDocument,
   type LeadDocumentType,
 } from "@/lib/documents/document"
@@ -37,7 +37,8 @@ import { useBusinessUnits } from "@/lib/data-access/modules/business-units"
 import {
   buildLeadDialogFormState,
   EMPTY_LEAD_DIALOG_FORM,
-  leadDialogCanSubmit,
+  leadDialogAcceptsSubmit,
+  leadDialogFieldErrors,
   leadDialogUnitFields,
   type LeadDialogFormState,
 } from "@/lib/data-access/modules/leads/lead-dialog-form"
@@ -49,7 +50,6 @@ import {
   applyExplicitRenewalRecalculation,
   describeRenewalRecalculation,
 } from "@/lib/data-access/modules/leads/lead-next-contact-form"
-import { formatLastInteraction } from "@/lib/crm/last-interaction"
 import {
   INTEREST_CATEGORY_LABELS,
   type InterestCategory,
@@ -59,6 +59,7 @@ import {
   resolveInterestAvailability,
   type LeadCreateIntent,
 } from "@/lib/leads/lead-intent"
+import type { MarkLeadLostInput } from "@/lib/leads/lead-mark-lost"
 import { LEAD_OPPORTUNITY_PIPELINE_HINT } from "@/lib/leads/lead-pipeline-clarity"
 import {
   bug010DrawerLog,
@@ -129,15 +130,51 @@ function buildDuplicateMeta(duplicate: LeadDuplicate) {
   )
 }
 
+function LeadField({
+  label,
+  required = false,
+  error,
+  hint,
+  className,
+  children,
+}: {
+  label: string
+  required?: boolean
+  error?: string
+  hint?: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <label className={cn("flex min-w-0 flex-col gap-2", className)}>
+      <span className="text-sm font-medium text-[var(--avila-navy-900)]">
+        {label}
+        {required ? (
+          <span className="ml-0.5 text-[var(--avila-gold-600)]" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </span>
+      {children}
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {error ? (
+        <span className="text-xs font-medium text-destructive">{error}</span>
+      ) : null}
+    </label>
+  )
+}
+
 function LeadDialogUnits({
   selectedIds,
   units,
   knownUnits,
+  error,
   onToggle,
 }: {
   selectedIds: string[]
   units: Array<{ id: string; name: string }>
   knownUnits: Array<{ id: string; name: string }>
+  error?: string
   onToggle: (id: string) => void
 }) {
   const options = new Map<string, string>()
@@ -149,6 +186,9 @@ function LeadDialogUnits({
     <fieldset className="lg:col-span-2">
       <legend className="text-sm font-medium text-[var(--avila-navy-900)]">
         Unidades de negócio
+        <span className="ml-0.5 text-[var(--avila-gold-600)]" aria-hidden>
+          *
+        </span>
       </legend>
       <div className="mt-2! flex flex-wrap gap-x-4 gap-y-2">
         {[...options.entries()].map(([id, name]) => (
@@ -166,6 +206,9 @@ function LeadDialogUnits({
           </label>
         ))}
       </div>
+      {error ? (
+        <p className="mt-2 text-xs font-medium text-destructive">{error}</p>
+      ) : null}
     </fieldset>
   )
 }
@@ -251,20 +294,20 @@ function LeadDialogBusinessFields({
   }
 
   return (
-    <div className="flex flex-col gap-3 lg:col-span-2">
+    <div className="flex flex-col gap-4 lg:col-span-2">
       <span className="text-sm font-medium text-[var(--avila-navy-900)]">
-        Qualificações
+        Produto ou ramo de interesse
       </span>
       {pending ? (
         <p className="text-sm text-[#5c6578]">
-          Carregando as qualificações das unidades selecionadas…
+          Carregando os ramos das unidades selecionadas…
         </p>
       ) : available.length === 0 ? (
         <p className="text-sm text-[#5c6578]">
-          Selecione ao menos uma unidade para ver as qualificações.
+          Selecione ao menos uma unidade para ver os ramos de interesse.
         </p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {renderGroup("Seguros", insurance)}
           {renderGroup("Imóveis", property)}
         </div>
@@ -315,12 +358,12 @@ function LeadDialogSection({
   columns?: boolean
 }) {
   return (
-    <section className="rounded-xl border border-border bg-white p-4! shadow-[0_1px_2px_rgb(0_12_36/0.04)]">
-      <h3 className="mb-3! text-[11px] font-semibold tracking-wide text-[var(--avila-navy-800)] uppercase">
-        <span className="mr-2 text-[var(--avila-gold-600)]">{step}.</span>
+    <section className="flex flex-col gap-4 rounded-xl border border-[#D6CFC4] bg-white p-3!">
+      <h3 className="text-[0.6875rem] font-semibold tracking-[0.08em] text-[#10294B] uppercase">
+        <span className="mr-2 text-[#C09048]">{step}.</span>
         {title}
       </h3>
-      <div className={columns ? "grid gap-4 lg:grid-cols-2" : "grid gap-4"}>
+      <div className={columns ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
         {children}
       </div>
     </section>
@@ -339,6 +382,7 @@ export type LeadDialogProps = {
   onSubmit: (input: CreateLeadInput) => void | Promise<void>
   onOpenExistingLead: (leadId: string) => void
   onSubmitLockedChange: (locked: boolean) => void
+  onMarkLost?: (input: MarkLeadLostInput) => Promise<void>
 }
 
 export function LeadDialog({
@@ -353,12 +397,15 @@ export function LeadDialog({
   onSubmit,
   onOpenExistingLead,
   onSubmitLockedChange,
+  onMarkLost,
 }: LeadDialogProps) {
   const { session } = useSession()
   const unitsQuery = useBusinessUnits()
   const [duplicateDismissed, setDuplicateDismissed] = useState(false)
   const [form, setForm] = useState<LeadDialogFormState>(EMPTY_LEAD_DIALOG_FORM)
   const [submitLocked, setSubmitLocked] = useState(false)
+  const submitLockRef = useRef(false)
+  const [showFieldErrors, setShowFieldErrors] = useState(false)
   const [renewalPreview, setRenewalPreview] = useState<string[] | null>(null)
 
   const intent: LeadCreateIntent =
@@ -382,9 +429,11 @@ export function LeadDialog({
     if (!open) {
       setDuplicateDismissed(false)
       setRenewalPreview(null)
+      setShowFieldErrors(false)
       setForm(EMPTY_LEAD_DIALOG_FORM)
       console.log("[DRAWER] 7-before-loading-false")
       bug010DrawerLog("before setSubmitLocked(false)")
+      submitLockRef.current = false
       setSubmitLocked(false)
       bug010DrawerSetState({ submitLocked: false })
       bug010DrawerLog("after setSubmitLocked(false)")
@@ -393,8 +442,10 @@ export function LeadDialog({
     }
 
     setDuplicateDismissed(false)
+    setShowFieldErrors(false)
     console.log("[DRAWER] 7-before-loading-false")
     bug010DrawerLog("before setSubmitLocked(false)")
+    submitLockRef.current = false
     setSubmitLocked(false)
     bug010DrawerSetState({ submitLocked: false })
     bug010DrawerLog("after setSubmitLocked(false)")
@@ -411,6 +462,7 @@ export function LeadDialog({
     if (error) {
       console.log("[DRAWER] 7-before-loading-false")
       bug010DrawerLog("before setSubmitLocked(false)")
+      submitLockRef.current = false
       setSubmitLocked(false)
       bug010DrawerSetState({ submitLocked: false })
       bug010DrawerLog("after setSubmitLocked(false)")
@@ -461,27 +513,25 @@ export function LeadDialog({
         selectedInterests: form.interestCategories,
         settled: !unitsQuery.isLoading,
       })
-  const canSubmit =
-    leadDialogCanSubmit({
-      name: form.name,
-      businessUnitIds: form.businessUnitIds,
-    }) &&
-    !interestAvailability.pending &&
-    interestAvailability.incompatible.length === 0
+  const fieldErrors = showFieldErrors
+    ? leadDialogFieldErrors(form)
+    : {}
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending || submitLocked) return
-    if (!form.name.trim()) return
+    if (!leadDialogAcceptsSubmit({ pending, submitLocked: submitLockRef.current })) {
+      return
+    }
+    const errors = leadDialogFieldErrors(form)
+    if (Object.keys(errors).length > 0) {
+      setShowFieldErrors(true)
+      return
+    }
     const units = leadDialogUnitFields(
       form.businessUnitIds,
       lead?.businessUnitId || lockedBusinessUnitId || form.businessUnitId,
     )
     if (
-      !leadDialogCanSubmit({
-        name: form.name,
-        businessUnitIds: form.businessUnitIds,
-      }) ||
       interestAvailability.pending ||
       interestAvailability.incompatible.length > 0
     ) {
@@ -492,6 +542,7 @@ export function LeadDialog({
     bug010DrawerSetState({ dialogOpen: open, submitLocked })
     bug010DrawerLog("submit()")
     console.log("[DRAWER] 1-submit")
+    submitLockRef.current = true
     setSubmitLocked(true)
     bug010DrawerSetState({ submitLocked: true })
 
@@ -526,6 +577,7 @@ export function LeadDialog({
       })
     } finally {
       bug010DrawerLog("before setSubmitLocked(false)")
+      submitLockRef.current = false
       setSubmitLocked(false)
       bug010DrawerSetState({ submitLocked: false })
       bug010DrawerLog("after setSubmitLocked(false)")
@@ -536,44 +588,125 @@ export function LeadDialog({
     console.log("[DRAWER] isSubmitting =", submitPending)
   }, [submitPending])
 
+  const drawerTitle = lead
+    ? "Editar lead"
+    : intent === "real-estate"
+      ? "Novo lead imobiliário"
+      : "Novo lead seguro"
+  const drawerDescription = lead
+    ? "Atualize os dados de contato e o contexto comercial do lead."
+    : intent === "real-estate"
+      ? "O lead entra na Ávila Imóveis. Você pode vincular também a Corretora Ávila."
+      : "O lead entra na Corretora Ávila. Você pode vincular também a Ávila Imóveis."
+  const DrawerIcon = lead
+    ? Pencil
+    : intent === "real-estate"
+      ? Building2
+      : Shield
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <CrmFormDrawer open={open} onOpenChange={onOpenChange}>
       {open ? (
-        <DialogContent className="avila-crm-canvas avila-lead-surface w-[min(1040px,calc(100%-2rem))] gap-0 overflow-hidden border-border bg-[var(--avila-ivory)] p-0 text-foreground shadow-xl sm:max-w-[1040px]">
           <form
             onSubmit={handleSubmit}
-            className="grid max-h-[min(92vh,920px)] grid-rows-[auto_minmax(0,1fr)_auto]"
+            className="flex h-full min-h-0 flex-col"
           >
-            <DialogHeader className="border-b border-border bg-white px-6! py-4! pr-12!">
-              <DialogTitle className="text-lg font-semibold tracking-tight text-[var(--avila-navy-900)]">
-                {lead
-                  ? "Editar lead"
-                  : intent === "real-estate"
-                    ? "Novo lead imobiliário"
-                    : "Novo lead seguro"}
-              </DialogTitle>
-              <DialogDescription>
-                {lead
-                  ? "Atualize os dados de contato e o contexto comercial do lead."
-                  : intent === "real-estate"
-                    ? "O lead entra na Ávila Imóveis. Você pode vincular também a Corretora Ávila."
-                    : "O lead entra na Corretora Ávila. Você pode vincular também a Ávila Imóveis."}
-              </DialogDescription>
-              {lead ? (
-                <p className="text-sm font-medium text-foreground">{lead.name}</p>
-              ) : null}
-              {lead ? (
-                <p className="text-xs text-muted-foreground">
-                  {formatLastInteraction(
-                    lead.lastInteractionAt ?? lead.lastContactAt,
-                  )}
-                </p>
-              ) : null}
-            </DialogHeader>
+            <CrmFormDrawerHeader
+              icon={DrawerIcon}
+              title={drawerTitle}
+              description={
+                lead
+                  ? `${lead.name} · ${statusLabels[lead.status]}${
+                      lead.status === "lost" && lead.lostReason
+                        ? ` · ${lead.lostReason}`
+                        : ""
+                    } · ${drawerDescription}`
+                  : drawerDescription
+              }
+            />
 
-            <div className="min-h-0 overflow-x-hidden overflow-y-auto overscroll-contain px-6! py-5!">
-            <div className="grid gap-6">
-              <LeadDialogSection step={1} title="Dados do lead">
+            <CrmFormDrawerBody>
+            <div className="grid gap-4">
+              <LeadDialogSection step={1} title="Identificação">
+              <LeadField
+                label="Nome completo"
+                required
+                error={fieldErrors.name}
+                className="lg:col-span-2"
+              >
+                <Input
+                  value={form.name}
+                  aria-invalid={Boolean(fieldErrors.name)}
+                  onChange={(event) => update("name", event.target.value)}
+                  placeholder="Ex.: Marina Costa"
+                  autoComplete="name"
+                />
+              </LeadField>
+              <LeadField label="Tipo de pessoa">
+                <FormSelect
+                  value={form.documentType}
+                  onChange={(event) =>
+                    update("documentType", event.target.value as LeadDocumentType)
+                  }
+                  options={[
+                    { value: "cpf", label: "Pessoa física" },
+                    { value: "cnpj", label: "Pessoa jurídica" },
+                  ]}
+                />
+              </LeadField>
+              <LeadField
+                label={form.documentType === "cpf" ? "CPF" : "CNPJ"}
+                error={fieldErrors.document}
+              >
+                <Input
+                  value={form.document}
+                  aria-invalid={Boolean(fieldErrors.document)}
+                  onChange={(event) =>
+                    update(
+                      "document",
+                      formatDocumentMask(form.documentType, event.target.value),
+                    )
+                  }
+                  placeholder={
+                    form.documentType === "cpf"
+                      ? "000.000.000-00"
+                      : "00.000.000/0000-00"
+                  }
+                  inputMode="numeric"
+                />
+              </LeadField>
+              </LeadDialogSection>
+
+              <LeadDialogSection step={2} title="Contato">
+              <LeadField
+                label="Telefone"
+                error={fieldErrors.phone}
+                hint="O WhatsApp da listagem usa este número."
+              >
+                <Input
+                  value={form.phone}
+                  aria-invalid={Boolean(fieldErrors.phone)}
+                  onChange={(event) =>
+                    update("phone", formatPhoneBrMask(event.target.value))
+                  }
+                  placeholder="(11) 99999-9999"
+                  inputMode="tel"
+                  autoComplete="tel"
+                />
+              </LeadField>
+              <LeadField label="E-mail" error={fieldErrors.email}>
+                <Input
+                  type="email"
+                  value={form.email}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  onChange={(event) => update("email", event.target.value)}
+                  placeholder="lead@email.com"
+                  autoComplete="email"
+                />
+              </LeadField>
+              </LeadDialogSection>
+
+              <LeadDialogSection step={3} title="Informações comerciais">
               <LeadDialogUnits
                 selectedIds={form.businessUnitIds}
                 units={(unitsQuery.data ?? []).filter((unit) => unit.isActive)}
@@ -581,6 +714,7 @@ export function LeadDialog({
                   ...(lead?.businessUnits ?? []),
                   ...(lead?.businessUnit ? [lead.businessUnit] : []),
                 ]}
+                error={fieldErrors.businessUnitIds}
                 onToggle={(id) => {
                   setForm((current) => {
                     const has = current.businessUnitIds.includes(id)
@@ -596,97 +730,33 @@ export function LeadDialog({
                   })
                 }}
               />
-              <label className="flex flex-col gap-2 lg:col-span-2">
-                <span className="text-sm font-medium">Nome</span>
+              <LeadField label="Origem do lead">
                 <Input
-                  required
-                  value={form.name}
-                  onChange={(event) => update("name", event.target.value)}
-                  placeholder="Ex.: Marina Costa"
+                  value={form.source}
+                  onChange={(event) => update("source", event.target.value)}
+                  placeholder="WhatsApp, site, indicação..."
                 />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">E-mail</span>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => update("email", event.target.value)}
-                  placeholder="lead@email.com"
-                />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Telefone</span>
-                <Input
-                  value={form.phone}
-                  onChange={(event) =>
-                    update("phone", formatPhoneBrMask(event.target.value))
-                  }
-                  placeholder="(11) 99999-9999"
-                  inputMode="tel"
-                  autoComplete="tel"
-                />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Tipo de documento</span>
-                <FormSelect
-                  value={form.documentType}
-                  onChange={(event) =>
-                    update("documentType", event.target.value as LeadDocumentType)
-                  }
-                  options={LEAD_DOCUMENT_TYPES.map((item) => ({
-                    value: item,
-                    label: item.toUpperCase(),
-                  }))}
-                />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">
-                  {form.documentType === "cpf" ? "CPF" : "CNPJ"}
-                </span>
-                <Input
-                  value={form.document}
-                  onChange={(event) =>
-                    update(
-                      "document",
-                      formatDocumentMask(form.documentType, event.target.value),
-                    )
-                  }
-                  placeholder={
-                    form.documentType === "cpf"
-                      ? "000.000.000-00"
-                      : "00.000.000/0000-00"
-                  }
-                  inputMode="numeric"
-                />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Empresa</span>
+              </LeadField>
+              <LeadField label="Empresa">
                 <Input
                   value={form.company}
                   onChange={(event) => update("company", event.target.value)}
                   placeholder="Ex.: Transportes Sul"
                 />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Origem</span>
-                <Input
-                  value={form.source}
-                  onChange={(event) => update("source", event.target.value)}
-                  placeholder="whatsapp, site, indicação..."
-                />
-              </label>
-              <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium">Responsável</span>
+              </LeadField>
+              <LeadField
+                label="Responsável pelo atendimento"
+                required
+                error={fieldErrors.assignedTo}
+                className="lg:col-span-2"
+              >
                 <Input
                   value={form.assignedTo}
+                  aria-invalid={Boolean(fieldErrors.assignedTo)}
                   onChange={(event) => update("assignedTo", event.target.value)}
                   placeholder="Ex.: Ana Costa"
-                  required
                 />
-              </label>
-              </LeadDialogSection>
-
-              <LeadDialogSection step={2} title="Qualificação">
+              </LeadField>
               <LeadDialogBusinessFields
                 form={form}
                 update={update}
@@ -696,7 +766,7 @@ export function LeadDialog({
               />
               </LeadDialogSection>
 
-              <LeadDialogSection step={3} title="Oportunidade">
+              <LeadDialogSection step={4} title="Oportunidade">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Tipo oportunidade</span>
                 <FormSelect
@@ -746,7 +816,7 @@ export function LeadDialog({
               </label>
 
               {form.policyExpiresAt ? (
-                <div className="flex flex-col gap-3 rounded-lg border border-border bg-white p-3! lg:col-span-2">
+                <div className="flex flex-col gap-4 rounded-lg border border-[#D6CFC4] bg-white p-3! lg:col-span-2">
                   <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-muted-foreground">
                     Renovações automáticas
                   </p>
@@ -787,13 +857,13 @@ export function LeadDialog({
                     return (
                       <div
                         key={label}
-                        className="grid gap-3 lg:grid-cols-[4rem_1fr_8rem_auto] lg:items-end"
+                        className="grid gap-4 lg:grid-cols-[4rem_1fr_8rem_auto] lg:items-end"
                       >
                         <div>
                           <p className="text-sm font-medium">{label}</p>
                           <p className="text-xs text-muted-foreground">{status}</p>
                         </div>
-                        <label className="flex flex-col gap-1">
+                        <label className="flex flex-col gap-2">
                           <span className="text-xs text-muted-foreground">Data</span>
                           <Input
                             type="date"
@@ -804,7 +874,7 @@ export function LeadDialog({
                             }
                           />
                         </label>
-                        <label className="flex flex-col gap-1">
+                        <label className="flex flex-col gap-2">
                           <span className="text-xs text-muted-foreground">Hora</span>
                           <Input
                             type="time"
@@ -824,8 +894,7 @@ export function LeadDialog({
                         ) : (
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="sm"
+                            variant="crmSecondary"
                             onClick={() =>
                               setForm((current) => ({
                                 ...current,
@@ -842,7 +911,7 @@ export function LeadDialog({
                   })}
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="crmSecondary"
                     onClick={() =>
                       setRenewalPreview(describeRenewalRecalculation(form))
                     }
@@ -857,6 +926,7 @@ export function LeadDialog({
                       <div className="flex gap-2">
                         <Button
                           type="button"
+                          variant="crmPrimary"
                           onClick={() => {
                             setForm((current) =>
                               applyExplicitRenewalRecalculation(current),
@@ -868,7 +938,7 @@ export function LeadDialog({
                         </Button>
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="crmSecondary"
                           onClick={() => setRenewalPreview(null)}
                         >
                           Cancelar
@@ -880,7 +950,7 @@ export function LeadDialog({
               ) : null}
               </LeadDialogSection>
 
-              <LeadDialogSection step={4} title="Próxima ação" columns={false}>
+              <LeadDialogSection step={5} title="Próxima ação" columns={false}>
               <div className="space-y-3 rounded-lg border border-border p-3">
                 <label className="flex flex-col gap-2">
                   <span className="text-sm font-medium">Próximo contato</span>
@@ -900,7 +970,7 @@ export function LeadDialog({
                   />
                 </label>
                 {form.followUpDays === NEXT_CONTACT_PRESET_CUSTOM ? (
-                  <div className="grid gap-3 lg:grid-cols-2">
+                  <div className="grid gap-4 lg:grid-cols-2">
                     <label className="flex flex-col gap-2">
                       <span className="text-sm font-medium">Data</span>
                       <Input
@@ -950,7 +1020,7 @@ export function LeadDialog({
               </div>
               </LeadDialogSection>
 
-              <LeadDialogSection step={5} title="Histórico e observações" columns={false}>
+              <LeadDialogSection step={6} title="Histórico e observações" columns={false}>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Notas</span>
                 <textarea
@@ -969,12 +1039,19 @@ export function LeadDialog({
                   dealId={lead.dealId}
                   compact
                   embedded
+                  presentation="drawer"
+                  lockLink
+                  linkPreference="lead"
+                  linkTitle={lead.name}
+                  linkDetail={lead.phone ?? undefined}
                 />
                 <ActivityTimeline
                   leadId={lead.id}
                   dealId={lead.dealId}
                   embedded
                   showHeading={false}
+                  presentation="drawer"
+                  lockLink
                 />
               </>
             ) : null}
@@ -1004,45 +1081,39 @@ export function LeadDialog({
               />
             ) : null}
 
+            {lead && onMarkLost ? (
+              <LeadMarkLostSection
+                lead={lead}
+                pending={pending}
+                onMarkLost={onMarkLost}
+              />
+            ) : null}
+
             {error ? (
               <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 {getErrorMessage(error, "Erro ao salvar lead")}
               </p>
             ) : null}
             </div>
-            </div>
+            </CrmFormDrawerBody>
 
-            <DialogFooter className="mx-0! mb-0! border-t border-border bg-white px-6! py-4!">
-              <Button
-                type="button"
-                variant="outline"
+            <CrmFormDrawerFooter>
+              <CrmFormDrawerCancel
                 disabled={submitPending}
                 onClick={() => onOpenChange(false)}
+              />
+              <CrmFormDrawerSubmit
+                pending={submitPending}
+                disabled={
+                  interestAvailability.pending ||
+                  interestAvailability.incompatible.length > 0
+                }
               >
-                <X className="size-4" />
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="save"
-                disabled={submitPending || !canSubmit}
-              >
-                {submitPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Salvando…
-                  </>
-                ) : (
-                  <>
-                    <Check className="size-4" />
-                    {lead ? "Salvar alterações" : "Salvar lead"}
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
+                {lead ? "Salvar alterações" : "Salvar lead"}
+              </CrmFormDrawerSubmit>
+            </CrmFormDrawerFooter>
           </form>
-        </DialogContent>
       ) : null}
-    </Dialog>
+    </CrmFormDrawer>
   )
 }

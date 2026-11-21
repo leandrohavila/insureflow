@@ -94,8 +94,7 @@ export function LeadLossReasonsManager() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
+                variant="crmSecondary"
                 onClick={() =>
                   updateReason.mutate({
                     id: reason.id,
@@ -108,7 +107,6 @@ export function LeadLossReasonsManager() {
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
                 onClick={() => deleteReason.mutate(reason.id)}
               >
                 Excluir

@@ -35,6 +35,9 @@ function toQueryString(filters: LeadListFilters = {}) {
   if (filters.createdWithinDays) {
     params.set("createdWithinDays", String(filters.createdWithinDays))
   }
+  if (filters.sort && filters.sort !== "recent") {
+    params.set("sort", filters.sort)
+  }
   if (filters.page) params.set("page", String(filters.page))
   if (filters.limit) params.set("limit", String(filters.limit))
 
