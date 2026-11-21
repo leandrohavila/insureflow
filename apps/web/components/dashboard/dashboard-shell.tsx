@@ -1,5 +1,6 @@
 "use client"
 
+import { useLayoutEffect } from "react"
 import { motion, useReducedMotion } from "framer-motion"
 
 import { usePathname } from "next/navigation"
@@ -27,6 +28,13 @@ export function DashboardShell({ children, session }: DashboardShellProps) {
   const reduce = useReducedMotion()
   const pathname = usePathname()
   const crmCanvas = isCrmCanvasPath(pathname ?? "")
+
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.classList.add("avila-nav-chrome")
+    root.classList.remove("avila-crm-chrome")
+    return () => root.classList.remove("avila-nav-chrome")
+  }, [])
 
   return (
     <SessionProvider initialSession={session}>

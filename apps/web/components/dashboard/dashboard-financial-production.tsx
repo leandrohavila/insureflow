@@ -4,6 +4,7 @@ import { useMemo } from "react"
 
 import type { DashboardKpi } from "@/lib/data-access/modules/dashboard/hooks"
 import { useCrmDeals } from "@/lib/data-access/modules/crm"
+import { cn } from "@/lib/utils"
 
 import { DashboardKpiTile, DashboardKpiTileGrid } from "./dashboard-kpi-tile"
 import { computePipelineMetrics } from "./dashboard-pipeline-metrics"
@@ -44,7 +45,7 @@ export function DashboardFinancialProduction({
       dense
       fill
       loading={loading}
-      className={dashboardUniformCardClassName}
+      className={cn(dashboardUniformCardClassName, "dashboard-finance")}
     >
       <DashboardKpiTileGrid>
         <DashboardKpiTile

@@ -33,7 +33,7 @@ export function DashboardKpiTile({
   return (
     <div
       className={cn(
-        "min-w-0 rounded-[var(--if-radius-md)] bg-white/[0.02] px-2 py-1.5",
+        "dashboard-tile min-w-0 rounded-lg border border-[#e4ddd2] bg-[var(--avila-ivory)]",
         className,
       )}
     >
@@ -45,7 +45,7 @@ export function DashboardKpiTile({
       >
         {loading ? "—" : value}
       </p>
-      <p className="mt-1 truncate text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="dashboard-tile-label mt-0.5 truncate text-[0.6875rem] font-medium leading-snug text-muted-foreground">
         {label}
       </p>
     </div>
@@ -62,7 +62,7 @@ export function DashboardKpiTileGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-1.5 sm:grid-cols-3",
+        "dashboard-tile-grid grid grid-cols-2 sm:grid-cols-3",
         className,
       )}
     >
@@ -91,14 +91,14 @@ export function DashboardIconMetric({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-[var(--if-space-2)] rounded-[var(--if-radius-md)] px-1 py-1",
+        "dashboard-tile flex h-full min-w-0 items-center gap-[var(--if-space-2)] rounded-lg border border-[#e4ddd2] bg-[var(--avila-ivory)]",
         className,
       )}
     >
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-[var(--if-radius-md)] bg-white/[0.04] text-muted-foreground">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-md border border-[#e4ddd2] bg-[var(--avila-paper)] text-muted-foreground">
         <Icon className="size-3.5" aria-hidden />
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <p
           className={cn(
             "text-base font-semibold leading-none tabular-nums",
@@ -107,7 +107,7 @@ export function DashboardIconMetric({
         >
           {loading ? "—" : value}
         </p>
-        <p className="mt-0.5 truncate text-[0.625rem] text-muted-foreground">
+        <p className="mt-0.5 text-[0.625rem] leading-snug text-muted-foreground">
           {label}
         </p>
       </div>

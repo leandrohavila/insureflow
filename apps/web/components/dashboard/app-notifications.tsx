@@ -26,7 +26,10 @@ export function AppNotifications() {
       >
         <Bell className="size-4" strokeWidth={1.5} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="glass-panel w-64 border-white/[0.08] p-1">
+      <DropdownMenuContent
+        align="end"
+        className="glass-panel avila-crm-canvas w-64 border-white/[0.08] p-1"
+      >
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
           Notificações
         </DropdownMenuLabel>

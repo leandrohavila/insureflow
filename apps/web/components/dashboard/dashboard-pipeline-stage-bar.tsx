@@ -6,19 +6,19 @@ import { cn } from "@/lib/utils"
 import type { PipelineStageMetric } from "./dashboard-pipeline-metrics"
 
 const stageBarColor: Record<(typeof pipelineStages)[number]["id"], string> = {
-  novo: "bg-sky-500",
-  contato: "bg-violet-500",
-  cotacao: "bg-primary",
-  qualificacao: "bg-violet-500",
-  visita: "bg-violet-500",
-  proposta: "bg-primary",
-  negociacao: "bg-amber-500",
-  contrato: "bg-amber-500",
-  fechamento: "bg-emerald-500",
-  fechado: "bg-emerald-500",
-  "primeiro-contato": "bg-violet-500",
-  "visita-agendada": "bg-primary",
-  perdido: "bg-neutral-400",
+  novo: "bg-[#10294B]",
+  contato: "bg-[#3d5f86]",
+  qualificacao: "bg-[#3d5f86]",
+  "primeiro-contato": "bg-[#3d5f86]",
+  visita: "bg-[#6d88a8]",
+  "visita-agendada": "bg-[#6d88a8]",
+  cotacao: "bg-[#C09048]",
+  proposta: "bg-[#9a7040]",
+  negociacao: "bg-[#9a7040]",
+  contrato: "bg-[#9a7040]",
+  fechamento: "bg-[#157a3c]",
+  fechado: "bg-[#157a3c]",
+  perdido: "bg-[#c4bbae]",
 }
 
 type DashboardPipelineStageBarProps = {
@@ -46,9 +46,9 @@ export function DashboardPipelineStageBar({
         <div className="h-3.5 w-full rounded-md border border-border/50 bg-muted/30" />
       ) : (
         <div
-          className="flex w-full gap-1 rounded-md border border-border/40 bg-muted/20 p-0.5"
+          className="flex h-2.5 w-full overflow-hidden rounded-full bg-[#ebe5dc]"
           role="img"
-          aria-label={`Distribuição do pipeline: ${stages.map((s) => `${s.label} ${s.count}`).join(", ")}`}
+          aria-label={`Distribuição do pipeline: ${stages.map((s) => `${s.label} ${s.count} ${s.share}%`).join(", ")}`}
         >
           {stages.map((stage) => {
             const share = stage.count / total
@@ -57,41 +57,38 @@ export function DashboardPipelineStageBar({
             return (
               <div
                 key={stage.id}
-                className="min-w-[3px] flex-1"
-                style={{ flexGrow: share, flexBasis: 0 }}
-              >
-                <div
-                  className={cn(
-                    "h-3 rounded-[3px] border border-white/10 shadow-sm transition-[filter] duration-[var(--if-duration-base)] hover:brightness-110",
-                    stageBarColor[stage.id],
-                  )}
-                  title={`${stage.label}: ${stage.count} (${stage.share}%)`}
-                />
-              </div>
+                className={cn("h-full shrink-0", stageBarColor[stage.id])}
+                style={{ width: `${share * 100}%` }}
+                title={`${stage.label}: ${stage.count} (${stage.share}%)`}
+              />
             )
           })}
         </div>
       )}
 
-      <div className="grid grid-cols-5 gap-0.5">
+      <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
         {stages.map((stage) => (
-          <div key={stage.id} className="min-w-0 px-0.5 text-center">
-            <p className="truncate text-[0.625rem] font-medium text-muted-foreground">
+          <li key={stage.id} className="flex min-w-0 items-center gap-2">
+            <span
+              aria-hidden
+              className={cn("size-2 shrink-0 rounded-full", stageBarColor[stage.id])}
+            />
+            <span className="min-w-0 flex-1 truncate text-xs text-foreground">
               {stage.label}
-            </p>
+            </span>
             {!loading ? (
               <>
-                <p className="text-xs font-semibold tabular-nums text-foreground">
+                <span className="text-xs font-semibold tabular-nums text-foreground">
                   {stage.count}
-                </p>
-                <p className="text-[0.625rem] tabular-nums text-muted-foreground/80">
+                </span>
+                <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
                   {total > 0 ? `${stage.share}%` : "—"}
-                </p>
+                </span>
               </>
             ) : null}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }

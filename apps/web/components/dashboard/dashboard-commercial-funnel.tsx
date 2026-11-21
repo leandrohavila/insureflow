@@ -4,11 +4,15 @@ import type { DashboardKpi } from "@/lib/data-access/modules/dashboard/hooks"
 import { cn } from "@/lib/utils"
 
 import { DashboardSection } from "./dashboard-section"
-import {
-  dashboardFunnelBarClassName,
-  parseDashboardMetricNumber,
-  pickDashboardKpi,
-} from "./dashboard-utils"
+import { parseDashboardMetricNumber, pickDashboardKpi } from "./dashboard-utils"
+
+const funnelFill = [
+  "bg-[#10294B]",
+  "bg-[#3d5f86]",
+  "bg-[#C09048]",
+  "bg-[#9a7040]",
+  "bg-[#157a3c]",
+]
 
 type FunnelStep = {
   id: string
@@ -24,8 +28,6 @@ type DashboardCommercialFunnelProps = {
   clientsEnabled: boolean
   quotesEnabled: boolean
 }
-
-const FUNNEL_WIDTHS = [100, 82, 64, 46, 28]
 
 export function DashboardCommercialFunnel({
   kpis,
@@ -84,33 +86,32 @@ export function DashboardCommercialFunnel({
   if (steps.length <= 1) return null
 
   const loading = steps.some((step) => step.loading)
-  const topValue = Math.max(steps[0]?.value ?? 0, 1)
+  const topValue = Math.max(
+    ...steps.filter((step) => !step.placeholder).map((step) => step.value),
+    1,
+  )
 
   return (
     <DashboardSection title="Funil Comercial" dense loading={loading}>
-      <div className="mx-auto w-full max-w-xl space-y-1">
+      <div className="space-y-2">
         {steps.map((step, index) => {
-          const funnelWidth = FUNNEL_WIDTHS[index] ?? 24
-          const valueWidth =
-            step.placeholder || step.value === 0
-              ? funnelWidth * 0.35
-              : Math.round((step.value / topValue) * funnelWidth)
-          const width = Math.min(funnelWidth, Math.max(12, valueWidth))
+          const share =
+            step.placeholder || topValue === 0
+              ? 0
+              : Math.round((step.value / topValue) * 100)
+          const width = step.placeholder ? 18 : Math.max(share, step.value > 0 ? 8 : 0)
 
           return (
             <div
               key={step.id}
-              className="grid grid-cols-[4rem_minmax(0,1fr)_1.75rem] items-center gap-2"
+              className="grid grid-cols-[5.25rem_minmax(0,1fr)_2rem_2.75rem] items-center gap-2"
             >
-              <p className="text-[0.6875rem] font-medium text-muted-foreground">
-                {step.label}
-              </p>
-              <div className="flex justify-center">
+              <p className="text-xs font-medium text-foreground">{step.label}</p>
+              <div className="h-2 overflow-hidden rounded-full bg-[#ebe5dc]">
                 <span
                   className={cn(
-                    dashboardFunnelBarClassName,
-                    "block h-2.5 min-w-[2rem] rounded-sm",
-                    step.placeholder && "bg-muted-foreground/20 hover:bg-muted-foreground/30",
+                    "block h-full rounded-full",
+                    step.placeholder ? "bg-[#c4bbae]" : funnelFill[index] ?? "bg-[#10294B]",
                   )}
                   style={{ width: `${width}%` }}
                 />
@@ -118,10 +119,15 @@ export function DashboardCommercialFunnel({
               <p
                 className={cn(
                   "text-right text-xs font-semibold tabular-nums",
-                  step.placeholder ? "text-muted-foreground" : "text-foreground",
+                  step.placeholder || step.loading
+                    ? "text-muted-foreground"
+                    : "text-foreground",
                 )}
               >
-                {step.loading ? "—" : step.placeholder ? "—" : step.value}
+                {step.loading || step.placeholder ? "—" : step.value}
+              </p>
+              <p className="text-right text-xs font-medium tabular-nums text-muted-foreground">
+                {step.loading || step.placeholder ? "" : `${share}%`}
               </p>
             </div>
           )

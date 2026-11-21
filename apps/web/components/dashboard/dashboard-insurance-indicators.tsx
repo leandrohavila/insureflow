@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 
 import type { DashboardKpi } from "@/lib/data-access/modules/dashboard/hooks"
+import { cn } from "@/lib/utils"
 
 import { DashboardIconMetric } from "./dashboard-kpi-tile"
 import { DashboardSection } from "./dashboard-section"
@@ -40,9 +41,9 @@ export function DashboardInsuranceIndicators({
       dense
       fill
       loading={loading}
-      className={dashboardUniformCardClassName}
+      className={cn(dashboardUniformCardClassName, "dashboard-insurance")}
     >
-      <div className="space-y-0.5">
+      <div className="dashboard-insurance-metrics">
         <DashboardIconMetric
           icon={FileText}
           label="Cotações"

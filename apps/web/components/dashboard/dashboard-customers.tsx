@@ -1,6 +1,7 @@
 "use client"
 
 import type { DashboardKpi } from "@/lib/data-access/modules/dashboard/hooks"
+import { cn } from "@/lib/utils"
 
 import { DashboardKpiTile, DashboardKpiTileGrid } from "./dashboard-kpi-tile"
 import { DashboardSection } from "./dashboard-section"
@@ -27,7 +28,7 @@ export function DashboardCustomers({ kpis, enabled }: DashboardCustomersProps) {
       dense
       fill
       loading={loading}
-      className={dashboardUniformCardClassName}
+      className={cn(dashboardUniformCardClassName, "dashboard-customers")}
     >
       <DashboardKpiTileGrid className="grid-cols-2 sm:grid-cols-2">
         <DashboardKpiTile
@@ -43,7 +44,6 @@ export function DashboardCustomers({ kpis, enabled }: DashboardCustomersProps) {
           label="Próxima renovação"
           value="—"
           placeholder
-          className="col-span-2"
         />
       </DashboardKpiTileGrid>
     </DashboardSection>
