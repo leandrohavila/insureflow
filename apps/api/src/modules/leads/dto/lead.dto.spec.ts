@@ -24,6 +24,21 @@ describe('ListLeadsQueryDto', () => {
     expect(result.page).toBe(1);
   });
 
+  it('aceita ordenação conhecida e rejeita valor fora da lista', async () => {
+    const accepted = (await pipe.transform(
+      { sort: 'lastContact' },
+      { type: 'query', metatype: ListLeadsQueryDto },
+    )) as ListLeadsQueryDto;
+    expect(accepted.sort).toBe('lastContact');
+
+    await expect(
+      pipe.transform(
+        { sort: 'pipeline' },
+        { type: 'query', metatype: ListLeadsQueryDto },
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('rejects limit above workspace cap', async () => {
     await expect(
       pipe.transform(

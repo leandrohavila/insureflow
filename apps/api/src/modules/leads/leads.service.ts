@@ -45,6 +45,7 @@ import {
   LEAD_SEARCH_ACCENTS_FROM,
   LEAD_SEARCH_ACCENTS_TO,
   buildLeadAttributeWhere,
+  leadListOrderBy,
   leadPhoneLikePattern,
   leadSearchLikePattern,
 } from './lead-list-filters.util';
@@ -149,7 +150,7 @@ export class LeadsService {
         this.prisma.lead.findMany({
           where,
           include: leadOwnerInclude,
-          orderBy: { createdAt: 'desc' },
+          orderBy: leadListOrderBy(query.sort),
           skip: (page - 1) * limit,
           take: limit,
         }),
@@ -549,7 +550,7 @@ export class LeadsService {
         tenantId,
         dto.lossReasonId,
       );
-      if (!createReason) {
+      if (!createReason?.isActive) {
         throw new BadRequestException('Motivo de perda inválido ou inativo.');
       }
       if (
@@ -742,7 +743,7 @@ export class LeadsService {
       : null;
 
     if (transitioningToLost) {
-      if (!configuredReason) {
+      if (!configuredReason?.isActive) {
         throw new BadRequestException('Motivo de perda inválido ou inativo.');
       }
       if (

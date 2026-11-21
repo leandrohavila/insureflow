@@ -2,6 +2,8 @@ import {
   boardDealStage,
   canonicalDealStage,
   computeStageSla,
+  STAGE_DURATION_MS_MAX,
+  stageDurationMs,
 } from './deal-pipeline.util';
 
 describe('deal-pipeline', () => {
@@ -30,6 +32,16 @@ describe('deal-pipeline', () => {
     });
     expect(sla.status).toBe('overdue');
     expect(sla.dueAt).toBe('2026-08-19T12:00:00.000Z');
+  });
+
+  it('limita a permanência do estágio ao inteiro de 32 bits', () => {
+    const entered = new Date('2026-01-01T00:00:00.000Z');
+    const left = new Date('2026-08-01T00:00:00.000Z');
+    expect(left.getTime() - entered.getTime()).toBeGreaterThan(
+      STAGE_DURATION_MS_MAX,
+    );
+    expect(stageDurationMs(entered, left)).toBe(STAGE_DURATION_MS_MAX);
+    expect(stageDurationMs(left, entered)).toBe(0);
   });
 
   it('alerta ao atingir 80% do SLA do estágio', () => {
