@@ -25,6 +25,7 @@ import type { JwtAccessPayload } from '../../common/interfaces/jwt-payload.inter
 import type { BusinessUnitActor } from '../../common/utils/business-unit-acl.util';
 import {
   CreateQuestionnaireFieldDto,
+  CreateQuestionnaireShareDto,
   CreateQuestionnaireSubmissionDto,
   CreateQuestionnaireTemplateDto,
   ListQuestionnaireSubmissionsQueryDto,
@@ -74,6 +75,23 @@ export class QuestionnairesController {
     );
   }
 
+  @Post('intelligent-forms/:branch')
+  @RequirePermissions('questionnaires:manage')
+  @ApiOperation({
+    summary: 'Garantir o formulário interno versionado de um ramo',
+  })
+  @ApiParam({ name: 'branch', enum: ['auto', 'residencial', 'empresarial'] })
+  ensureIntelligentForm(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('branch') branch: string,
+  ) {
+    return this.questionnaires.ensureIntelligentForm(
+      user.tenantId,
+      branch,
+      user.sub,
+    );
+  }
+
   @Get('templates')
   @RequirePermissions('questionnaires:view')
   @ApiOperation({ summary: 'Listar templates de questionário do tenant' })
@@ -107,7 +125,7 @@ export class QuestionnairesController {
     @CurrentUser() user: JwtAccessPayload,
     @Body() dto: CreateQuestionnaireTemplateDto,
   ) {
-    return this.questionnaires.createTemplate(user.tenantId, dto);
+    return this.questionnaires.createTemplate(user.tenantId, dto, user.sub);
   }
 
   @Patch('templates/:id')
@@ -202,6 +220,34 @@ export class QuestionnairesController {
     @Param('fieldId') fieldId: string,
   ) {
     return this.questionnaires.deleteField(user.tenantId, templateId, fieldId);
+  }
+
+  @Post('templates/:id/versions')
+  @RequirePermissions('questionnaires:manage')
+  @ApiOperation({
+    summary: 'Publicar uma versão imutável do modelo de questionário',
+  })
+  @ApiParam({ name: 'id', description: 'ID do template' })
+  publishTemplateVersion(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('id') id: string,
+  ) {
+    return this.questionnaires.publishTemplateVersion(
+      user.tenantId,
+      id,
+      user.sub,
+    );
+  }
+
+  @Get('templates/:id/versions')
+  @RequirePermissions('questionnaires:view')
+  @ApiOperation({ summary: 'Listar versões publicadas do modelo' })
+  @ApiParam({ name: 'id', description: 'ID do template' })
+  listTemplateVersions(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('id') id: string,
+  ) {
+    return this.questionnaires.listTemplateVersions(user.tenantId, id);
   }
 
   @Get('submissions')
@@ -300,6 +346,76 @@ export class QuestionnairesController {
     return this.questionnaires.deleteSubmission(
       user.tenantId,
       id,
+      this.actorFrom(user),
+    );
+  }
+
+  @Post('submissions/:id/shares')
+  @RequirePermissions('questionnaires:manage')
+  @ApiOperation({
+    summary:
+      'Preparar compartilhamento externo. O token aleatório é devolvido uma vez e só o hash é persistido.',
+  })
+  @ApiParam({ name: 'id', description: 'ID da resposta' })
+  createShare(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('id') id: string,
+    @Body() dto: CreateQuestionnaireShareDto,
+  ) {
+    return this.questionnaires.createShare(
+      user.tenantId,
+      id,
+      dto,
+      user.sub,
+      this.actorFrom(user),
+    );
+  }
+
+  @Get('submissions/:id/shares')
+  @RequirePermissions('questionnaires:view')
+  @ApiOperation({
+    summary: 'Listar compartilhamentos da resposta, sem o token',
+  })
+  @ApiParam({ name: 'id', description: 'ID da resposta' })
+  listShares(@CurrentUser() user: JwtAccessPayload, @Param('id') id: string) {
+    return this.questionnaires.listShares(
+      user.tenantId,
+      id,
+      this.actorFrom(user),
+    );
+  }
+
+  @Post('submissions/:id/revisions')
+  @RequirePermissions('questionnaires:manage')
+  @ApiOperation({
+    summary:
+      'Criar uma nova resposta de correção sem alterar o questionário concluído nem o lead',
+  })
+  @ApiParam({ name: 'id', description: 'ID da resposta concluída' })
+  reviseSubmission(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('id') id: string,
+  ) {
+    return this.questionnaires.reviseSubmission(
+      user.tenantId,
+      id,
+      user.sub,
+      this.actorFrom(user),
+    );
+  }
+
+  @Post('shares/:shareId/revoke')
+  @RequirePermissions('questionnaires:manage')
+  @ApiOperation({ summary: 'Revogar um compartilhamento externo' })
+  @ApiParam({ name: 'shareId', description: 'ID do compartilhamento' })
+  revokeShare(
+    @CurrentUser() user: JwtAccessPayload,
+    @Param('shareId') shareId: string,
+  ) {
+    return this.questionnaires.revokeShare(
+      user.tenantId,
+      shareId,
+      user.sub,
       this.actorFrom(user),
     );
   }

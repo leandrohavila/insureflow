@@ -27,10 +27,10 @@ describe('questionnaire-answer-audit.util', () => {
       {
         field: 'vehicle_model',
         label: 'Modelo do veículo',
-        oldValue: 'Civic',
-        newValue: 'Corolla',
       },
     ]);
+    expect(JSON.stringify(changes)).not.toContain('Civic');
+    expect(JSON.stringify(changes)).not.toContain('Corolla');
   });
 
   it('compares object answers without depending on key order', () => {
