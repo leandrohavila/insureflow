@@ -38,5 +38,12 @@ export const PUBLIC_PATHS = ["/login", "/unauthorized"] as const
 
 export function isPublicPath(pathname: string): boolean {
   const path = pathname.split("?")[0] ?? pathname
+  if (path === "/questionario" || path.startsWith("/questionario/")) return true
+  if (
+    path === "/api/public/questionnaires" ||
+    path.startsWith("/api/public/questionnaires/")
+  ) {
+    return true
+  }
   return PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
 }

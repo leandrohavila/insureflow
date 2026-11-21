@@ -68,3 +68,16 @@ export {
   parseFavoritesJson,
   serializeFavorites,
 } from "./utils/favorites"
+
+export {
+  INTELLIGENT_FORM_BRANCHES,
+  INTELLIGENT_FORM_CATALOG_VERSION,
+  getIntelligentForm,
+  listIntelligentForms,
+  intelligentFormFingerprint,
+  isIntelligentFormBranch,
+  type IntelligentFormBranch,
+  type IntelligentFormDefinition,
+  type IntelligentFormField,
+  type IntelligentFormSection,
+} from "./intelligent-forms"
